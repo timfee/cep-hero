@@ -1,0 +1,9 @@
+{
+  "rules": {
+    "func-style": ["error", "declaration"],
+    "eqeqeq": "warn",
+    "no-debugger": "warn",
+    "no-console": "off",
+    "no-unused-vars": "warn"
+  }
+}

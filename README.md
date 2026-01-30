@@ -1,36 +1,119 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Chrome Enterprise Premium (CEP) - MCP Server & AI Agent
 
-## Getting Started
+This project is a dual-purpose application:
 
-First, run the development server:
+1.  **AI Admin Hero UI:** A Next.js-based Chat Interface for managing Chrome Enterprise Premium.
+2.  **MCP Server:** A compliant [Model Context Protocol](https://modelcontextprotocol.io/) server that allows external agents (like Claude Desktop or Gemini CLI) to manage your Chrome fleet.
+
+It connects to **REAL** Google Cloud APIs (Admin SDK, Chrome Management, Cloud Identity, Chrome Policy).
+
+---
+
+## 🛠️ Developer Setup (Required)
+
+To run this application, you must create a Google Cloud Project and configure OAuth credentials.
+
+### 1. Create Google Cloud Project & Enable APIs
+
+1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
+2.  Create a new project (e.g., `cep-admin-hero`).
+3.  **Enable the following APIs** (API & Services > Library):
+    - **Admin SDK** (`admin.googleapis.com`)
+    - **Chrome Management API** (`chromemanagement.googleapis.com`)
+    - **Cloud Identity API** (`cloudidentity.googleapis.com`)
+
+### 2. Configure OAuth Consent Screen
+
+1.  Go to **APIs & Services > OAuth consent screen**.
+2.  Select **Internal** (if you are a Workspace user) or **External** (for testing).
+3.  Fill in the app name and email.
+4.  **Scopes:** Add the following scopes:
+    - `https://www.googleapis.com/auth/chrome.management.reports.readonly`
+    - `https://www.googleapis.com/auth/chrome.management.profiles.readonly`
+    - `https://www.googleapis.com/auth/cloud-identity.policies`
+    - `https://www.googleapis.com/auth/admin.reports.audit.readonly`
+    - `https://www.googleapis.com/auth/cloud-platform`
+    - `openid`, `email`, `profile`
+5.  Save and continue.
+
+### 3. Create OAuth Credentials
+
+1.  Go to **APIs & Services > Credentials**.
+2.  Click **Create Credentials > OAuth client ID**.
+3.  Application type: **Web application**.
+4.  Name: `CEP App`.
+5.  **Authorized Redirect URIs** (Add BOTH):
+    - `http://localhost:3000/api/auth/callback/google` (Web UI)
+    - `http://localhost:3000/callback` (CLI Login script)
+6.  Click **Create**.
+7.  Copy the **Client ID** and **Client Secret**.
+
+### 4. Environment Configuration
+
+Create a `.env.local` file in the root of the project:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
+# Google OAuth Credentials (Required)
+GOOGLE_CLIENT_ID=your_client_id_here
+GOOGLE_CLIENT_SECRET=your_client_secret_here
+
+# Better Auth Configuration
+BETTER_AUTH_URL=http://localhost:3000
+NEXT_PUBLIC_BETTER_AUTH_URL=http://localhost:3000
+BETTER_AUTH_SECRET=generate_a_random_string_here
+
+# AI Configuration (Gemini API)
+GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
+
+# Upstash Vector (for grounding)
+UPSTASH_VECTOR_REST_URL=your_vector_url
+UPSTASH_VECTOR_REST_TOKEN=your_vector_token
+```
+
+---
+
+## 🚀 Usage Guide
+
+### 1. Install Dependencies
+
+```bash
+bun install
+```
+
+### 2. Authentication (Choose One)
+
+#### Option A: Web UI (Standard)
+
+Just start the app. You will be prompted to sign in with Google when you visit the page.
+
+```bash
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+#### Option B: CLI / Headless Mode
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Use an OAuth token from the web sign-in flow. Application Default Credentials and local credential files are not supported.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### 3. Connect External Agents (Claude/Gemini CLI)
 
-## Learn More
+**SSE Endpoint:** `http://localhost:3000/api/mcp`
 
-To learn more about Next.js, take a look at the following resources:
+**Authorization:**
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+- Use the same OAuth bearer token issued by the web UI session: `Authorization: Bearer <token>`.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+#### Example `curl` Test
 
-## Deploy on Vercel
+```bash
+curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 📂 Project Structure
+
+- **`lib/mcp/registry.ts`**: Deterministic tools + evidence extraction + structured AI summaries.
+- **`lib/mcp/server-factory.ts`**: MCP tool registrations and SSE transport.
+- **`app/api/chat/route.ts`**: Chat endpoint that exposes tools to the UI.
+- **`app/api/mcp/route.ts`**: MCP Server endpoint via Server-Sent Events (SSE).
+- **`app/api/overview/route.ts`**: Fleet overview endpoint backed by `getFleetOverview`.
