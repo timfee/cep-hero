@@ -1,21 +1,17 @@
 import { google as googleModel } from "@ai-sdk/google";
 import { generateObject } from "ai";
-import fs from "fs";
-import { GoogleAuth, OAuth2Client } from "google-auth-library";
+import { OAuth2Client } from "google-auth-library";
 import { google as googleApis, chromepolicy_v1 } from "googleapis";
-import path from "path";
 import { z } from "zod";
 
 import type { VectorSearchResult } from "@/lib/upstash/search";
 
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
-import { recordActivity } from "../activity-log";
 
-// --- Types & Schemas ---
+import { recordActivity } from "../activity-log";
 
 /**
  * Schema for fetching Chrome audit events.
- * Used by the 'getChromeEvents' tool.
  */
 export const GetChromeEventsSchema = z.object({
   maxResults: z
@@ -26,7 +22,6 @@ export const GetChromeEventsSchema = z.object({
 
 /**
  * Schema for listing DLP rules.
- * Currently requires no parameters as it fetches policy-wide configurations.
  */
 export const ListDLPRulesSchema = z.object({
   includeHelp: z
@@ -37,7 +32,6 @@ export const ListDLPRulesSchema = z.object({
 
 /**
  * Schema for enrolling a browser.
- * Requires the target Organizational Unit (OU) ID.
  */
 export const EnrollBrowserSchema = z.object({
   orgUnitId: z
@@ -50,7 +44,6 @@ export const EnrollBrowserSchema = z.object({
 
 /**
  * Schema for fetching connector configurations.
- * Used to diagnose connectivity issues between Chrome and CEP.
  */
 export const GetConnectorConfigSchema = z.object({});
 
@@ -103,6 +96,17 @@ type FleetOverviewFacts = {
   errors: string[];
 };
 
+type ResolvedPolicy =
+  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
+    policyTargetKey?: { targetResource?: string };
+  };
+
+type OrgUnit = {
+  orgUnitId?: string | null;
+  parentOrgUnitId?: string | null;
+  orgUnitPath?: string | null;
+};
+
 /**
  * Extract deterministic fleet signals from tool outputs.
  */
@@ -143,7 +147,6 @@ function extractFleetOverviewFacts(
 
 /**
  * Use the AI model to synthesize a narrative summary from structured facts.
- * This is the only place where interpretation is performed.
  */
 async function summarizeFleetOverview(
   facts: FleetOverviewFacts,
@@ -162,35 +165,31 @@ async function summarizeFleetOverview(
 }
 
 export class CepToolExecutor {
-  private auth: GoogleAuth | OAuth2Client;
+  private auth: OAuth2Client;
   private customerId: string;
 
   /**
-   * Initializes the executor.
-   *
-   * @param accessToken - Required. Uses the signed-in user's token from the web flow.
-   * @param customerId - The Google Workspace Customer ID (defaults to 'my_customer' alias).
+   * Initialize the executor with a signed-in user's access token.
    */
   constructor(accessToken: string, customerId: string = "my_customer") {
     this.customerId = customerId;
 
-    // Web UI Session (Passed explicitly)
     const client = new OAuth2Client();
     client.setCredentials({ access_token: accessToken });
     this.auth = client;
   }
 
   /**
-   * Fetches recent Chrome audit events (e.g., file uploads, malware transfers) from the Admin SDK Reports API.
-   *
-   * @param params - The parameters defined in GetChromeEventsSchema.
-   * @returns An object containing the list of events or an error message with a suggestion.
+   * Fetch recent Chrome audit events from the Admin SDK Reports API.
    */
   async getChromeEvents({
     maxResults = 10,
   }: z.infer<typeof GetChromeEventsSchema>) {
     console.log("[chrome-events] request", { maxResults });
-    const service = googleApis.admin({ version: "reports_v1", auth: this.auth });
+    const service = googleApis.admin({
+      version: "reports_v1",
+      auth: this.auth,
+    });
     const start = Date.now();
     try {
       const res = await service.activities.list({
@@ -201,7 +200,10 @@ export class CepToolExecutor {
       });
       console.log(
         "[chrome-events] response",
-        JSON.stringify({ count: res.data.items?.length ?? 0, sample: res.data.items?.[0]?.id })
+        JSON.stringify({
+          count: res.data.items?.length ?? 0,
+          sample: res.data.items?.[0]?.id,
+        })
       );
       recordActivity({
         id: crypto.randomUUID(),
@@ -214,23 +216,24 @@ export class CepToolExecutor {
         kind: "workspace",
       });
       return { events: res.data.items || [] };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const { code, message, errors } = getErrorDetails(error);
       console.log(
         "[chrome-events] error",
-        JSON.stringify({ code: error?.code, message: error?.message, errors: error?.errors })
+        JSON.stringify({ code, message, errors })
       );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://admin.googleapis.com/admin/reports_v1/activities",
         method: "GET",
-        status: error?.code ?? "error",
+        status: normalizeStatus(code),
         durationMs: Date.now() - start,
-        responsePreview: error?.message ?? "Unknown error",
+        responsePreview: message ?? "Unknown error",
         timestamp: Date.now(),
         kind: "workspace",
       });
       return {
-        error: error.message,
+        error: message ?? "Unknown error",
         suggestion:
           "Ensure the 'Admin SDK' API is enabled in GCP and the user has 'Reports' privileges.",
       };
@@ -238,9 +241,7 @@ export class CepToolExecutor {
   }
 
   /**
-   * Lists the current Data Loss Prevention (DLP) policies configured in Cloud Identity.
-   *
-   * @returns A normalized list of DLP rules with display metadata.
+   * List DLP policies configured in Cloud Identity.
    */
   async listDLPRules({
     includeHelp = false,
@@ -249,15 +250,26 @@ export class CepToolExecutor {
       version: "v1",
       auth: this.auth,
     });
+    const listPolicies = getPoliciesList(service);
     console.log("[dlp-rules] request");
     const start = Date.now();
     try {
-      const res = await service.policies.list({
+      if (!listPolicies) {
+        return {
+          error: "Cloud Identity policy client unavailable",
+          suggestion: "Confirm Cloud Identity API is enabled for this project.",
+        };
+      }
+
+      const res = await listPolicies({
         filter: `customer == "customers/${this.customerId}"`,
       });
       console.log(
         "[dlp-rules] response",
-        JSON.stringify({ count: res.data.policies?.length ?? 0, sample: res.data.policies?.[0]?.name })
+        JSON.stringify({
+          count: res.data.policies?.length ?? 0,
+          sample: res.data.policies?.[0]?.name,
+        })
       );
 
       recordActivity({
@@ -271,20 +283,22 @@ export class CepToolExecutor {
         kind: "workspace",
       });
 
-      const rules = (res.data.policies ?? []).map((policy, idx) => {
-        const resourceName = policy.name ?? "";
-        const id = resourceName.split("/").pop() ?? `rule-${idx + 1}`;
-        const displayName = id;
-        const description = "";
+      const rules = (res.data.policies ?? []).map(
+        (policy: { name?: string | null }, idx: number) => {
+          const resourceName = policy.name ?? "";
+          const id = resourceName.split("/").pop() ?? `rule-${idx + 1}`;
+          const displayName = id;
+          const description = "";
 
-        return {
-          id,
-          displayName,
-          description,
-          resourceName,
-          consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-        };
-      });
+          return {
+            id,
+            displayName,
+            description,
+            resourceName,
+            consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+          };
+        }
+      );
 
       if (!includeHelp || rules.length === 0) {
         return { rules };
@@ -292,23 +306,24 @@ export class CepToolExecutor {
 
       const help = await searchPolicies("Chrome DLP rules", 4);
       return { rules, help };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const { code, message, errors } = getErrorDetails(error);
       console.log(
         "[dlp-rules] error",
-        JSON.stringify({ code: error?.code, message: error?.message, errors: error?.errors })
+        JSON.stringify({ code, message, errors })
       );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://cloudidentity.googleapis.com/v1/policies",
         method: "GET",
-        status: error?.code ?? "error",
+        status: normalizeStatus(code),
         durationMs: Date.now() - start,
-        responsePreview: error?.message ?? "Unknown error",
+        responsePreview: message ?? "Unknown error",
         timestamp: Date.now(),
         kind: "workspace",
       });
       return {
-        error: error.message,
+        error: message ?? "Unknown error",
         suggestion:
           "Check 'Cloud Identity API' enablement and DLP Read permissions.",
       };
@@ -316,22 +331,26 @@ export class CepToolExecutor {
   }
 
   /**
-   * Generates a new enrollment token for Chrome Browser Cloud Management (CBCM).
-   *
-   * @param params - The parameters defined in EnrollBrowserSchema.
-   * @returns The enrollment token and its expiration date.
+   * Generate a new enrollment token for Chrome Browser Cloud Management.
    */
-  async enrollBrowser({
-    orgUnitId: _orgUnitId,
-  }: z.infer<typeof EnrollBrowserSchema>) {
+  async enrollBrowser({ orgUnitId }: z.infer<typeof EnrollBrowserSchema>) {
     const service = googleApis.chromemanagement({
       version: "v1",
       auth: this.auth,
     });
-    console.log("[enroll-browser] request", { orgUnitId: _orgUnitId });
+    const createEnrollment = getEnrollmentCreate(service);
+    console.log("[enroll-browser] request", { orgUnitId });
     const start = Date.now();
     try {
-      const res = await service.customers.policies.networks.enrollments.create({
+      if (!createEnrollment) {
+        return {
+          error: "Chrome Management enrollment client unavailable",
+          suggestion:
+            "Confirm Chrome Management API is enabled and the account has enrollment permissions.",
+        };
+      }
+
+      const res = await createEnrollment({
         parent: `customers/${this.customerId}`,
         requestBody: {
           policySchemaId: "chrome.users.EnrollmentToken",
@@ -342,7 +361,10 @@ export class CepToolExecutor {
       });
       console.log(
         "[enroll-browser] response",
-        JSON.stringify({ token: res.data.name ?? "", expires: res.data.expirationTime })
+        JSON.stringify({
+          token: res.data.name ?? "",
+          expires: res.data.expirationTime,
+        })
       );
       recordActivity({
         id: crypto.randomUUID(),
@@ -358,23 +380,24 @@ export class CepToolExecutor {
         enrollmentToken: res.data.name ?? "",
         expiresAt: res.data.expirationTime ?? null,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const { code, message, errors } = getErrorDetails(error);
       console.log(
         "[enroll-browser] error",
-        JSON.stringify({ code: error?.code, message: error?.message, errors: error?.errors })
+        JSON.stringify({ code, message, errors })
       );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
         method: "POST",
-        status: error?.code ?? "error",
+        status: normalizeStatus(code),
         durationMs: Date.now() - start,
-        responsePreview: error?.message ?? "Unknown error",
+        responsePreview: message ?? "Unknown error",
         timestamp: Date.now(),
         kind: "workspace",
       });
       return {
-        error: error.message,
+        error: message ?? "Unknown error",
         suggestion:
           "Ensure 'Chrome Browser Cloud Management API' is enabled and caller has Chrome policy admin rights.",
       };
@@ -382,9 +405,7 @@ export class CepToolExecutor {
   }
 
   /**
-   * Retrieves the current Chrome Connector configuration policies.
-   *
-   * @returns The resolved Chrome Policy values for connector-related schemas.
+   * Retrieve Chrome Connector configuration policies.
    */
   async getChromeConnectorConfiguration() {
     const service = googleApis.chromepolicy({
@@ -392,67 +413,58 @@ export class CepToolExecutor {
       auth: this.auth,
     });
 
-      const policySchemas = [
-        "chrome.users.SafeBrowsingProtectionLevel",
-        "chrome.users.SafeBrowsingExtendedReporting",
-        "chrome.users.SafeBrowsingAllowlistDomain",
-        "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
-        "chrome.users.SafeBrowsingDeepScanningEnabled",
-        "chrome.users.CloudReporting",
-        "chrome.users.CloudProfileReportingEnabled",
-        "chrome.users.CloudReportingUploadFrequencyV2",
-        "chrome.users.MetricsReportingEnabled",
-        "chrome.users.DataLeakPreventionReportingEnabled",
-      ];
+    const policySchemas = [
+      "chrome.users.SafeBrowsingProtectionLevel",
+      "chrome.users.SafeBrowsingExtendedReporting",
+      "chrome.users.SafeBrowsingAllowlistDomain",
+      "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
+      "chrome.users.SafeBrowsingDeepScanningEnabled",
+      "chrome.users.CloudReporting",
+      "chrome.users.CloudProfileReportingEnabled",
+      "chrome.users.CloudReportingUploadFrequencyV2",
+      "chrome.users.MetricsReportingEnabled",
+      "chrome.users.DataLeakPreventionReportingEnabled",
+    ];
 
     const start = Date.now();
     try {
-      const resolvedPolicies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] =
-        [];
+      const resolvedPolicies: ResolvedPolicy[] = [];
 
       const directory = googleApis.admin({
         version: "directory_v1",
         auth: this.auth,
       });
+      const listOrgUnits = getOrgUnitsList(directory);
 
       let rootOrgUnitId = "";
       let rootOrgUnitPath = "";
       try {
-        const orgUnits = await directory.orgunits.list({
-          customerId: this.customerId,
-          type: "all",
-        });
-        const orgUnitsList = orgUnits.data.organizationUnits ?? [];
-        const rootOu = orgUnitsList.find((unit) => unit.orgUnitPath === "/");
-        rootOrgUnitId = (rootOu?.orgUnitId ?? "").replace(/^id:/, "");
-        rootOrgUnitPath = rootOu?.orgUnitPath ?? "";
-      if (!rootOrgUnitId && orgUnitsList.length > 0) {
-        rootOrgUnitId = (orgUnitsList[0]?.orgUnitId ?? "").replace(/^id:/, "");
-      }
-      if (!rootOrgUnitId && orgUnitsList.length > 0) {
-        rootOrgUnitId = (orgUnitsList[0]?.parentOrgUnitId ?? "").replace(/^id:/, "");
-      }
-      if (!rootOrgUnitPath && orgUnitsList.length > 0) {
-        rootOrgUnitPath = orgUnitsList[0]?.orgUnitPath ?? "";
-      }
-      if (!rootOrgUnitPath && rootOrgUnitId) {
-        rootOrgUnitPath = "/";
-      }
+        const orgUnits = listOrgUnits
+          ? await listOrgUnits({ customerId: this.customerId, type: "all" })
+          : undefined;
+        const resolved = resolveRootOrgUnit(
+          orgUnits?.data.organizationUnits ?? []
+        );
+        rootOrgUnitId = resolved.id;
+        rootOrgUnitPath = resolved.path;
       } catch (error) {
         console.log(
           "[connector-config] root-ou error",
-          JSON.stringify({ message: (error as Error).message })
+          JSON.stringify({ message: getErrorMessage(error) })
         );
       }
 
       const targetCandidates = [
         rootOrgUnitId ? `orgunits/${rootOrgUnitId}` : "",
         rootOrgUnitPath ? `orgunits/${rootOrgUnitPath}` : "",
-        rootOrgUnitPath ? `orgunits/${encodeURIComponent(rootOrgUnitPath)}` : "",
+        rootOrgUnitPath
+          ? `orgunits/${encodeURIComponent(rootOrgUnitPath)}`
+          : "",
         rootOrgUnitPath ? `orgunits/${rootOrgUnitPath.replace(/^\//, "")}` : "",
       ].filter(Boolean);
 
-      const resolveErrors: Array<{ targetResource: string; message: string }> = [];
+      const resolveErrors: Array<{ targetResource: string; message: string }> =
+        [];
       for (const targetResource of targetCandidates) {
         try {
           const res = await service.customers.policies.resolve({
@@ -471,7 +483,9 @@ export class CepToolExecutor {
             JSON.stringify({
               targetResource,
               count: res.data.resolvedPolicies?.length ?? 0,
-              sample: res.data.resolvedPolicies?.[0]?.policyTargetKey,
+              sampleTargetResource: getPolicyTargetResource(
+                res.data.resolvedPolicies?.[0]
+              ),
             })
           );
 
@@ -497,7 +511,7 @@ export class CepToolExecutor {
         } catch (error) {
           resolveErrors.push({
             targetResource,
-            message: (error as Error).message,
+            message: getErrorMessage(error),
           });
         }
       }
@@ -516,27 +530,28 @@ export class CepToolExecutor {
         policySchemas,
         value: [],
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
+      const { code, message, errors } = getErrorDetails(error);
       console.log(
         "[connector-config] error",
         JSON.stringify({
-          code: error?.code,
-          message: error?.message,
-          errors: error?.errors,
+          code,
+          message,
+          errors,
         })
       );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
         method: "POST",
-        status: error?.code ?? "error",
+        status: normalizeStatus(code),
         durationMs: Date.now() - start,
-        responsePreview: error?.message ?? "Unknown error",
+        responsePreview: message ?? "Unknown error",
         timestamp: Date.now(),
         kind: "workspace",
       });
       return {
-        error: error.message,
+        error: message ?? "Unknown error",
         suggestion:
           "Check Chrome Policy API permissions and policy schema access.",
         policySchemas,
@@ -545,7 +560,7 @@ export class CepToolExecutor {
   }
 
   /**
-   * Fetches related documentation for grounding overview responses.
+   * Fetch related documentation for grounding overview responses.
    */
   async getKnowledgeContext(query: string): Promise<FleetKnowledgeContext> {
     if (!query.trim()) {
@@ -560,6 +575,9 @@ export class CepToolExecutor {
     return { docs, policies };
   }
 
+  /**
+   * Summarize fleet posture from live CEP data.
+   */
   async getFleetOverview({
     maxEvents = 25,
     knowledgeQuery,
@@ -592,7 +610,7 @@ export class CepToolExecutor {
       );
 
       return summary;
-    } catch (error) {
+    } catch {
       return {
         headline: "I just reviewed your Chrome fleet.",
         summary:
@@ -632,4 +650,167 @@ export class CepToolExecutor {
       };
     }
   }
+}
+
+/**
+ * Normalize error details from API exceptions.
+ */
+function getErrorDetails(error: unknown): {
+  code?: number | string;
+  message?: string;
+  errors?: unknown;
+} {
+  if (!error || typeof error !== "object") {
+    return {};
+  }
+
+  const code = Reflect.get(error, "code");
+  const message = Reflect.get(error, "message");
+  const errors = Reflect.get(error, "errors");
+
+  return {
+    code:
+      typeof code === "number" || typeof code === "string" ? code : undefined,
+    message: typeof message === "string" ? message : undefined,
+    errors,
+  };
+}
+
+/**
+ * Extract a readable message from unknown errors.
+ */
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  const message =
+    error && typeof error === "object"
+      ? Reflect.get(error, "message")
+      : undefined;
+
+  return typeof message === "string" ? message : "Unknown error";
+}
+
+/**
+ * Resolve the most likely root org unit ID and path.
+ */
+function resolveRootOrgUnit(units: OrgUnit[]): { id: string; path: string } {
+  if (units.length === 0) {
+    return { id: "", path: "" };
+  }
+
+  const root = units.find((unit) => unit.orgUnitPath === "/");
+  const fallback = root ?? units[0];
+  const id = (fallback?.orgUnitId ?? fallback?.parentOrgUnitId ?? "").replace(
+    /^id:/,
+    ""
+  );
+  const path = fallback?.orgUnitPath ?? (id ? "/" : "");
+
+  return { id, path };
+}
+
+/**
+ * Read target resource from a resolved policy.
+ */
+function getPolicyTargetResource(policy?: ResolvedPolicy): string | undefined {
+  const targetResource = policy?.policyTargetKey?.targetResource;
+  return typeof targetResource === "string" ? targetResource : undefined;
+}
+
+/**
+ * Normalize error codes for activity logging.
+ */
+function normalizeStatus(code?: number | string): number | "error" {
+  return typeof code === "number" ? code : "error";
+}
+
+/**
+ * Resolve Cloud Identity policies list handler.
+ */
+function getPoliciesList(
+  service: unknown
+):
+  | ((args: {
+      filter: string;
+    }) => Promise<{ data: { policies?: Array<{ name?: string | null }> } }>)
+  | null {
+  if (!service || typeof service !== "object") {
+    return null;
+  }
+
+  const policies = Reflect.get(service, "policies");
+  if (!policies || typeof policies !== "object") {
+    return null;
+  }
+
+  const list = Reflect.get(policies, "list");
+  return typeof list === "function" ? list.bind(policies) : null;
+}
+
+/**
+ * Resolve Chrome Management enrollment handler.
+ */
+function getEnrollmentCreate(service: unknown):
+  | ((args: {
+      parent: string;
+      requestBody: {
+        policySchemaId: string;
+        policyTargetKey: { targetResource: string };
+      };
+    }) => Promise<{
+      data: { name?: string | null; expirationTime?: string | null };
+    }>)
+  | null {
+  if (!service || typeof service !== "object") {
+    return null;
+  }
+
+  const customers = Reflect.get(service, "customers");
+  if (!customers || typeof customers !== "object") {
+    return null;
+  }
+
+  const policies = Reflect.get(customers, "policies");
+  if (!policies || typeof policies !== "object") {
+    return null;
+  }
+
+  const networks = Reflect.get(policies, "networks");
+  if (!networks || typeof networks !== "object") {
+    return null;
+  }
+
+  const enrollments = Reflect.get(networks, "enrollments");
+  if (!enrollments || typeof enrollments !== "object") {
+    return null;
+  }
+
+  const create = Reflect.get(enrollments, "create");
+  return typeof create === "function" ? create.bind(enrollments) : null;
+}
+
+/**
+ * Resolve Directory API org unit list handler.
+ */
+function getOrgUnitsList(
+  service: unknown
+):
+  | ((args: {
+      customerId: string;
+      type: string;
+    }) => Promise<{ data: { organizationUnits?: OrgUnit[] } }>)
+  | null {
+  if (!service || typeof service !== "object") {
+    return null;
+  }
+
+  const orgunits = Reflect.get(service, "orgunits");
+  if (!orgunits || typeof orgunits !== "object") {
+    return null;
+  }
+
+  const list = Reflect.get(orgunits, "list");
+  return typeof list === "function" ? list.bind(orgunits) : null;
 }

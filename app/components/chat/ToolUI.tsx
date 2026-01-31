@@ -1,19 +1,36 @@
 "use client";
 
-import { Check, Copy, AlertTriangle, Shield, Globe, Users } from "lucide-react";
+import { Check, Copy, AlertTriangle, Shield } from "lucide-react";
 import { useState } from "react";
 
-// --- Components ---
-
 type EventParam = { name?: string; value?: string };
+type ChromeEventDetail = { name?: string; parameters?: EventParam[] };
+type ChromeEvent = {
+  actor?: { email?: string };
+  id?: { time?: string };
+  events?: ChromeEventDetail[];
+};
+type DlpRule = {
+  id?: string;
+  displayName?: string;
+  resourceName?: string;
+  description?: string;
+  consoleUrl?: string;
+};
 
-function extractParam(detail: any, key: string): string | null {
-  const params = (detail?.parameters || []) as EventParam[];
-  const hit = params.find((p) => p.name === key);
-  return (hit?.value as string) ?? null;
+/**
+ * Pull a parameter value from a Chrome event detail.
+ */
+function extractParam(detail: ChromeEventDetail | undefined, key: string): string | null {
+  const params = detail?.parameters ?? [];
+  const hit = params.find((param) => param.name === key);
+  return hit?.value ?? null;
 }
 
-function topCount<T>(items: T[], keyFn: (t: T) => string | null) {
+/**
+ * Return the most frequent value in a list.
+ */
+function topCount<T>(items: T[], keyFn: (item: T) => string | null) {
   const counts = new Map<string, number>();
   for (const item of items) {
     const key = keyFn(item);
@@ -24,6 +41,9 @@ function topCount<T>(items: T[], keyFn: (t: T) => string | null) {
   return sorted[0] ? { value: sorted[0][0], count: sorted[0][1] } : null;
 }
 
+/**
+ * Summarize common detector types.
+ */
 function summarizeDetector(detector?: string | null) {
   if (!detector) return null;
   const name = detector.toUpperCase();
@@ -35,14 +55,14 @@ function summarizeDetector(detector?: string | null) {
   return `Detector matched: ${detector}`;
 }
 
-export function EventsTable({ events }: { events: any[] }) {
-  if (!events?.length)
+export function EventsTable({ events }: { events: ChromeEvent[] }) {
+  if (events.length === 0) {
     return <div className="text-zinc-500 italic">No recent events found.</div>;
+  }
 
   const latest = events[0];
   const latestEvent = latest?.events?.[0];
   const latestUrl = extractParam(latestEvent, "url");
-  const latestActor = latest?.actor?.email;
   const latestType = latestEvent?.name;
   const latestTime = latest?.id?.time;
   const latestTimestamp = latestTime
@@ -51,22 +71,6 @@ export function EventsTable({ events }: { events: any[] }) {
   const recentActors = Array.from(
     new Set(events.map((evt) => evt.actor?.email).filter(Boolean))
   ).slice(0, 5);
-  const domains = Array.from(
-    new Set(
-      events
-        .map((evt) => extractParam(evt.events?.[0], "url"))
-        .filter((v): v is string => Boolean(v))
-        .map((url) => {
-          try {
-            return new URL(url).hostname;
-          } catch {
-            return null;
-          }
-        })
-        .filter((v): v is string => Boolean(v))
-    )
-  ).slice(0, 5);
-
   const detector =
     extractParam(latestEvent, "detector_name") ||
     extractParam(latestEvent, "detectorId") ||
@@ -153,8 +157,8 @@ export function EventsTable({ events }: { events: any[] }) {
           <tbody className="divide-y divide-zinc-800">
             {events.map((evt, i) => {
               const detail = evt.events?.[0];
-              const params = detail?.parameters || [];
-              const url = params.find((p: any) => p.name === "url")?.value;
+              const params = detail?.parameters ?? [];
+              const url = params.find((param) => param.name === "url")?.value;
               const host = (() => {
                 try {
                   return url ? new URL(url).hostname : null;
@@ -210,7 +214,7 @@ export function EventsTable({ events }: { events: any[] }) {
   );
 }
 
-export function RuleCard({ rule }: { rule: any }) {
+export function RuleCard({ rule }: { rule: DlpRule }) {
   const title = rule.displayName || rule.id || "DLP rule";
   const resource = rule.resourceName || "";
 

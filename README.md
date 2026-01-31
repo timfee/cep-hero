@@ -68,6 +68,10 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
 # Upstash Vector (for grounding)
 UPSTASH_VECTOR_REST_URL=your_vector_url
 UPSTASH_VECTOR_REST_TOKEN=your_vector_token
+
+# Optional: Service account for test bypass
+GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 ```
 
 ---
@@ -107,6 +111,13 @@ Use an OAuth token from the web sign-in flow. Application Default Credentials an
 ```bash
 curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
 ```
+
+---
+
+## 🧪 Testing Notes
+
+- The live eval suite uses `X-Test-Bypass: 1` to avoid interactive auth.
+- When test bypass is enabled, the server attempts service-account token minting with `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_TOKEN_EMAIL`.
 
 ---
 

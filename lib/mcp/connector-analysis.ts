@@ -14,17 +14,33 @@ export type ConnectorAnalysis = {
   sampleTarget?: string;
 };
 
-function classifyTarget(targetResource?: string): "customer" | "orgUnit" | "group" | "unknown" {
+type ResolvedPolicy =
+  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
+    policyTargetKey?: { targetResource?: string };
+  };
+
+/**
+ * Classify a policy target resource into a known scope type.
+ */
+function classifyTarget(
+  targetResource?: string
+): "customer" | "orgUnit" | "group" | "unknown" {
   if (!targetResource) return "unknown";
   const normalized = targetResource.toLowerCase();
-  if (normalized.startsWith("orgunits/") || normalized.includes("/orgunits/")) return "orgUnit";
-  if (normalized.startsWith("groups/") || normalized.includes("/groups/")) return "group";
-  if (normalized.startsWith("customers/") || normalized.includes("/customers/")) return "customer";
+  if (normalized.startsWith("orgunits/") || normalized.includes("/orgunits/"))
+    return "orgUnit";
+  if (normalized.startsWith("groups/") || normalized.includes("/groups/"))
+    return "group";
+  if (normalized.startsWith("customers/") || normalized.includes("/customers/"))
+    return "customer";
   return "unknown";
 }
 
+/**
+ * Analyze connector policy targets to detect mis-scoping.
+ */
 export function analyzeConnectorPolicies(
-  policies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[]
+  policies: ResolvedPolicy[]
 ): ConnectorAnalysis {
   const mutableCounts: ConnectorAnalysis["byTarget"] = {
     customer: 0,
@@ -32,10 +48,11 @@ export function analyzeConnectorPolicies(
     group: 0,
     unknown: 0,
   };
-  const misScoped: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] = [];
+  const misScoped: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] =
+    [];
 
   for (const policy of policies) {
-    const targetResource = policy.policyTargetKey?.targetResource;
+    const targetResource = getTargetResource(policy);
     const targetType = classifyTarget(targetResource);
     mutableCounts[targetType] += 1;
     if (targetType === "customer") {
@@ -51,6 +68,14 @@ export function analyzeConnectorPolicies(
     misScoped: misScoped.length,
     detail,
     flag: misScoped.length > 0,
-    sampleTarget: misScoped[0]?.policyTargetKey?.targetResource,
+    sampleTarget: misScoped[0] ? getTargetResource(misScoped[0]) : undefined,
   };
+}
+
+/**
+ * Safely read the policy target resource from a resolved policy.
+ */
+function getTargetResource(policy: ResolvedPolicy): string | undefined {
+  const targetResource = policy.policyTargetKey?.targetResource;
+  return typeof targetResource === "string" ? targetResource : undefined;
 }

@@ -6,9 +6,13 @@ import { diagnose } from "@/app/api/chat/diagnose";
 import { auth } from "@/lib/auth";
 import { CepToolExecutor, GetChromeEventsSchema } from "@/lib/mcp/registry";
 
+type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
 /**
- * Streamed diagnosis: calls our diagnose helper (which fetches evidence) and then streams
- * a synthesized answer. This keeps the UI answer-first.
+ * Stream CEP diagnosis, delegating evidence gathering to the diagnose helper.
  */
 export async function POST(req: Request) {
   const session = await auth.api.getSession({ headers: req.headers });
@@ -31,9 +35,9 @@ export async function POST(req: Request) {
     );
   }
 
-  const { messages } = await req.json();
-  const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
-  const prompt = lastUser?.content || "";
+  const body = await req.json();
+  const messages = getMessagesFromBody(body);
+  const prompt = getLastUserMessage(messages);
 
   const executor = new CepToolExecutor(accessTokenResponse.accessToken);
 
@@ -48,7 +52,6 @@ export async function POST(req: Request) {
       { role: "user", content: prompt },
     ],
     tools: {
-      // Example: allow streaming events, but the main diagnosis is from diagnose()
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
         inputSchema: GetChromeEventsSchema,
@@ -68,4 +71,47 @@ export async function POST(req: Request) {
   });
 
   return result.toTextStreamResponse();
+}
+
+/**
+ * Extract the most recent user message content.
+ */
+function getLastUserMessage(messages: ChatMessage[]): string {
+  const lastUser = [...messages]
+    .reverse()
+    .find((message) => message.role === "user");
+  return lastUser?.content ?? "";
+}
+
+/**
+ * Read chat messages from a request body.
+ */
+function getMessagesFromBody(body: unknown): ChatMessage[] {
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+
+  const messages = Reflect.get(body, "messages");
+  if (!Array.isArray(messages)) {
+    return [];
+  }
+
+  return messages.filter(isChatMessage);
+}
+
+/**
+ * Validate chat message shape from the client.
+ */
+function isChatMessage(value: unknown): value is ChatMessage {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const role = Reflect.get(value, "role");
+  const content = Reflect.get(value, "content");
+
+  return (
+    (role === "system" || role === "user" || role === "assistant") &&
+    typeof content === "string"
+  );
 }

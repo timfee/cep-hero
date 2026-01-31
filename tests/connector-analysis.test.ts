@@ -1,10 +1,17 @@
+import type { chromepolicy_v1 } from "googleapis";
+
 import { describe, expect, it } from "bun:test";
 
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
 
+type ResolvedPolicy =
+  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
+    policyTargetKey?: { targetResource?: string };
+  };
+
 describe("analyzeConnectorPolicies", () => {
   it("flags customer-level scoped policies as mis-scoped", () => {
-    const result = analyzeConnectorPolicies([
+    const policies: ResolvedPolicy[] = [
       {
         policyTargetKey: { targetResource: "customers/my_customer" },
       },
@@ -14,7 +21,9 @@ describe("analyzeConnectorPolicies", () => {
       {
         policyTargetKey: { targetResource: "customers/another" },
       },
-    ] as unknown as any);
+    ];
+
+    const result = analyzeConnectorPolicies(policies);
 
     expect(result.total).toBe(3);
     expect(result.byTarget.customer).toBe(2);
@@ -25,10 +34,12 @@ describe("analyzeConnectorPolicies", () => {
   });
 
   it("returns no flag when policies are OU or group scoped", () => {
-    const result = analyzeConnectorPolicies([
+    const policies: ResolvedPolicy[] = [
       { policyTargetKey: { targetResource: "orgunits/root" } },
       { policyTargetKey: { targetResource: "groups/123" } },
-    ] as any);
+    ];
+
+    const result = analyzeConnectorPolicies(policies);
 
     expect(result.flag).toBe(false);
     expect(result.byTarget.customer).toBe(0);
