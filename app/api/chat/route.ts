@@ -1,15 +1,22 @@
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 
-import type { DiagnosisPayload, DiagnosisResult } from "@/types/chat";
+import type { DiagnosisError, DiagnosisResult } from "@/types/chat";
 
 import { diagnose } from "@/app/api/chat/diagnose";
 import { auth } from "@/lib/auth";
 
 export const maxDuration = 30;
 
+type ChatMessage = {
+  role: "system" | "user" | "assistant";
+  content: string;
+};
+
+/**
+ * Handle streaming CEP diagnosis chat responses.
+ */
 export async function POST(req: Request) {
-  const isTestBypass =
-    req.headers.get("x-test-bypass") === "1";
+  const isTestBypass = req.headers.get("x-test-bypass") === "1";
 
   const session = isTestBypass
     ? { user: { id: "test" } }
@@ -39,20 +46,20 @@ export async function POST(req: Request) {
     );
   }
 
-  const { messages } = await req.json();
-  const lastUser = [...messages].reverse().find((m: any) => m.role === "user");
-  const prompt = lastUser?.content || "";
+  const body = await req.json();
+  const messages = getMessagesFromBody(body);
+  const prompt = getLastUserMessage(messages);
 
-  const diagnosis = (await diagnose(req, prompt)) as DiagnosisResult;
+  const diagnosis = await diagnose(req, prompt);
 
-  if ("error" in diagnosis) {
+  if (isDiagnosisError(diagnosis)) {
     return new Response(
       JSON.stringify({ error: diagnosis.error ?? "Diagnosis failed" }),
       { status: 500 }
     );
   }
 
-  const diag = diagnosis as DiagnosisPayload;
+  const diag = diagnosis;
 
   const answer = diag.diagnosis ?? "Unable to diagnose right now.";
   const reference =
@@ -78,7 +85,7 @@ export async function POST(req: Request) {
     const top = hypotheses
       .slice(0, 2)
       .map(
-        (h: any) =>
+        (h) =>
           `- ${h.cause} (confidence ${Math.round((h.confidence ?? 0) * 100)}%)`
       )
       .join("\n");
@@ -90,7 +97,7 @@ export async function POST(req: Request) {
   if (missingQuestions.length) {
     summaryLines.push(
       `Missing info (${missingQuestions.length}):\n- ${missingQuestions
-        .map((q: any) => `${q.question}${q.why ? ` (why: ${q.why})` : ""}`)
+        .map((q) => `${q.question}${q.why ? ` (why: ${q.why})` : ""}`)
         .join("\n-")}`
     );
   }
@@ -142,11 +149,60 @@ export async function POST(req: Request) {
         },
       });
     },
-    originalMessages: messages,
     onError: () => "An error occurred while streaming.",
   });
 
   return createUIMessageStreamResponse({
     stream,
   });
+}
+
+/**
+ * Extract the most recent user message content.
+ */
+function getLastUserMessage(messages: ChatMessage[]): string {
+  const lastUser = [...messages]
+    .reverse()
+    .find((message) => message.role === "user");
+  return lastUser?.content ?? "";
+}
+
+/**
+ * Read chat messages from a request body.
+ */
+function getMessagesFromBody(body: unknown): ChatMessage[] {
+  if (!body || typeof body !== "object") {
+    return [];
+  }
+
+  const messages = Reflect.get(body, "messages");
+  if (!Array.isArray(messages)) {
+    return [];
+  }
+
+  return messages.filter(isChatMessage);
+}
+
+/**
+ * Validate chat message shape from the client.
+ */
+function isChatMessage(value: unknown): value is ChatMessage {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const role = Reflect.get(value, "role");
+  const content = Reflect.get(value, "content");
+
+  return (
+    (role === "system" || role === "user" || role === "assistant") &&
+    typeof content === "string"
+  );
+}
+
+/**
+ * Narrow diagnosis results to error responses.
+ */
+function isDiagnosisError(result: DiagnosisResult): result is DiagnosisError {
+  return "error" in result;
 }

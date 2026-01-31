@@ -16,26 +16,30 @@ import { authClient } from "@/lib/auth-client";
 import { useActivityLog } from "../providers";
 import { MessageBubble } from "./chat/MessageBubble";
 
+type OverviewCard = {
+  label: string;
+  value: string;
+  note: string;
+  source: string;
+  action: string;
+  lastUpdated?: string;
+};
+
+type OverviewData = {
+  headline: string;
+  summary: string;
+  postureCards: OverviewCard[];
+  suggestions: string[];
+  sources: string[];
+};
+
 export default function ChatInterface() {
   const { data: session, isPending } = authClient.useSession();
   const { messages, sendMessage, status: chatStatus } = useChat();
   const { entries, setOpen, setFilter } = useActivityLog();
 
   const [input, setInput] = useState("");
-  const [overview, setOverview] = useState<{
-    headline: string;
-    summary: string;
-    postureCards: Array<{
-      label: string;
-      value: string;
-      note: string;
-      source: string;
-      action: string;
-      lastUpdated?: string;
-    }>;
-    suggestions: string[];
-    sources: string[];
-  } | null>(null);
+  const [overview, setOverview] = useState<OverviewData | null>(null);
   const [overviewError, setOverviewError] = useState<string | null>(null);
   const isLoading = chatStatus === "streaming" || chatStatus === "submitted";
 
@@ -101,26 +105,15 @@ export default function ChatInterface() {
         if (!response.ok) {
           throw new Error("Unable to load overview");
         }
-        const data = (await response.json()) as {
-          headline: string;
-          summary: string;
-          postureCards: Array<{
-            label: string;
-            value: string;
-            note: string;
-            source: string;
-            action: string;
-            lastUpdated?: string;
-          }>;
-          suggestions: string[];
-          sources: string[];
-        };
+        const data = await response.json();
+        const overview = parseOverviewResponse(data);
 
-        if (isActive) {
-          setOverview(data);
+        if (isActive && overview) {
+          setOverview(overview);
           setOverviewError(null);
         }
       } catch (error) {
+        console.warn("[overview] fetch failed", { message: getErrorMessage(error) });
         if (isActive) {
           setOverview(null);
           setOverviewError("Unable to load overview data");
@@ -454,4 +447,99 @@ export default function ChatInterface() {
       </div>
     </div>
   );
+}
+
+function parseOverviewResponse(value: unknown): OverviewData | null {
+  if (!value || typeof value !== "object") {
+    return null;
+  }
+
+  const headline = getOptionalString(value, "headline");
+  const summary = getOptionalString(value, "summary");
+  const suggestions = getStringArray(value, "suggestions");
+  const sources = getStringArray(value, "sources");
+  const postureCards = getOverviewCards(value);
+
+  if (!headline || !summary || postureCards.length === 0) {
+    return null;
+  }
+
+  return {
+    headline,
+    summary,
+    postureCards,
+    suggestions,
+    sources,
+  };
+}
+
+function getOverviewCards(value: unknown): OverviewCard[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const cards = Reflect.get(value, "postureCards");
+  if (!Array.isArray(cards)) {
+    return [];
+  }
+
+  const parsed = cards.map((card) => {
+      if (!card || typeof card !== "object") {
+        return null;
+      }
+
+      const label = getOptionalString(card, "label");
+      const valueText = getOptionalString(card, "value");
+      const note = getOptionalString(card, "note");
+      const source = getOptionalString(card, "source");
+      const action = getOptionalString(card, "action");
+      const lastUpdated = getOptionalString(card, "lastUpdated");
+
+      if (!label || !valueText || !note || !source || !action) {
+        return null;
+      }
+
+      const base: OverviewCard = {
+        label,
+        value: valueText,
+        note,
+        source,
+        action,
+      };
+
+      return lastUpdated ? { ...base, lastUpdated } : base;
+    });
+
+  return parsed.filter((card): card is OverviewCard => card !== null);
+}
+
+function getOptionalString(value: unknown, key: string): string | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const property = Reflect.get(value, key);
+  return typeof property === "string" ? property : undefined;
+}
+
+function getStringArray(value: unknown, key: string): string[] {
+  if (!value || typeof value !== "object") {
+    return [];
+  }
+
+  const property = Reflect.get(value, key);
+  return Array.isArray(property) && property.every((item) => typeof item === "string")
+    ? property
+    : [];
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  const message =
+    error && typeof error === "object" ? Reflect.get(error, "message") : undefined;
+
+  return typeof message === "string" ? message : "Unknown error";
 }

@@ -2,11 +2,12 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 
+import type { VectorSearchHit } from "@/lib/upstash/search";
 import type { DiagnosisResult } from "@/types/chat";
 
 import { auth } from "@/lib/auth";
-import { CepToolExecutor, GetFleetOverviewSchema } from "@/lib/mcp/registry";
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
+import { CepToolExecutor } from "@/lib/mcp/registry";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 const DiagnosisSchema = z.object({
@@ -83,7 +84,13 @@ const DiagnosisSchema = z.object({
     .optional(),
 });
 
-export async function diagnose(req: Request, prompt: string) {
+/**
+ * Run CEP diagnostics with evidence and optional knowledge grounding.
+ */
+export async function diagnose(
+  req: Request,
+  prompt: string
+): Promise<DiagnosisResult> {
   const isTestBypass = req.headers.get("x-test-bypass") === "1";
 
   const session = isTestBypass
@@ -103,9 +110,8 @@ export async function diagnose(req: Request, prompt: string) {
   let accessToken = accessTokenResponse?.accessToken ?? "";
   if (isTestBypass) {
     try {
-      const { getServiceAccountAccessToken } = await import(
-        "@/lib/google-service-account"
-      );
+      const { getServiceAccountAccessToken } =
+        await import("@/lib/google-service-account");
       accessToken = await getServiceAccountAccessToken(
         [
           "https://www.googleapis.com/auth/admin.directory.user",
@@ -175,12 +181,12 @@ export async function diagnose(req: Request, prompt: string) {
     evidence.signals.push({
       type: "connector-policies",
       source: "Chrome Policy",
-      summary: "No connector policies returned; ensure policyTargetKey targets an org unit",
+      summary:
+        "No connector policies returned; ensure policyTargetKey targets an org unit",
     });
   }
 
-  const knowledgeReference =
-    docsResult.hits[0] ?? policyResult.hits[0] ?? undefined;
+  const knowledgeReference = docsResult.hits[0] ?? policyResult.hits[0];
 
   const modelInput = {
     prompt,
@@ -188,16 +194,15 @@ export async function diagnose(req: Request, prompt: string) {
     knowledge: knowledgeReference
       ? {
           title:
-            (knowledgeReference.metadata as any)?.title ??
+            getMetadataString(knowledgeReference, "title") ??
             String(knowledgeReference.id),
-          url: (knowledgeReference.metadata as any)?.url,
+          url: getMetadataString(knowledgeReference, "url"),
           score: knowledgeReference.score,
         }
       : null,
   };
 
   const result = await generateObject({
-    // Ensure model sees the connector analysis to avoid hollow next steps
     model: google("gemini-2.0-flash-001"),
     schema: DiagnosisSchema,
     system:
@@ -206,9 +211,12 @@ export async function diagnose(req: Request, prompt: string) {
 - Do not include filesystem paths or console routes like /settings.`,
   });
 
-  return result.object as DiagnosisResult;
+  return result.object;
 }
 
+/**
+ * Build structured evidence from CEP tool outputs.
+ */
 function buildEvidence({
   eventsResult,
   dlpResult,
@@ -238,7 +246,6 @@ function buildEvidence({
   }> = [];
   const nextSteps: string[] = [];
 
-  // Events
   if ("events" in eventsResult) {
     const count = eventsResult.events?.length ?? 0;
     checks.push({
@@ -265,7 +272,6 @@ function buildEvidence({
     gaps.push({ missing: "Chrome events", why: eventsResult.error });
   }
 
-  // DLP rules
   if ("rules" in dlpResult) {
     const count = dlpResult.rules?.length ?? 0;
     checks.push({
@@ -292,7 +298,6 @@ function buildEvidence({
     gaps.push({ missing: "DLP rules", why: dlpResult.error });
   }
 
-  // Connectors
   if ("value" in connectorResult) {
     const connectorPolicies = Array.isArray(connectorResult.value)
       ? connectorResult.value
@@ -346,4 +351,15 @@ function buildEvidence({
     sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
     connectorAnalysis,
   };
+}
+
+/**
+ * Extract a string field from vector search metadata.
+ */
+function getMetadataString(
+  hit: VectorSearchHit,
+  key: "title" | "url"
+): string | undefined {
+  const value = hit.metadata?.[key];
+  return typeof value === "string" ? value : undefined;
 }

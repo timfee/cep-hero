@@ -2,8 +2,10 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 
+import type { VectorSearchHit } from "@/lib/upstash/search";
+
 import { auth } from "@/lib/auth";
-import { CepToolExecutor, GetFleetOverviewSchema } from "@/lib/mcp/registry";
+import { CepToolExecutor } from "@/lib/mcp/registry";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 const DiagnosisSchema = z.object({
@@ -49,13 +51,15 @@ const DiagnosisSchema = z.object({
     .optional(),
 });
 
+/**
+ * Run a structured diagnosis for agent usage.
+ */
 export async function POST(req: Request) {
-  const body = (await req.json()) as {
-    prompt?: string;
-    knowledgeQuery?: string;
-  };
+  const body = await req.json();
+  const prompt = getOptionalString(body, "prompt");
+  const knowledgeQuery = getOptionalString(body, "knowledgeQuery");
 
-  if (!body.prompt || !body.prompt.trim()) {
+  if (!prompt?.trim()) {
     return Response.json({ error: "Missing prompt" }, { status: 400 });
   }
 
@@ -78,30 +82,28 @@ export async function POST(req: Request) {
 
   const executor = new CepToolExecutor(accessTokenResponse.accessToken);
 
-  // Collect evidence in parallel
   const [eventsResult, dlpResult, connectorResult, docsResult, policyResult] =
     await Promise.all([
       executor.getChromeEvents({ maxResults: 25 }),
       executor.listDLPRules({ includeHelp: false }),
       executor.getChromeConnectorConfiguration(),
-      searchDocs(body.knowledgeQuery ?? body.prompt, 1),
-      searchPolicies(body.knowledgeQuery ?? body.prompt, 1),
+      searchDocs(knowledgeQuery ?? prompt, 1),
+      searchPolicies(knowledgeQuery ?? prompt, 1),
     ]);
 
   const evidence = buildEvidence({ eventsResult, dlpResult, connectorResult });
 
-  const knowledgeReference =
-    docsResult.hits[0] ?? policyResult.hits[0] ?? undefined;
+  const knowledgeReference = docsResult.hits[0] ?? policyResult.hits[0];
 
   const modelInput = {
-    prompt: body.prompt,
+    prompt,
     evidence,
     knowledge: knowledgeReference
       ? {
           title:
-            (knowledgeReference.metadata as any)?.title ??
+            getMetadataString(knowledgeReference, "title") ??
             String(knowledgeReference.id),
-          url: (knowledgeReference.metadata as any)?.url,
+          url: getMetadataString(knowledgeReference, "url"),
           score: knowledgeReference.score,
         }
       : null,
@@ -113,11 +115,12 @@ export async function POST(req: Request) {
       schema: DiagnosisSchema,
       system:
         "You are the CEP troubleshooting assistant. Use evidence to answer. Never invent evidence. If data is missing, say what is missing and ask a targeted question. Keep answers concise and action-oriented. If a change is needed, ask for confirmation.",
-      prompt: `User question: ${body.prompt}\nEvidence JSON: ${JSON.stringify(evidence)}\nKnowledge: ${JSON.stringify(modelInput.knowledge)}\nProduce a concise diagnosis. If you lack evidence, say what is missing. Do not dump raw IDs; summarize them.`,
+      prompt: `User question: ${prompt}\nEvidence JSON: ${JSON.stringify(evidence)}\nKnowledge: ${JSON.stringify(modelInput.knowledge)}\nProduce a concise diagnosis. If you lack evidence, say what is missing. Do not dump raw IDs; summarize them.`,
     });
 
     return Response.json(result.object);
   } catch (error) {
+    console.warn("[agent-diagnose] model error", { message: getErrorMessage(error) });
     return Response.json(
       {
         diagnosis: "I could not synthesize a full answer due to a model error.",
@@ -131,6 +134,9 @@ export async function POST(req: Request) {
   }
 }
 
+/**
+ * Build structured evidence from CEP tool outputs.
+ */
 function buildEvidence({
   eventsResult,
   dlpResult,
@@ -157,7 +163,6 @@ function buildEvidence({
     referenceUrl?: string;
   }> = [];
 
-  // Events
   if ("events" in eventsResult) {
     const count = eventsResult.events?.length ?? 0;
     checks.push({
@@ -184,7 +189,6 @@ function buildEvidence({
     gaps.push({ missing: "Chrome events", why: eventsResult.error });
   }
 
-  // DLP rules
   if ("rules" in dlpResult) {
     const count = dlpResult.rules?.length ?? 0;
     checks.push({
@@ -211,7 +215,6 @@ function buildEvidence({
     gaps.push({ missing: "DLP rules", why: dlpResult.error });
   }
 
-  // Connectors
   if ("value" in connectorResult) {
     const count = connectorResult.value?.length ?? 0;
     checks.push({
@@ -243,4 +246,38 @@ function buildEvidence({
     signals,
     sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
   };
+}
+
+/**
+ * Read a string property from a JSON body.
+ */
+function getOptionalString(body: unknown, key: string): string | undefined {
+  if (!body || typeof body !== "object") {
+    return undefined;
+  }
+
+  const value = Reflect.get(body, key);
+  return typeof value === "string" ? value : undefined;
+}
+
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  const message =
+    error && typeof error === "object" ? Reflect.get(error, "message") : undefined;
+
+  return typeof message === "string" ? message : "Unknown error";
+}
+
+/**
+ * Extract a string field from vector search metadata.
+ */
+function getMetadataString(
+  hit: VectorSearchHit,
+  key: "title" | "url"
+): string | undefined {
+  const value = hit.metadata?.[key];
+  return typeof value === "string" ? value : undefined;
 }

@@ -8,7 +8,9 @@ type ServiceAccountCredentials = {
 function loadServiceAccount(): ServiceAccountCredentials {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (!inline) {
-    throw new Error("Missing GOOGLE_SERVICE_ACCOUNT_JSON env for service account credentials");
+    throw new Error(
+      "Missing GOOGLE_SERVICE_ACCOUNT_JSON env for service account credentials"
+    );
   }
 
   const trimmed = inline.replace(/^['"]|['"]$/g, "");
@@ -25,7 +27,10 @@ function loadServiceAccount(): ServiceAccountCredentials {
   return { client_email: parsed.client_email, private_key: key };
 }
 
-export async function getServiceAccountAccessToken(scopes: string[], subject?: string) {
+export async function getServiceAccountAccessToken(
+  scopes: string[],
+  subject?: string
+) {
   const { client_email, private_key } = loadServiceAccount();
   const jwt = new JWT({
     email: client_email,

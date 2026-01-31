@@ -1,8 +1,11 @@
-import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
-import type { EvidencePayload } from "@/types/chat";
 import type { CepToolExecutor } from "@/lib/mcp/registry";
+import type { EvidencePayload } from "@/types/chat";
 
-// Expose buildEvidence logic for unit tests without hitting the model.
+import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
+
+/**
+ * Build evidence payloads for tests without calling the model.
+ */
 export function buildEvidenceForTest({
   eventsResult,
   dlpResult,
@@ -11,10 +14,13 @@ export function buildEvidenceForTest({
 }: {
   eventsResult: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>>;
   dlpResult: Awaited<ReturnType<CepToolExecutor["listDLPRules"]>>;
-  connectorResult: Awaited<ReturnType<CepToolExecutor["getChromeConnectorConfiguration"]>>;
+  connectorResult: Awaited<
+    ReturnType<CepToolExecutor["getChromeConnectorConfiguration"]>
+  >;
   connectorAnalysis?: ReturnType<typeof analyzeConnectorPolicies>;
 }): EvidencePayload {
-  const analysis = connectorAnalysis ??
+  const analysis =
+    connectorAnalysis ??
     analyzeConnectorPolicies(
       "value" in connectorResult && Array.isArray(connectorResult.value)
         ? connectorResult.value
@@ -60,10 +66,9 @@ export function buildEvidenceForTest({
       signals.push({
         type: "connector-policies",
         source: "Chrome Policy",
-        summary:
-          analysis.flag
-            ? "Some connector policies target customers (need org units or groups)"
-            : "Connector policies scoped to org units/groups",
+        summary: analysis.flag
+          ? "Some connector policies target customers (need org units or groups)"
+          : "Connector policies scoped to org units/groups",
       });
       if (analysis.flag) {
         gaps.push({

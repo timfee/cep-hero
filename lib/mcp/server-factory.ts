@@ -13,27 +13,12 @@ import {
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 /**
- * A global map to hold active SSE transports.
- * Key: Session ID
- * Value: SSEServerTransport instance
- *
- * Note: In a serverless environment (like Vercel functions), this map will not persist
- * across different invocations unless the execution context is reused.
- * For 'bun dev' or long-running containers, this works as intended.
+ * In-memory transport registry for MCP SSE sessions.
  */
 export const transportMap = new Map<string, SSEServerTransport>();
 
 /**
- * Factory function to create and configure an MCP Server instance.
- *
- * This function:
- * 1. Instantiates a new McpServer with the application's metadata.
- * 2. Initializes the business logic executor with the user's access token.
- * 3. Registers all available tools (getChromeEvents, listDLPRules, etc.) with the server.
- * 4. Binds the tool execution to the executor instance.
- *
- * @param accessToken - The Google OAuth2 access token for the authenticated user.
- * @returns A fully configured McpServer instance ready to be connected to a transport.
+ * Create an MCP server with CEP tool registrations.
  */
 export function createMcpServer(accessToken: string) {
   const server = new McpServer({

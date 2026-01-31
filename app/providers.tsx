@@ -5,12 +5,11 @@ import {
   useCallback,
   useContext,
   useEffect,
-   useMemo,
-   useRef,
-   useState,
-   useLayoutEffect,
- } from "react";
-
+  useMemo,
+  useRef,
+  useState,
+  useLayoutEffect,
+} from "react";
 
 type ActivityEntry = {
   id: string;
@@ -77,9 +76,10 @@ function useFetchInstrumentation(
       const timestamp = Date.now();
 
       const isMcp = requestUrl.includes("/api/mcp");
-      const isWorkspace = /https?:\/\/(.*\.)?(googleapis\.com|google\.com)(\/|$)/i.test(
-        requestUrl
-      );
+      const isWorkspace =
+        /https?:\/\/(.*\.)?(googleapis\.com|google\.com)(\/|$)/i.test(
+          requestUrl
+        );
 
       let kind: ActivityEntry["kind"] | null = null;
       if (isMcp) {
@@ -124,7 +124,8 @@ function useFetchInstrumentation(
         if (kind === "workspace") {
           const contentType =
             response.headers.get("content-type")?.toLowerCase() ?? "";
-          responsePreview = `${response.status} ${response.statusText || ""} ${contentType}`.trim();
+          responsePreview =
+            `${response.status} ${response.statusText || ""} ${contentType}`.trim();
         } else if (shouldReadBody) {
           try {
             const clone = response.clone();

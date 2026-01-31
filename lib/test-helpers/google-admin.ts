@@ -1,7 +1,10 @@
 import { OAuth2Client } from "google-auth-library";
-import { admin_directory_v1, chromepolicy_v1, google } from "googleapis";
+import { chromepolicy_v1, google } from "googleapis";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
+
+type Directory = ReturnType<typeof google.admin>;
+type ChromePolicy = ReturnType<typeof google.chromepolicy>;
 
 export type GoogleClients = {
   directory: Directory;
@@ -9,7 +12,6 @@ export type GoogleClients = {
   tokenEmail?: string;
   customerId: string;
 };
-
 
 async function resolveCustomerIdFromPolicySchemas(
   policy: ChromePolicy
@@ -23,6 +25,9 @@ async function resolveCustomerIdFromPolicySchemas(
     const match = name.match(/customers\/([^/]+)\//);
     return match?.[1] ?? null;
   } catch (error) {
+    console.warn("[google-admin] resolve customer id", {
+      message: getErrorMessage(error),
+    });
     return null;
   }
 }
@@ -71,7 +76,20 @@ export async function detectPrimaryDomain() {
   return primary?.domainName ?? null;
 }
 
-export async function listUsers({ maxResults = 25 }: { maxResults?: number } = {}) {
+function getErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message;
+  }
+
+  const message =
+    error && typeof error === "object" ? Reflect.get(error, "message") : undefined;
+
+  return typeof message === "string" ? message : "Unknown error";
+}
+
+export async function listUsers({
+  maxResults = 25,
+}: { maxResults?: number } = {}) {
   const { directory, customerId } = await makeGoogleClients();
   const res = await directory.users.list({ customer: customerId, maxResults });
   return res.data.users ?? [];
@@ -104,7 +122,10 @@ export async function listOrgUnits() {
   });
   const root = await getRootOrgUnit();
   const list = res.data.organizationUnits ?? [];
-  if (root?.orgUnitPath && !list.some((ou) => ou.orgUnitPath === root.orgUnitPath)) {
+  if (
+    root?.orgUnitPath &&
+    !list.some((ou) => ou.orgUnitPath === root.orgUnitPath)
+  ) {
     return [root, ...list];
   }
   return list;
@@ -160,7 +181,7 @@ export async function probePolicyTargetResources({
     } catch (error) {
       errors.push({
         targetResource,
-        message: (error as Error).message,
+        message: getErrorMessage(error),
       });
     }
   }
@@ -231,7 +252,13 @@ export async function deleteUser(primaryEmail: string) {
   await directory.users.delete({ userKey: primaryEmail });
 }
 
-export async function createGroup({ name, email }: { name: string; email: string }) {
+export async function createGroup({
+  name,
+  email,
+}: {
+  name: string;
+  email: string;
+}) {
   const { directory } = await makeGoogleClients();
   const res = await directory.groups.insert({
     requestBody: {
@@ -266,7 +293,13 @@ export async function addUserToGroup({
   });
 }
 
-export async function removeUserFromGroup({ groupKey, email }: { groupKey: string; email: string }) {
+export async function removeUserFromGroup({
+  groupKey,
+  email,
+}: {
+  groupKey: string;
+  email: string;
+}) {
   const { directory } = await makeGoogleClients();
   await directory.members.delete({ groupKey, memberKey: email });
 }

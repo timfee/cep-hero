@@ -53,6 +53,10 @@ BETTER_AUTH_SECRET=generate_a_random_string_here
 GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
 UPSTASH_VECTOR_REST_URL=your_vector_url
 UPSTASH_VECTOR_REST_TOKEN=your_vector_token
+
+# Optional: service account for test bypass
+GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
+GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 ```
 
 ## 5. Running the App

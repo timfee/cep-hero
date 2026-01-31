@@ -22,6 +22,7 @@ This document defines the architecture for a CEP troubleshooting assistant that 
 - **Structured outputs:** AI emits schemas with explicit confidence and evidence.
 - **Modular tools:** A small set of composable tools power most flows.
 - **Deterministic checks:** Configuration rules are validated by pure functions.
+- **Observability:** Deterministic tools emit structured logs for POC visibility.
 
 ## System Architecture
 

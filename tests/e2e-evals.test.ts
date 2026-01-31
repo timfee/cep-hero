@@ -1,4 +1,11 @@
-import { describe, it, expect, beforeAll, afterAll, beforeEach } from "bun:test";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  afterAll,
+  beforeEach,
+} from "bun:test";
 import { randomUUID } from "crypto";
 
 import { callChat, callChatMessages } from "@/lib/test-helpers/chat-client";
@@ -10,6 +17,9 @@ import {
   detectDomainFromUsers,
 } from "@/lib/test-helpers/google-admin";
 
+/**
+ * Pause execution for a fixed delay.
+ */
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
@@ -21,18 +31,21 @@ const testUserDomain =
 
 const chatUrl = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 
+/**
+ * Check whether the chat endpoint is reachable.
+ */
 async function isServerUp(url: string) {
   try {
     const res = await fetch(url, { method: "HEAD" });
-    return res.ok || res.status >= 400; // reachable even if 404
+    return res.ok || res.status >= 400;
   } catch {
     return false;
   }
 }
 
-// Note: These are live eval sketches. Some policy write APIs are placeholders;
-// focus is on multi-turn chat verification with real resolve/list calls.
-
+/**
+ * Accept either a live response or common auth/token failures.
+ */
 function expectLiveOrToken(text: string, keyword: string) {
   const lower = text.toLowerCase();
   if (
@@ -57,13 +70,13 @@ function expectLiveOrToken(text: string, keyword: string) {
 describe("CEP live evals", () => {
   const TEST_TIMEOUT_MS = 60000;
   const suffix = randomUUID().slice(0, 8);
-  let server: any;
+  let server: { kill: () => void } | undefined;
   let resolvedDomain: string | null = null;
   const ous: string[] = [];
   const users: string[] = [];
 
   beforeAll(async () => {
-      const needsLocal = chatUrl.includes("localhost");
+    const needsLocal = chatUrl.includes("localhost");
     if (needsLocal) {
       const up = await isServerUp(chatUrl);
       if (!up) {
@@ -163,7 +176,8 @@ describe("CEP live evals", () => {
   it(
     "S02 missing policyTargetKey",
     async () => {
-      const prompt = "Connector resolve failed because policyTargetKey is missing.";
+      const prompt =
+        "Connector resolve failed because policyTargetKey is missing.";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "policytargetkey");
     },
@@ -173,7 +187,8 @@ describe("CEP live evals", () => {
   it(
     "S03 malformed resolve payload",
     async () => {
-      const prompt = "Resolve returned invalid JSON payload for policyTargetKey.targetResource.";
+      const prompt =
+        "Resolve returned invalid JSON payload for policyTargetKey.targetResource.";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "policytargetkey");
     },
@@ -193,7 +208,8 @@ describe("CEP live evals", () => {
   it(
     "S05 DLP rule not firing",
     async () => {
-      const prompt = "Why didn’t the DLP rule fire for testuser2 uploading to Drive?";
+      const prompt =
+        "Why didn’t the DLP rule fire for testuser2 uploading to Drive?";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "dlp");
     },
@@ -209,7 +225,6 @@ describe("CEP live evals", () => {
     },
     TEST_TIMEOUT_MS
   );
-
 
   it(
     "S07 Safe Browsing disabled",
@@ -264,7 +279,8 @@ describe("CEP live evals", () => {
   it(
     "S12 Mixed group vs OU precedence",
     async () => {
-      const prompt = "Which policy applies for a user in both OU and group targets?";
+      const prompt =
+        "Which policy applies for a user in both OU and group targets?";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "policy");
     },
@@ -274,7 +290,8 @@ describe("CEP live evals", () => {
   it(
     "S13 Enrollment token wrong OU",
     async () => {
-      const prompt = "Why are new devices enrolling to root instead of Enroll-Eng?";
+      const prompt =
+        "Why are new devices enrolling to root instead of Enroll-Eng?";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "enroll");
     },
@@ -314,7 +331,8 @@ describe("CEP live evals", () => {
   it(
     "S17 Group targeting format",
     async () => {
-      const prompt = "Group-scoped connector ignored. What is correct targetResource format?";
+      const prompt =
+        "Group-scoped connector ignored. What is correct targetResource format?";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "group");
     },
@@ -341,7 +359,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-    it(
+  it(
     "S20 Rate limit handling",
     async () => {
       const prompt = "Connector check hit rate limit.";
@@ -394,7 +412,8 @@ describe("CEP live evals", () => {
   it(
     "S25 Multi-OU comparison",
     async () => {
-      const prompt = "Compare connector coverage for Engineering-Test vs Sales-Test.";
+      const prompt =
+        "Compare connector coverage for Engineering-Test vs Sales-Test.";
       const resp = await callChat(prompt);
       expectLiveOrToken(resp.text, "ou");
     },
@@ -405,12 +424,24 @@ describe("CEP live evals", () => {
     "S26 Multi-turn: connector scope confirmation",
     async () => {
       const first = await callChatMessages([
-        { role: "system", content: "You are the CEP troubleshooting assistant." },
-        { role: "user", content: "Connector policies are not applying to Engineering-Test." },
+        {
+          role: "system",
+          content: "You are the CEP troubleshooting assistant.",
+        },
+        {
+          role: "user",
+          content: "Connector policies are not applying to Engineering-Test.",
+        },
       ]);
       const second = await callChatMessages([
-        { role: "system", content: "You are the CEP troubleshooting assistant." },
-        { role: "user", content: "Connector policies are not applying to Engineering-Test." },
+        {
+          role: "system",
+          content: "You are the CEP troubleshooting assistant.",
+        },
+        {
+          role: "user",
+          content: "Connector policies are not applying to Engineering-Test.",
+        },
         { role: "assistant", content: first.text },
         { role: "user", content: "We applied at customer level. What now?" },
       ]);
@@ -418,5 +449,4 @@ describe("CEP live evals", () => {
     },
     TEST_TIMEOUT_MS
   );
-}
-);
+});
