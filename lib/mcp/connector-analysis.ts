@@ -16,22 +16,22 @@ export type ConnectorAnalysis = {
 
 function classifyTarget(targetResource?: string): "customer" | "orgUnit" | "group" | "unknown" {
   if (!targetResource) return "unknown";
-  if (targetResource.includes("/orgunits/")) return "orgUnit";
-  if (targetResource.includes("/groups/")) return "group";
-  if (targetResource.includes("/customers/")) return "customer";
+  const normalized = targetResource.toLowerCase();
+  if (normalized.startsWith("orgunits/") || normalized.includes("/orgunits/")) return "orgUnit";
+  if (normalized.startsWith("groups/") || normalized.includes("/groups/")) return "group";
+  if (normalized.startsWith("customers/") || normalized.includes("/customers/")) return "customer";
   return "unknown";
 }
 
 export function analyzeConnectorPolicies(
   policies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[]
 ): ConnectorAnalysis {
-  const counts = {
+  const mutableCounts: ConnectorAnalysis["byTarget"] = {
     customer: 0,
     orgUnit: 0,
     group: 0,
     unknown: 0,
-  } as const;
-  const mutableCounts = { ...counts };
+  };
   const misScoped: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] = [];
 
   for (const policy of policies) {

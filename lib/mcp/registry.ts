@@ -189,6 +189,7 @@ export class CepToolExecutor {
   async getChromeEvents({
     maxResults = 10,
   }: z.infer<typeof GetChromeEventsSchema>) {
+    console.log("[chrome-events] request", { maxResults });
     const service = googleApis.admin({ version: "reports_v1", auth: this.auth });
     const start = Date.now();
     try {
@@ -198,6 +199,10 @@ export class CepToolExecutor {
         maxResults,
         customerId: this.customerId,
       });
+      console.log(
+        "[chrome-events] response",
+        JSON.stringify({ count: res.data.items?.length ?? 0, sample: res.data.items?.[0]?.id })
+      );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://admin.googleapis.com/admin/reports_v1/activities",
@@ -210,6 +215,10 @@ export class CepToolExecutor {
       });
       return { events: res.data.items || [] };
     } catch (error: any) {
+      console.log(
+        "[chrome-events] error",
+        JSON.stringify({ code: error?.code, message: error?.message, errors: error?.errors })
+      );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://admin.googleapis.com/admin/reports_v1/activities",
@@ -240,11 +249,16 @@ export class CepToolExecutor {
       version: "v1",
       auth: this.auth,
     });
+    console.log("[dlp-rules] request");
     const start = Date.now();
     try {
       const res = await service.policies.list({
         filter: `customer == "customers/${this.customerId}"`,
       });
+      console.log(
+        "[dlp-rules] response",
+        JSON.stringify({ count: res.data.policies?.length ?? 0, sample: res.data.policies?.[0]?.name })
+      );
 
       recordActivity({
         id: crypto.randomUUID(),
@@ -279,6 +293,10 @@ export class CepToolExecutor {
       const help = await searchPolicies("Chrome DLP rules", 4);
       return { rules, help };
     } catch (error: any) {
+      console.log(
+        "[dlp-rules] error",
+        JSON.stringify({ code: error?.code, message: error?.message, errors: error?.errors })
+      );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://cloudidentity.googleapis.com/v1/policies",
@@ -310,6 +328,7 @@ export class CepToolExecutor {
       version: "v1",
       auth: this.auth,
     });
+    console.log("[enroll-browser] request", { orgUnitId: _orgUnitId });
     const start = Date.now();
     try {
       const res = await service.customers.policies.networks.enrollments.create({
@@ -321,6 +340,10 @@ export class CepToolExecutor {
           },
         },
       });
+      console.log(
+        "[enroll-browser] response",
+        JSON.stringify({ token: res.data.name ?? "", expires: res.data.expirationTime })
+      );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
@@ -336,6 +359,10 @@ export class CepToolExecutor {
         expiresAt: res.data.expirationTime ?? null,
       };
     } catch (error: any) {
+      console.log(
+        "[enroll-browser] error",
+        JSON.stringify({ code: error?.code, message: error?.message, errors: error?.errors })
+      );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
@@ -365,47 +392,139 @@ export class CepToolExecutor {
       auth: this.auth,
     });
 
-    const policySchemas = [
-      "chrome.users.DlpRulesList",
-      "chrome.users.EventReportingSettings",
-      "chrome.users.SafeBrowsingEnabled",
-      "chrome.users.SafeBrowsingProtectionLevel",
-      "chrome.users.WebDataConnectorEnabled",
-      "chrome.users.BulkDataConnectorEnabled",
-      "chrome.users.FileTransferConnectorEnabled",
-      "chrome.users.PrintConnectorEnabled",
-    ];
+      const policySchemas = [
+        "chrome.users.SafeBrowsingProtectionLevel",
+        "chrome.users.SafeBrowsingExtendedReporting",
+        "chrome.users.SafeBrowsingAllowlistDomain",
+        "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
+        "chrome.users.SafeBrowsingDeepScanningEnabled",
+        "chrome.users.CloudReporting",
+        "chrome.users.CloudProfileReportingEnabled",
+        "chrome.users.CloudReportingUploadFrequencyV2",
+        "chrome.users.MetricsReportingEnabled",
+        "chrome.users.DataLeakPreventionReportingEnabled",
+      ];
 
     const start = Date.now();
     try {
       const resolvedPolicies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] =
         [];
 
-      const res = await service.customers.policies.resolve({
-        customer: `customers/${this.customerId}`,
-        policySchemaFilter: policySchemas.join(","),
-        pageSize: 100,
+      const directory = googleApis.admin({
+        version: "directory_v1",
+        auth: this.auth,
       });
 
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
-        method: "POST",
-        status: 200,
-        durationMs: Date.now() - start,
-        responsePreview: `policies=${res.data.resolvedPolicies?.length ?? 0}`,
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
+      let rootOrgUnitId = "";
+      let rootOrgUnitPath = "";
+      try {
+        const orgUnits = await directory.orgunits.list({
+          customerId: this.customerId,
+          type: "all",
+        });
+        const orgUnitsList = orgUnits.data.organizationUnits ?? [];
+        const rootOu = orgUnitsList.find((unit) => unit.orgUnitPath === "/");
+        rootOrgUnitId = (rootOu?.orgUnitId ?? "").replace(/^id:/, "");
+        rootOrgUnitPath = rootOu?.orgUnitPath ?? "";
+      if (!rootOrgUnitId && orgUnitsList.length > 0) {
+        rootOrgUnitId = (orgUnitsList[0]?.orgUnitId ?? "").replace(/^id:/, "");
+      }
+      if (!rootOrgUnitId && orgUnitsList.length > 0) {
+        rootOrgUnitId = (orgUnitsList[0]?.parentOrgUnitId ?? "").replace(/^id:/, "");
+      }
+      if (!rootOrgUnitPath && orgUnitsList.length > 0) {
+        rootOrgUnitPath = orgUnitsList[0]?.orgUnitPath ?? "";
+      }
+      if (!rootOrgUnitPath && rootOrgUnitId) {
+        rootOrgUnitPath = "/";
+      }
+      } catch (error) {
+        console.log(
+          "[connector-config] root-ou error",
+          JSON.stringify({ message: (error as Error).message })
+        );
+      }
 
-      resolvedPolicies.push(...(res.data.resolvedPolicies ?? []));
+      const targetCandidates = [
+        rootOrgUnitId ? `orgunits/${rootOrgUnitId}` : "",
+        rootOrgUnitPath ? `orgunits/${rootOrgUnitPath}` : "",
+        rootOrgUnitPath ? `orgunits/${encodeURIComponent(rootOrgUnitPath)}` : "",
+        rootOrgUnitPath ? `orgunits/${rootOrgUnitPath.replace(/^\//, "")}` : "",
+      ].filter(Boolean);
+
+      const resolveErrors: Array<{ targetResource: string; message: string }> = [];
+      for (const targetResource of targetCandidates) {
+        try {
+          const res = await service.customers.policies.resolve({
+            customer: `customers/${this.customerId}`,
+            requestBody: {
+              policySchemaFilter: policySchemas.join(","),
+              pageSize: 100,
+              policyTargetKey: {
+                targetResource,
+              },
+            },
+          });
+
+          console.log(
+            "[connector-config] response",
+            JSON.stringify({
+              targetResource,
+              count: res.data.resolvedPolicies?.length ?? 0,
+              sample: res.data.resolvedPolicies?.[0]?.policyTargetKey,
+            })
+          );
+
+          recordActivity({
+            id: crypto.randomUUID(),
+            url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
+            method: "POST",
+            status: 200,
+            durationMs: Date.now() - start,
+            responsePreview: `policies=${res.data.resolvedPolicies?.length ?? 0}`,
+            timestamp: Date.now(),
+            kind: "workspace",
+          });
+
+          resolvedPolicies.push(...(res.data.resolvedPolicies ?? []));
+
+          return {
+            status: "Resolved",
+            policySchemas,
+            value: resolvedPolicies,
+            targetResource,
+          };
+        } catch (error) {
+          resolveErrors.push({
+            targetResource,
+            message: (error as Error).message,
+          });
+        }
+      }
+
+      if (resolveErrors.length > 0) {
+        return {
+          status: "Resolved",
+          policySchemas,
+          value: [],
+          errors: resolveErrors,
+        };
+      }
 
       return {
         status: "Resolved",
         policySchemas,
-        value: resolvedPolicies,
+        value: [],
       };
     } catch (error: any) {
+      console.log(
+        "[connector-config] error",
+        JSON.stringify({
+          code: error?.code,
+          message: error?.message,
+          errors: error?.errors,
+        })
+      );
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
