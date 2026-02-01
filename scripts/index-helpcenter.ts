@@ -1,3 +1,17 @@
+/**
+ * IMPORTANT: RATE LIMITING AND SESSION HEADERS
+ *
+ * If you encounter 429 Too Many Requests errors, you need to refresh the
+ * session headers. This typically occurs when running off-corp without a valid
+ * session.
+ *
+ * To resolve:
+ * 1. Log in to support.google.com on a corp account.
+ * 2. Copy the request headers from a successful page load.
+ * 3. Update the 'headers' constant below.
+ *
+ * See detailed instructions near the 'headers' constant below.
+ */
 import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
 import { getStandardId, processDocs, turndown } from "./utils";
@@ -70,20 +84,35 @@ function cleanHtml(html: string): string {
 }
 
 /**
- * INSTRUCTIONS FOR "TOO MANY REQUESTS" (429) ERRORS:
- * If you encounter 429 errors, your session/IP might be throttled.
- * 1. Visit https://support.google.com from your corp account.
- * 2. Resolve any CAPTCHA if prompted.
- * 3. Refresh the page.
- * 4. Open Developer Tools (F12 or Cmd+Option+I).
- * 5. Go to the 'Network' tab.
- * 6. Refresh again and find the main document request (the page URL).
- * 7. Right-click the request -> Copy -> Copy as fetch.
- * 8. Extract the 'headers' from the fetch command and paste them into the 'headers' constant below.
- *
- * Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
+ * Helper to allow pasting full fetch options object or just the headers.
+ * If user pastes: { "headers": { ... }, "method": "GET" }
+ * This extracts the inner "headers" object.
  */
-const headers = {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function resolveHeaders(input: any) {
+  if (
+    input &&
+    typeof input === "object" &&
+    "headers" in input &&
+    typeof input.headers === "object"
+  ) {
+    return input.headers;
+  }
+  return input;
+}
+
+/**
+ * INSTRUCTIONS FOR UPDATING HEADERS
+ *
+ * 1. Visit https://support.google.com from your corp account.
+ * 2. Resolve any CAPTCHA if prompted and refresh.
+ * 3. Open DevTools (Network tab), find the main doc request.
+ * 4. Right-click -> Copy -> Copy as fetch.
+ * 5. Extract the 'headers' object and paste it below.
+ *
+ * Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
+ */
+const headers = resolveHeaders({
   accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
   "accept-language": "en-US,en;q=0.9",
@@ -100,17 +129,23 @@ const headers = {
   "x-browser-channel": "stable",
   "x-browser-year": "2026",
   Referer: "https://support.google.com/",
-} satisfies Record<string, string>;
+}) satisfies Record<string, string>;
 
 async function main() {
   const documents: Document[] = [];
   const INSTRUCTION_MESSAGE = `
-⚠️ TOO MANY REQUESTS (429) DETECTED
-Please visit https://support.google.com from your corp account, resolve any captcha, refresh, then:
-1. Open dev tools -> Network tab.
-2. Right click the page request -> Copy as Fetch.
-3. Paste the headers into the 'headers' constant in scripts/index-helpcenter.ts.
-Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
+TOO MANY REQUESTS (429) DETECTED
+
+Rate limiting typically occurs when off-corp and not logged in. Log in to a
+corp account to bypass.
+
+1. Visit https://support.google.com from your corp account.
+2. Resolve any captcha, refresh.
+3. Open dev tools -> Network tab.
+4. Right click the page request -> Copy as Fetch.
+5. Paste the headers into the 'headers' constant in scripts/index-helpcenter.ts.
+
+Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
 `;
 
   const crawler = new CheerioCrawler({
@@ -124,11 +159,18 @@ Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mn
       },
     ],
 
-    failedRequestHandler({ request, response }) {
-      if (response?.statusCode === 429) {
+    failedRequestHandler({ request, error }) {
+      // Check for 429 in both standard error object and Crawlee/got response
+      const statusCode =
+        // @ts-expect-error - Crawlee error types don't expose response but it exists at runtime
+        error?.response?.statusCode ??
+        // @ts-expect-error - Fallback for other error shapes
+        error?.statusCode;
+
+      if (statusCode === 429) {
         console.error(INSTRUCTION_MESSAGE);
       }
-      console.log(`❌ Failed to crawl: ${request.url}`);
+      console.log(`Failed to crawl: ${request.url}`);
     },
 
     async requestHandler({
@@ -148,7 +190,7 @@ Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mn
       const validPattern = /^\/(chrome\/)?a(\/((answer|topic)\/\d+)?)?$/;
 
       if (!validPattern.test(url.pathname)) {
-        console.log(`⚠️ Skipping malformed URL: ${request.url}`);
+        console.log(`Skipping malformed URL: ${request.url}`);
         return;
       }
 
@@ -158,7 +200,7 @@ Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mn
       // Only process pages with actual numeric IDs for content extraction
       if (!request.url.match(/\/(answer|topic)\/(\d+)/)) {
         console.log(
-          `📁 Topic/category page (no content extraction): ${request.url}`
+          `Topic/category page (no content extraction): ${request.url}`
         );
         // Still enqueue links from topic pages but don't extract content
         await enqueueLinks({
@@ -215,7 +257,7 @@ Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mn
         title,
         metadata: helpcenterMetadata,
       });
-      console.log(`✓ Crawled: ${title}`);
+      console.log(`Crawled: ${title}`);
 
       // Enqueue links from content pages
       await enqueueLinks({
