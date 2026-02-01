@@ -2,6 +2,9 @@ import { expect } from "bun:test";
 
 const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 
+let chatReady = false;
+let chatReadyPromise: Promise<void> | undefined;
+
 export type ChatResponse = {
   text: string;
   metadata?: unknown;
@@ -18,6 +21,7 @@ type ChatMessage = {
 export async function callChatMessages(
   messages: ChatMessage[]
 ): Promise<ChatResponse> {
+  await ensureChatReady(CHAT_URL);
   const res = await fetchWithRetry(() =>
     fetch(CHAT_URL, {
       method: "POST",
@@ -127,6 +131,47 @@ function getStringArray(value: unknown, key: string): string[] {
     : [];
 }
 
+async function ensureChatReady(url: string): Promise<void> {
+  if (chatReady || !url.includes("localhost")) {
+    return;
+  }
+
+  if (!chatReadyPromise) {
+    chatReadyPromise = waitForChatReady(url, 8, 250)
+      .then((ready) => {
+        chatReady = ready;
+      })
+      .finally(() => {
+        chatReadyPromise = undefined;
+      });
+  }
+
+  await chatReadyPromise;
+}
+
+async function waitForChatReady(
+  url: string,
+  attempts: number,
+  delayMs: number
+): Promise<boolean> {
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    if (await isServerUp(url)) {
+      return true;
+    }
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+  return false;
+}
+
+async function isServerUp(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url, { method: "HEAD" });
+    return res.ok || res.status >= 400;
+  } catch {
+    return false;
+  }
+}
+
 type RetryOptions = {
   retries: number;
   delayMs: number;
@@ -134,9 +179,9 @@ type RetryOptions = {
 };
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
-  retries: 3,
-  delayMs: 400,
-  maxDelayMs: 2000,
+  retries: 6,
+  delayMs: 600,
+  maxDelayMs: 5000,
 };
 
 async function fetchWithRetry(
@@ -158,8 +203,9 @@ async function fetchWithRetry(
       }
     }
 
-    await new Promise((resolve) => setTimeout(resolve, delay));
-    delay = Math.min(options.maxDelayMs, delay * 2);
+    const jitterMs = Math.floor(Math.random() * 200);
+    await new Promise((resolve) => setTimeout(resolve, delay + jitterMs));
+    delay = Math.min(options.maxDelayMs, Math.ceil(delay * 1.8));
     attempt += 1;
   }
 }

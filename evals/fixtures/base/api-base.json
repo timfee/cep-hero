@@ -103,13 +103,11 @@
       "policyDescription": "Allow web services to request proof that the device is running an unmodified version of ChromeOS that is policy compliant."
     }
   ],
-  "chromeReports": {
-    "error": "Error: Chrome Management API has not been used in project 226520923819 before or it is disabled. Enable it by visiting https://<redacted-domain>"
-  },
+  "chromeReports": {},
   "auditEvents": {
     "kind": "admin#reports#activities",
-    "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/H2oa2TE95MfZ0WI_P41UKS2tVsk\"",
-    "nextPageToken": "R:AZWPV1MDxRrgWY_M5JJmXJutaOBOwm2I22JTw2JRoKmf5AD_DrK1CTZcj2BbUT4-NxAerBN0Os9nSWJIrL4_RdfaWmhkSN-cg3RXeRM",
+    "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/nn_QzHv7Xx-Tz0tDd_7YUKjm1Pc\"",
+    "nextPageToken": "R:AZWPV1PQ_DtwTW80wXQMfDJgy5kgytibQfzlCUkzAgWuJkNyfx6MTawgSBGZSZKkRrPW9t_F6F_dZW75a7m7IBAoW8k8itt64Va0c4Q",
     "items": [
       {
         "kind": "admin#reports#activity",
@@ -272,7 +270,9 @@
                 ]
               }
             ],
-            "resourceIds": ["0z337ya20jo9lx"]
+            "resourceIds": [
+              "0z337ya20jo9lx"
+            ]
           }
         ],
         "resourceDetails": [
@@ -432,7 +432,9 @@
                 ]
               }
             ],
-            "resourceIds": ["0z337ya20jo9lx"]
+            "resourceIds": [
+              "0z337ya20jo9lx"
+            ]
           }
         ],
         "resourceDetails": [
@@ -603,7 +605,9 @@
                 ]
               }
             ],
-            "resourceIds": ["0z337ya20jo9lx"]
+            "resourceIds": [
+              "0z337ya20jo9lx"
+            ]
           }
         ],
         "resourceDetails": [
@@ -763,7 +767,9 @@
                 ]
               }
             ],
-            "resourceIds": ["0z337ya20jo9lx"]
+            "resourceIds": [
+              "0z337ya20jo9lx"
+            ]
           }
         ],
         "resourceDetails": [
@@ -923,7 +929,9 @@
                 ]
               }
             ],
-            "resourceIds": ["0z337ya20jo9lx"]
+            "resourceIds": [
+              "0z337ya20jo9lx"
+            ]
           }
         ],
         "resourceDetails": [

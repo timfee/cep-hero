@@ -6,6 +6,11 @@
 - [x] ses_worker_docs_base_delta (Worker): `evals/README.md`, `README.md`, `SETUP.md` - done
 - [x] ses_2 (Worker): `tests/evals/*.test.ts` - done
 - [x] ses_1 (Worker): `evals/registry.json` - done
+- [x] ses_worker_fixtures_refresh (Worker): `evals/fixtures/base/api-base.json` - done
+- [x] ses_worker_fixtures_capture (Worker): `evals/fixtures/base/api-base.json` - done
+ - [x] ses_worker_sync_fix (Worker): `lib/test-helpers/chat-client.ts` - done
+- [ ] ses_worker_sync_rootcause (Worker): `tests/e2e-evals.test.ts` - in_progress
+- [x] ses_worker_sync_investigate (Worker): `lib/test-helpers/chat-client.ts` - done
 
 ## Completed Units (Ready for Integration)
 
@@ -25,6 +30,10 @@
 | evals/README.md                       | ses_worker_docs_base_delta   | n/a       | 2026-02-01T13:52:20 |
 | README.md                             | ses_worker_docs_base_delta   | n/a       | 2026-02-01T13:52:20 |
 | SETUP.md                              | ses_worker_docs_base_delta   | n/a       | 2026-02-01T13:52:20 |
+| lib/test-helpers/chat-client.ts       | ses_worker_sync_fix | n/a | 2026-02-01T14:22:00 |
+| lib/test-helpers/chat-client.ts       | ses_worker_sync_investigate | n/a | 2026-02-01T14:20:45 |
+| evals/fixtures/base/api-base.json     | ses_worker_fixtures_capture  | n/a       | 2026-02-01T14:19:10 |
+| evals/fixtures/base/api-base.json     | ses_worker_fixtures_refresh | n/a       | 2026-02-01T14:18:56 |
 
 ## Pending Integration
 
@@ -35,9 +44,12 @@
 - package.json
 - lib/test-helpers/eval-runner.ts
 - evals/fixtures/EC-003/overrides.json
+- evals/fixtures/base/api-base.json
 - evals/README.md
 - README.md
 - SETUP.md
+- lib/test-helpers/chat-client.ts
+- lib/test-helpers/chat-client.ts
 
 ## Reviewer Status
 
@@ -46,4 +58,20 @@
 - 2026-02-01: Unit review failed; build lock detected and `bun test` timed out in `tests/e2e-evals.test.ts`.
 - 2026-02-01: Unit review FAILED for docs base+delta; lsp TS2554 in eval tests, `bun test` ECONNRESET and EADDRINUSE; build passed.
 - 2026-02-01: Unit review FAILED; `bun test` cannot resolve `@/lib/test-helpers/eval-server` (diagnostics evals).
+- 2026-02-01: Unit review PASSED; `bun test` and eval tests with base+fixtures succeeded.
 - 2026-02-01: Unit review FAILED for base+delta overlays; lsp clean, build passed, `bun test` ECONNRESET in `tests/evals/test-plan.test.ts` and API quota 429.
+- 2026-02-01: Unit review FAILED for fixtures refresh; lsp clean, `bun run build` failed due to `.next/lock`, `bun test` timed out after 180000 ms.
+- 2026-02-01: Unit review FAILED for S4.1.2; build blocked by `.next/lock`, `bun test` failed in `tests/evals/test-plan.test.ts` (expectStructuredText matches=0).
+- 2026-02-01: Unit review for S4.1.1 blocked; worker sessions still in_progress, build failed with `.next/lock`, `bun test` timed out, unit-tests dir missing.
+- 2026-02-01: Unit review FAILED for M4 sync issues; lsp clean, build passed, `bun test` failed with HTTP 500 from `/api/chat` in `tests/evals/test-plan.test.ts` (EC-071).
+- 2026-02-01: Unit review FAILED for T4.1; build blocked by `.next/lock` and `bun test` timed out (120s).
+
+## Investigation Notes
+
+- ses_worker_sync_rootcause: `tests/e2e-evals.test.ts` not found in repo; eval suites now live in `tests/evals/*.test.ts` (see `tests/evals/common-challenges.test.ts:48-59`, `tests/evals/diagnostics.test.ts:50-61`, `tests/evals/test-plan.test.ts:50-61`).
+- `ensureEvalServer` uses per-process `globalThis` state and spawns `bun run dev` on port 3100 (`lib/test-helpers/eval-server.ts:13-56`). Bun runs each test file in separate worker processes, so the “singleton” does not coordinate across files → multiple dev servers compete on the same port and can be killed in `afterAll` while other suites still run, matching ECONNRESET/ConnectionRefused and hook timeouts.
+- `/api/chat` work is heavy: `diagnose` makes 5 parallel external API calls and then calls `generateObject` with Gemini (`app/api/chat/diagnose.ts:152-213`). Under test load this can hit quota (429) or be slow, causing long request times and hook timeouts if setup/teardown depends on responsiveness.
+
+## Notes
+
+- 2026-02-01: `bun run credentials:check` ok; warning: GOOGLE_CUSTOMER_ID not set (auto-resolve).
