@@ -37,3 +37,5 @@
 
 - Ultracite is the lint/format tool (`bun x ultracite fix`).
 - Live evals use `/api/chat` with test bypass when enabled.
+- Eval overrides: JSON object overrides deep-merge onto `evals/fixtures/base/api-base.json` when `EVAL_USE_BASE=1`.
+- Precedence: base snapshot → registry/per-case overrides (in order) → fixtures appended after the merged base block.

@@ -1,2 +1,0 @@
-2026-01-20T04:02:22.802Z wifi: deauth reason=15 (4-way handshake timeout)
-2026-01-20T04:02:23.102Z wifi: deauth reason=34 (poor channel conditions)

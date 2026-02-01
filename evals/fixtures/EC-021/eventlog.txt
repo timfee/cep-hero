@@ -1,0 +1,3 @@
+2026-01-20T04:02:22.802Z wifi: deauth reason=15 (4-way handshake timeout) ssid=CorpNet signal=-72dBm
+2026-01-20T04:02:23.102Z wifi: deauth reason=34 (poor channel conditions) channel=11 retries=3
+2026-01-20T04:02:24.402Z wifi: assoc status=17 (AP cannot support more stations)

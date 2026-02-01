@@ -66,3 +66,29 @@ bun dev
 ```
 
 Visit `http://localhost:3000`. You will be prompted to sign in with your Google Workspace account. Once signed in, the "Gemini CLI" will have a real Access Token to perform operations on your behalf.
+
+## 6. Eval commands (optional)
+
+```bash
+bun run evals:run
+bun run evals:run:diag
+bun run evals:run:plan
+EVAL_IDS=EC-075 bun run evals:run:by-id
+```
+
+Gates you can toggle during eval runs:
+
+- `EVAL_USE_BASE=1` attaches the base API snapshot.
+- `EVAL_USE_FIXTURES=1` attaches fixture context for the case.
+
+## 7. Credential check (recommended for test bypass)
+
+```bash
+bun run credentials:check
+```
+
+Expected summary output:
+
+```text
+[credentials] status ok
+```

@@ -1,18 +1,32 @@
-# Mission: Converge eval cases and align tests
+# Mission: CEP eval base+delta overrides rollout
 
-## M1: Case inventory and documentation
+## Project Context
+- Language: TypeScript (Bun + Next.js)
+- Core paths: `lib/`, `tests/`, `evals/`
 
-### T1.1: Create eval case index and files
+## File Manifest
+| Action | File Path | Description | Dependencies |
+|--------|-----------|-------------|--------------|
+| MODIFY | lib/test-helpers/eval-runner.ts | Extend buildEvalPrompt to merge base snapshot + overrides + fixtures | lib/test-helpers/eval-registry.ts (RegistryCase overrides field) |
+| MODIFY | tests/evals/common-challenges.test.ts | Pass overrides/caseId into buildEvalPrompt | lib/test-helpers/eval-runner.ts |
+| MODIFY | tests/evals/diagnostics.test.ts | Pass overrides/caseId into buildEvalPrompt | lib/test-helpers/eval-runner.ts |
+| MODIFY | tests/evals/test-plan.test.ts | Pass overrides/caseId into buildEvalPrompt | lib/test-helpers/eval-runner.ts |
 
-- [x] S1.1.1: Create `eval-cases/` index and case files
-- [x] S1.1.2: Replace `EVAL_CASES.md` with new index pointer
+## G1: Discovery + Design | status: completed
+### P1.1: Override schema decision | agent:Planner
+- [x] T1.1.1: Decide overrides JSON shape and merge strategy | size:S
+- [x] T1.1.2: Specify precedence order (base vs overrides vs fixtures) | size:S
 
-### T1.2: Align tests with case IDs
+## G2: Implementation | status: completed | depends:G1
+### P2.1: Prompt assembly | agent:Worker
+- [x] T2.1.1: MODIFY `lib/test-helpers/eval-runner.ts` | file:lib/test-helpers/eval-runner.ts | size:M
 
-- [x] S1.2.1: Update test titles to use EC-### IDs
+### P2.2: Test wiring | agent:Worker | depends:P2.1
+- [x] T2.2.1: MODIFY `tests/evals/common-challenges.test.ts` | file:tests/evals/common-challenges.test.ts | size:S
+- [x] T2.2.2: MODIFY `tests/evals/diagnostics.test.ts` | file:tests/evals/diagnostics.test.ts | size:S
+- [x] T2.2.3: MODIFY `tests/evals/test-plan.test.ts` | file:tests/evals/test-plan.test.ts | size:S
 
-## M2: Verification
-
-### T2.1: Run diagnostics/tests
-
-- [x] S2.1.1: Run `bun test`
+## G3: Verification | status: in_progress | depends:G2
+### P3.1: LSP + tests | agent:Reviewer
+- [x] T3.1.1: Run `lsp_diagnostics({ file: "*" })` | size:S
+- [ ] T3.1.2: Run eval tests as needed | size:S

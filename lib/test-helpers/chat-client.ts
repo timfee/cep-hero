@@ -18,14 +18,16 @@ type ChatMessage = {
 export async function callChatMessages(
   messages: ChatMessage[]
 ): Promise<ChatResponse> {
-  const res = await fetch(CHAT_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Test-Bypass": "1",
-    },
-    body: JSON.stringify({ messages }),
-  });
+  const res = await fetchWithRetry(() =>
+    fetch(CHAT_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "X-Test-Bypass": "1",
+      },
+      body: JSON.stringify({ messages }),
+    })
+  );
 
   expect(res.status).toBeLessThan(500);
   const bodyText = await res.text();
@@ -123,4 +125,45 @@ function getStringArray(value: unknown, key: string): string[] {
     property.every((item) => typeof item === "string")
     ? property
     : [];
+}
+
+type RetryOptions = {
+  retries: number;
+  delayMs: number;
+  maxDelayMs: number;
+};
+
+const DEFAULT_RETRY_OPTIONS: RetryOptions = {
+  retries: 3,
+  delayMs: 400,
+  maxDelayMs: 2000,
+};
+
+async function fetchWithRetry(
+  action: () => Promise<Response>,
+  options: RetryOptions = DEFAULT_RETRY_OPTIONS
+): Promise<Response> {
+  let attempt = 0;
+  let delay = options.delayMs;
+
+  while (true) {
+    try {
+      const response = await action();
+      if (!isRetryableStatus(response.status) || attempt >= options.retries) {
+        return response;
+      }
+    } catch (error) {
+      if (attempt >= options.retries) {
+        throw error;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, delay));
+    delay = Math.min(options.maxDelayMs, delay * 2);
+    attempt += 1;
+  }
+}
+
+function isRetryableStatus(status: number): boolean {
+  return status === 429 || status === 502 || status === 503 || status === 504;
 }

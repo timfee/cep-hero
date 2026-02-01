@@ -19,6 +19,7 @@ export type RegistryCase = {
   tags: string[];
   expected_schema: string[];
   fixtures?: string[];
+  overrides?: string[];
   required_evidence?: string[];
   rubric?: {
     min_score: number;
@@ -149,6 +150,7 @@ function parseRegistryCase(value: unknown, index: number): RegistryCase {
   const tags = getStringArray(value, "tags");
   const expected_schema = getStringArray(value, "expected_schema");
   const fixtures = getOptionalStringArray(value, "fixtures");
+  const overrides = getOptionalStringArray(value, "overrides");
   const required_evidence = getOptionalStringArray(value, "required_evidence");
   const rubric = getOptionalRubric(value, `Case ${id} rubric`);
 
@@ -163,6 +165,7 @@ function parseRegistryCase(value: unknown, index: number): RegistryCase {
     tags,
     expected_schema,
     fixtures,
+    overrides,
     required_evidence,
     rubric,
   };
