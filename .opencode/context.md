@@ -23,7 +23,7 @@
 
 - Source: `app/`, `lib/`
 - Tests: `tests/`
-- Docs: `README.md`, `TEST_PLAN.md`, `EVAL_CASES.md`, `eval-cases/`
+- Docs: `README.md`, `TEST_PLAN.md`, `EVAL_CASES.md`, `evals/cases/`
 - Entry: `app/api/chat/route.ts`
 
 ## Conventions
