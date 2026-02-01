@@ -16,7 +16,7 @@
 - Fix: Investigate test setup/teardown timing or server readiness; reduce flakiness and ensure hooks complete under timeout.
 - Status: pending
 
-## SYNC-3
+## SYNC-4
 
 - Severity: HIGH
 - Files: tests/evals/test-plan.test.ts ↔ app/api/chat/route.ts
@@ -35,7 +35,31 @@
 ## SYNC-6
 
 - Severity: HIGH
-- Files: tests/evals/diagnostics.test.ts ↔ lib/test-helpers/eval-server.ts
-- Problem: `bun test` fails with "Cannot find module '@/lib/test-helpers/eval-server'" when loading diagnostics eval tests.
-- Fix: Ensure `@/lib/test-helpers/eval-server` is added to the repo and resolvable, or update imports to the correct path.
+- Files: lib/test-helpers/chat-client.ts ↔ app/api/chat/route.ts ↔ tests/evals/test-plan.test.ts
+- Problem: `bun test` failed in `tests/evals/test-plan.test.ts` with HTTP 500 from `/api/chat` (expected < 500). Failure surfaced in `callChatMessages` during EC-071.
+- Fix: Investigate `/api/chat` error path for test bypass; add readiness/retry or stub/mocks to avoid 500s in eval runs.
+- Status: pending
+
+## SYNC-7
+
+- Severity: HIGH
+- Files: tests/evals/test-plan.test.ts ↔ lib/test-helpers/eval-runner.ts
+- Problem: `bun test` failed in `tests/evals/test-plan.test.ts` (EC-080) with expectStructuredText expecting >= 1 match but received 0.
+- Fix: Inspect response shaping for EC-080 and adjust prompt assembly or expected schema/evidence to restore at least one required match.
+- Status: pending
+
+## SYNC-7
+
+- Severity: MEDIUM
+- Files: .next/lock
+- Problem: `bun run build` failed: Unable to acquire lock at `.next/lock` (another build/dev process may be running or stale lock).
+- Fix: Stop any running Next.js build/dev process and remove stale `.next/lock`, then re-run `bun run build`.
+- Status: pending
+
+## SYNC-8
+
+- Severity: HIGH
+- Files: tests
+- Problem: `bun test` timed out after 180000 ms with no completion output.
+- Fix: Investigate hanging test(s) or server readiness; re-run with targeted suites to isolate the blocker.
 - Status: pending

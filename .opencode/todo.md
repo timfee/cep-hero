@@ -26,7 +26,7 @@
 - [x] T2.2.2: MODIFY `tests/evals/diagnostics.test.ts` | file:tests/evals/diagnostics.test.ts | size:S
 - [x] T2.2.3: MODIFY `tests/evals/test-plan.test.ts` | file:tests/evals/test-plan.test.ts | size:S
 
-## G3: Verification | status: in_progress | depends:G2
+## G3: Verification | status: completed | depends:G2
 ### P3.1: LSP + tests | agent:Reviewer
 - [x] T3.1.1: Run `lsp_diagnostics({ file: "*" })` | size:S
-- [ ] T3.1.2: Run eval tests as needed | size:S
+- [x] T3.1.2: Run eval tests as needed | size:S
