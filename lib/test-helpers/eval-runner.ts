@@ -1,0 +1,199 @@
+import { expect } from "bun:test";
+import { readFileSync } from "fs";
+import { mkdir, writeFile } from "fs/promises";
+import path from "path";
+
+/** Pass/fail status for eval reports. */
+export type EvalReportStatus = "pass" | "fail";
+
+/** Report payload emitted per eval run. */
+export type EvalReport = {
+  runId: string;
+  caseId: string;
+  title: string;
+  category: string;
+  tags: string[];
+  sourceRefs: string[];
+  caseFile: string;
+  prompt: string;
+  responseText: string;
+  responseMetadata: unknown;
+  expectedSchema: string[];
+  schemaMatched: boolean;
+  rubricScore?: number;
+  rubricCriteria?: string[];
+  rubricMinScore?: number;
+  status: EvalReportStatus;
+  durationMs: number;
+  timestamp: string;
+  error?: string;
+};
+
+const schemaKeyMap: Record<string, string> = {
+  diagnosis: "diagnosis",
+  evidence: "evidence",
+  hypotheses: "hypotheses",
+  next_steps: "nextSteps",
+  reference: "reference",
+};
+
+const DEFAULT_REPORTS_DIR = path.join(process.cwd(), "evals", "reports");
+
+/**
+ * Build an eval prompt and optionally attach fixture context when enabled.
+ */
+export function buildEvalPrompt(
+  basePrompt: string,
+  fixtures: string[] | undefined,
+  rootDir: string = process.cwd()
+): string {
+  const base = `${basePrompt}\n\nPlease respond with diagnosis, evidence, hypotheses, and next steps. Keep the response under 800 characters and avoid long nested fields.`;
+  if (!fixtures || fixtures.length === 0) {
+    return base;
+  }
+  if (process.env.EVAL_USE_FIXTURES !== "1") {
+    return base;
+  }
+  const fixtureText = fixtures
+    .map((fixturePath) => {
+      const fullPath = path.isAbsolute(fixturePath)
+        ? fixturePath
+        : path.join(rootDir, fixturePath);
+      return readFileSync(fullPath, "utf-8");
+    })
+    .join("\n\n");
+  return `${base}\n\nFixture context:\n${fixtureText}`;
+}
+
+/**
+ * Enforce evidence markers when strict evidence gating is enabled.
+ */
+export function assertRequiredEvidence({
+  text,
+  metadata,
+  requiredEvidence,
+}: {
+  text: string;
+  metadata: unknown;
+  requiredEvidence: string[] | undefined;
+}): void {
+  if (!requiredEvidence || requiredEvidence.length === 0) {
+    return;
+  }
+  const lowerText = text.toLowerCase();
+  const metadataText = metadata ? JSON.stringify(metadata).toLowerCase() : "";
+  const combined = `${lowerText}\n${metadataText}`;
+  const missing = requiredEvidence.filter(
+    (needle) => !combined.includes(needle.toLowerCase())
+  );
+  if (missing.length === 0) {
+    return;
+  }
+  if (process.env.EVAL_STRICT_EVIDENCE === "1") {
+    throw new Error(`Missing required evidence: ${missing.join(", ")}`);
+  }
+  if (process.env.EVAL_WARN_MISSING_EVIDENCE === "1") {
+    console.warn(`[eval] Missing required evidence: ${missing.join(", ")}`);
+  }
+}
+
+/**
+ * Validate that a response contains the expected structured output.
+ * Returns true when schema metadata is present.
+ */
+export function assertStructuredResponse({
+  text,
+  metadata,
+  expectedSchema,
+}: {
+  text: string;
+  metadata: unknown;
+  expectedSchema: string[];
+}): boolean {
+  const schemaMatched = hasExpectedSchema(metadata, expectedSchema);
+  if (schemaMatched) {
+    return true;
+  }
+
+  expectStructuredText(text, expectedSchema);
+  return false;
+}
+
+/**
+ * Score rubric criteria by checking for required cues in the response.
+ */
+export function scoreRubric({
+  text,
+  metadata,
+  criteria,
+}: {
+  text: string;
+  metadata: unknown;
+  criteria: string[];
+}): number {
+  const combined = `${text.toLowerCase()}\n${metadata ? JSON.stringify(metadata).toLowerCase() : ""}`;
+  return criteria.reduce((score, criterion) => {
+    return combined.includes(criterion.toLowerCase()) ? score + 1 : score;
+  }, 0);
+}
+
+/**
+ * Enforce rubric threshold when strict rubric gating is enabled.
+ */
+export function enforceRubric({
+  score,
+  minScore,
+}: {
+  score: number;
+  minScore: number;
+}): void {
+  if (score >= minScore) {
+    return;
+  }
+  if (process.env.EVAL_RUBRIC_STRICT === "1") {
+    throw new Error(`Rubric score ${score} below minimum ${minScore}.`);
+  }
+  if (process.env.EVAL_WARN_RUBRIC === "1") {
+    console.warn(`[eval] Rubric score ${score} below minimum ${minScore}.`);
+  }
+}
+
+/** Persist a report to evals/reports with a stable filename. */
+export async function writeEvalReport(
+  report: EvalReport,
+  reportsDir: string = DEFAULT_REPORTS_DIR
+): Promise<string> {
+  await mkdir(reportsDir, { recursive: true });
+  const fileName = `${report.caseId}-${report.runId}.json`;
+  const outputPath = path.join(reportsDir, fileName);
+  await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf-8");
+  return outputPath;
+}
+
+export function createRunId(date: Date = new Date()): string {
+  return date.toISOString().replace(/[:.]/g, "-");
+}
+
+function hasExpectedSchema(metadata: unknown, expected: string[]): boolean {
+  if (!isRecord(metadata)) return false;
+  return expected.every((key) => {
+    const mapped = schemaKeyMap[key] ?? key;
+    return Object.prototype.hasOwnProperty.call(metadata, mapped);
+  });
+}
+
+function expectStructuredText(text: string, expected: string[]): void {
+  const lower = text.toLowerCase();
+  const signals = ["diagnosis", "evidence", "hypothesis", "next", "reference"];
+  const matches = signals.filter((signal) => lower.includes(signal)).length;
+  if (expected.length === 0) {
+    expect(lower.length).toBeGreaterThan(0);
+    return;
+  }
+  expect(lower.length).toBeGreaterThan(20);
+  expect(matches).toBeGreaterThanOrEqual(1);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}

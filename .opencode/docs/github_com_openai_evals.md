@@ -8,14 +8,15 @@
 # OpenAI Evals
 
 [](#openai-evals)
-> 
-You can now configure and run Evals directly in the OpenAI Dashboard. [Get started →](https://platform.openai.com/docs/guides/evals)
+
+> You can now configure and run Evals directly in the OpenAI Dashboard. [Get started →](https://platform.openai.com/docs/guides/evals)
 
 Evals provide a framework for evaluating large language models (LLMs) or systems built using LLMs. We offer an existing registry of evals to test different dimensions of OpenAI models and the ability to write your own custom evals for use cases you care about. You can also use your data to build private evals which represent the common LLMs patterns in your workflow without exposing any of that data publicly.
 
 If you are building with LLMs, creating high quality evals is one of the most impactful things you can do. Without evals, it can be very difficult and time intensive to understand how different model versions might affect your use case. In the words of [OpenAI's President Greg Brockman](https://twitter.com/gdb/status/1733553161884127435):
 
 [](https://private-user-images.githubusercontent.com/35577566/289374940-ce7840ff-43a8-4d88-bb2f-6b207410333b.png?jwt=eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJnaXRodWIuY29tIiwiYXVkIjoicmF3LmdpdGh1YnVzZXJjb250ZW50LmNvbSIsImtleSI6ImtleTUiLCJleHAiOjE3Njk5NzQyOTAsIm5iZiI6MTc2OTk3Mzk5MCwicGF0aCI6Ii8zNTU3NzU2Ni8yODkzNzQ5NDAtY2U3ODQwZmYtNDNhOC00ZDg4LWJiMmYtNmIyMDc0MTAzMzNiLnBuZz9YLUFtei1BbGdvcml0aG09QVdTNC1ITUFDLVNIQTI1NiZYLUFtei1DcmVkZW50aWFsPUFLSUFWQ09EWUxTQTUzUFFLNFpBJTJGMjAyNjAyMDElMkZ1cy1lYXN0LTElMkZzMyUyRmF3czRfcmVxdWVzdCZYLUFtei1EYXRlPTIwMjYwMjAxVDE5MjYzMFomWC1BbXotRXhwaXJlcz0zMDAmWC1BbXotU2lnbmF0dXJlPTBkZGMzNWMzMjZmZWQwYzNmMGU1NWJhZmQ1ZjUyZjhmYWFiNDljMTAyZjQ0NGRjODlmMDVjNmE3ZDdmNmMwOGUmWC1BbXotU2lnbmVkSGVhZGVycz1ob3N0In0.gI4X24bPTEmlHKQlP8jhX7MKRS1kU0t9w8O9ToDslUI)
+
 ## Setup
 
 [](#setup)
@@ -37,6 +38,7 @@ You may just want to fetch data for a select eval. You can achieve this via:
 
 git lfs fetch --include=evals/registry/data/${your eval}
 git lfs pull
+
 ### Making evals
 
 [](#making-evals)
