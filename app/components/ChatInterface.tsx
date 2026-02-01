@@ -113,7 +113,9 @@ export default function ChatInterface() {
           setOverviewError(null);
         }
       } catch (error) {
-        console.warn("[overview] fetch failed", { message: getErrorMessage(error) });
+        console.warn("[overview] fetch failed", {
+          message: getErrorMessage(error),
+        });
         if (isActive) {
           setOverview(null);
           setOverviewError("Unable to load overview data");
@@ -449,6 +451,9 @@ export default function ChatInterface() {
   );
 }
 
+/**
+ * Validate overview responses from the API.
+ */
 function parseOverviewResponse(value: unknown): OverviewData | null {
   if (!value || typeof value !== "object") {
     return null;
@@ -473,6 +478,9 @@ function parseOverviewResponse(value: unknown): OverviewData | null {
   };
 }
 
+/**
+ * Parse overview cards from a response payload.
+ */
 function getOverviewCards(value: unknown): OverviewCard[] {
   if (!value || typeof value !== "object") {
     return [];
@@ -484,35 +492,38 @@ function getOverviewCards(value: unknown): OverviewCard[] {
   }
 
   const parsed = cards.map((card) => {
-      if (!card || typeof card !== "object") {
-        return null;
-      }
+    if (!card || typeof card !== "object") {
+      return null;
+    }
 
-      const label = getOptionalString(card, "label");
-      const valueText = getOptionalString(card, "value");
-      const note = getOptionalString(card, "note");
-      const source = getOptionalString(card, "source");
-      const action = getOptionalString(card, "action");
-      const lastUpdated = getOptionalString(card, "lastUpdated");
+    const label = getOptionalString(card, "label");
+    const valueText = getOptionalString(card, "value");
+    const note = getOptionalString(card, "note");
+    const source = getOptionalString(card, "source");
+    const action = getOptionalString(card, "action");
+    const lastUpdated = getOptionalString(card, "lastUpdated");
 
-      if (!label || !valueText || !note || !source || !action) {
-        return null;
-      }
+    if (!label || !valueText || !note || !source || !action) {
+      return null;
+    }
 
-      const base: OverviewCard = {
-        label,
-        value: valueText,
-        note,
-        source,
-        action,
-      };
+    const base: OverviewCard = {
+      label,
+      value: valueText,
+      note,
+      source,
+      action,
+    };
 
-      return lastUpdated ? { ...base, lastUpdated } : base;
-    });
+    return lastUpdated ? { ...base, lastUpdated } : base;
+  });
 
   return parsed.filter((card): card is OverviewCard => card !== null);
 }
 
+/**
+ * Extract a string property from unknown objects.
+ */
 function getOptionalString(value: unknown, key: string): string | undefined {
   if (!value || typeof value !== "object") {
     return undefined;
@@ -522,24 +533,33 @@ function getOptionalString(value: unknown, key: string): string | undefined {
   return typeof property === "string" ? property : undefined;
 }
 
+/**
+ * Extract a string array from unknown objects.
+ */
 function getStringArray(value: unknown, key: string): string[] {
   if (!value || typeof value !== "object") {
     return [];
   }
 
   const property = Reflect.get(value, key);
-  return Array.isArray(property) && property.every((item) => typeof item === "string")
+  return Array.isArray(property) &&
+    property.every((item) => typeof item === "string")
     ? property
     : [];
 }
 
+/**
+ * Normalize errors for logging.
+ */
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
 
   const message =
-    error && typeof error === "object" ? Reflect.get(error, "message") : undefined;
+    error && typeof error === "object"
+      ? Reflect.get(error, "message")
+      : undefined;
 
   return typeof message === "string" ? message : "Unknown error";
 }

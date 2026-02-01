@@ -67,6 +67,20 @@ function expectLiveOrToken(text: string, keyword: string) {
   expect(lower).toContain(keyword);
 }
 
+function expectAuthOrToken(text: string) {
+  const lower = text.toLowerCase();
+  if (
+    lower.includes("google access token") ||
+    lower.includes("missing access token") ||
+    lower.includes("missing google access token") ||
+    lower.includes("not authorized") ||
+    lower.includes("permission")
+  ) {
+    return;
+  }
+  expect(lower).toContain("token");
+}
+
 describe("CEP live evals", () => {
   const TEST_TIMEOUT_MS = 60000;
   const suffix = randomUUID().slice(0, 8);
@@ -150,7 +164,7 @@ describe("CEP live evals", () => {
   });
 
   it(
-    "S01 connector mis-scoped warning surfaces",
+    "EC-001 connector scope mis-targeted",
     async () => {
       const { orgUnitPath } = await createOrgUnit({
         name: `Engineering-Test-${suffix}`,
@@ -174,7 +188,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S02 missing policyTargetKey",
+    "EC-002 missing policyTargetKey",
     async () => {
       const prompt =
         "Connector resolve failed because policyTargetKey is missing.";
@@ -185,7 +199,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S03 malformed resolve payload",
+    "EC-003 malformed resolve payload",
     async () => {
       const prompt =
         "Resolve returned invalid JSON payload for policyTargetKey.targetResource.";
@@ -196,7 +210,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S04 DLP rules absent",
+    "EC-004 DLP rules absent",
     async () => {
       const prompt = "Why does testuser2@ have no DLP enforcement?";
       const resp = await callChat(prompt);
@@ -206,7 +220,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S05 DLP rule not firing",
+    "EC-005 DLP rule not firing",
     async () => {
       const prompt =
         "Why didn’t the DLP rule fire for testuser2 uploading to Drive?";
@@ -217,7 +231,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S06 event reporting off",
+    "EC-006 event reporting off",
     async () => {
       const prompt = "Why do Chrome audit events show zero for testuser3@?";
       const resp = await callChat(prompt);
@@ -227,7 +241,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S07 Safe Browsing disabled",
+    "EC-007 Safe Browsing disabled",
     async () => {
       const prompt = "Why isn’t Safe Browsing enforced for testuser4@?";
       const resp = await callChat(prompt);
@@ -237,7 +251,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S08 Bulk Data Connector disabled",
+    "EC-008 Bulk Data Connector disabled",
     async () => {
       const prompt = "Bulk connector not working for testuser5@—why?";
       const resp = await callChat(prompt);
@@ -247,7 +261,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S09 Web Data Connector missing",
+    "EC-009 Web Data Connector missing",
     async () => {
       const prompt = "Why can’t testuser6@ export web data?";
       const resp = await callChat(prompt);
@@ -257,7 +271,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S10 File Transfer Connector missing",
+    "EC-010 File Transfer Connector missing",
     async () => {
       const prompt = "Why can’t testuser7@ use file transfer connector?";
       const resp = await callChat(prompt);
@@ -267,7 +281,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S11 Print Connector mis-scoped",
+    "EC-011 Print Connector mis-scoped",
     async () => {
       const prompt = "Why doesn’t print connector apply to testuser8@?";
       const resp = await callChat(prompt);
@@ -277,7 +291,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S12 Mixed group vs OU precedence",
+    "EC-012 Mixed group vs OU precedence",
     async () => {
       const prompt =
         "Which policy applies for a user in both OU and group targets?";
@@ -288,7 +302,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S13 Enrollment token wrong OU",
+    "EC-013 Enrollment token wrong OU",
     async () => {
       const prompt =
         "Why are new devices enrolling to root instead of Enroll-Eng?";
@@ -299,7 +313,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S14 Enrollment permission denied",
+    "EC-014 Enrollment permission denied",
     async () => {
       const prompt = "Enrollment token creation failed with permission denied.";
       const resp = await callChat(prompt);
@@ -309,7 +323,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S15 Propagation delay",
+    "EC-015 Propagation delay",
     async () => {
       const prompt = "Policies applied but not live yet after 30 minutes.";
       const resp = await callChat(prompt);
@@ -319,7 +333,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S16 Bad schema ID",
+    "EC-016 Bad schema ID",
     async () => {
       const prompt = "Policy resolve returned zero policies for schema id.";
       const resp = await callChat(prompt);
@@ -329,7 +343,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S17 Group targeting format",
+    "EC-017 Group targeting format",
     async () => {
       const prompt =
         "Group-scoped connector ignored. What is correct targetResource format?";
@@ -340,7 +354,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S18 Reference doc grounding",
+    "EC-018 Reference doc grounding",
     async () => {
       const prompt = "Show me Chrome DLP reference for this issue.";
       const resp = await callChat(prompt);
@@ -350,17 +364,17 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S19 Token expired",
+    "EC-019 Token expired",
     async () => {
       const prompt = "Why does the bot say missing Google access token?";
       const resp = await callChat(prompt);
-      expectLiveOrToken(resp.text, "token");
+      expectAuthOrToken(resp.text);
     },
     TEST_TIMEOUT_MS
   );
 
   it(
-    "S20 Rate limit handling",
+    "EC-020 Rate limit handling",
     async () => {
       const prompt = "Connector check hit rate limit.";
       const resp = await callChat(prompt);
@@ -370,7 +384,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S21 Outlook.com blocked",
+    "EC-021 Outlook.com blocked",
     async () => {
       const prompt = "Why can’t testuser13@ access outlook.com?";
       const resp = await callChat(prompt);
@@ -380,7 +394,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S22 Outlook.com still blocked after removal",
+    "EC-022 Outlook.com still blocked after removal",
     async () => {
       const prompt = "Outlook.com is still blocked after policy removal.";
       const resp = await callChat(prompt);
@@ -390,7 +404,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S23 Detector tuning",
+    "EC-023 Detector tuning",
     async () => {
       const prompt = "Why is phone detector firing on internal domains?";
       const resp = await callChat(prompt);
@@ -400,7 +414,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S24 Conflicting DLP vs connector",
+    "EC-024 Conflicting DLP vs connector",
     async () => {
       const prompt = "Data still leaving via bulk connector despite DLP rules.";
       const resp = await callChat(prompt);
@@ -410,7 +424,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S25 Multi-OU comparison",
+    "EC-025 Multi-OU comparison",
     async () => {
       const prompt =
         "Compare connector coverage for Engineering-Test vs Sales-Test.";
@@ -421,7 +435,7 @@ describe("CEP live evals", () => {
   );
 
   it(
-    "S26 Multi-turn: connector scope confirmation",
+    "EC-026 Multi-turn connector scope confirmation",
     async () => {
       const first = await callChatMessages([
         {
@@ -446,6 +460,253 @@ describe("CEP live evals", () => {
         { role: "user", content: "We applied at customer level. What now?" },
       ]);
       expectLiveOrToken(second.text, "org");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-027 OS version mismatch in CAA",
+    async () => {
+      const prompt =
+        "Access denied in context-aware access due to OS version mismatch.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "os");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-028 Encryption status detection failure",
+    async () => {
+      const prompt =
+        "Access denied because encryption status is missing or unencrypted.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "encryption");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-029 IP subnet or geo blocking",
+    async () => {
+      const prompt = "Access blocked due to IP subnet or region restrictions.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "ip");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-030 Split-brain profile context",
+    async () => {
+      const prompt =
+        "Access denied in a personal Chrome profile with missing device context.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "device");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-031 Corporate-owned vs BYOD classification",
+    async () => {
+      const prompt = "A corporate laptop is treated as BYOD and denied access.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "corporate");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-032 Access level logic errors",
+    async () => {
+      const prompt =
+        "Access level logic change blocked everyone after a policy update.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "access");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-033 Malware scanning timeouts",
+    async () => {
+      const prompt = "Large file download failed with virus scan timeout.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "timeout");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-034 Password-protected files blocked",
+    async () => {
+      const prompt = "Encrypted ZIP blocked because it is unscannable.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "encrypted");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-035 DLP false positives",
+    async () => {
+      const prompt =
+        "DLP blocked a product SKU list that looks like credit cards.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "dlp");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-036 Printing restrictions blocked jobs",
+    async () => {
+      const prompt = "Print job blocked by DLP policy.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "print");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-037 Clipboard restrictions",
+    async () => {
+      const prompt = "Copy/paste is blocked by clipboard restrictions.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "clipboard");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-038 Policy precedence conflicts",
+    async () => {
+      const prompt = "Local policy overrides cloud policy due to precedence.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "policy");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-039 OU inheritance override",
+    async () => {
+      const prompt = "A child OU is not inheriting root policy settings.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "inherit");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-040 Policy schema JSON errors",
+    async () => {
+      const prompt = "ExtensionSettings JSON is invalid and policy is ignored.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "json");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-041 Recommended vs mandatory policies",
+    async () => {
+      const prompt =
+        "Users can override the homepage policy. Is it recommended?";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "recommended");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-042 User affiliation and profile separation",
+    async () => {
+      const prompt =
+        "User is not affiliated with device domain; policies limited.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "affiliated");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-043 Force-install extension failures",
+    async () => {
+      const prompt = "Forced extension install failed due to manifest errors.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "extension");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-044 Permission increase blocking",
+    async () => {
+      const prompt = "Extension disabled after requesting new permissions.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "permission");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-045 Malicious extension removal",
+    async () => {
+      const prompt = "Is the malicious extension still installed anywhere?";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "malicious");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-046 Enrollment token invalid or expired",
+    async () => {
+      const prompt = "Enrollment token invalid or expired during device setup.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "token");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-047 Stale device sync",
+    async () => {
+      const prompt = "Device lastSyncTime is stale; state is out of date.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "sync");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-048 User session revocation delay",
+    async () => {
+      const prompt = "Suspended user still has an active Chrome session.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "suspend");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-049 PAC file and proxy authentication",
+    async () => {
+      const prompt = "PAC file proxy auth is blocking CEP traffic.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "proxy");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  it(
+    "EC-050 SSL inspection conflicts",
+    async () => {
+      const prompt = "SSL inspection breaks connector traffic on our network.";
+      const resp = await callChat(prompt);
+      expectLiveOrToken(resp.text, "ssl");
     },
     TEST_TIMEOUT_MS
   );

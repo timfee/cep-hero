@@ -6,6 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "test": "bun test",
+    "test:evals": "bun test tests/e2e-evals.test.ts",
+    "test:eval": "bun test tests/e2e-evals.test.ts --test-name-pattern \"$TEST_PATTERN\"",
     "check": "ultracite check",
     "fix": "ultracite fix"
   },
@@ -35,6 +38,7 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.1.18",
+    "@types/bun": "^1.2.0",
     "@types/node": "^25.1.0",
     "@types/open": "^6.2.1",
     "@types/react": "^19.2.10",

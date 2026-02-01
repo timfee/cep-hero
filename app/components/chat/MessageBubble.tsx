@@ -15,11 +15,47 @@ import { EventsTable, RuleCard, EnrollmentToken } from "./ToolUI";
 
 const HIDE_TOOL_OUTPUTS = new Set<string>(["searchKnowledge"]);
 
+type ToolPart = {
+  type: string;
+  state?: string;
+  output?: unknown;
+  toolName?: string;
+};
+
+type ToolResult = {
+  toolName: string;
+  result: unknown;
+};
+
+type DlpRule = {
+  id?: string;
+  displayName?: string;
+  resourceName?: string;
+  description?: string;
+  consoleUrl?: string;
+};
+
+type HelpHit = {
+  id?: string | number;
+  metadata?: { title?: string; url?: string };
+};
+
+/**
+ * Extract assistant metadata when available.
+ */
 function asAssistantWithEvidence(
   message: UIMessage
 ): AssistantMessageWithEvidence | null {
-  if (message.role !== "assistant") return null;
-  return message as unknown as AssistantMessageWithEvidence;
+  if (message.role !== "assistant") {
+    return null;
+  }
+
+  const metadata = message.metadata;
+  if (!metadata || typeof metadata !== "object") {
+    return null;
+  }
+
+  return { ...message, metadata };
 }
 
 export function MessageBubble({ message }: { message: UIMessage }) {
@@ -98,66 +134,66 @@ export function MessageBubble({ message }: { message: UIMessage }) {
         })()}
 
         {message.parts.map((part, index) => {
-          const isTool =
-            part.type.startsWith("tool-") || part.type === "dynamic-tool";
-
-          if (isTool) {
-            const toolPart = part as any;
-            const toolName =
-              toolPart.type === "dynamic-tool"
-                ? toolPart.toolName
-                : toolPart.type.replace("tool-", "");
-
-            if (HIDE_TOOL_OUTPUTS.has(toolName)) return null;
-
-            return (
-              <div key={index} className="w-full max-w-3xl">
-                {toolPart.state === "output-available" ? (
-                  <ToolResultRenderer
-                    tool={{
-                      toolName,
-                      result: toolPart.output,
-                    }}
-                  />
-                ) : (
-                  <div className="flex items-center gap-2 text-xs text-zinc-500 animate-pulse">
-                    <div className="h-2 w-2 rounded-full bg-blue-500" />
-                    Working on {toolName}…
-                  </div>
-                )}
-              </div>
-            );
+          const toolName = getToolName(part);
+          if (!toolName) {
+            return null;
           }
-          return null;
+
+          if (HIDE_TOOL_OUTPUTS.has(toolName)) {
+            return null;
+          }
+
+          const output = getToolOutput(part);
+
+          return (
+            <div key={index} className="w-full max-w-3xl">
+              {output !== null ? (
+                <ToolResultRenderer tool={{ toolName, result: output }} />
+              ) : (
+                <div className="flex items-center gap-2 text-xs text-zinc-500 animate-pulse">
+                  <div className="h-2 w-2 rounded-full bg-blue-500" />
+                  Working on {toolName}…
+                </div>
+              )}
+            </div>
+          );
         })}
       </div>
     </motion.div>
   );
 }
 
-function ToolResultRenderer({ tool }: { tool: any }) {
+/**
+ * Render tool results as UI blocks.
+ */
+function ToolResultRenderer({ tool }: { tool: ToolResult }) {
   const result = tool.result;
 
   if (tool.toolName === "getChromeEvents") {
-    return <EventsTable events={result.events} />;
+    return <EventsTable events={getEvents(result)} />;
   }
 
   if (tool.toolName === "listDLPRules") {
+    const rules = getDlpRules(result);
+    const hits = getHelpHits(result);
     return (
       <div className="space-y-4">
         <div className="space-y-3">
-          {result.rules?.map((rule: any, i: number) => (
+          {rules.map((rule, i) => (
             <RuleCard key={i} rule={rule} />
           ))}
         </div>
-        {result.help?.hits?.length ? (
+        {hits.length > 0 ? (
           <div className="rounded-lg border border-zinc-800 bg-zinc-950/60 p-4 text-xs text-zinc-400">
             <div className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">
               Policy References
             </div>
             <ul className="mt-3 space-y-2">
-              {result.help.hits.map((hit: any) => (
-                <li key={hit.id} className="flex flex-col gap-1">
+              {hits.map((hit) => (
+                <li
+                  key={String(hit.id ?? "hit")}
+                  className="flex flex-col gap-1"
+                >
                   <span className="text-zinc-200">
                     {hit.metadata?.title ?? hit.id}
                   </span>
@@ -181,9 +217,126 @@ function ToolResultRenderer({ tool }: { tool: any }) {
   }
 
   if (tool.toolName === "enrollBrowser") {
-    return <EnrollmentToken token={result.token} />;
+    const token = getOptionalString(result, "token");
+    return token ? <EnrollmentToken token={token} /> : null;
   }
 
-  // Default: keep tool output hidden unless needed
   return null;
+}
+
+/**
+ * Extract tool name from a tool part.
+ */
+function getToolName(part: unknown): string | null {
+  if (!isToolPart(part)) {
+    return null;
+  }
+
+  if (part.type === "dynamic-tool") {
+    return typeof part.toolName === "string" ? part.toolName : null;
+  }
+
+  return part.type.startsWith("tool-") ? part.type.replace("tool-", "") : null;
+}
+
+/**
+ * Extract output from a tool part when available.
+ */
+function getToolOutput(part: unknown): unknown | null {
+  if (!isToolPart(part)) {
+    return null;
+  }
+
+  if (part.state !== "output-available") {
+    return null;
+  }
+
+  return "output" in part ? (part.output ?? null) : null;
+}
+
+/**
+ * Guard for tool part shape.
+ */
+function isToolPart(part: unknown): part is ToolPart {
+  if (!part || typeof part !== "object") {
+    return false;
+  }
+
+  const type = Reflect.get(part, "type");
+  return typeof type === "string";
+}
+
+/**
+ * Pull Chrome events from tool output.
+ */
+function getEvents(
+  result: unknown
+): Parameters<typeof EventsTable>[0]["events"] {
+  if (!result || typeof result !== "object") {
+    return [];
+  }
+
+  const events = Reflect.get(result, "events");
+  return Array.isArray(events) ? events : [];
+}
+
+/**
+ * Pull DLP rules from tool output.
+ */
+function getDlpRules(result: unknown): DlpRule[] {
+  if (!result || typeof result !== "object") {
+    return [];
+  }
+
+  const rules = Reflect.get(result, "rules");
+  if (!Array.isArray(rules)) {
+    return [];
+  }
+
+  const parsed: DlpRule[] = [];
+
+  for (const rule of rules) {
+    if (!rule || typeof rule !== "object") {
+      continue;
+    }
+
+    parsed.push({
+      id: getOptionalString(rule, "id"),
+      displayName: getOptionalString(rule, "displayName"),
+      resourceName: getOptionalString(rule, "resourceName"),
+      description: getOptionalString(rule, "description"),
+      consoleUrl: getOptionalString(rule, "consoleUrl"),
+    });
+  }
+
+  return parsed;
+}
+
+/**
+ * Pull help hits from tool output.
+ */
+function getHelpHits(result: unknown): HelpHit[] {
+  if (!result || typeof result !== "object") {
+    return [];
+  }
+
+  const help = Reflect.get(result, "help");
+  if (!help || typeof help !== "object") {
+    return [];
+  }
+
+  const hits = Reflect.get(help, "hits");
+  return Array.isArray(hits) ? hits : [];
+}
+
+/**
+ * Extract a string property from unknown objects.
+ */
+function getOptionalString(value: unknown, key: string): string | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const property = Reflect.get(value, key);
+  return typeof property === "string" ? property : undefined;
 }

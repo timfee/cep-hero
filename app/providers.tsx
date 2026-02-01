@@ -64,11 +64,14 @@ function useFetchInstrumentation(
     const originalFetch = window.fetch;
     isPatchedRef.current = true;
 
-    window.fetch = async (input, init) => {
-      const requestUrl = typeof input === "string" ? input : input.url;
-      const method = (
-        init?.method || (input instanceof Request ? input.method : "GET")
-      ).toUpperCase();
+    type FetchArgs = Parameters<typeof originalFetch>;
+
+    async function fetchPatched(
+      ...args: FetchArgs
+    ): ReturnType<typeof originalFetch> {
+      const [input, init] = args;
+      const requestUrl = getRequestUrl(input);
+      const method = (init?.method || getRequestMethod(input)).toUpperCase();
       const start = performance.now();
       const id = crypto.randomUUID
         ? crypto.randomUUID()
@@ -89,14 +92,11 @@ function useFetchInstrumentation(
       }
 
       if (!kind) {
-        return originalFetch(input as RequestInfo, init as RequestInit);
+        return originalFetch(...args);
       }
 
       try {
-        const response = await originalFetch(
-          input as RequestInfo,
-          init as RequestInit
-        );
+        const response = await originalFetch(...args);
         const durationMs = Math.max(0, Math.round(performance.now() - start));
 
         // Capture streaming MCP responses by logging immediately if MCP (body may not be readable)
@@ -164,13 +164,43 @@ function useFetchInstrumentation(
         });
         throw error;
       }
-    };
+    }
+
+    const patchedFetch = fetchPatched as typeof window.fetch;
+    Object.assign(patchedFetch, originalFetch);
+    window.fetch = patchedFetch;
 
     return () => {
       window.fetch = originalFetch;
       isPatchedRef.current = false;
     };
   }, [log]);
+}
+
+/**
+ * Resolve a URL string from a fetch input.
+ */
+function getRequestUrl(input: RequestInfo | URL): string {
+  if (typeof input === "string") {
+    return input;
+  }
+
+  if (input instanceof Request) {
+    return input.url;
+  }
+
+  return input.href;
+}
+
+/**
+ * Resolve an HTTP method from a fetch input.
+ */
+function getRequestMethod(input: RequestInfo | URL): string {
+  if (input instanceof Request) {
+    return input.method;
+  }
+
+  return "GET";
 }
 
 function ActivityPanel({ isOpen }: { isOpen: boolean }) {

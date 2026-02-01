@@ -120,7 +120,9 @@ export async function POST(req: Request) {
 
     return Response.json(result.object);
   } catch (error) {
-    console.warn("[agent-diagnose] model error", { message: getErrorMessage(error) });
+    console.warn("[agent-diagnose] model error", {
+      message: getErrorMessage(error),
+    });
     return Response.json(
       {
         diagnosis: "I could not synthesize a full answer due to a model error.",
@@ -266,7 +268,9 @@ function getErrorMessage(error: unknown): string {
   }
 
   const message =
-    error && typeof error === "object" ? Reflect.get(error, "message") : undefined;
+    error && typeof error === "object"
+      ? Reflect.get(error, "message")
+      : undefined;
 
   return typeof message === "string" ? message : "Unknown error";
 }
