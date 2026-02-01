@@ -12,7 +12,10 @@
       "tags": ["enrollment", "network"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "fixtures": ["evals/fixtures/net.log", "evals/fixtures/eventlog.txt"],
+      "fixtures": [
+        "evals/fixtures/EC-019/net.log",
+        "evals/fixtures/EC-021/eventlog.txt"
+      ],
       "required_evidence": ["net.log", "eventlog"],
       "assertions": [],
       "cleanup": []
@@ -28,7 +31,7 @@
       "tags": ["enrollment", "errors"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "fixtures": ["evals/fixtures/update_engine.log"],
+      "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
       "required_evidence": ["update_engine.log", "error"],
       "assertions": [],
       "cleanup": []
@@ -44,7 +47,8 @@
       "tags": ["updates", "chromeos"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "fixtures": ["evals/fixtures/update_engine.log"],
+      "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
+      "overrides": ["evals/fixtures/EC-003/overrides.json"],
       "required_evidence": ["update_engine.log", "scatter"],
       "assertions": [],
       "cleanup": []
@@ -270,7 +274,7 @@
       "tags": ["network", "logging"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "fixtures": ["evals/fixtures/net.log"],
+      "fixtures": ["evals/fixtures/EC-019/net.log"],
       "required_evidence": ["net-export", "log-net-log"],
       "assertions": [],
       "cleanup": []
@@ -300,7 +304,7 @@
       "tags": ["network", "wifi"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "fixtures": ["evals/fixtures/eventlog.txt"],
+      "fixtures": ["evals/fixtures/EC-021/eventlog.txt"],
       "required_evidence": ["reason code", "eventlog"],
       "assertions": [],
       "cleanup": []

@@ -1,0 +1,26 @@
+{
+  "chromeReports": {
+    "error": "Error: Chrome Management API has not been used in project <redacted> before or it is disabled."
+  },
+  "auditEvents": {
+    "items": [
+      {
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "name": "DEVICE_UPDATE_FAILED",
+            "parameters": [
+              {
+                "name": "error",
+                "value": "UPDATE_ENGINE_ERROR"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

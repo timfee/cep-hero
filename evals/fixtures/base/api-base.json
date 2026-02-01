@@ -1,0 +1,938 @@
+{
+  "orgUnits": [
+    {
+      "orgUnitId": "id:03ph8a2z221pcso",
+      "orgUnitPath": "/Engineering-Test-2a8efd6f",
+      "name": "Engineering-Test-2a8efd6f",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z1hiis1t",
+      "orgUnitPath": "/Engineering-Test-07b4581a",
+      "name": "Engineering-Test-07b4581a",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z1d5f3oz",
+      "orgUnitPath": "/Engineering-Test-a7032bd0",
+      "name": "Engineering-Test-a7032bd0",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z40bkyjw",
+      "orgUnitPath": "/Engineering-Test-b60896fe",
+      "name": "Engineering-Test-b60896fe",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z0lvwese",
+      "orgUnitPath": "/Engineering-Test-62d8a81d",
+      "name": "Engineering-Test-62d8a81d",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z2mu9l06",
+      "orgUnitPath": "/Web-Off-116167ca",
+      "name": "Web-Off-116167ca",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z4cxzwen",
+      "orgUnitPath": "/FT-Off-116167ca",
+      "name": "FT-Off-116167ca",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z1ccgknx",
+      "orgUnitPath": "/Engineering-Test-55f42fed",
+      "name": "Engineering-Test-55f42fed",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z41dexrm",
+      "orgUnitPath": "/Safe-Off-116167ca",
+      "name": "Safe-Off-116167ca",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z44ujnw2",
+      "orgUnitPath": "/FT-Off-800c91eb",
+      "name": "FT-Off-800c91eb",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    }
+  ],
+  "policySchemas": [
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.networks.cellular.Details",
+      "policyDescription": "Cellular network configuration details."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.networks.cellular.DetailsV2",
+      "policyDescription": "Cellular network configuration details."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.networks.cellular.AllowForChromeDevices",
+      "policyDescription": "Allow chrome devices to use this network."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.networks.vpn.Details",
+      "policyDescription": "Vpn network configuration details."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.networks.vpn.AllowForChromeDevices",
+      "policyDescription": "Allow chrome devices to use this network."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.networks.vpn.AllowForChromeUsers",
+      "policyDescription": "Allow this network to be used by chrome users."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.devices.ForcedReenrollment",
+      "policyDescription": "Forced re-enrollment."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.devices.DeviceUpdateDeviceAttributes",
+      "policyDescription": "Asset identifier input after zero touch enrollment."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.devices.DevicePowerwashAllowed",
+      "policyDescription": "Powerwash."
+    },
+    {
+      "name": "customers/<redacted>/policySchemas/chrome.devices.ContentProtection",
+      "policyDescription": "Allow web services to request proof that the device is running an unmodified version of ChromeOS that is policy compliant."
+    }
+  ],
+  "chromeReports": {
+    "error": "Error: Chrome Management API has not been used in project 226520923819 before or it is disabled. Enable it by visiting https://<redacted-domain>"
+  },
+  "auditEvents": {
+    "kind": "admin#reports#activities",
+    "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/H2oa2TE95MfZ0WI_P41UKS2tVsk\"",
+    "nextPageToken": "R:AZWPV1MDxRrgWY_M5JJmXJutaOBOwm2I22JTw2JRoKmf5AD_DrK1CTZcj2BbUT4-NxAerBN0Os9nSWJIrL4_RdfaWmhkSN-cg3RXeRM",
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "uniqueQualifier": "-58716657015301156",
+          "applicationName": "chrome",
+          "customerId": "<redacted>"
+        },
+        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/ydDOsvg9ln4dYSqFNS5kglGgF6Y\"",
+        "actor": {
+          "callerType": "USER",
+          "email": "<redacted-email>",
+          "profileId": "<redacted>"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER_TYPE",
+            "name": "CONTENT_TRANSFER",
+            "parameters": [
+              {
+                "name": "TIMESTAMP",
+                "intValue": "1768881742802"
+              },
+              {
+                "name": "EVENT_REASON",
+                "value": "CONTENT_MATCHED_SENSITIVE_DATA_TYPES"
+              },
+              {
+                "name": "BROWSER_VERSION",
+                "value": "144.0.7559.59"
+              },
+              {
+                "name": "CHROME_ORG_UNIT_ID",
+                "value": "03ph8a2z23yjui6"
+              },
+              {
+                "name": "CLIENT_TYPE",
+                "value": "CHROME_PROFILE"
+              },
+              {
+                "name": "CONTENT_HASH",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "CONTENT_NAME",
+                "value": "<redacted-path> - Stock Plan - 1099DIV - 2025.PDF"
+              },
+              {
+                "name": "CONTENT_RISK_LEVEL",
+                "value": "CONTENT_RISK_LEVEL_UNSPECIFIED"
+              },
+              {
+                "name": "CONTENT_TRANSFER_METHOD",
+                "value": "FILE_PICKER"
+              },
+              {
+                "name": "CONTENT_TYPE",
+                "value": "application/pdf"
+              },
+              {
+                "name": "DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_PLATFORM",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_USER",
+                "value": ""
+              },
+              {
+                "name": "EVENT_RESULT",
+                "value": "DETECTED"
+              },
+              {
+                "name": "LOCALIZED_URL_CATEGORY",
+                "value": "ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING"
+              },
+              {
+                "name": "LOCAL_IP",
+                "value": "<redacted-ipv4>, <redacted-ipv6>, <redacted-ipv6>"
+              },
+              {
+                "name": "ORG_UNIT_NAME",
+                "value": "cep-netnew.cc"
+              },
+              {
+                "name": "PE_HASH",
+                "value": ""
+              },
+              {
+                "name": "PROFILE_USER_NAME",
+                "value": "<redacted-email>"
+              },
+              {
+                "name": "REMOTE_IP",
+                "value": "<redacted-ipv6>"
+              },
+              {
+                "name": "SCAN_ID",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "TAB_URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "TRIGGER_DESTINATION",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_SOURCE",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_TYPE",
+                "value": "FILE_UPLOAD"
+              },
+              {
+                "name": "URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "USER_AGENT",
+                "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<redacted-ipv4> Safari/537.36,gzip(gfe)"
+              },
+              {
+                "name": "VIRTUAL_DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "CONTENT_SIZE",
+                "intValue": "128403"
+              },
+              {
+                "name": "IS_ENCRYPTED",
+                "boolValue": false
+              },
+              {
+                "name": "MATCHED_DETECTORS",
+                "multiMessageValue": [
+                  {
+                    "parameter": [
+                      {
+                        "name": "DETECTOR_ID",
+                        "value": "PHONE_NUMBER"
+                      },
+                      {
+                        "name": "DETECTOR_NAME",
+                        "value": "PHONE_NUMBER"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "resourceIds": ["0z337ya20jo9lx"]
+          }
+        ],
+        "resourceDetails": [
+          {
+            "id": "0z337ya20jo9lx",
+            "type": "USER"
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:21.220Z",
+          "uniqueQualifier": "-2822449097126863975",
+          "applicationName": "chrome",
+          "customerId": "<redacted>"
+        },
+        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/Zzg10oSE4Zn78e0Fp2DhpzB-ihY\"",
+        "actor": {
+          "callerType": "USER",
+          "email": "<redacted-email>",
+          "profileId": "<redacted>"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER_TYPE",
+            "name": "CONTENT_TRANSFER",
+            "parameters": [
+              {
+                "name": "TIMESTAMP",
+                "intValue": "1768881741220"
+              },
+              {
+                "name": "BROWSER_VERSION",
+                "value": "144.0.7559.59"
+              },
+              {
+                "name": "CHROME_ORG_UNIT_ID",
+                "value": "03ph8a2z23yjui6"
+              },
+              {
+                "name": "CLIENT_TYPE",
+                "value": "CHROME_PROFILE"
+              },
+              {
+                "name": "CONTENT_HASH",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "CONTENT_NAME",
+                "value": "<redacted-path> - Stock Plan - 1099DIV - 2025.PDF"
+              },
+              {
+                "name": "CONTENT_RISK_LEVEL",
+                "value": "CONTENT_RISK_LEVEL_UNSPECIFIED"
+              },
+              {
+                "name": "CONTENT_TRANSFER_METHOD",
+                "value": "FILE_PICKER"
+              },
+              {
+                "name": "CONTENT_TYPE",
+                "value": "application/pdf"
+              },
+              {
+                "name": "DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_PLATFORM",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_USER",
+                "value": ""
+              },
+              {
+                "name": "EVENT_RESULT",
+                "value": "DETECTED"
+              },
+              {
+                "name": "LOCALIZED_URL_CATEGORY",
+                "value": "ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING"
+              },
+              {
+                "name": "LOCAL_IP",
+                "value": "<redacted-ipv4>, <redacted-ipv6>, <redacted-ipv6>"
+              },
+              {
+                "name": "ORG_UNIT_NAME",
+                "value": "cep-netnew.cc"
+              },
+              {
+                "name": "PE_HASH",
+                "value": ""
+              },
+              {
+                "name": "PROFILE_USER_NAME",
+                "value": "<redacted-email>"
+              },
+              {
+                "name": "REMOTE_IP",
+                "value": "<redacted-ipv6>"
+              },
+              {
+                "name": "SCAN_ID",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "TAB_URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "TRIGGER_DESTINATION",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_SOURCE",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_TYPE",
+                "value": "FILE_UPLOAD"
+              },
+              {
+                "name": "URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "USER_AGENT",
+                "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<redacted-ipv4> Safari/537.36,gzip(gfe)"
+              },
+              {
+                "name": "VIRTUAL_DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "CONTENT_SIZE",
+                "intValue": "128403"
+              },
+              {
+                "name": "IS_ENCRYPTED",
+                "boolValue": false
+              },
+              {
+                "name": "REFERRAL_URLS",
+                "multiValue": [
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>"
+                ]
+              }
+            ],
+            "resourceIds": ["0z337ya20jo9lx"]
+          }
+        ],
+        "resourceDetails": [
+          {
+            "id": "0z337ya20jo9lx",
+            "type": "USER"
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T03:57:28.094Z",
+          "uniqueQualifier": "-6221016361884255107",
+          "applicationName": "chrome",
+          "customerId": "<redacted>"
+        },
+        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/QJgbCAHk99jgll2w_Wq21gE26k0\"",
+        "actor": {
+          "callerType": "USER",
+          "email": "<redacted-email>",
+          "profileId": "<redacted>"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER_TYPE",
+            "name": "CONTENT_TRANSFER",
+            "parameters": [
+              {
+                "name": "TIMESTAMP",
+                "intValue": "1768881448094"
+              },
+              {
+                "name": "EVENT_REASON",
+                "value": "CONTENT_MATCHED_SENSITIVE_DATA_TYPES"
+              },
+              {
+                "name": "BROWSER_VERSION",
+                "value": "144.0.7559.59"
+              },
+              {
+                "name": "CHROME_ORG_UNIT_ID",
+                "value": "03ph8a2z23yjui6"
+              },
+              {
+                "name": "CLIENT_TYPE",
+                "value": "CHROME_PROFILE"
+              },
+              {
+                "name": "CONTENT_HASH",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "CONTENT_NAME",
+                "value": "<redacted-path> LLC-2025-W2.pdf"
+              },
+              {
+                "name": "CONTENT_RISK_LEVEL",
+                "value": "CONTENT_RISK_LEVEL_UNSPECIFIED"
+              },
+              {
+                "name": "CONTENT_TRANSFER_METHOD",
+                "value": "FILE_PICKER"
+              },
+              {
+                "name": "CONTENT_TYPE",
+                "value": "application/pdf"
+              },
+              {
+                "name": "DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_PLATFORM",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_USER",
+                "value": ""
+              },
+              {
+                "name": "EVENT_RESULT",
+                "value": "DETECTED"
+              },
+              {
+                "name": "LOCALIZED_URL_CATEGORY",
+                "value": "ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING"
+              },
+              {
+                "name": "LOCAL_IP",
+                "value": "<redacted-ipv4>, <redacted-ipv6>, <redacted-ipv6>"
+              },
+              {
+                "name": "ORG_UNIT_NAME",
+                "value": "cep-netnew.cc"
+              },
+              {
+                "name": "PE_HASH",
+                "value": ""
+              },
+              {
+                "name": "PROFILE_USER_NAME",
+                "value": "<redacted-email>"
+              },
+              {
+                "name": "REMOTE_IP",
+                "value": "<redacted-ipv6>"
+              },
+              {
+                "name": "SCAN_ID",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "TAB_URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "TRIGGER_DESTINATION",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_SOURCE",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_TYPE",
+                "value": "FILE_UPLOAD"
+              },
+              {
+                "name": "URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "USER_AGENT",
+                "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<redacted-ipv4> Safari/537.36,gzip(gfe)"
+              },
+              {
+                "name": "VIRTUAL_DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "CONTENT_SIZE",
+                "intValue": "268296"
+              },
+              {
+                "name": "IS_ENCRYPTED",
+                "boolValue": false
+              },
+              {
+                "name": "MATCHED_DETECTORS",
+                "multiMessageValue": [
+                  {
+                    "parameter": [
+                      {
+                        "name": "DETECTOR_ID",
+                        "value": "PHONE_NUMBER"
+                      },
+                      {
+                        "name": "DETECTOR_NAME",
+                        "value": "PHONE_NUMBER"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ],
+            "resourceIds": ["0z337ya20jo9lx"]
+          }
+        ],
+        "resourceDetails": [
+          {
+            "id": "0z337ya20jo9lx",
+            "type": "USER"
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T03:57:27.759Z",
+          "uniqueQualifier": "911533833702825584",
+          "applicationName": "chrome",
+          "customerId": "<redacted>"
+        },
+        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/BvX6FTCVmDpPm-HmzzipubIaTHU\"",
+        "actor": {
+          "callerType": "USER",
+          "email": "<redacted-email>",
+          "profileId": "<redacted>"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER_TYPE",
+            "name": "CONTENT_TRANSFER",
+            "parameters": [
+              {
+                "name": "TIMESTAMP",
+                "intValue": "1768881447759"
+              },
+              {
+                "name": "BROWSER_VERSION",
+                "value": "144.0.7559.59"
+              },
+              {
+                "name": "CHROME_ORG_UNIT_ID",
+                "value": "03ph8a2z23yjui6"
+              },
+              {
+                "name": "CLIENT_TYPE",
+                "value": "CHROME_PROFILE"
+              },
+              {
+                "name": "CONTENT_HASH",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "CONTENT_NAME",
+                "value": "<redacted-path> LLC-2025-W2.pdf"
+              },
+              {
+                "name": "CONTENT_RISK_LEVEL",
+                "value": "CONTENT_RISK_LEVEL_UNSPECIFIED"
+              },
+              {
+                "name": "CONTENT_TRANSFER_METHOD",
+                "value": "FILE_PICKER"
+              },
+              {
+                "name": "CONTENT_TYPE",
+                "value": "application/pdf"
+              },
+              {
+                "name": "DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_PLATFORM",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_USER",
+                "value": ""
+              },
+              {
+                "name": "EVENT_RESULT",
+                "value": "DETECTED"
+              },
+              {
+                "name": "LOCALIZED_URL_CATEGORY",
+                "value": "ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING"
+              },
+              {
+                "name": "LOCAL_IP",
+                "value": "<redacted-ipv4>, <redacted-ipv6>, <redacted-ipv6>"
+              },
+              {
+                "name": "ORG_UNIT_NAME",
+                "value": "cep-netnew.cc"
+              },
+              {
+                "name": "PE_HASH",
+                "value": ""
+              },
+              {
+                "name": "PROFILE_USER_NAME",
+                "value": "<redacted-email>"
+              },
+              {
+                "name": "REMOTE_IP",
+                "value": "<redacted-ipv6>"
+              },
+              {
+                "name": "SCAN_ID",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "TAB_URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "TRIGGER_DESTINATION",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_SOURCE",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_TYPE",
+                "value": "FILE_UPLOAD"
+              },
+              {
+                "name": "URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "USER_AGENT",
+                "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<redacted-ipv4> Safari/537.36,gzip(gfe)"
+              },
+              {
+                "name": "VIRTUAL_DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "CONTENT_SIZE",
+                "intValue": "268296"
+              },
+              {
+                "name": "IS_ENCRYPTED",
+                "boolValue": false
+              },
+              {
+                "name": "REFERRAL_URLS",
+                "multiValue": [
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>"
+                ]
+              }
+            ],
+            "resourceIds": ["0z337ya20jo9lx"]
+          }
+        ],
+        "resourceDetails": [
+          {
+            "id": "0z337ya20jo9lx",
+            "type": "USER"
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T03:56:15.668Z",
+          "uniqueQualifier": "1072634106896205448",
+          "applicationName": "chrome",
+          "customerId": "<redacted>"
+        },
+        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/2SwHepPoquA3BQvH7SuvXZVbhF8\"",
+        "actor": {
+          "callerType": "USER",
+          "email": "<redacted-email>",
+          "profileId": "<redacted>"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER_TYPE",
+            "name": "CONTENT_TRANSFER",
+            "parameters": [
+              {
+                "name": "TIMESTAMP",
+                "intValue": "1768881375668"
+              },
+              {
+                "name": "BROWSER_VERSION",
+                "value": "144.0.7559.59"
+              },
+              {
+                "name": "CHROME_ORG_UNIT_ID",
+                "value": "03ph8a2z23yjui6"
+              },
+              {
+                "name": "CLIENT_TYPE",
+                "value": "CHROME_PROFILE"
+              },
+              {
+                "name": "CONTENT_HASH",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "CONTENT_NAME",
+                "value": "<redacted-path> - Yearly Statement.pdf"
+              },
+              {
+                "name": "CONTENT_RISK_LEVEL",
+                "value": "CONTENT_RISK_LEVEL_UNSPECIFIED"
+              },
+              {
+                "name": "CONTENT_TRANSFER_METHOD",
+                "value": "FILE_PICKER"
+              },
+              {
+                "name": "CONTENT_TYPE",
+                "value": "application/pdf"
+              },
+              {
+                "name": "DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_PLATFORM",
+                "value": ""
+              },
+              {
+                "name": "DEVICE_USER",
+                "value": ""
+              },
+              {
+                "name": "EVENT_RESULT",
+                "value": "DETECTED"
+              },
+              {
+                "name": "LOCALIZED_URL_CATEGORY",
+                "value": "ONLINE_COMMUNITIES__FILE_SHARING_AND_HOSTING"
+              },
+              {
+                "name": "LOCAL_IP",
+                "value": "<redacted-ipv4>, <redacted-ipv6>, <redacted-ipv6>"
+              },
+              {
+                "name": "ORG_UNIT_NAME",
+                "value": "cep-netnew.cc"
+              },
+              {
+                "name": "PE_HASH",
+                "value": ""
+              },
+              {
+                "name": "PROFILE_USER_NAME",
+                "value": "<redacted-email>"
+              },
+              {
+                "name": "REMOTE_IP",
+                "value": "<redacted-ipv6>"
+              },
+              {
+                "name": "SCAN_ID",
+                "value": "<redacted-hash>"
+              },
+              {
+                "name": "TAB_URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "TRIGGER_DESTINATION",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_SOURCE",
+                "value": ""
+              },
+              {
+                "name": "TRIGGER_TYPE",
+                "value": "FILE_UPLOAD"
+              },
+              {
+                "name": "URL",
+                "value": "https://<redacted-domain>"
+              },
+              {
+                "name": "USER_AGENT",
+                "value": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/<redacted-ipv4> Safari/537.36,gzip(gfe)"
+              },
+              {
+                "name": "VIRTUAL_DEVICE_ID",
+                "value": ""
+              },
+              {
+                "name": "CONTENT_SIZE",
+                "intValue": "92080"
+              },
+              {
+                "name": "IS_ENCRYPTED",
+                "boolValue": false
+              },
+              {
+                "name": "REFERRAL_URLS",
+                "multiValue": [
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>",
+                  "https://<redacted-domain>"
+                ]
+              }
+            ],
+            "resourceIds": ["0z337ya20jo9lx"]
+          }
+        ],
+        "resourceDetails": [
+          {
+            "id": "0z337ya20jo9lx",
+            "type": "USER"
+          }
+        ]
+      }
+    ]
+  }
+}

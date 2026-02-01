@@ -69,6 +69,20 @@ function cleanHtml(html: string): string {
   return html.split(/Was this helpful\?/i)[0] || html;
 }
 
+/**
+ * INSTRUCTIONS FOR "TOO MANY REQUESTS" (429) ERRORS:
+ * If you encounter 429 errors, your session/IP might be throttled.
+ * 1. Visit https://support.google.com from your corp account.
+ * 2. Resolve any CAPTCHA if prompted.
+ * 3. Refresh the page.
+ * 4. Open Developer Tools (F12 or Cmd+Option+I).
+ * 5. Go to the 'Network' tab.
+ * 6. Refresh again and find the main document request (the page URL).
+ * 7. Right-click the request -> Copy -> Copy as fetch.
+ * 8. Extract the 'headers' from the fetch command and paste them into the 'headers' constant below.
+ *
+ * Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
+ */
 const headers = {
   accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -90,6 +104,14 @@ const headers = {
 
 async function main() {
   const documents: Document[] = [];
+  const INSTRUCTION_MESSAGE = `
+⚠️ TOO MANY REQUESTS (429) DETECTED
+Please visit https://support.google.com from your corp account, resolve any captcha, refresh, then:
+1. Open dev tools -> Network tab.
+2. Right click the page request -> Copy as Fetch.
+3. Paste the headers into the 'headers' constant in scripts/index-helpcenter.ts.
+Video walkthrough: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
+`;
 
   const crawler = new CheerioCrawler({
     maxRequestsPerCrawl: MAX_REQUESTS,
@@ -102,11 +124,24 @@ async function main() {
       },
     ],
 
-    failedRequestHandler({ request }) {
+    failedRequestHandler({ request, response }) {
+      if (response?.statusCode === 429) {
+        console.error(INSTRUCTION_MESSAGE);
+      }
       console.log(`❌ Failed to crawl: ${request.url}`);
     },
 
-    async requestHandler({ request, $, enqueueLinks }: CheerioCrawlingContext) {
+    async requestHandler({
+      request,
+      response,
+      $,
+      enqueueLinks,
+    }: CheerioCrawlingContext) {
+      if (response.statusCode === 429) {
+        console.error(INSTRUCTION_MESSAGE);
+        return;
+      }
+
       // Validate URL structure before processing
       const url = new URL(request.url);
       // Allow: /chrome/a, /chrome/a/answer/123, /chrome/a/topic/123, /a/answer/123, /a/topic/123

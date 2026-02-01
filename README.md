@@ -119,6 +119,16 @@ curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
 - The live eval suite uses `X-Test-Bypass: 1` to avoid interactive auth.
 - When test bypass is enabled, the server attempts service-account token minting with `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_TOKEN_EMAIL`.
 
+Eval runs:
+
+- `bun run evals:run` runs the full eval suite.
+- `bun run evals:run:plan`, `evals:run:diag`, `evals:run:common` run a category.
+- `EVAL_IDS=EC-075 bun run evals:run:by-id` runs a single case.
+- `EVAL_TAGS=dlp bun run evals:run:by-tag` filters by tags.
+- `TEST_PATTERN="EC-0(1|2|3)" bun run evals:run:pattern` filters by name.
+- `EVAL_USE_BASE=1` and `EVAL_USE_FIXTURES=1` attach the base snapshot and fixtures.
+- `bun run credentials:check` validates service-account setup for test bypass.
+
 ---
 
 ## 📂 Project Structure

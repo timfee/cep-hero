@@ -1,5 +1,5 @@
 import { expect } from "bun:test";
-import { readFileSync } from "fs";
+import { existsSync, readFileSync } from "fs";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 
@@ -39,30 +39,154 @@ const schemaKeyMap: Record<string, string> = {
 
 const DEFAULT_REPORTS_DIR = path.join(process.cwd(), "evals", "reports");
 
+type BuildEvalPromptOptions = {
+  fixtures?: string[];
+  overrides?: string[];
+  caseId?: string;
+  rootDir?: string;
+};
+
 /**
  * Build an eval prompt and optionally attach fixture context when enabled.
  */
 export function buildEvalPrompt(
   basePrompt: string,
-  fixtures: string[] | undefined,
-  rootDir: string = process.cwd()
+  fixtures?: string[],
+  rootDir?: string,
+  overrides?: string[]
+): string;
+export function buildEvalPrompt(
+  basePrompt: string,
+  options?: BuildEvalPromptOptions
+): string;
+export function buildEvalPrompt(
+  basePrompt: string,
+  fixturesOrOptions: string[] | BuildEvalPromptOptions = [],
+  rootDir: string = process.cwd(),
+  overrides?: string[]
 ): string {
   const base = `${basePrompt}\n\nPlease respond with diagnosis, evidence, hypotheses, and next steps. Keep the response under 800 characters and avoid long nested fields.`;
-  if (!fixtures || fixtures.length === 0) {
+  const options = Array.isArray(fixturesOrOptions)
+    ? ({
+        fixtures: fixturesOrOptions,
+        overrides,
+        rootDir,
+      } satisfies BuildEvalPromptOptions)
+    : fixturesOrOptions;
+  const {
+    fixtures,
+    overrides: optionOverrides,
+    caseId,
+    rootDir: resolvedRootDir = process.cwd(),
+  } = options ?? {};
+  const useFixtures = process.env.EVAL_USE_FIXTURES === "1";
+  const useBase = process.env.EVAL_USE_BASE === "1";
+  const resolvedOverrides = optionOverrides ?? overrides;
+  if (
+    !useFixtures &&
+    !useBase &&
+    (!resolvedOverrides || resolvedOverrides.length === 0)
+  ) {
     return base;
   }
-  if (process.env.EVAL_USE_FIXTURES !== "1") {
-    return base;
+
+  const blocks: string[] = [];
+  const overridePaths: string[] = [];
+  if (resolvedOverrides) {
+    for (const overridePath of resolvedOverrides) {
+      overridePaths.push(
+        path.isAbsolute(overridePath)
+          ? overridePath
+          : path.join(resolvedRootDir, overridePath)
+      );
+    }
   }
-  const fixtureText = fixtures
-    .map((fixturePath) => {
+  if (caseId) {
+    const perCaseOverridePath = path.join(
+      resolvedRootDir,
+      "evals",
+      "fixtures",
+      caseId,
+      "overrides.json"
+    );
+    if (existsSync(perCaseOverridePath)) {
+      overridePaths.push(perCaseOverridePath);
+    }
+  }
+
+  if (useBase) {
+    const basePath = path.join(
+      resolvedRootDir,
+      "evals",
+      "fixtures",
+      "base",
+      "api-base.json"
+    );
+    let baseData: unknown = loadJsonFixture(basePath);
+    if (overridePaths.length > 0) {
+      for (const overridePath of overridePaths) {
+        const overrideData = loadJsonFixture(overridePath);
+        baseData = mergeJson(baseData, overrideData);
+      }
+      blocks.push(formatJsonFixture("api-base+overrides.json", baseData));
+    } else {
+      blocks.push(formatFixture("api-base.json", basePath));
+    }
+  } else if (overridePaths.length > 0) {
+    for (const overridePath of overridePaths) {
+      blocks.push(formatFixture(path.basename(overridePath), overridePath));
+    }
+  }
+
+  if (useFixtures && fixtures && fixtures.length > 0) {
+    for (const fixturePath of fixtures) {
       const fullPath = path.isAbsolute(fixturePath)
         ? fixturePath
-        : path.join(rootDir, fixturePath);
-      return readFileSync(fullPath, "utf-8");
-    })
-    .join("\n\n");
-  return `${base}\n\nFixture context:\n${fixtureText}`;
+        : path.join(resolvedRootDir, fixturePath);
+      blocks.push(formatFixture(path.basename(fixturePath), fullPath));
+    }
+  }
+
+  if (blocks.length === 0) {
+    return base;
+  }
+
+  return `${base}\n\nFixture context:\n${blocks.join("\n\n")}`;
+}
+
+function formatFixture(label: string, filePath: string): string {
+  const contents = readFileSync(filePath, "utf-8");
+  return `--- ${label} ---\n${contents}`;
+}
+
+function loadJsonFixture(filePath: string): unknown {
+  const contents = readFileSync(filePath, "utf-8");
+  return JSON.parse(contents) as unknown;
+}
+
+function formatJsonFixture(label: string, data: unknown): string {
+  return `--- ${label} ---\n${JSON.stringify(data, null, 2)}`;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function mergeJson(base: unknown, override: unknown): unknown {
+  if (override === undefined) {
+    return base;
+  }
+  if (base === undefined) {
+    return override;
+  }
+  if (isPlainObject(base) && isPlainObject(override)) {
+    const result: Record<string, unknown> = { ...base };
+    for (const [key, value] of Object.entries(override)) {
+      result[key] = mergeJson(result[key], value);
+    }
+    return result;
+  }
+  return override;
 }
 
 /**

@@ -22,20 +22,14 @@ import {
   scoreRubric,
   writeEvalReport,
 } from "@/lib/test-helpers/eval-runner";
+import {
+  ensureEvalServer,
+  releaseEvalServer,
+} from "@/lib/test-helpers/eval-server";
 
 const TEST_TIMEOUT_MS = 60000;
 const chatUrl = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 const manageServer = process.env.EVAL_MANAGE_SERVER !== "0";
-
-/** Check whether the chat endpoint is reachable. */
-async function isServerUp(url: string) {
-  try {
-    const res = await fetch(url, { method: "HEAD" });
-    return res.ok || res.status >= 400;
-  } catch {
-    return false;
-  }
-}
 
 const registry = loadEvalRegistry();
 const promptMap = buildPromptMap(registry);
@@ -53,59 +47,18 @@ const cases = shouldRunTestPlan
   : [];
 
 describe("CEP evals: test plan", () => {
-  let server: { kill: () => void } | undefined;
-
   beforeAll(async () => {
-    if (!manageServer || cases.length === 0) {
+    if (cases.length === 0) {
       return;
     }
-    if (chatUrl.includes("localhost")) {
-      const up = await isServerUp(chatUrl);
-      if (!up) {
-        server = Bun.spawn({
-          cmd: ["bun", "run", "dev"],
-          stdout: "inherit",
-          stderr: "inherit",
-          env: { ...process.env, PORT: "3100", NODE_ENV: "test" },
-        });
-        for (let i = 0; i < 60; i += 1) {
-          if (await isServerUp(chatUrl)) break;
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-      }
-    }
-  });
-
-  beforeEach(async () => {
-    if (!manageServer || cases.length === 0) {
-      return;
-    }
-    if (chatUrl.includes("localhost")) {
-      const up = await isServerUp(chatUrl);
-      if (!up) {
-        server = Bun.spawn({
-          cmd: ["bun", "run", "dev"],
-          stdout: "inherit",
-          stderr: "inherit",
-          env: { ...process.env, PORT: "3100", NODE_ENV: "test" },
-        });
-        for (let i = 0; i < 60; i += 1) {
-          if (await isServerUp(chatUrl)) break;
-          await new Promise((resolve) => setTimeout(resolve, 500));
-        }
-      }
-    }
+    await ensureEvalServer({ chatUrl, manageServer });
   });
 
   afterAll(() => {
-    if (!manageServer || cases.length === 0) {
+    if (cases.length === 0) {
       return;
     }
-    if (server) {
-      try {
-        server.kill();
-      } catch {}
-    }
+    releaseEvalServer();
   });
 
   it(
@@ -132,7 +85,11 @@ describe("CEP evals: test plan", () => {
     async (evalCase) => {
       const basePrompt =
         promptMap.get(evalCase.id) ?? `Help me troubleshoot: ${evalCase.title}`;
-      const prompt = buildEvalPrompt(basePrompt, evalCase.fixtures);
+      const prompt = buildEvalPrompt(basePrompt, {
+        fixtures: evalCase.fixtures,
+        overrides: evalCase.overrides,
+        caseId: evalCase.id,
+      });
       const start = performance.now();
       let status: "pass" | "fail" = "pass";
       let failure: unknown = undefined;
