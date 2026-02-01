@@ -10,22 +10,43 @@ export async function POST(req: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await req.json()) as {
-    query?: string;
-    scope?: "docs" | "policies";
-    topK?: number;
-  };
+  const body = await req.json();
+  const query = getOptionalString(body, "query");
+  const scope = getOptionalString(body, "scope");
+  const topK = getOptionalNumber(body, "topK") ?? 4;
 
-  if (!body.query) {
+  if (!query) {
     return Response.json({ error: "Missing query" }, { status: 400 });
   }
 
-  const topK = body.topK ?? 4;
-
   const result =
-    body.scope === "policies"
-      ? await searchPolicies(body.query, topK)
-      : await searchDocs(body.query, topK);
+    scope === "policies"
+      ? await searchPolicies(query, topK)
+      : await searchDocs(query, topK);
 
   return Response.json(result);
+}
+
+/**
+ * Read a string property from a JSON body.
+ */
+function getOptionalString(value: unknown, key: string): string | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const property = Reflect.get(value, key);
+  return typeof property === "string" ? property : undefined;
+}
+
+/**
+ * Read a number property from a JSON body.
+ */
+function getOptionalNumber(value: unknown, key: string): number | undefined {
+  if (!value || typeof value !== "object") {
+    return undefined;
+  }
+
+  const property = Reflect.get(value, key);
+  return typeof property === "number" ? property : undefined;
 }

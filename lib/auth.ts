@@ -5,8 +5,8 @@ export const auth = betterAuth({
   secret: process.env.BETTER_AUTH_SECRET ?? "better-auth-dev-secret-change-me",
   socialProviders: {
     google: {
-      clientId: process.env.GOOGLE_CLIENT_ID as string,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET as string,
+      clientId: getRequiredEnv("GOOGLE_CLIENT_ID"),
+      clientSecret: getRequiredEnv("GOOGLE_CLIENT_SECRET"),
       accessType: "offline",
       prompt: "select_account consent",
       scope: [
@@ -36,3 +36,15 @@ export const auth = betterAuth({
     },
   },
 });
+
+/**
+ * Resolve a required environment variable.
+ */
+function getRequiredEnv(name: string): string {
+  const value = process.env[name];
+  if (!value) {
+    throw new Error(`Missing ${name} environment variable`);
+  }
+
+  return value;
+}

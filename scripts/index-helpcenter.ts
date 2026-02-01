@@ -3,28 +3,66 @@ import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 import { getStandardId, processDocs, turndown } from "./utils";
 import { type Document, MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
 
+type ArticleType = "answer" | "topic";
+
+/**
+ * Extract a title string from a Cheerio element.
+ */
 function extractCleanTitle(element: unknown, url: string): string {
-  try {
-    const cheerioElement = element as { text?: () => string };
-    const title = cheerioElement?.text?.()?.replace(/\s+/g, " ").trim();
-    if (title) return title;
-  } catch {
-    // Fallback to URL-based title
+  const title = getElementText(element);
+  if (title) {
+    return title.replace(/\s+/g, " ").trim();
   }
 
   const match = url.match(/\/(answer|topic)\/(\d+)/);
   return match ? `Article ${match[2]}` : "Untitled";
 }
 
+/**
+ * Extract helpcenter metadata from a URL.
+ */
 function extractHelpcenterMetadata(url: string) {
   const urlMatch = url.match(/\/(answer|topic)\/(\d+)/);
   if (urlMatch) {
+    const articleType = parseArticleType(urlMatch[1]);
     return {
-      articleType: urlMatch[1] as "answer" | "topic",
+      articleType,
       articleId: urlMatch[2],
     };
   }
   return {};
+}
+
+/**
+ * Parse article type from a string segment.
+ */
+function parseArticleType(value: string | undefined): ArticleType | undefined {
+  if (value === "answer" || value === "topic") {
+    return value;
+  }
+
+  return undefined;
+}
+
+/**
+ * Read text content from an element-like object.
+ */
+function getElementText(element: unknown): string | null {
+  if (!element || typeof element !== "object") {
+    return null;
+  }
+
+  const textFn = Reflect.get(element, "text");
+  if (typeof textFn !== "function") {
+    return null;
+  }
+
+  try {
+    const text = textFn.call(element);
+    return typeof text === "string" ? text : null;
+  } catch {
+    return null;
+  }
 }
 
 function cleanHtml(html: string): string {

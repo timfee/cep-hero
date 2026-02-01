@@ -21,7 +21,10 @@ type DlpRule = {
 /**
  * Pull a parameter value from a Chrome event detail.
  */
-function extractParam(detail: ChromeEventDetail | undefined, key: string): string | null {
+function extractParam(
+  detail: ChromeEventDetail | undefined,
+  key: string
+): string | null {
   const params = detail?.parameters ?? [];
   const hit = params.find((param) => param.name === key);
   return hit?.value ?? null;

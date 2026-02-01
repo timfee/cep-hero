@@ -1,14 +1,22 @@
+import type {
+  admin_directory_v1,
+  chromepolicy_v1,
+  chromemanagement_v1,
+} from "googleapis";
+
 import { OAuth2Client } from "google-auth-library";
-import { chromepolicy_v1, google } from "googleapis";
+import { google } from "googleapis";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
-type Directory = ReturnType<typeof google.admin>;
-type ChromePolicy = ReturnType<typeof google.chromepolicy>;
+type Directory = admin_directory_v1.Admin;
+type ChromePolicy = chromepolicy_v1.Chromepolicy;
+type ChromeManagement = chromemanagement_v1.Chromemanagement;
 
 export type GoogleClients = {
   directory: Directory;
   policy: ChromePolicy;
+  management: ChromeManagement;
   tokenEmail?: string;
   customerId: string;
 };
@@ -53,6 +61,7 @@ export async function makeGoogleClients(): Promise<GoogleClients> {
 
   const directory = google.admin({ version: "directory_v1", auth });
   const policy = google.chromepolicy({ version: "v1", auth });
+  const management = google.chromemanagement({ version: "v1", auth });
 
   if (!envCustomerId) {
     const resolvedCustomerId = await resolveCustomerIdFromPolicySchemas(policy);
@@ -61,7 +70,7 @@ export async function makeGoogleClients(): Promise<GoogleClients> {
     }
   }
 
-  return { directory, policy, tokenEmail, customerId };
+  return { directory, policy, management, tokenEmail, customerId };
 }
 
 export async function listDomains() {
@@ -76,13 +85,18 @@ export async function detectPrimaryDomain() {
   return primary?.domainName ?? null;
 }
 
+/**
+ * Normalize error values to a message string.
+ */
 function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     return error.message;
   }
 
   const message =
-    error && typeof error === "object" ? Reflect.get(error, "message") : undefined;
+    error && typeof error === "object"
+      ? Reflect.get(error, "message")
+      : undefined;
 
   return typeof message === "string" ? message : "Unknown error";
 }
@@ -429,8 +443,14 @@ export async function deleteGroupPolicy({
 }
 
 export async function createEnrollmentToken(targetResource: string) {
-  const { policy, customerId } = await makeGoogleClients();
-  const res = await policy.customers.policies.networks.enrollments.create({
+  const { management, customerId } = await makeGoogleClients();
+  const createEnrollment = getEnrollmentCreate(management);
+
+  if (!createEnrollment) {
+    throw new Error("Enrollment client unavailable");
+  }
+
+  const res = await createEnrollment({
     parent: `customers/${customerId}`,
     requestBody: {
       policySchemaId: "chrome.users.EnrollmentToken",
@@ -441,4 +461,46 @@ export async function createEnrollmentToken(targetResource: string) {
     token: res.data.name ?? "",
     expiresAt: res.data.expirationTime ?? null,
   };
+}
+
+/**
+ * Resolve the Chrome Management enrollment creation handler.
+ */
+function getEnrollmentCreate(service: unknown):
+  | ((args: {
+      parent: string;
+      requestBody: {
+        policySchemaId: string;
+        policyTargetKey: { targetResource: string };
+      };
+    }) => Promise<{
+      data: { name?: string | null; expirationTime?: string | null };
+    }>)
+  | null {
+  if (!service || typeof service !== "object") {
+    return null;
+  }
+
+  const customers = Reflect.get(service, "customers");
+  if (!customers || typeof customers !== "object") {
+    return null;
+  }
+
+  const policies = Reflect.get(customers, "policies");
+  if (!policies || typeof policies !== "object") {
+    return null;
+  }
+
+  const networks = Reflect.get(policies, "networks");
+  if (!networks || typeof networks !== "object") {
+    return null;
+  }
+
+  const enrollments = Reflect.get(networks, "enrollments");
+  if (!enrollments || typeof enrollments !== "object") {
+    return null;
+  }
+
+  const create = Reflect.get(enrollments, "create");
+  return typeof create === "function" ? create.bind(enrollments) : null;
 }
