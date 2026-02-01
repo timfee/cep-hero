@@ -211,6 +211,14 @@ S25 Multi-OU comparison
 - Expect: differential summary and action.
 - Cleanup: remove policies, users, OUs.
 
+S26 Multi-turn connector scope confirmation
+
+- Setup: prompt about connector policies not applying to an OU.
+- Prompt 1: “Connector policies are not applying to Engineering-Test.”
+- Prompt 2: “We applied at customer level. What now?”
+- Expect: confirm customer-level scope and recommend OU or group scoping.
+- Cleanup: none.
+
 ## Consistency checks for all tests
 
 - Each test must:
