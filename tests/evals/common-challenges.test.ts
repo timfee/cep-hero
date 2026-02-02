@@ -26,6 +26,10 @@ import {
 } from "@/lib/test-helpers/eval-server";
 
 const TEST_TIMEOUT_MS = 60000;
+const CASE_PAUSE_MS = Number.parseInt(
+  process.env.EVAL_CASE_PAUSE_MS ?? "0",
+  10
+);
 const chatUrl = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 const manageServer = process.env.EVAL_MANAGE_SERVER !== "0";
 
@@ -81,6 +85,9 @@ describe("CEP evals: common challenges", () => {
   it.each(cases)(
     "$id $title",
     async (evalCase) => {
+      if (CASE_PAUSE_MS > 0) {
+        await new Promise((resolve) => setTimeout(resolve, CASE_PAUSE_MS));
+      }
       const basePrompt =
         promptMap.get(evalCase.id) ?? `Help me troubleshoot: ${evalCase.title}`;
       const prompt = buildEvalPrompt(basePrompt, {

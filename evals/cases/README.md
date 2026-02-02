@@ -35,6 +35,8 @@ tests and documentation stay aligned.
 | EC-025 | Citrix SPA expired token proxy pop-up           | CommonChallenge-25 | Planned       |
 | EC-026 | Citrix SPA service unavailable                  | CommonChallenge-26 | Planned       |
 
+Fixtures exist only for EC-001/002/003 (net logs and update_engine samples). Add concise fixtures under `evals/fixtures/EC-###/` when you tighten a case.
+
 ## Architectural Diagnostics (EC-027–EC-056)
 
 | ID     | Title                                      | Source        | Test coverage           |

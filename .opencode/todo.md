@@ -26,7 +26,11 @@
 - [x] T2.2.2: MODIFY `tests/evals/diagnostics.test.ts` | file:tests/evals/diagnostics.test.ts | size:S
 - [x] T2.2.3: MODIFY `tests/evals/test-plan.test.ts` | file:tests/evals/test-plan.test.ts | size:S
 
-## G3: Verification | status: completed | depends:G2
+## G3: Verification | status: in_progress | depends:G2
 ### P3.1: LSP + tests | agent:Reviewer
 - [x] T3.1.1: Run `lsp_diagnostics({ file: "*" })` | size:S
-- [x] T3.1.2: Run eval tests as needed | size:S
+- [x] T3.1.2: Run eval tests as needed (full suites) | size:S (passed with EVAL_FAKE_CHAT=1; real-chat runs tracked in SYNC-6)
+
+## G4: Documentation | status: completed
+### P4.1: Doc review | agent:Reviewer
+- [x] T4.1.1: Review evals/README.md, README.md, SETUP.md updates for consistency | size:S

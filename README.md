@@ -1,11 +1,11 @@
 # Chrome Enterprise Premium (CEP) - MCP Server & AI Agent
 
-This project is a dual-purpose application:
+This project does two things:
 
-1.  **AI Admin Hero UI:** A Next.js-based Chat Interface for managing Chrome Enterprise Premium.
-2.  **MCP Server:** A compliant [Model Context Protocol](https://modelcontextprotocol.io/) server that allows external agents (like Claude Desktop or Gemini CLI) to manage your Chrome fleet.
+1.  A Next.js chat UI for Chrome Enterprise Premium.
+2.  An MCP server so external agents (Claude Desktop, Gemini CLI) can manage the fleet.
 
-It connects to **REAL** Google Cloud APIs (Admin SDK, Chrome Management, Cloud Identity, Chrome Policy).
+It talks to real Google Cloud APIs (Admin SDK, Chrome Management, Cloud Identity, Chrome Policy).
 
 ---
 
@@ -114,19 +114,21 @@ curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
 
 ---
 
-## 🧪 Testing Notes
+## 🧪 Testing notes
 
-- The live eval suite uses `X-Test-Bypass: 1` to avoid interactive auth.
-- When test bypass is enabled, the server attempts service-account token minting with `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_TOKEN_EMAIL`.
+- The live eval suite uses `X-Test-Bypass: 1` to skip interactive auth.
+- With bypass on, the server mints tokens from `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_TOKEN_EMAIL`.
+- `EVAL_TEST_MODE=1` keeps real chat as the default but asks `/api/chat` for a lightweight synthetic response when base/fixtures are enabled. Use it for fast, quota-safe runs.
+- Fixtures are sparse (EC-001/002/003 only). Add more under `evals/fixtures/EC-###/` when you tighten coverage.
+- Eval tests log each case (`[eval][diagnostics]` / `[eval][test-plan]`) and add a small per-case pause; set `EVAL_CASE_PAUSE_MS` if you need more room.
 
-Eval runs:
+Eval runs (defaults: parallel, small pacing, real chat unless `EVAL_TEST_MODE=1`):
 
-- `bun run evals:run` runs the full eval suite.
-- `bun run evals:run:plan`, `evals:run:diag`, `evals:run:common` run a category.
-- `EVAL_IDS=EC-075 bun run evals:run:by-id` runs a single case.
-- `EVAL_TAGS=dlp bun run evals:run:by-tag` filters by tags.
-- `TEST_PATTERN="EC-0(1|2|3)" bun run evals:run:pattern` filters by name.
-- `EVAL_USE_BASE=1` and `EVAL_USE_FIXTURES=1` attach the base snapshot and fixtures.
+- `bun run evals:run` runs all evals.
+- `EVAL_IDS="EC-071,EC-072" bun run evals:run` runs selected cases (comma or space separated).
+- `EVAL_CATEGORY=test_plan bun run evals:run` runs one category.
+- `EVAL_TEST_MODE=1 bun run evals:run` uses synthetic chat responses (quota-safe).
+- `EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1` attach the base snapshot and fixtures.
 - `bun run credentials:check` validates service-account setup for test bypass.
 
 ---

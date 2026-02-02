@@ -37,5 +37,6 @@
 
 - Ultracite is the lint/format tool (`bun x ultracite fix`).
 - Live evals use `/api/chat` with test bypass when enabled.
+- Stabilization plan: add per-case pacing queue between eval cases (~350ms default for real chat); introduce `/api/chat` test-mode stub gated by env flag to skip quota-heavy Cloud Identity/Reports calls; real chat remains default; chat-client sets the flag only for eval runs.
 - Eval overrides: JSON object overrides deep-merge onto `evals/fixtures/base/api-base.json` when `EVAL_USE_BASE=1`.
 - Precedence: base snapshot → registry/per-case overrides (in order) → fixtures appended after the merged base block.
