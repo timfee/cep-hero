@@ -322,8 +322,25 @@ Reviewed and created fixtures for all 7 enrollment category cases:
 
 **Eval run (test mode):** All 7 cases ran successfully (failures expected in test mode since synthetic responses don't contain evidence markers)
 
+**Continued in same session - Events & Extensions:**
+
+Created fixtures for events category (2 cases):
+- EC-052: chromeReports with appUsageMetrics showing "Legacy Ad Blocker Pro" at 45% CPU
+- EC-062: CloudReporting disabled in connectorPolicies for Events-Off OU
+
+Created fixtures for extensions category (4 cases):
+- EC-043: EXTENSION_INSTALL_FAILED with CRX_FETCH_FAILED and MANIFEST_INVALID
+- EC-044: EXTENSION_DISABLED with PERMISSIONS_INCREASE reason
+- EC-045: Malicious extension on 2 devices, needs blocklisting
+- EC-053: EXTENSION_CRASH events leading to CORRUPTED state
+
+**Total Progress:** 13/85 cases now have fixtures
+- enrollment: 7 ✅
+- events: 2 ✅
+- extensions: 4 ✅
+
 **Next Session Should:**
 
-1. Run enrollment evals against live server to establish true baseline
-2. Review and improve evals based on AI responses
-3. Continue to next category (events - 2 cases)
+1. Run evals against live server to establish true baseline
+2. Review endpoint category (4 cases)
+3. Continue with remaining categories
