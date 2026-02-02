@@ -88,7 +88,6 @@ function cleanHtml(html: string): string {
  * If user pastes: { "headers": { ... }, "method": "GET" }
  * This extracts the inner "headers" object.
  */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function resolveHeaders(input: any) {
   if (
     input &&
@@ -162,9 +161,7 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
     failedRequestHandler({ request, error }) {
       // Check for 429 in both standard error object and Crawlee/got response
       const statusCode =
-        // @ts-expect-error - Crawlee error types don't expose response but it exists at runtime
         error?.response?.statusCode ??
-        // @ts-expect-error - Fallback for other error shapes
         error?.statusCode;
 
       if (statusCode === 429) {

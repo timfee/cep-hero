@@ -193,7 +193,6 @@ describe("CEP evals: test plan", () => {
         await Promise.allSettled(cases.map((evalCase) => runCase(evalCase)));
       } else {
         for (const evalCase of cases) {
-          // eslint-disable-next-line no-await-in-loop
           await runCase(evalCase);
         }
       }

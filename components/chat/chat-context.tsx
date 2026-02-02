@@ -19,7 +19,6 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
 
   const { messages, status, sendMessage } = useChat({
-    // @ts-ignore - fetch is supported but types might be outdated
     fetch: clientFetch,
   });
 
