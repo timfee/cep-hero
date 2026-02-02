@@ -9,8 +9,6 @@ import type { VectorSearchResult } from "@/lib/upstash/search";
 import { writeDebugLog } from "@/lib/debug-log";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
-import { recordActivity } from "../activity-log";
-
 /**
  * Schema for fetching Chrome audit events.
  */
@@ -251,7 +249,6 @@ export class CepToolExecutor {
       version: "reports_v1",
       auth: this.auth,
     });
-    const start = Date.now();
     try {
       const res = await service.activities.list({
         userKey: "all",
@@ -268,16 +265,6 @@ export class CepToolExecutor {
           nextPageToken: res.data.nextPageToken ?? null,
         })
       );
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://admin.googleapis.com/admin/reports_v1/activities",
-        method: "GET",
-        status: 200,
-        durationMs: Date.now() - start,
-        responsePreview: `items=${res.data.items?.length ?? 0}, nextPageToken=${res.data.nextPageToken ?? ""}`,
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
       await this.logApi("google.response.chrome-events", {
         status: "ok",
         count: res.data.items?.length ?? 0,
@@ -299,16 +286,6 @@ export class CepToolExecutor {
         message,
         errors,
         pageToken,
-      });
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://admin.googleapis.com/admin/reports_v1/activities",
-        method: "GET",
-        status: normalizeStatus(code),
-        durationMs: Date.now() - start,
-        responsePreview: message ?? "Unknown error",
-        timestamp: Date.now(),
-        kind: "workspace",
       });
       return {
         error: message ?? "Unknown error",
@@ -334,7 +311,6 @@ export class CepToolExecutor {
       method: "GET",
       params: { customerId: this.customerId, includeHelp },
     });
-    const start = Date.now();
     try {
       if (!service.policies?.list) {
         return {
@@ -354,16 +330,6 @@ export class CepToolExecutor {
         })
       );
 
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://cloudidentity.googleapis.com/v1/policies",
-        method: "GET",
-        status: 200,
-        durationMs: Date.now() - start,
-        responsePreview: `policies=${res.data.policies?.length ?? 0}`,
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
       await this.logApi("google.response.dlp-rules", {
         status: "ok",
         count: res.data.policies?.length ?? 0,
@@ -404,16 +370,6 @@ export class CepToolExecutor {
         message,
         errors,
       });
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://cloudidentity.googleapis.com/v1/policies",
-        method: "GET",
-        status: normalizeStatus(code),
-        durationMs: Date.now() - start,
-        responsePreview: message ?? "Unknown error",
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
       return {
         error: message ?? "Unknown error",
         suggestion:
@@ -439,7 +395,6 @@ export class CepToolExecutor {
       params: { customerId: this.customerId, type: "all" },
     });
 
-    const start = Date.now();
     try {
       if (!service.orgunits?.list) {
         return {
@@ -459,17 +414,6 @@ export class CepToolExecutor {
           count: res.data.organizationUnits?.length ?? 0,
         })
       );
-
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
-        method: "GET",
-        status: 200,
-        durationMs: Date.now() - start,
-        responsePreview: `units=${res.data.organizationUnits?.length ?? 0}`,
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
 
       await this.logApi("google.response.org-units", {
         status: "ok",
@@ -496,16 +440,6 @@ export class CepToolExecutor {
         code,
         message,
         errors,
-      });
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
-        method: "GET",
-        status: normalizeStatus(code),
-        durationMs: Date.now() - start,
-        responsePreview: message ?? "Unknown error",
-        timestamp: Date.now(),
-        kind: "workspace",
       });
       return {
         error: message ?? "Unknown error",
@@ -553,7 +487,6 @@ export class CepToolExecutor {
         targetResource,
       },
     });
-    const start = Date.now();
     try {
       if (!customers.policies?.networks?.enrollments?.create) {
         return {
@@ -579,16 +512,6 @@ export class CepToolExecutor {
           expires: res.data.expirationTime,
         })
       );
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
-        method: "POST",
-        status: 200,
-        durationMs: Date.now() - start,
-        responsePreview: res.data.name ?? "",
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
       await this.logApi("google.response.enroll-browser", {
         status: "ok",
         token: res.data.name ?? "",
@@ -608,16 +531,6 @@ export class CepToolExecutor {
         code,
         message,
         errors,
-      });
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
-        method: "POST",
-        status: normalizeStatus(code),
-        durationMs: Date.now() - start,
-        responsePreview: message ?? "Unknown error",
-        timestamp: Date.now(),
-        kind: "workspace",
       });
       return {
         error: message ?? "Unknown error",
@@ -649,7 +562,6 @@ export class CepToolExecutor {
       "chrome.users.DataLeakPreventionReportingEnabled",
     ];
 
-    const start = Date.now();
     await this.logApi("google.request.connector-config", {
       endpoint:
         "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
@@ -767,17 +679,6 @@ export class CepToolExecutor {
             })
           );
 
-          recordActivity({
-            id: crypto.randomUUID(),
-            url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
-            method: "POST",
-            status: 200,
-            durationMs: Date.now() - start,
-            responsePreview: `policies=${res.data.resolvedPolicies?.length ?? 0}, target=${targetResource}`,
-            timestamp: Date.now(),
-            kind: "workspace",
-          });
-
           resolvedPolicies.push(...(res.data.resolvedPolicies ?? []));
 
           await this.logApi("google.response.connector-config", {
@@ -801,17 +702,6 @@ export class CepToolExecutor {
           const isIgnorable =
             message.includes("Requested entity was not found") ||
             message.includes("must be of type 'orgunits' or 'groups'");
-
-          recordActivity({
-            id: crypto.randomUUID(),
-            url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
-            method: "POST",
-            status: normalizeStatus(getErrorDetails(error).code),
-            durationMs: Date.now() - start,
-            responsePreview: `target=${targetResource}, error=${message}`,
-            timestamp: Date.now(),
-            kind: "workspace",
-          });
 
           if (!isIgnorable) {
             await this.logApi("google.error.connector-config", {
@@ -862,16 +752,6 @@ export class CepToolExecutor {
           errors,
         })
       );
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
-        method: "POST",
-        status: normalizeStatus(code),
-        durationMs: Date.now() - start,
-        responsePreview: message ?? "Unknown error",
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
       await this.logApi("google.error.connector-config", {
         code,
         message,
@@ -892,7 +772,6 @@ export class CepToolExecutor {
    * Debug the current access token scopes and expiry.
    */
   async debugAuth() {
-    const start = Date.now();
     const token = await this.auth.getAccessToken();
     const accessToken = token?.token;
 
@@ -915,17 +794,6 @@ export class CepToolExecutor {
         audience?: string;
         error?: string;
       };
-
-      recordActivity({
-        id: crypto.randomUUID(),
-        url: "https://www.googleapis.com/oauth2/v1/tokeninfo",
-        method: "GET",
-        status: res.status,
-        durationMs: Date.now() - start,
-        responsePreview: data.scope ?? data.error ?? "(no scope)",
-        timestamp: Date.now(),
-        kind: "workspace",
-      });
 
       await this.logApi("google.response.debug-auth", {
         status: res.status,
@@ -1148,11 +1016,4 @@ function resolveOrgUnitCandidates(units: OrgUnit[]): string[] {
 function getPolicyTargetResource(policy?: ResolvedPolicy): string | undefined {
   const targetResource = policy?.policyTargetKey?.targetResource;
   return typeof targetResource === "string" ? targetResource : undefined;
-}
-
-/**
- * Normalize error codes for activity logging.
- */
-function normalizeStatus(code?: number | string): number | "error" {
-  return typeof code === "number" ? code : "error";
 }
