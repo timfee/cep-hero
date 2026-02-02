@@ -20,7 +20,7 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
 
   const { messages, status, sendMessage } = useChat({
     fetch: clientFetch,
-  });
+  } as Parameters<typeof useChat>[0] & { fetch: typeof clientFetch });
 
   const value = useMemo<ChatContextValue>(
     () => ({ messages, status, input, setInput, sendMessage }),

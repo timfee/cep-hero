@@ -19,6 +19,13 @@ import { type Document, MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
 
 type ArticleType = "answer" | "topic";
 
+interface CrawleeError extends Error {
+  statusCode?: number;
+  response?: {
+    statusCode?: number;
+  };
+}
+
 /**
  * Extract a title string from a Cheerio element.
  */
@@ -62,21 +69,21 @@ function parseArticleType(value: string | undefined): ArticleType | undefined {
  * Read text content from an element-like object.
  */
 function getElementText(element: unknown): string | null {
-  if (!element || typeof element !== "object") {
+  if (!element || typeof element !== "object" || element === null) {
     return null;
   }
 
-  const textFn = Reflect.get(element, "text");
-  if (typeof textFn !== "function") {
-    return null;
+  // Safe check for 'text' method common in Cheerio elements
+  if ("text" in element && typeof (element as { text: unknown }).text === "function") {
+    try {
+      const text = (element as { text: () => unknown }).text();
+      return typeof text === "string" ? text : null;
+    } catch {
+      return null;
+    }
   }
-
-  try {
-    const text = textFn.call(element);
-    return typeof text === "string" ? text : null;
-  } catch {
-    return null;
-  }
+  
+  return null;
 }
 
 function cleanHtml(html: string): string {
@@ -85,19 +92,17 @@ function cleanHtml(html: string): string {
 
 /**
  * Helper to allow pasting full fetch options object or just the headers.
- * If user pastes: { "headers": { ... }, "method": "GET" }
- * This extracts the inner "headers" object.
  */
-function resolveHeaders(input: any) {
+function resolveHeaders(input: unknown): Record<string, string> {
   if (
     input &&
     typeof input === "object" &&
     "headers" in input &&
-    typeof input.headers === "object"
+    typeof (input as { headers: unknown }).headers === "object"
   ) {
-    return input.headers;
+    return (input as { headers: Record<string, string> }).headers;
   }
-  return input;
+  return input as Record<string, string>;
 }
 
 /**
@@ -158,7 +163,8 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
       },
     ],
 
-    failedRequestHandler({ request, error }) {
+    failedRequestHandler({ request, error: rawError }) {
+      const error = rawError as CrawleeError;
       // Check for 429 in both standard error object and Crawlee/got response
       const statusCode =
         error?.response?.statusCode ??

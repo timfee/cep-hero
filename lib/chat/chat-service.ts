@@ -27,6 +27,15 @@ interface CreateChatStreamParams {
   req: Request; // Passed for 'diagnose' tool which needs req context
 }
 
+/**
+ * Creates and configures the AI chat stream with all CEP tools registered.
+ *
+ * @param params - Configuration parameters for the chat stream.
+ * @param params.messages - The conversation history.
+ * @param params.accessToken - Google OAuth access token for tool execution.
+ * @param params.req - The original request object (needed for some tools).
+ * @returns A streaming response compatible with the AI SDK.
+ */
 export async function createChatStream({
   messages,
   accessToken,
@@ -47,32 +56,37 @@ export async function createChatStream({
         inputSchema: GetChromeEventsSchema,
         execute: async (args) => await executor.getChromeEvents(args),
       }),
+      
       getChromeConnectorConfiguration: tool({
         description: "Fetch Chrome connector configuration policies.",
         inputSchema: GetConnectorConfigSchema,
         execute: async () => await executor.getChromeConnectorConfiguration(),
       }),
+      
       listDLPRules: tool({
         description: "List DLP rules from Cloud Identity.",
         inputSchema: ListDLPRulesSchema,
         execute: async (args) => await executor.listDLPRules(args),
       }),
+      
       enrollBrowser: tool({
-        description:
-          "Generate a Chrome Browser Cloud Management enrollment token.",
+        description: "Generate a Chrome Browser Cloud Management enrollment token.",
         inputSchema: EnrollBrowserSchema,
         execute: async (args) => await executor.enrollBrowser(args),
       }),
+      
       getFleetOverview: tool({
         description: "Summarize fleet posture from live CEP data.",
         inputSchema: GetFleetOverviewSchema,
         execute: async (args) => await executor.getFleetOverview(args),
       }),
+      
       debugAuth: tool({
         description: "Inspect access token scopes and expiry.",
         inputSchema: debugAuthSchema,
         execute: async () => await executor.debugAuth(),
       }),
+      
       runDiagnosis: tool({
         description: "Run full diagnosis and return structured answer.",
         inputSchema: z.object({ prompt: z.string() }),
@@ -90,7 +104,9 @@ export async function createChatStream({
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
     messageMetadata: () => {
-      if (!diagnosisResult || "error" in diagnosisResult) return undefined;
+      if (!diagnosisResult || "error" in diagnosisResult) {
+        return undefined;
+      }
 
       // Build structured evidence for the UI
       const evidence = {
