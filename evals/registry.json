@@ -1,10 +1,10 @@
 {
-  "version": "1.0.0",
+  "version": "2.0.0",
   "cases": [
     {
       "id": "EC-001",
       "title": "Network connectivity during enrollment",
-      "category": "common_challenges",
+      "category": "enrollment",
       "source_refs": ["CommonChallenge-1"],
       "case_file": "evals/cases/EC-001-network-enrollment-connectivity.md",
       "mode": "deterministic",
@@ -23,7 +23,7 @@
     {
       "id": "EC-002",
       "title": "Enrollment error codes",
-      "category": "common_challenges",
+      "category": "enrollment",
       "source_refs": ["CommonChallenge-2"],
       "case_file": "evals/cases/EC-002-enrollment-error-codes.md",
       "mode": "deterministic",
@@ -39,7 +39,7 @@
     {
       "id": "EC-003",
       "title": "ChromeOS auto-update failures",
-      "category": "common_challenges",
+      "category": "updates",
       "source_refs": ["CommonChallenge-3"],
       "case_file": "evals/cases/EC-003-chromeos-auto-update-failures.md",
       "mode": "deterministic",
@@ -56,7 +56,7 @@
     {
       "id": "EC-004",
       "title": "Duplicate machine identifier after VM cloning",
-      "category": "common_challenges",
+      "category": "enrollment",
       "source_refs": ["CommonChallenge-4"],
       "case_file": "evals/cases/EC-004-duplicate-machine-identifier.md",
       "mode": "deterministic",
@@ -70,7 +70,7 @@
     {
       "id": "EC-005",
       "title": "Policies not applying (restart vs invalid JSON)",
-      "category": "common_challenges",
+      "category": "policy",
       "source_refs": ["CommonChallenge-5"],
       "case_file": "evals/cases/EC-005-policy-not-applying-restart.md",
       "mode": "deterministic",
@@ -84,7 +84,7 @@
     {
       "id": "EC-006",
       "title": "macOS policy sync issue",
-      "category": "common_challenges",
+      "category": "policy",
       "source_refs": ["CommonChallenge-6"],
       "case_file": "evals/cases/EC-006-macos-policy-sync-issue.md",
       "mode": "deterministic",
@@ -98,7 +98,7 @@
     {
       "id": "EC-007",
       "title": "Browser crashes (Aw, Snap)",
-      "category": "common_challenges",
+      "category": "browser",
       "source_refs": ["CommonChallenge-7"],
       "case_file": "evals/cases/EC-007-browser-crashes-aw-snap.md",
       "mode": "deterministic",
@@ -112,7 +112,7 @@
     {
       "id": "EC-008",
       "title": "Browser performance (high CPU/slow tabs)",
-      "category": "common_challenges",
+      "category": "browser",
       "source_refs": ["CommonChallenge-8"],
       "case_file": "evals/cases/EC-008-browser-performance-high-cpu.md",
       "mode": "deterministic",
@@ -126,7 +126,7 @@
     {
       "id": "EC-009",
       "title": "Endpoint Verification sync (macOS Keychain)",
-      "category": "common_challenges",
+      "category": "endpoint",
       "source_refs": ["CommonChallenge-9"],
       "case_file": "evals/cases/EC-009-endpoint-verification-macos-keychain.md",
       "mode": "deterministic",
@@ -140,7 +140,7 @@
     {
       "id": "EC-010",
       "title": "Endpoint Verification sync (Windows DPAPI)",
-      "category": "common_challenges",
+      "category": "endpoint",
       "source_refs": ["CommonChallenge-10"],
       "case_file": "evals/cases/EC-010-endpoint-verification-windows-dpapi.md",
       "mode": "deterministic",
@@ -154,7 +154,7 @@
     {
       "id": "EC-011",
       "title": "Endpoint Verification cannot recover key",
-      "category": "common_challenges",
+      "category": "endpoint",
       "source_refs": ["CommonChallenge-11"],
       "case_file": "evals/cases/EC-011-endpoint-verification-recover-key.md",
       "mode": "deterministic",
@@ -168,7 +168,7 @@
     {
       "id": "EC-012",
       "title": "Endpoint Verification service worker bug",
-      "category": "common_challenges",
+      "category": "endpoint",
       "source_refs": ["CommonChallenge-12"],
       "case_file": "evals/cases/EC-012-endpoint-verification-sw-bug.md",
       "mode": "deterministic",
@@ -182,7 +182,7 @@
     {
       "id": "EC-013",
       "title": "Chromebook battery/power issues",
-      "category": "common_challenges",
+      "category": "devices",
       "source_refs": ["CommonChallenge-13"],
       "case_file": "evals/cases/EC-013-chromebook-battery-power-issues.md",
       "mode": "deterministic",
@@ -196,7 +196,7 @@
     {
       "id": "EC-014",
       "title": "Account conflict gtempaccount.com",
-      "category": "common_challenges",
+      "category": "auth",
       "source_refs": ["CommonChallenge-14"],
       "case_file": "evals/cases/EC-014-account-conflict-gtempaccount.md",
       "mode": "deterministic",
@@ -210,7 +210,7 @@
     {
       "id": "EC-015",
       "title": "Shared drive move/playback issues",
-      "category": "common_challenges",
+      "category": "system",
       "source_refs": ["CommonChallenge-15"],
       "case_file": "evals/cases/EC-015-shared-drive-move-playback-issues.md",
       "mode": "deterministic",
@@ -224,7 +224,7 @@
     {
       "id": "EC-016",
       "title": "Device lockout (previous owner)",
-      "category": "common_challenges",
+      "category": "devices",
       "source_refs": ["CommonChallenge-16"],
       "case_file": "evals/cases/EC-016-device-lockout-previous-owner.md",
       "mode": "deterministic",
@@ -238,7 +238,7 @@
     {
       "id": "EC-017",
       "title": "Citrix SPA integration issues (overview)",
-      "category": "common_challenges",
+      "category": "integration",
       "source_refs": ["CommonChallenge-17"],
       "case_file": "evals/cases/EC-017-citrix-spa-integration-issues.md",
       "mode": "deterministic",
@@ -252,7 +252,7 @@
     {
       "id": "EC-018",
       "title": "CEP enrollment/connectors not registering",
-      "category": "common_challenges",
+      "category": "enrollment",
       "source_refs": ["CommonChallenge-18"],
       "case_file": "evals/cases/EC-018-enrollment-connectors-not-registering.md",
       "mode": "deterministic",
@@ -266,7 +266,7 @@
     {
       "id": "EC-019",
       "title": "Capturing network logs",
-      "category": "common_challenges",
+      "category": "network",
       "source_refs": ["CommonChallenge-19"],
       "case_file": "evals/cases/EC-019-capturing-network-logs.md",
       "mode": "deterministic",
@@ -282,7 +282,7 @@
     {
       "id": "EC-020",
       "title": "Remote log collection & support",
-      "category": "common_challenges",
+      "category": "system",
       "source_refs": ["CommonChallenge-20"],
       "case_file": "evals/cases/EC-020-remote-log-collection-support.md",
       "mode": "deterministic",
@@ -296,7 +296,7 @@
     {
       "id": "EC-021",
       "title": "Wi‑Fi deauth/association codes",
-      "category": "common_challenges",
+      "category": "network",
       "source_refs": ["CommonChallenge-21"],
       "case_file": "evals/cases/EC-021-wifi-deauth-reason-codes.md",
       "mode": "deterministic",
@@ -312,7 +312,7 @@
     {
       "id": "EC-022",
       "title": "Update scattering delays",
-      "category": "common_challenges",
+      "category": "policy",
       "source_refs": ["CommonChallenge-22"],
       "case_file": "evals/cases/EC-022-update-scattering-delays.md",
       "mode": "deterministic",
@@ -326,7 +326,7 @@
     {
       "id": "EC-023",
       "title": "Citrix SPA profile picker",
-      "category": "common_challenges",
+      "category": "browser",
       "source_refs": ["CommonChallenge-23"],
       "case_file": "evals/cases/EC-023-citrix-spa-profile-picker.md",
       "mode": "deterministic",
@@ -340,7 +340,7 @@
     {
       "id": "EC-024",
       "title": "Citrix SPA group membership sync",
-      "category": "common_challenges",
+      "category": "integration",
       "source_refs": ["CommonChallenge-24"],
       "case_file": "evals/cases/EC-024-citrix-spa-group-sync.md",
       "mode": "deterministic",
@@ -354,7 +354,7 @@
     {
       "id": "EC-025",
       "title": "Citrix SPA expired token proxy pop-up",
-      "category": "common_challenges",
+      "category": "integration",
       "source_refs": ["CommonChallenge-25"],
       "case_file": "evals/cases/EC-025-citrix-spa-expired-token-proxy.md",
       "mode": "deterministic",
@@ -368,7 +368,7 @@
     {
       "id": "EC-026",
       "title": "Citrix SPA service unavailable",
-      "category": "common_challenges",
+      "category": "integration",
       "source_refs": ["CommonChallenge-26"],
       "case_file": "evals/cases/EC-026-citrix-spa-service-unavailable.md",
       "mode": "deterministic",
@@ -382,7 +382,7 @@
     {
       "id": "EC-027",
       "title": "OS version mismatch in CAA",
-      "category": "diagnostics",
+      "category": "security",
       "source_refs": ["Diagnostic-1"],
       "case_file": "evals/cases/EC-027-os-version-mismatch.md",
       "mode": "rubric",
@@ -400,7 +400,7 @@
     {
       "id": "EC-028",
       "title": "Encryption status detection failure",
-      "category": "diagnostics",
+      "category": "security",
       "source_refs": ["Diagnostic-2"],
       "case_file": "evals/cases/EC-028-encryption-status-detection-failure.md",
       "mode": "rubric",
@@ -418,7 +418,7 @@
     {
       "id": "EC-029",
       "title": "IP subnet or geo blocking",
-      "category": "diagnostics",
+      "category": "network",
       "source_refs": ["Diagnostic-3"],
       "case_file": "evals/cases/EC-029-ip-subnet-or-geo-blocking.md",
       "mode": "rubric",
@@ -436,7 +436,7 @@
     {
       "id": "EC-030",
       "title": "Split-brain profile context",
-      "category": "diagnostics",
+      "category": "security",
       "source_refs": ["Diagnostic-4"],
       "case_file": "evals/cases/EC-030-split-brain-profile-context.md",
       "mode": "rubric",
@@ -454,7 +454,7 @@
     {
       "id": "EC-031",
       "title": "Corporate-owned vs BYOD classification",
-      "category": "diagnostics",
+      "category": "devices",
       "source_refs": ["Diagnostic-5"],
       "case_file": "evals/cases/EC-031-corporate-owned-vs-byod.md",
       "mode": "rubric",
@@ -472,7 +472,7 @@
     {
       "id": "EC-032",
       "title": "Access level logic errors",
-      "category": "diagnostics",
+      "category": "security",
       "source_refs": ["Diagnostic-6"],
       "case_file": "evals/cases/EC-032-access-level-logic-errors.md",
       "mode": "rubric",
@@ -490,7 +490,7 @@
     {
       "id": "EC-033",
       "title": "Malware scanning timeouts",
-      "category": "diagnostics",
+      "category": "dlp",
       "source_refs": ["Diagnostic-7"],
       "case_file": "evals/cases/EC-033-malware-scanning-timeouts.md",
       "mode": "rubric",
@@ -508,7 +508,7 @@
     {
       "id": "EC-034",
       "title": "Password-protected files blocked",
-      "category": "diagnostics",
+      "category": "dlp",
       "source_refs": ["Diagnostic-8"],
       "case_file": "evals/cases/EC-034-password-protected-files-blocked.md",
       "mode": "rubric",
@@ -526,7 +526,7 @@
     {
       "id": "EC-035",
       "title": "DLP false positives",
-      "category": "diagnostics",
+      "category": "dlp",
       "source_refs": ["Diagnostic-9"],
       "case_file": "evals/cases/EC-035-dlp-false-positives.md",
       "mode": "rubric",
@@ -544,7 +544,7 @@
     {
       "id": "EC-036",
       "title": "Printing restrictions block jobs",
-      "category": "diagnostics",
+      "category": "dlp",
       "source_refs": ["Diagnostic-11"],
       "case_file": "evals/cases/EC-036-printing-restrictions-blocked-jobs.md",
       "mode": "rubric",
@@ -562,7 +562,7 @@
     {
       "id": "EC-037",
       "title": "Clipboard restrictions",
-      "category": "diagnostics",
+      "category": "dlp",
       "source_refs": ["Diagnostic-12"],
       "case_file": "evals/cases/EC-037-clipboard-restrictions.md",
       "mode": "rubric",
@@ -580,7 +580,7 @@
     {
       "id": "EC-038",
       "title": "Policy precedence conflicts",
-      "category": "diagnostics",
+      "category": "policy",
       "source_refs": ["Diagnostic-13"],
       "case_file": "evals/cases/EC-038-policy-precedence-conflicts.md",
       "mode": "rubric",
@@ -598,7 +598,7 @@
     {
       "id": "EC-039",
       "title": "OU inheritance override",
-      "category": "diagnostics",
+      "category": "policy",
       "source_refs": ["Diagnostic-14"],
       "case_file": "evals/cases/EC-039-ou-inheritance-override.md",
       "mode": "rubric",
@@ -616,7 +616,7 @@
     {
       "id": "EC-040",
       "title": "Policy schema JSON errors",
-      "category": "diagnostics",
+      "category": "policy",
       "source_refs": ["Diagnostic-15"],
       "case_file": "evals/cases/EC-040-policy-schema-json-errors.md",
       "mode": "rubric",
@@ -634,7 +634,7 @@
     {
       "id": "EC-041",
       "title": "Recommended vs mandatory policies",
-      "category": "diagnostics",
+      "category": "policy",
       "source_refs": ["Diagnostic-16"],
       "case_file": "evals/cases/EC-041-recommended-vs-mandatory.md",
       "mode": "rubric",
@@ -652,7 +652,7 @@
     {
       "id": "EC-042",
       "title": "User affiliation & profile separation",
-      "category": "diagnostics",
+      "category": "policy",
       "source_refs": ["Diagnostic-17"],
       "case_file": "evals/cases/EC-042-user-affiliation-profile-separation.md",
       "mode": "rubric",
@@ -670,7 +670,7 @@
     {
       "id": "EC-043",
       "title": "Force-install extension failures",
-      "category": "diagnostics",
+      "category": "extensions",
       "source_refs": ["Diagnostic-18"],
       "case_file": "evals/cases/EC-043-force-install-failures.md",
       "mode": "rubric",
@@ -688,7 +688,7 @@
     {
       "id": "EC-044",
       "title": "Permission increase blocking",
-      "category": "diagnostics",
+      "category": "extensions",
       "source_refs": ["Diagnostic-19"],
       "case_file": "evals/cases/EC-044-permission-increase-blocking.md",
       "mode": "rubric",
@@ -706,7 +706,7 @@
     {
       "id": "EC-045",
       "title": "Malicious extension removal",
-      "category": "diagnostics",
+      "category": "extensions",
       "source_refs": ["Diagnostic-21"],
       "case_file": "evals/cases/EC-045-malicious-extension-removal.md",
       "mode": "rubric",
@@ -724,7 +724,7 @@
     {
       "id": "EC-046",
       "title": "Enrollment token issues",
-      "category": "diagnostics",
+      "category": "enrollment",
       "source_refs": ["Diagnostic-23"],
       "case_file": "evals/cases/EC-046-enrollment-token-invalid-or-expired.md",
       "mode": "rubric",
@@ -742,7 +742,7 @@
     {
       "id": "EC-047",
       "title": "Stale device sync",
-      "category": "diagnostics",
+      "category": "devices",
       "source_refs": ["Diagnostic-24"],
       "case_file": "evals/cases/EC-047-stale-device-sync.md",
       "mode": "rubric",
@@ -760,7 +760,7 @@
     {
       "id": "EC-048",
       "title": "User session revocation delay",
-      "category": "diagnostics",
+      "category": "auth",
       "source_refs": ["Diagnostic-25"],
       "case_file": "evals/cases/EC-048-user-session-revocation-delay.md",
       "mode": "rubric",
@@ -778,7 +778,7 @@
     {
       "id": "EC-049",
       "title": "PAC file & proxy authentication",
-      "category": "diagnostics",
+      "category": "network",
       "source_refs": ["Diagnostic-27"],
       "case_file": "evals/cases/EC-049-pac-file-proxy-authentication.md",
       "mode": "rubric",
@@ -796,7 +796,7 @@
     {
       "id": "EC-050",
       "title": "SSL inspection conflicts",
-      "category": "diagnostics",
+      "category": "network",
       "source_refs": ["Diagnostic-28"],
       "case_file": "evals/cases/EC-050-ssl-inspection-conflicts.md",
       "mode": "rubric",
@@ -814,7 +814,7 @@
     {
       "id": "EC-051",
       "title": "Connector handshake & service availability",
-      "category": "diagnostics",
+      "category": "connector",
       "source_refs": ["Diagnostic-10"],
       "case_file": "evals/cases/EC-051-connector-handshake-service-availability.md",
       "mode": "rubric",
@@ -832,7 +832,7 @@
     {
       "id": "EC-052",
       "title": "Performance degradation telemetry",
-      "category": "diagnostics",
+      "category": "events",
       "source_refs": ["Diagnostic-20"],
       "case_file": "evals/cases/EC-052-performance-degradation-telemetry.md",
       "mode": "rubric",
@@ -850,7 +850,7 @@
     {
       "id": "EC-053",
       "title": "Corrupt extension state",
-      "category": "diagnostics",
+      "category": "extensions",
       "source_refs": ["Diagnostic-22"],
       "case_file": "evals/cases/EC-053-corrupt-extension-state.md",
       "mode": "rubric",
@@ -868,7 +868,7 @@
     {
       "id": "EC-054",
       "title": "Deprovisioning gaps",
-      "category": "diagnostics",
+      "category": "devices",
       "source_refs": ["Diagnostic-26"],
       "case_file": "evals/cases/EC-054-deprovisioning-gaps.md",
       "mode": "rubric",
@@ -886,7 +886,7 @@
     {
       "id": "EC-055",
       "title": "Connector connectivity firewall",
-      "category": "diagnostics",
+      "category": "network",
       "source_refs": ["Diagnostic-29"],
       "case_file": "evals/cases/EC-055-connector-connectivity-firewall.md",
       "mode": "rubric",
@@ -904,7 +904,7 @@
     {
       "id": "EC-056",
       "title": "API quota exhaustion",
-      "category": "diagnostics",
+      "category": "system",
       "source_refs": ["Diagnostic-30"],
       "case_file": "evals/cases/EC-056-api-quota-exhaustion.md",
       "mode": "deterministic",
@@ -918,7 +918,7 @@
     {
       "id": "EC-057",
       "title": "Connector scope mis-targeted",
-      "category": "test_plan",
+      "category": "connector",
       "source_refs": ["TestPlan-S01"],
       "case_file": "evals/cases/EC-057-connector-scope-mis-targeted.md",
       "mode": "deterministic",
@@ -932,7 +932,7 @@
     {
       "id": "EC-058",
       "title": "Missing policyTargetKey",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S02"],
       "case_file": "evals/cases/EC-058-missing-policy-target-key.md",
       "mode": "deterministic",
@@ -946,7 +946,7 @@
     {
       "id": "EC-059",
       "title": "Malformed resolve payload",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S03"],
       "case_file": "evals/cases/EC-059-malformed-resolve-payload.md",
       "mode": "deterministic",
@@ -960,7 +960,7 @@
     {
       "id": "EC-060",
       "title": "DLP rules absent",
-      "category": "test_plan",
+      "category": "dlp",
       "source_refs": ["TestPlan-S04"],
       "case_file": "evals/cases/EC-060-dlp-rules-absent.md",
       "mode": "deterministic",
@@ -974,7 +974,7 @@
     {
       "id": "EC-061",
       "title": "DLP rule present but not firing",
-      "category": "test_plan",
+      "category": "dlp",
       "source_refs": ["TestPlan-S05"],
       "case_file": "evals/cases/EC-061-dlp-rule-not-firing.md",
       "mode": "deterministic",
@@ -988,7 +988,7 @@
     {
       "id": "EC-062",
       "title": "Event reporting off",
-      "category": "test_plan",
+      "category": "events",
       "source_refs": ["TestPlan-S06"],
       "case_file": "evals/cases/EC-062-event-reporting-off.md",
       "mode": "deterministic",
@@ -1002,7 +1002,7 @@
     {
       "id": "EC-063",
       "title": "Safe Browsing disabled",
-      "category": "test_plan",
+      "category": "security",
       "source_refs": ["TestPlan-S07"],
       "case_file": "evals/cases/EC-063-safe-browsing-disabled.md",
       "mode": "deterministic",
@@ -1016,7 +1016,7 @@
     {
       "id": "EC-064",
       "title": "Bulk Data Connector disabled",
-      "category": "test_plan",
+      "category": "connector",
       "source_refs": ["TestPlan-S08"],
       "case_file": "evals/cases/EC-064-bulk-data-connector-disabled.md",
       "mode": "deterministic",
@@ -1030,7 +1030,7 @@
     {
       "id": "EC-065",
       "title": "Web Data Connector missing",
-      "category": "test_plan",
+      "category": "connector",
       "source_refs": ["TestPlan-S09"],
       "case_file": "evals/cases/EC-065-web-data-connector-missing.md",
       "mode": "deterministic",
@@ -1044,7 +1044,7 @@
     {
       "id": "EC-066",
       "title": "File Transfer Connector missing",
-      "category": "test_plan",
+      "category": "connector",
       "source_refs": ["TestPlan-S10"],
       "case_file": "evals/cases/EC-066-file-transfer-connector-missing.md",
       "mode": "deterministic",
@@ -1058,7 +1058,7 @@
     {
       "id": "EC-067",
       "title": "Print Connector mis-scoped",
-      "category": "test_plan",
+      "category": "connector",
       "source_refs": ["TestPlan-S11"],
       "case_file": "evals/cases/EC-067-print-connector-mis-scoped.md",
       "mode": "deterministic",
@@ -1072,7 +1072,7 @@
     {
       "id": "EC-068",
       "title": "Mixed group vs OU precedence",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S12"],
       "case_file": "evals/cases/EC-068-mixed-group-vs-ou-precedence.md",
       "mode": "deterministic",
@@ -1086,7 +1086,7 @@
     {
       "id": "EC-069",
       "title": "Enrollment token wrong OU",
-      "category": "test_plan",
+      "category": "enrollment",
       "source_refs": ["TestPlan-S13"],
       "case_file": "evals/cases/EC-069-enrollment-token-wrong-ou.md",
       "mode": "deterministic",
@@ -1100,7 +1100,7 @@
     {
       "id": "EC-070",
       "title": "Enrollment permission denied",
-      "category": "test_plan",
+      "category": "enrollment",
       "source_refs": ["TestPlan-S14"],
       "case_file": "evals/cases/EC-070-enrollment-permission-denied.md",
       "mode": "deterministic",
@@ -1114,7 +1114,7 @@
     {
       "id": "EC-071",
       "title": "Propagation delay",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S15"],
       "case_file": "evals/cases/EC-071-propagation-delay.md",
       "mode": "deterministic",
@@ -1128,7 +1128,7 @@
     {
       "id": "EC-072",
       "title": "Bad schema ID",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S16"],
       "case_file": "evals/cases/EC-072-bad-schema-id.md",
       "mode": "deterministic",
@@ -1142,7 +1142,7 @@
     {
       "id": "EC-073",
       "title": "Group targeting format",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S17"],
       "case_file": "evals/cases/EC-073-group-targeting-format.md",
       "mode": "deterministic",
@@ -1156,7 +1156,7 @@
     {
       "id": "EC-074",
       "title": "Reference doc grounding",
-      "category": "test_plan",
+      "category": "system",
       "source_refs": ["TestPlan-S18"],
       "case_file": "evals/cases/EC-074-reference-doc-grounding.md",
       "mode": "deterministic",
@@ -1176,7 +1176,7 @@
     {
       "id": "EC-075",
       "title": "Token expired",
-      "category": "test_plan",
+      "category": "auth",
       "source_refs": ["TestPlan-S19"],
       "case_file": "evals/cases/EC-075-token-expired.md",
       "mode": "deterministic",
@@ -1190,7 +1190,7 @@
     {
       "id": "EC-076",
       "title": "Rate limit handling",
-      "category": "test_plan",
+      "category": "system",
       "source_refs": ["TestPlan-S20"],
       "case_file": "evals/cases/EC-076-rate-limit-handling.md",
       "mode": "deterministic",
@@ -1204,7 +1204,7 @@
     {
       "id": "EC-077",
       "title": "Outlook.com blocked",
-      "category": "test_plan",
+      "category": "system",
       "source_refs": ["TestPlan-S21"],
       "case_file": "evals/cases/EC-077-outlook-blocked.md",
       "mode": "deterministic",
@@ -1218,7 +1218,7 @@
     {
       "id": "EC-078",
       "title": "Outlook.com still blocked after removal",
-      "category": "test_plan",
+      "category": "system",
       "source_refs": ["TestPlan-S22"],
       "case_file": "evals/cases/EC-078-outlook-still-blocked-after-removal.md",
       "mode": "deterministic",
@@ -1232,7 +1232,7 @@
     {
       "id": "EC-079",
       "title": "Detector tuning",
-      "category": "test_plan",
+      "category": "dlp",
       "source_refs": ["TestPlan-S23"],
       "case_file": "evals/cases/EC-079-detector-tuning.md",
       "mode": "deterministic",
@@ -1246,7 +1246,7 @@
     {
       "id": "EC-080",
       "title": "Conflicting DLP vs connector",
-      "category": "test_plan",
+      "category": "connector",
       "source_refs": ["TestPlan-S24"],
       "case_file": "evals/cases/EC-080-conflicting-dlp-vs-connector.md",
       "mode": "deterministic",
@@ -1260,7 +1260,7 @@
     {
       "id": "EC-081",
       "title": "Multi-OU comparison",
-      "category": "test_plan",
+      "category": "policy",
       "source_refs": ["TestPlan-S25"],
       "case_file": "evals/cases/EC-081-multi-ou-comparison.md",
       "mode": "deterministic",
@@ -1274,7 +1274,7 @@
     {
       "id": "EC-083",
       "title": "Check Org Units",
-      "category": "common_challenges",
+      "category": "devices",
       "source_refs": ["CommonChallenge-CheckOU"],
       "case_file": "evals/cases/EC-083-check-org-units.md",
       "mode": "deterministic",
@@ -1288,7 +1288,7 @@
     {
       "id": "EC-084",
       "title": "DLP audit rule setup for all traffic",
-      "category": "test_plan",
+      "category": "dlp",
       "source_refs": ["TestPlan-DLP-Audit"],
       "case_file": "evals/cases/EC-084-dlp-audit-rule-all-traffic.md",
       "mode": "rubric",
