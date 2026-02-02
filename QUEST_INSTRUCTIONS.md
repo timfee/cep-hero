@@ -319,38 +319,194 @@ Define criteria that capture the essential qualities of a good response:
 
 ## AI SDK Patterns
 
-CEP-Hero uses the Vercel AI SDK. When improving the system, consider these patterns from the AI SDK documentation:
+CEP-Hero uses the Vercel AI SDK. When improving the system, apply these patterns from the AI SDK documentation.
 
 ### Loop Control
 
-**IMPORTANT**: CEP-Hero currently uses `stopWhen: stepCountIs(5)` in `lib/chat/chat-service.ts` (line 170). This is significantly lower than the AI SDK default of 20 steps.
+**CURRENT STATE**: CEP-Hero uses `stopWhen: stepCountIs(5)` in `lib/chat/chat-service.ts` (search for `stopWhen:` to find it). This is significantly lower than the AI SDK default of 20 steps and represents a **simplistic approach that should be replaced**.
 
-This limit may need to be increased or made dynamic for complex diagnostic scenarios. The user has explicitly requested researching dynamic loop control per AI SDK best practices.
+**PROBLEM**: Hardcoded step counts are the wrong abstraction for troubleshooting workflows. A simple policy lookup might need 2 steps while a complex multi-OU diagnostic might need 10+. Modern best practices prioritize **semantic stopping conditions** over step counting.
 
-Options for improvement:
+#### Recommended Stopping Strategies
 
-- `stepCountIs(n)`: Stop after n steps (current approach)
-- `hasToolCall('toolName')`: Stop after calling a specific tool
-- Custom conditions based on response content
-- Dynamic limits based on query complexity
+**1. Content-Based Stopping** - Stop when the AI generates a complete diagnosis:
+
+```typescript
+const hasDiagnosis: StopCondition = ({ steps }) =>
+  steps.some(step =>
+    step.text?.includes("Diagnosis:") &&
+    step.text?.includes("Next Steps:")
+  ) ?? false;
+```
+
+**2. Tool-Based Stopping** - Stop when a specific "completion" tool is called:
+
+```typescript
+// Add a 'provideDiagnosis' tool with no execute function
+// Combine with toolChoice: 'required' to force structured output
+stopWhen: hasToolCall('provideDiagnosis')
+```
+
+**3. Budget-Aware Stopping** - Track token usage and stop when cost threshold is reached:
+
+```typescript
+const budgetExceeded: StopCondition = ({ steps }) => {
+  const totalUsage = steps.reduce((acc, step) => ({
+    inputTokens: acc.inputTokens + (step.usage?.inputTokens ?? 0),
+    outputTokens: acc.outputTokens + (step.usage?.outputTokens ?? 0),
+  }), { inputTokens: 0, outputTokens: 0 });
+  return (totalUsage.inputTokens * 0.01 + totalUsage.outputTokens * 0.03) / 1000 > 0.5;
+};
+```
+
+**4. Combined Conditions** - Multiple conditions for defense in depth:
+
+```typescript
+stopWhen: [
+  stepCountIs(15),                    // Safety limit
+  hasToolCall('provideDiagnosis'),    // Normal completion
+  budgetExceeded,                     // Cost control
+]
+```
+
+#### Dynamic Execution with prepareStep
+
+Use `prepareStep` callback for runtime adjustments:
+
+```typescript
+prepareStep: async ({ stepNumber, messages }) => {
+  // Upgrade model after initial exploration
+  if (stepNumber > 3 && complexityDetected(messages)) {
+    return { model: google("gemini-1.5-pro") };
+  }
+
+  // Phase-based tool availability
+  if (stepNumber < 3) {
+    return { tools: { ...dataCollectionTools } };  // Steps 0-2: Gather data
+  } else {
+    return { tools: { ...analysisTools } };        // Steps 3+: Analyze
+  }
+};
+```
+
+#### Implementation Recommendation for CEP-Hero
+
+For troubleshooting workflows, implement phased execution:
+
+| Phase | Steps | Tools Available | Goal |
+|-------|-------|-----------------|------|
+| Discovery | 0-2 | Data collection (getOrgUnits, getPolicies, getEvents) | Gather context |
+| Analysis | 3-5 | All tools + RAG/web search | Analyze and correlate |
+| Diagnosis | 6+ | provideDiagnosis (no execute) | Force structured output |
 
 ### Workflow Patterns
 
-Consider these patterns for complex diagnostics:
+The AI SDK documents five workflow patterns. For CEP-Hero troubleshooting, consider:
 
-- **Sequential Processing**: Steps executed in order (data collection → analysis → diagnosis)
-- **Parallel Processing**: Independent data collection tasks run simultaneously
-- **Routing**: Direct work based on the type of issue detected
-- **Evaluation Loops**: Check results and iterate if quality is insufficient
+#### Sequential Processing (Chains)
+
+Each step's output feeds into the next. Best for well-defined diagnostic flows.
+
+```
+User Query → Identify Domain → Collect Data → Analyze → Diagnose → Recommend
+```
+
+**Use when**: The troubleshooting path is predictable (e.g., policy not applying → check OU → check inheritance → check JSON).
+
+#### Routing
+
+The model acts as an intelligent router, selecting different paths based on the issue type.
+
+```
+User Query → Classify Issue Type → Route to Specialized Handler
+                ├── Policy Issues → Policy diagnostic flow
+                ├── DLP Issues → DLP diagnostic flow
+                ├── Connector Issues → Connector diagnostic flow
+                └── Unknown → General exploration flow
+```
+
+**Use when**: Different issue types require fundamentally different approaches.
+
+#### Parallel Processing
+
+Independent data collection tasks run simultaneously.
+
+```
+User Query → Spawn parallel tasks:
+             ├── Get org units
+             ├── Get policies
+             ├── Get recent events
+             └── Search knowledge base
+         → Aggregate results → Analyze → Diagnose
+```
+
+**Use when**: Multiple data sources must be checked but are independent.
+
+#### Orchestrator-Worker
+
+A coordinator plans execution while specialized workers handle subtasks.
+
+```
+Orchestrator: "This issue requires checking policy inheritance across 3 OUs"
+  → Worker 1: Analyze OU-A policies
+  → Worker 2: Analyze OU-B policies
+  → Worker 3: Analyze OU-C policies
+Orchestrator: Synthesize findings and diagnose
+```
+
+**Use when**: Complex diagnostics span multiple domains or require specialized expertise.
+
+#### Evaluator-Optimizer
+
+Generate → Evaluate → Improve loop for quality-sensitive output.
+
+```
+Generate initial diagnosis
+  → Evaluate: Does it address the user's actual question?
+  → Evaluate: Is evidence cited correctly?
+  → Evaluate: Are next steps actionable?
+  → If quality < threshold: Regenerate with feedback
+```
+
+**Use when**: Diagnosis quality is critical and worth the extra LLM calls.
+
+### Design Principles
+
+When selecting patterns, consider:
+
+| Factor | Question |
+|--------|----------|
+| Flexibility vs Control | How constrained should the AI be? |
+| Error Tolerance | What's the cost of a wrong diagnosis? |
+| Latency | How long can users wait? |
+| Cost | How many LLM calls can we afford? |
+| Maintainability | Can we debug and improve this? |
+
+**Strategy**: Start with the simplest sufficient approach (Sequential), add complexity only when evals demonstrate the need.
 
 ### Avoiding Whack-a-Mole
 
 Don't add ad-hoc system instructions to fix individual eval failures. Instead:
 
-1. Identify patterns across multiple failures
-2. Design general solutions that improve overall behavior
-3. Test changes against the full eval suite
-4. Document the reasoning behind system instruction changes
+1. **Identify patterns** across multiple failures - run the full eval suite, not just the failing case
+2. **Design general solutions** that improve overall behavior - if the AI misses evidence in one case, it's probably missing it in others
+3. **Test changes comprehensively** - a fix for one case shouldn't break others
+4. **Document the reasoning** - why did we add this instruction? What pattern was it addressing?
+
+**Example of what NOT to do**:
+```
+# Bad: Ad-hoc fix for EC-057
+"When analyzing connector policies, always check the policyTargetKey scope."
+```
+
+**Example of what TO do**:
+```
+# Good: General pattern addressing multiple cases
+"When diagnosing policy issues, always identify:
+ 1. The target scope (customer, OU, group, user)
+ 2. Whether inheritance is blocked
+ 3. Whether conflicting policies exist at other scopes"
+```
 
 ## Progress Tracking
 

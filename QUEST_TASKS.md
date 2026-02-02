@@ -30,8 +30,9 @@ This document tracks progress on overhauling the CEP-Hero evaluation system. Pro
 
 - [x] Create QUEST_INSTRUCTIONS.md with comprehensive eval documentation
 - [x] Create QUEST_TASKS.md for progress tracking
-- [ ] Update main README.md with clear evals section
-- [ ] Update evals/README.md to be more actionable
+- [x] Update main README.md with clear evals section
+- [x] Update evals/README.md to be more actionable
+- [x] Research and document AI SDK loop control and workflow patterns
 
 ---
 
@@ -112,13 +113,13 @@ For each eval case, assess:
 
 | Case   | Title                                         | Reviewed | Fixtures | Notes |
 | ------ | --------------------------------------------- | -------- | -------- | ----- |
-| EC-001 | Network connectivity during enrollment        | [ ]      | Yes      |       |
-| EC-002 | Enrollment error codes                        | [ ]      | Yes      |       |
-| EC-004 | Duplicate machine identifier after VM cloning | [ ]      | No       |       |
-| EC-018 | CEP enrollment/connectors not registering     | [ ]      | No       |       |
-| EC-046 | Enrollment token issues                       | [ ]      | No       |       |
-| EC-069 | Enrollment token wrong OU                     | [ ]      | No       |       |
-| EC-070 | Enrollment permission denied                  | [ ]      | No       |       |
+| EC-001 | Network connectivity during enrollment        | [x]      | Partial  | Uses EC-019/EC-021 fixtures. net.log shows SUCCESS not failure - mismatch. eventlog.txt wifi deauth is correct. Need failing network fixture. |
+| EC-002 | Enrollment error codes                        | [x]      | Yes      | Uses EC-003/update_engine.log with 402 error. Good match. Could add -105 DNS error example. |
+| EC-004 | Duplicate machine identifier after VM cloning | [x]      | No       | Needs: API response showing duplicate device IDs in BrowserManagement.browsers |
+| EC-018 | CEP enrollment/connectors not registering     | [x]      | No       | Needs: Empty browsers list + enrollment token status showing not applied |
+| EC-046 | Enrollment token issues                       | [x]      | No       | Needs: Enrollment token API response with expired/revoked status |
+| EC-069 | Enrollment token wrong OU                     | [x]      | No       | Needs: Token details showing targetResource=root instead of OU |
+| EC-070 | Enrollment permission denied                  | [x]      | No       | Needs: API 403 error response with PERMISSION_DENIED |
 
 ### events (2 cases)
 
@@ -278,3 +279,45 @@ EVAL_USE_BASE=1 bun run evals:verbose
 1. Begin reviewing individual eval cases
 2. Create fixtures for cases that need them
 3. Update main README.md with clear evals section
+
+### Session 2: 2026-02-02
+
+**Completed:**
+
+- Fixed line number reference in QUEST_INSTRUCTIONS.md to use search pattern instead
+- Verified fixtures column accuracy in QUEST_TASKS.md (already correct)
+- Confirmed main README.md already has comprehensive evals section
+- Researched AI SDK documentation (loop-control, workflows, building-agents)
+- Expanded QUEST_INSTRUCTIONS.md with detailed AI SDK patterns:
+  - Content-based, tool-based, and budget-aware stopping conditions
+  - prepareStep callback for dynamic execution
+  - Five workflow patterns (Sequential, Routing, Parallel, Orchestrator-Worker, Evaluator-Optimizer)
+  - Implementation recommendations for phased execution
+- Improved evals/README.md with:
+  - Decision tree for handling failed evals
+  - Detailed "How to add a new eval" walkthrough
+  - Iteration workflow section
+  - Cross-references to QUEST files
+
+**Key Insight:** Current `stepCountIs(5)` is too simplistic. Should implement semantic stopping conditions (e.g., stop when diagnosis is complete) rather than arbitrary step limits.
+
+**Phase 2 Progress (same session):**
+
+Reviewed all 7 enrollment category cases:
+
+| Case | Status | Fixture Assessment |
+|------|--------|-------------------|
+| EC-001 | Reviewed | net.log shows SUCCESS - needs failure fixture |
+| EC-002 | Good | Has 402 error in update_engine.log |
+| EC-004 | Needs fixture | Duplicate device ID response |
+| EC-018 | Needs fixture | Empty browsers list |
+| EC-046 | Needs fixture | Expired token response |
+| EC-069 | Needs fixture | Token with wrong targetResource |
+| EC-070 | Needs fixture | 403 PERMISSION_DENIED response |
+
+**Next Session Should:**
+
+1. Create missing fixtures for EC-004, EC-018, EC-046, EC-069, EC-070
+2. Fix EC-001 fixture (add failing network sample)
+3. Run enrollment evals to establish baseline
+4. Continue to next category (events or extensions)
