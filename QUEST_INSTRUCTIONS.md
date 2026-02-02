@@ -266,6 +266,31 @@ Evals are organized by failure domain to make it easier to find related cases an
 
 ## Best Practices
 
+### Generating Fixtures
+
+Fixtures should be generated from actual API responses to ensure they accurately reflect the real data structures the AI will encounter in production.
+
+**Capture base fixtures from live APIs:**
+
+```bash
+bun run fixtures:capture
+```
+
+This writes `evals/fixtures/base/api-base.json` with org units, policy schemas, Chrome reports, and audit events. The script automatically redacts emails, customer IDs, IPs, and hashes.
+
+**Process for creating case-specific fixtures:**
+
+1. Reproduce the issue in a real environment
+2. Use the browser dev tools or API explorer to capture the relevant API responses
+3. Identify the minimal data needed to trigger the scenario
+4. Redact sensitive information while preserving structure
+5. Save to `evals/fixtures/EC-###/overrides.json`
+6. Run the eval to verify the fixture triggers the expected behavior
+
+**Validating fixtures match actual API:**
+
+When generating fixtures, examine the API response structure carefully. This serves two purposes: ensuring evals are realistic, and identifying opportunities to improve how the UI renders structured data. If you notice the API returns data in a format that's hard to display (like opaque policy IDs), document this as a potential UI improvement.
+
 ### Fixture Design
 
 Keep fixtures short and focused. Long fixtures increase the chance the AI will miss important details. Include only the data necessary to trigger the expected diagnosis.
