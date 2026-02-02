@@ -100,8 +100,11 @@ Control eval behavior with these environment variables:
 | `EVAL_IDS`             | Comma-separated list of case IDs to run                                                                                                                        |
 | `EVAL_CATEGORY`        | Filter by category (policy, dlp, connector, system, enrollment, security, network, devices, integration, extensions, endpoint, browser, auth, events, updates) |
 | `EVAL_TAGS`            | Comma-separated list of tags to filter by                                                                                                                      |
+| `EVAL_LIMIT`           | Maximum number of cases to run                                                                                                                                 |
+| `EVAL_SERIAL=1`        | Run cases sequentially instead of in parallel (useful for rate limiting)                                                                                       |
 | `EVAL_MANAGE_SERVER=0` | Skip automatic server lifecycle management                                                                                                                     |
 | `EVAL_VERBOSE=1`       | Enable verbose output                                                                                                                                          |
+| `CHAT_URL`             | Override chat API URL (default: `http://localhost:3100/api/chat`)                                                                                              |
 
 ### Recommended Workflows
 
@@ -157,7 +160,7 @@ When an eval fails, examine the report to understand why:
 
 When an eval produces unexpected results, you have several options:
 
-1. **Tighten the eval**: Add `required_evidence` terms in `registry.json` and run with `EVAL_STRICT_EVIDENCE=1`. If it fails, the response is out of spec.
+1. **Tighten the eval**: Add `required_evidence` terms in `registry.json`. The runner automatically checks for these terms in the response. If it fails, the response is out of spec.
 
 2. **Adjust the fixture**: Add the exact data you expect the AI to reference. Keep fixtures short and focused so the model is less likely to ignore them.
 
