@@ -11,7 +11,7 @@ import { cjk } from "@streamdown/cjk";
 import { code } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { mermaid } from "@streamdown/mermaid";
-import { motion, AnimatePresence } from "motion/react";
+import { motion } from "motion/react";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import type { ComponentProps, ReactNode } from "react";
 import { createContext, memo, useContext, useEffect, useState } from "react";
@@ -122,34 +122,7 @@ export type ReasoningTriggerProps = ComponentProps<
 };
 
 const ThinkingAnimation = () => (
-  <motion.span
-    className="inline-flex items-center gap-1"
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-  >
-    <motion.span
-      animate={{ opacity: [0.4, 1, 0.4] }}
-      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-    >
-      Thinking
-    </motion.span>
-    <motion.span className="inline-flex">
-      {[0, 1, 2].map((i) => (
-        <motion.span
-          key={i}
-          animate={{ opacity: [0.3, 1, 0.3], y: [0, -2, 0] }}
-          transition={{
-            duration: 0.8,
-            repeat: Infinity,
-            delay: i * 0.15,
-            ease: "easeInOut",
-          }}
-        >
-          .
-        </motion.span>
-      ))}
-    </motion.span>
-  </motion.span>
+  <span className="text-muted-foreground">Thinking...</span>
 );
 
 const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
@@ -157,9 +130,9 @@ const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
     return <ThinkingAnimation />;
   }
   if (duration === undefined) {
-    return <p>Thought for a few seconds</p>;
+    return <span>Reasoning</span>;
   }
-  return <p>Thought for {duration} seconds</p>;
+  return <span>Reasoned for {duration}s</span>;
 };
 
 export const ReasoningTrigger = memo(
@@ -181,19 +154,9 @@ export const ReasoningTrigger = memo(
       >
         {children ?? (
           <>
-            <motion.div
-              animate={isStreaming ? { scale: [1, 1.1, 1] } : {}}
-              transition={{ duration: 1, repeat: Infinity }}
-            >
-              <BrainIcon className="size-4" />
-            </motion.div>
-            {getThinkingMessage(isStreaming, duration)}
-            <motion.div
-              animate={{ rotate: isOpen ? 180 : 0 }}
-              transition={{ duration: 0.2, ease: "easeInOut" }}
-            >
-              <ChevronDownIcon className="size-4" />
-            </motion.div>
+            <BrainIcon className="size-3.5" />
+            <span className="text-xs">{getThinkingMessage(isStreaming, duration)}</span>
+            <ChevronDownIcon className={cn("size-3.5 transition-transform", isOpen && "rotate-180")} />
           </>
         )}
       </CollapsibleTrigger>
@@ -212,24 +175,16 @@ export const ReasoningContent = memo(
     const { isOpen } = useReasoning();
 
     return (
-      <AnimatePresence>
-        {isOpen && (
-          <CollapsibleContent forceMount asChild>
-            <motion.div
-              initial={{ opacity: 0, height: 0, y: -8 }}
-              animate={{ opacity: 1, height: "auto", y: 0 }}
-              exit={{ opacity: 0, height: 0, y: -8 }}
-              transition={{ duration: 0.25, ease: "easeOut" }}
-              className={cn("mt-4 overflow-hidden text-sm text-muted-foreground", className)}
-              {...props}
-            >
-              <Streamdown plugins={{ code, mermaid, math, cjk }}>
-                {children}
-              </Streamdown>
-            </motion.div>
-          </CollapsibleContent>
-        )}
-      </AnimatePresence>
+      <CollapsibleContent>
+        <div
+          className={cn("mt-2 text-xs text-muted-foreground leading-relaxed", className)}
+          {...props}
+        >
+          <Streamdown plugins={{ code, mermaid, math, cjk }}>
+            {children}
+          </Streamdown>
+        </div>
+      </CollapsibleContent>
     );
   }
 );

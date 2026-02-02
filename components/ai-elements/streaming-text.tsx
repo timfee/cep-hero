@@ -51,7 +51,7 @@ export const StreamingText = memo(function StreamingText({
 export const StreamingCursor = memo(function StreamingCursor() {
   return (
     <motion.span
-      className="ml-0.5 inline-block h-4 w-0.5 align-middle bg-primary"
+      className="ml-0.5 inline-block h-4 w-0.5 align-middle bg-foreground/60"
       animate={{ opacity: [1, 0.3, 1] }}
       transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
     />
@@ -80,8 +80,8 @@ export const ThinkingIndicator = memo(function ThinkingIndicator({
         {[0, 1, 2].map((i) => (
           <motion.span
             key={i}
-            className="h-1.5 w-1.5 rounded-full bg-primary"
-            animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
+            className="h-1.5 w-1.5 rounded-full bg-muted-foreground"
+            animate={{ y: [0, -3, 0], opacity: [0.3, 0.8, 0.3] }}
             transition={{
               duration: 0.8,
               repeat: Infinity,
@@ -91,13 +91,7 @@ export const ThinkingIndicator = memo(function ThinkingIndicator({
           />
         ))}
       </div>
-      <motion.span
-        className="text-sm text-muted-foreground"
-        animate={{ opacity: [0.5, 1, 0.5] }}
-        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
-      >
-        {message}
-      </motion.span>
+      <span className="text-sm text-muted-foreground">{message}</span>
     </motion.div>
   );
 });
