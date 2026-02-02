@@ -56,37 +56,38 @@ export async function createChatStream({
         inputSchema: GetChromeEventsSchema,
         execute: async (args) => await executor.getChromeEvents(args),
       }),
-      
+
       getChromeConnectorConfiguration: tool({
         description: "Fetch Chrome connector configuration policies.",
         inputSchema: GetConnectorConfigSchema,
         execute: async () => await executor.getChromeConnectorConfiguration(),
       }),
-      
+
       listDLPRules: tool({
         description: "List DLP rules from Cloud Identity.",
         inputSchema: ListDLPRulesSchema,
         execute: async (args) => await executor.listDLPRules(args),
       }),
-      
+
       enrollBrowser: tool({
-        description: "Generate a Chrome Browser Cloud Management enrollment token.",
+        description:
+          "Generate a Chrome Browser Cloud Management enrollment token.",
         inputSchema: EnrollBrowserSchema,
         execute: async (args) => await executor.enrollBrowser(args),
       }),
-      
+
       getFleetOverview: tool({
         description: "Summarize fleet posture from live CEP data.",
         inputSchema: GetFleetOverviewSchema,
         execute: async (args) => await executor.getFleetOverview(args),
       }),
-      
+
       debugAuth: tool({
         description: "Inspect access token scopes and expiry.",
         inputSchema: debugAuthSchema,
         execute: async () => await executor.debugAuth(),
       }),
-      
+
       runDiagnosis: tool({
         description: "Run full diagnosis and return structured answer.",
         inputSchema: z.object({ prompt: z.string() }),

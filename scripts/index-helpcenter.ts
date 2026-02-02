@@ -74,7 +74,10 @@ function getElementText(element: unknown): string | null {
   }
 
   // Safe check for 'text' method common in Cheerio elements
-  if ("text" in element && typeof (element as { text: unknown }).text === "function") {
+  if (
+    "text" in element &&
+    typeof (element as { text: unknown }).text === "function"
+  ) {
     try {
       const text = (element as { text: () => unknown }).text();
       return typeof text === "string" ? text : null;
@@ -82,7 +85,7 @@ function getElementText(element: unknown): string | null {
       return null;
     }
   }
-  
+
   return null;
 }
 
@@ -166,9 +169,7 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
     failedRequestHandler({ request, error: rawError }) {
       const error = rawError as CrawleeError;
       // Check for 429 in both standard error object and Crawlee/got response
-      const statusCode =
-        error?.response?.statusCode ??
-        error?.statusCode;
+      const statusCode = error?.response?.statusCode ?? error?.statusCode;
 
       if (statusCode === 429) {
         console.error(INSTRUCTION_MESSAGE);
