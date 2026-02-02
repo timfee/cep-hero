@@ -82,7 +82,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
   );
 
   const handleRefresh = useCallback(async () => {
-    track("Dashboard Refreshed");
+    await track("Dashboard Refreshed");
     setIsRefreshing(true);
     try {
       await mutate();
@@ -180,8 +180,8 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => {
-                            track("Posture Card Clicked", {
+                          onClick={async () => {
+                            await track("Posture Card Clicked", {
                               label: card.label,
                               status: status,
                             });
@@ -262,8 +262,8 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => {
-                          track("Suggestion Clicked", {
+                        onClick={async () => {
+                          await track("Suggestion Clicked", {
                             category: suggestion.category,
                           });
                           onAction(suggestion.action);

@@ -51,11 +51,11 @@ export const ActionButtons = memo(function ActionButtons({
 
   if (actions.length === 0) return null;
 
-  const handleClick = (action: ActionItem) => {
+  const handleClick = async (action: ActionItem) => {
     if (globalDisabled || action.disabled || loadingId) return;
     const cmd = action.command ?? action.label ?? action.id;
     if (!cmd) return;
-    track("Action Button Clicked", { label: action.label ?? action.id });
+    await track("Action Button Clicked", { label: action.label ?? action.id });
     setLoadingId(action.id);
     onAction?.(cmd);
     // Clear any existing timeout before setting a new one

@@ -12,7 +12,7 @@ export default function SignInPage() {
   const [isLoading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    track("Sign In Clicked");
+    await track("Sign In Clicked");
     await authClient.signIn.social({
       provider: "google",
       callbackURL: "/",
