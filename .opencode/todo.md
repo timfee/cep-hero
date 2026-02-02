@@ -44,5 +44,5 @@
 
 - [x] G5 complete
 
-- [x] S5.1: Run lsp_diagnostics({ file: "*" }) | priority: high | id:S5.1
+- [x] S5.1: Run lsp_diagnostics({ file: "\*" }) | priority: high | id:S5.1
 - [x] S5.2: Run targeted tests or chat flow check as feasible; note any blockers | priority: medium | id:S5.2
