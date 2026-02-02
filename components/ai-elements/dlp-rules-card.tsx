@@ -1,6 +1,14 @@
 "use client";
 
+import { InfoIcon } from "lucide-react";
 import { memo } from "react";
+
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TOOLTIPS } from "@/lib/terminology";
 
 type DlpRule = {
   id?: string;
@@ -44,12 +52,22 @@ export const DlpRulesCard = memo(function DlpRulesCard({
 
   return (
     <div className="rounded-md border border-border bg-background">
-      <div className="border-b border-border px-3 py-2">
-        <p className="text-sm font-medium text-foreground">
-          Cloud Identity DLP rules
-        </p>
+      <div className="border-b border-border px-4 py-3">
+        <div className="flex items-center gap-2">
+          <p className="text-sm font-medium text-foreground">
+            Data Protection Rules
+          </p>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <InfoIcon className="h-3.5 w-3.5 cursor-help text-muted-foreground" />
+            </TooltipTrigger>
+            <TooltipContent className="max-w-xs">
+              <p>{TOOLTIPS.dlpRules}</p>
+            </TooltipContent>
+          </Tooltip>
+        </div>
         <p className="text-xs text-muted-foreground">
-          Showing {Math.min(rules.length, 8)} of {rules.length}
+          Showing {Math.min(rules.length, 8)} of {rules.length} rules
         </p>
       </div>
       <div className="divide-y divide-border">

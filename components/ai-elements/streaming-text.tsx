@@ -20,19 +20,26 @@ export const StreamingText = memo(function StreamingText({
   isStreaming = false,
   className,
 }: StreamingTextProps) {
-  const paragraphs = text.split(/\n{2,}/).filter(Boolean);
+  const trimmedText = text.trim();
+  const paragraphs = trimmedText.split(/\n{2,}/).filter(Boolean);
+  const showEmptyStreamingState = isStreaming && trimmedText.length === 0;
 
   return (
-    <div className={cn("space-y-3", className)}>
+    <div
+      aria-busy={isStreaming}
+      aria-live="polite"
+      className={cn("space-y-3", className)}
+    >
       {paragraphs.map((paragraph, i) => {
         const isLast = i === paragraphs.length - 1;
 
         return (
           <motion.p
             key={i}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-sm leading-relaxed text-foreground whitespace-pre-wrap"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: i * 0.04, ease: "easeOut" }}
+            className="whitespace-pre-wrap text-sm leading-relaxed text-foreground"
           >
             {paragraph}
             {isStreaming && isLast && <StreamingCursor />}
@@ -41,7 +48,17 @@ export const StreamingText = memo(function StreamingText({
       })}
 
       {/* Show cursor even when text is empty during streaming */}
-      {isStreaming && paragraphs.length === 0 && <StreamingCursor />}
+      {showEmptyStreamingState && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="flex items-center gap-2 text-sm text-muted-foreground"
+          role="status"
+        >
+          <ThinkingIndicator message="Gathering context..." />
+          <StreamingCursor />
+        </motion.div>
+      )}
     </div>
   );
 });
