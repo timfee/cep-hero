@@ -1,3 +1,5 @@
+"use client";
+
 import { track } from "@vercel/analytics";
 import { getToolName, isToolUIPart } from "ai";
 import { RefreshCcwIcon, CopyIcon } from "lucide-react";
