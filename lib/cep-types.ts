@@ -39,10 +39,10 @@ export type ChromeEvent = {
 
 export type PostureCard = {
   label: string;
-  status: "healthy" | "warning" | "critical" | "error";
-  detail: string;
+  value: string;
+  note: string;
   source: string;
-  action?: string;
+  action: string;
   lastUpdated?: string;
 };
 

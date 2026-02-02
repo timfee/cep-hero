@@ -6,15 +6,10 @@ import { cn } from "@/lib/utils";
 
 type EntityNameProps = {
   children: ReactNode;
-  type?: "connector" | "rule" | "device" | "policy" | "default";
   className?: string;
 };
 
-export function EntityName({
-  children,
-  type: _type = "default",
-  className,
-}: EntityNameProps) {
+export function EntityName({ children, className }: EntityNameProps) {
   return (
     <span
       className={cn(

@@ -4,6 +4,7 @@ import type { UIMessage } from "ai";
 
 import { getToolName, isToolUIPart } from "ai";
 import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 import { cn } from "@/lib/utils";
 
@@ -41,6 +42,7 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
                   part.text
                 ) : (
                   <ReactMarkdown
+                    remarkPlugins={[remarkGfm]}
                     components={{
                       p: ({ children }) => (
                         <p className="mb-3 last:mb-0">{children}</p>
@@ -83,6 +85,28 @@ export function ChatMessage({ message, onAction }: ChatMessageProps) {
                         <h3 className="mb-2 mt-3 font-semibold first:mt-0">
                           {children}
                         </h3>
+                      ),
+                      table: ({ children }) => (
+                        <div className="my-3 overflow-x-auto">
+                          <table className="w-full border-collapse text-sm">
+                            {children}
+                          </table>
+                        </div>
+                      ),
+                      thead: ({ children }) => (
+                        <thead className="border-b border-border">
+                          {children}
+                        </thead>
+                      ),
+                      th: ({ children }) => (
+                        <th className="px-3 py-2 text-left font-semibold">
+                          {children}
+                        </th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border-b border-border/50 px-3 py-2">
+                          {children}
+                        </td>
                       ),
                     }}
                   >

@@ -15,10 +15,10 @@ const fetcher = async (url: string) => {
 
 type PostureCard = {
   label: string;
-  status: "healthy" | "warning" | "critical" | "error";
-  detail: string;
+  value: string;
+  note: string;
   source: string;
-  action?: string;
+  action: string;
   lastUpdated?: string;
 };
 
@@ -57,10 +57,8 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
     );
   }
 
-  const unhealthyCards = data.postureCards.filter(
-    (c) => c.status !== "healthy"
-  );
-  const hasIssues = unhealthyCards.length > 0 || data.suggestions.length > 0;
+  const hasContent =
+    data.postureCards.length > 0 || data.suggestions.length > 0;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -74,55 +72,43 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
           </p>
         </header>
 
-        {hasIssues ? (
+        {hasContent ? (
           <div className="space-y-12">
-            {unhealthyCards.length > 0 && (
+            {data.postureCards.length > 0 && (
               <section>
                 <h2 className="mb-6 text-sm font-medium text-muted-foreground">
-                  Needs attention
+                  Fleet posture
                 </h2>
                 <div className="space-y-3">
-                  {unhealthyCards.map((card, idx) => (
+                  {data.postureCards.map((card, idx) => (
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => card.action && onAction(card.action)}
-                      disabled={!card.action}
+                      onClick={() => onAction(card.action)}
                       className={cn(
                         "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
                         "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
                         "transition-all duration-200",
-                        card.action &&
-                          "hover:border-white/15 hover:bg-white/[0.08]",
-                        !card.action && "cursor-default"
+                        "hover:border-white/15 hover:bg-white/[0.08]"
                       )}
                     >
                       <div className="flex items-center gap-4">
-                        <span
-                          className={cn(
-                            "h-2.5 w-2.5 rounded-full",
-                            card.status === "warning" &&
-                              "bg-(--color-status-warning)",
-                            card.status === "critical" &&
-                              "bg-(--color-status-error)",
-                            card.status === "error" &&
-                              "bg-(--color-status-error)"
-                          )}
-                        />
+                        <span className="h-2.5 w-2.5 rounded-full bg-(--color-status-info)" />
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-foreground">
                               {card.label}
                             </span>
+                            <span className="text-muted-foreground">
+                              {card.value}
+                            </span>
                           </div>
                           <p className="mt-1 text-sm text-muted-foreground">
-                            {card.detail}
+                            {card.note}
                           </p>
                         </div>
                       </div>
-                      {card.action && (
-                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
-                      )}
+                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
                     </button>
                   ))}
                 </div>

@@ -49,8 +49,9 @@ export function ChatConsole({ initialPrompt, className }: ChatConsoleProps) {
   }, [messages]);
 
   const submitInput = useCallback(() => {
-    if (!input.trim() || isLoading) return;
-    sendMessage({ text: input });
+    const trimmedInput = input.trim();
+    if (!trimmedInput || isLoading) return;
+    sendMessage({ text: trimmedInput });
     setInput("");
   }, [input, isLoading, sendMessage]);
 
