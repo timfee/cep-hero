@@ -1,6 +1,7 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import {
@@ -115,7 +116,17 @@ export const ChainOfThoughtHeader = memo(
   }
 );
 
-export type ChainOfThoughtStepProps = ComponentProps<"div"> & {
+type DivWithoutDrag = Omit<
+  ComponentProps<"div">,
+  | "onDrag"
+  | "onDragStart"
+  | "onDragEnd"
+  | "onDragOver"
+  | "onDragLeave"
+  | "onDragEnter"
+>;
+
+export type ChainOfThoughtStepProps = DivWithoutDrag & {
   icon?: LucideIcon;
   label: ReactNode;
   description?: ReactNode;
@@ -130,7 +141,6 @@ export const ChainOfThoughtStep = memo(
     description,
     status = "complete",
     children,
-    ...props
   }: ChainOfThoughtStepProps) => {
     const statusStyles = {
       complete: "text-muted-foreground",
@@ -144,7 +154,6 @@ export const ChainOfThoughtStep = memo(
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
         className={cn("flex gap-2 text-sm", statusStyles[status], className)}
-        {...props}
       >
         <div className="relative mt-0.5">
           <motion.div
@@ -205,19 +214,25 @@ export const ChainOfThoughtSearchResult = memo(
   )
 );
 
-export type ChainOfThoughtContentProps = ComponentProps<
-  typeof CollapsibleContent
+export type ChainOfThoughtContentProps = Omit<
+  ComponentProps<typeof CollapsibleContent>,
+  | "onDrag"
+  | "onDragStart"
+  | "onDragEnd"
+  | "onDragOver"
+  | "onDragLeave"
+  | "onDragEnter"
 >;
 
 export const ChainOfThoughtContent = memo(
-  ({ className, children, ...props }: ChainOfThoughtContentProps) => {
+  ({ className, children }: ChainOfThoughtContentProps) => {
     const { isOpen } = useChainOfThought();
 
     return (
       <Collapsible open={isOpen}>
         <AnimatePresence>
           {isOpen && (
-            <CollapsibleContent forceMount asChild>
+            <CollapsibleContent forceMount>
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -227,7 +242,6 @@ export const ChainOfThoughtContent = memo(
                   "mt-2 space-y-3 overflow-hidden text-popover-foreground",
                   className
                 )}
-                {...props}
               >
                 {children}
               </motion.div>

@@ -28,7 +28,7 @@ describe("buildEvidence connector handling", () => {
     const connectorAnalysis = analyzeConnectorPolicies(connectorPolicies);
 
     const evidence = buildEvidenceForTest({
-      eventsResult: { events: [] },
+      eventsResult: { events: [], nextPageToken: null },
       dlpResult: { rules: [] },
       connectorResult: {
         status: "Resolved",
@@ -60,7 +60,7 @@ describe("buildEvidence connector handling", () => {
     const connectorAnalysis = analyzeConnectorPolicies(connectorPolicies);
 
     const evidence = buildEvidenceForTest({
-      eventsResult: { events: [] },
+      eventsResult: { events: [], nextPageToken: null },
       dlpResult: { rules: [] },
       connectorResult: {
         status: "Resolved",
@@ -80,7 +80,7 @@ describe("buildEvidence connector handling", () => {
 
   it("surfaces missing required scopes when auth debug shows gaps", () => {
     const evidence = buildEvidenceForTest({
-      eventsResult: { events: [] },
+      eventsResult: { events: [], nextPageToken: null },
       dlpResult: { rules: [] },
       connectorResult: {
         status: "Resolved",
@@ -106,7 +106,7 @@ describe("buildEvidence connector handling", () => {
 
   it("records connector resolve errors as gaps", () => {
     const evidence = buildEvidenceForTest({
-      eventsResult: { events: [] },
+      eventsResult: { events: [], nextPageToken: null },
       dlpResult: { rules: [] },
       connectorResult: {
         error: "Could not determine policy target (root org unit).",

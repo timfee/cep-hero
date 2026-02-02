@@ -14,10 +14,12 @@ import {
   DEFAULT_SUGGESTIONS,
   QUICK_ACTIONS,
 } from "@/lib/overview";
+import { useChatContext } from "@/components/chat/chat-context";
 
 export default function Home() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, signOut } = useAuth();
+  const { sendMessage, setInput } = useChatContext();
   const [overview, setOverview] = useState<OverviewData | null>(null);
 
   // Redirect to sign-in if not authenticated
@@ -56,9 +58,8 @@ export default function Home() {
   }, [overview]);
 
   const dispatchCommand = (command: string) => {
-    document.dispatchEvent(
-      new CustomEvent("cep-action", { detail: { command } })
-    );
+    setInput("");
+    void sendMessage({ text: command });
   };
 
   const handleSignOut = async () => {
