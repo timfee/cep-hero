@@ -1,0 +1,64 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_INSTALL_FAILED",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "abcdefghijklmnopqrstuvwx" },
+              { "name": "EXTENSION_NAME", "value": "Corporate Security Tool" },
+              { "name": "INSTALL_TYPE", "value": "FORCE_INSTALLED" },
+              { "name": "ERROR_CODE", "value": "CRX_FETCH_FAILED" },
+              { "name": "ERROR_DETAIL", "value": "HTTP 404 - Extension not found in Chrome Web Store" },
+              { "name": "DEVICE_ID", "value": "device-abc123" },
+              { "name": "MACHINE_NAME", "value": "LAPTOP-ENG-042" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:05:33.102Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_INSTALL_FAILED",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "abcdefghijklmnopqrstuvwx" },
+              { "name": "EXTENSION_NAME", "value": "Corporate Security Tool" },
+              { "name": "INSTALL_TYPE", "value": "FORCE_INSTALLED" },
+              { "name": "ERROR_CODE", "value": "MANIFEST_INVALID" },
+              { "name": "ERROR_DETAIL", "value": "Invalid manifest: missing 'version' field" },
+              { "name": "DEVICE_ID", "value": "device-xyz789" },
+              { "name": "MACHINE_NAME", "value": "DESKTOP-HR-019" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "connectorPolicies": [
+    {
+      "targetKey": { "targetResource": "orgunits/03ph8a2z221pcso" },
+      "value": {
+        "policySchema": "chrome.users.ExtensionInstallForcelist",
+        "value": {
+          "extensionInstallForcelist": [
+            "abcdefghijklmnopqrstuvwx;https://clients2.google.com/service/update2/crx"
+          ]
+        }
+      },
+      "sourceKey": { "targetResource": "orgunits/03ph8a2z221pcso" }
+    }
+  ]
+}

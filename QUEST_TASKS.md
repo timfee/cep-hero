@@ -121,21 +121,21 @@ For each eval case, assess:
 | EC-069 | Enrollment token wrong OU                     | [x]      | Yes      | Token targeting customers/C00000000 instead of Enroll-Eng OU |
 | EC-070 | Enrollment permission denied                  | [x]      | Yes      | errors.enrollBrowser: "PERMISSION_DENIED" |
 
-### events (2 cases)
+### events (2 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                             | Reviewed | Fixtures | Notes |
 | ------ | --------------------------------- | -------- | -------- | ----- |
-| EC-052 | Performance degradation telemetry | [ ]      | No       |       |
-| EC-062 | Event reporting off               | [ ]      | No       |       |
+| EC-052 | Performance degradation telemetry | [x]      | Yes      | chromeReports with CPU/memory metrics showing "Legacy Ad Blocker Pro" at 45% CPU |
+| EC-062 | Event reporting off               | [x]      | Yes      | CloudReporting disabled in connectorPolicies for Events-Off OU |
 
-### extensions (4 cases)
+### extensions (4 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                            | Reviewed | Fixtures | Notes |
 | ------ | -------------------------------- | -------- | -------- | ----- |
-| EC-043 | Force-install extension failures | [ ]      | No       |       |
-| EC-044 | Permission increase blocking     | [ ]      | No       |       |
-| EC-045 | Malicious extension removal      | [ ]      | No       |       |
-| EC-053 | Corrupt extension state          | [ ]      | No       |       |
+| EC-043 | Force-install extension failures | [x]      | Yes      | EXTENSION_INSTALL_FAILED with CRX_FETCH_FAILED and MANIFEST_INVALID errors |
+| EC-044 | Permission increase blocking     | [x]      | Yes      | EXTENSION_DISABLED with PERMISSIONS_INCREASE reason |
+| EC-045 | Malicious extension removal      | [x]      | Yes      | Extension installed on 2 devices, needs blocklisting |
+| EC-053 | Corrupt extension state          | [x]      | Yes      | EXTENSION_CRASH events leading to CORRUPTED state |
 
 ### integration (4 cases)
 
