@@ -29,6 +29,9 @@ import {
   writeSummaryReport,
 } from "./reporter";
 
+const DEFAULT_CASE_PAUSE_MS = 250;
+const DEFAULT_CHAT_URL = "http://localhost:3100/api/chat";
+
 export type RunnerOptions = {
   ids?: string;
   categories?: string;
@@ -60,8 +63,8 @@ export async function runEvals(
     parallel = process.env.EVAL_SERIAL !== "1",
     pauseMs = process.env.EVAL_CASE_PAUSE_MS
       ? Number.parseInt(process.env.EVAL_CASE_PAUSE_MS, 10)
-      : 250,
-    chatUrl = process.env.CHAT_URL ?? "http://localhost:3100/api/chat",
+      : DEFAULT_CASE_PAUSE_MS,
+    chatUrl = process.env.CHAT_URL ?? DEFAULT_CHAT_URL,
     manageServer = process.env.EVAL_MANAGE_SERVER !== "0",
     verbose = process.env.EVAL_VERBOSE === "1",
   } = options;
