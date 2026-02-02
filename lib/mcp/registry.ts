@@ -556,13 +556,34 @@ export class CepToolExecutor {
         if (!directory.orgunits?.list) {
           throw new Error("Directory orgunit client unavailable");
         }
+        let rootOuId: string | null = null;
+        try {
+          // Explicitly fetch the root OU ID to ensure we have the correct target
+          const rootRes = await directory.orgunits.get({
+            customerId: this.customerId,
+            orgUnitPath: "/",
+          });
+          rootOuId = rootRes.data.orgUnitId ?? null;
+        } catch (e) {
+          console.log("[connector-config] explicit root-ou fetch failed", getErrorMessage(e));
+        }
+
         const orgUnits = await directory.orgunits.list({
           customerId: this.customerId,
           type: "all",
         });
+        
         const orgUnitIds = resolveOrgUnitCandidates(
           orgUnits?.data.organizationUnits ?? []
         );
+
+        if (rootOuId) {
+          const normalizedRoot = normalizeResource(rootOuId);
+          if (!orgUnitIds.includes(normalizedRoot)) {
+            orgUnitIds.unshift(normalizedRoot);
+          }
+        }
+
         targetCandidates = orgUnitIds
           .map((id) => buildOrgUnitTargetResource(id))
           .filter((t) => t !== "");
@@ -590,6 +611,12 @@ export class CepToolExecutor {
         [];
       for (const targetResource of targetCandidates) {
         attemptedTargets.push(targetResource);
+
+        // The resolve endpoint only supports 'orgunits' or 'groups'.
+        if (targetResource.startsWith("customers/")) {
+          continue;
+        }
+
         try {
           await this.logApi("google.request.connector-config", {
             endpoint:
@@ -652,6 +679,10 @@ export class CepToolExecutor {
           };
         } catch (error) {
           const message = getErrorMessage(error);
+          const isIgnorable =
+            message.includes("Requested entity was not found") ||
+            message.includes("must be of type 'orgunits' or 'groups'");
+
           recordActivity({
             id: crypto.randomUUID(),
             url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
@@ -662,14 +693,17 @@ export class CepToolExecutor {
             timestamp: Date.now(),
             kind: "workspace",
           });
-          await this.logApi("google.error.connector-config", {
-            message,
-            targetResource,
-          });
-          resolveErrors.push({
-            targetResource,
-            message,
-          });
+
+          if (!isIgnorable) {
+            await this.logApi("google.error.connector-config", {
+              message,
+              targetResource,
+            });
+            resolveErrors.push({
+              targetResource,
+              message,
+            });
+          }
         }
       }
 

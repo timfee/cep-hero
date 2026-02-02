@@ -35,6 +35,7 @@ describe("buildEvidence connector handling", () => {
         policySchemas: [],
         value: connectorPolicies,
         targetResource: "orgunits/root",
+        attemptedTargets: ["orgunits/root"],
       },
       connectorAnalysis,
     });
@@ -67,6 +68,7 @@ describe("buildEvidence connector handling", () => {
         policySchemas: [],
         value: connectorPolicies,
         targetResource: "orgunits/root",
+        attemptedTargets: ["orgunits/root"],
       },
       connectorAnalysis,
     });
@@ -87,6 +89,7 @@ describe("buildEvidence connector handling", () => {
         policySchemas: [],
         value: makeConnectorPolicies(["orgunits/root"]),
         targetResource: "orgunits/root",
+        attemptedTargets: ["orgunits/root"],
       },
       authDebugResult: {
         scope: "https://www.googleapis.com/auth/admin.directory.user",
@@ -112,6 +115,8 @@ describe("buildEvidence connector handling", () => {
         error: "Could not determine policy target (root org unit).",
         suggestion: "Re-authenticate",
         policySchemas: [],
+        targetResource: "orgunits/root",
+        attemptedTargets: ["orgunits/root"],
       },
     });
 
