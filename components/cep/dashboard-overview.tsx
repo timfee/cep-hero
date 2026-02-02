@@ -93,7 +93,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                       )}
                     >
                       <div className="flex items-center gap-4">
-                        <span className="h-2.5 w-2.5 rounded-full bg-(--color-status-info)" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-status-info)]" />
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium text-foreground">
@@ -134,7 +134,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                       )}
                     >
                       <div className="flex items-center gap-4">
-                        <span className="h-2.5 w-2.5 rounded-full bg-(--color-status-info)" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-status-info)]" />
                         <p className="text-foreground">{suggestion}</p>
                       </div>
                       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
@@ -147,7 +147,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
         ) : (
           <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-10 text-center backdrop-blur-xl">
             <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/[0.06]">
-              <span className="h-3 w-3 rounded-full bg-(--color-status-healthy)" />
+              <span className="h-3 w-3 rounded-full bg-[var(--color-status-healthy)]" />
             </div>
             <p className="text-foreground">All systems healthy</p>
             <p className="mt-1 text-sm text-muted-foreground">
