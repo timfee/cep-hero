@@ -1,28 +1,66 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { AnimatePresence } from "motion/react";
-import { SendHorizontal } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
+import { SendHorizontal, HelpCircle } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { ChatMessage } from "./chat-message";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+} from "@/components/ai-elements/reasoning";
+import { Loader, ThinkingIndicator } from "@/components/ai-elements/loader";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+  type PromptInputMessage,
+} from "@/components/ai-elements/prompt-input";
+
+// Domain-specific components
+import { HypothesesList } from "@/components/ai-elements/hypothesis-card";
+import { EvidencePanel } from "@/components/ai-elements/evidence-panel";
+import { ConnectorStatus } from "@/components/ai-elements/connector-status";
+import { PlanSteps } from "@/components/ai-elements/plan-steps";
+import { NextStepsPanel } from "@/components/ai-elements/next-steps-panel";
+import { MissingQuestionsList } from "@/components/ai-elements/missing-questions";
+import { ActionButtons, type ActionItem } from "@/components/ai-elements/action-buttons";
+import type {
+  EvidencePayload,
+  ConnectorAnalysis,
+  Hypothesis,
+  MissingQuestion,
+} from "@/types/chat";
+
+interface MessageMetadata {
+  evidence?: {
+    planSteps?: string[];
+    hypotheses?: Hypothesis[];
+    nextSteps?: string[];
+    missingQuestions?: MissingQuestion[];
+    evidence?: EvidencePayload;
+    connectorAnalysis?: ConnectorAnalysis;
+  };
+  actions?: ActionItem[];
+}
 
 export function ChatConsole() {
   const { messages, sendMessage, status } = useChat();
   const [input, setInput] = useState("");
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   const isStreaming = status === "submitted" || status === "streaming";
-
-  // Auto-scroll on new messages
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (el) {
-      el.scrollTop = el.scrollHeight;
-    }
-  }, [messages, isStreaming]);
 
   // Listen for cross-page action dispatches
   useEffect(() => {
@@ -35,12 +73,11 @@ export function ChatConsole() {
     return () => document.removeEventListener("cep-action", handler);
   }, [sendMessage]);
 
-  const handleSubmit = async (e?: React.FormEvent) => {
-    e?.preventDefault();
-    const trimmed = input.trim();
+  const handleSubmit = (message: PromptInputMessage) => {
+    const trimmed = message.text?.trim();
     if (!trimmed) return;
     setInput("");
-    await sendMessage({ text: trimmed });
+    void sendMessage({ text: trimmed });
   };
 
   const handleAction = (command: string) => {
@@ -49,83 +86,134 @@ export function ChatConsole() {
 
   return (
     <div className="flex h-full min-h-[600px] flex-col rounded-lg border border-border bg-card">
-      {/* Messages Area */}
-      <div
-        ref={scrollRef}
-        className="flex-1 overflow-y-auto"
-        role="log"
-        aria-label="Chat messages"
-        aria-live="polite"
-      >
-        <AnimatePresence mode="popLayout">
+      {/* Conversation with auto-scroll */}
+      <Conversation className="flex-1">
+        <ConversationContent className="p-0">
           {/* Empty state */}
           {messages.length === 0 && !isStreaming && (
-            <div className="flex h-full flex-col items-center justify-center p-8 text-center">
-              <div className="mb-3 text-4xl">?</div>
-              <h3 className="text-base font-medium text-foreground">
-                How can I help?
-              </h3>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Ask about Chrome Enterprise Premium configurations, connector
-                issues, or DLP policies.
-              </p>
-            </div>
+            <ConversationEmptyState
+              icon={<HelpCircle className="h-8 w-8" />}
+              title="How can I help?"
+              description="Ask about Chrome Enterprise Premium configurations, connector issues, or DLP policies."
+            />
           )}
 
           {/* Messages */}
-          {messages.map((message, index) => (
-            <ChatMessage
-              key={message.id}
-              message={message}
-              isStreaming={isStreaming}
-              isLast={index === messages.length - 1}
-              onAction={handleAction}
-            />
-          ))}
+          {messages.map((message, index) => {
+            const isUser = message.role === "user";
+            const isLast = index === messages.length - 1;
+            const showStreamingCursor = isStreaming && isLast && !isUser;
+            const metadata = message.metadata as MessageMetadata | undefined;
 
-          {/* Streaming placeholder */}
-          {isStreaming && messages.length > 0 && status === "submitted" && (
-            <ChatMessage
-              message={{
-                id: "streaming",
-                role: "assistant",
-                content: "",
-                parts: [],
-              }}
-              isStreaming={true}
-              isLast={true}
-              onAction={handleAction}
-            />
-          )}
-        </AnimatePresence>
-      </div>
+            // Extract parts
+            const textParts = message.parts.filter(
+              (p): p is { type: "text"; text: string } => p.type === "text"
+            );
+            const reasoningParts = message.parts.filter(
+              (p): p is { type: "reasoning"; reasoning: string } =>
+                p.type === "reasoning"
+            );
 
-      {/* Input Form */}
-      <form
+            const mainText = textParts.map((p) => p.text).join("\n");
+            const reasoningText = reasoningParts.map((p) => p.reasoning).join("\n");
+            const evidence = metadata?.evidence;
+            const actions = metadata?.actions;
+
+            return (
+              <Message
+                key={message.id}
+                from={message.role}
+                className={isUser ? "bg-transparent px-4 py-4" : "bg-muted/30 px-4 py-4"}
+              >
+                {/* Role label */}
+                <div className="text-xs font-medium text-muted-foreground">
+                  {isUser ? "You" : "Assistant"}
+                </div>
+
+                <MessageContent className="space-y-3">
+                  {/* Reasoning */}
+                  {!isUser && reasoningText && (
+                    <Reasoning isStreaming={showStreamingCursor} defaultOpen>
+                      <ReasoningTrigger />
+                      <ReasoningContent>{reasoningText}</ReasoningContent>
+                    </Reasoning>
+                  )}
+
+                  {/* Thinking indicator */}
+                  {showStreamingCursor && !mainText && !reasoningText && (
+                    <ThinkingIndicator message="Thinking" />
+                  )}
+
+                  {/* Main text with streaming markdown support */}
+                  {mainText && <MessageResponse>{mainText}</MessageResponse>}
+
+                  {/* Domain-specific structured data */}
+                  {!isUser && evidence?.connectorAnalysis?.flag && (
+                    <ConnectorStatus analysis={evidence.connectorAnalysis} />
+                  )}
+
+                  {!isUser && evidence?.planSteps && evidence.planSteps.length > 0 && (
+                    <PlanSteps steps={evidence.planSteps} />
+                  )}
+
+                  {!isUser && evidence?.evidence && (
+                    <EvidencePanel evidence={evidence.evidence} />
+                  )}
+
+                  {!isUser && evidence?.hypotheses && evidence.hypotheses.length > 0 && (
+                    <HypothesesList hypotheses={evidence.hypotheses} />
+                  )}
+
+                  {!isUser && evidence?.missingQuestions && evidence.missingQuestions.length > 0 && (
+                    <MissingQuestionsList questions={evidence.missingQuestions} />
+                  )}
+
+                  {!isUser && evidence?.nextSteps && evidence.nextSteps.length > 0 && (
+                    <NextStepsPanel steps={evidence.nextSteps} onStepClick={handleAction} />
+                  )}
+
+                  {!isUser && actions && actions.length > 0 && (
+                    <ActionButtons actions={actions} onAction={handleAction} />
+                  )}
+                </MessageContent>
+              </Message>
+            );
+          })}
+
+          {/* Streaming loader */}
+          {status === "submitted" && <Loader className="mx-4 my-4 text-muted-foreground" variant="dots" />}
+        </ConversationContent>
+
+        <ConversationScrollButton />
+      </Conversation>
+
+      {/* Input using PromptInput */}
+      <PromptInput
         onSubmit={handleSubmit}
-        className="flex items-center gap-3 border-t border-border p-4"
+        className="border-t border-border p-4"
       >
-        <input
-          id="chat-input"
-          ref={inputRef}
-          type="text"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          placeholder={isStreaming ? "Thinking..." : "Type a message..."}
-          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
-          disabled={isStreaming}
-          aria-label="Message input"
-        />
-        <Button
-          type="submit"
-          disabled={isStreaming || !input.trim()}
-          size="sm"
-          variant="default"
-          aria-label="Send message"
-        >
-          <SendHorizontal className="h-4 w-4" />
-        </Button>
-      </form>
+        <div className="flex items-center gap-3">
+          <PromptInputTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={isStreaming ? "Thinking..." : "Type a message..."}
+            disabled={isStreaming}
+            className="min-h-0 flex-1 resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            rows={1}
+          />
+          <PromptInputSubmit asChild>
+            <Button
+              type="submit"
+              disabled={isStreaming || !input.trim()}
+              size="sm"
+              variant="default"
+              aria-label="Send message"
+            >
+              <SendHorizontal className="h-4 w-4" />
+            </Button>
+          </PromptInputSubmit>
+        </div>
+      </PromptInput>
     </div>
   );
 }
