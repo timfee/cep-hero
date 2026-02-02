@@ -174,6 +174,7 @@ function parseJson(value: string): unknown {
 
 /**
  * Extract text delta payload from a streaming chunk.
+ * AI SDK uses "textDelta" field, not "delta".
  */
 function getTextDelta(value: unknown): string | undefined {
   if (!value || typeof value !== "object") {
@@ -181,7 +182,8 @@ function getTextDelta(value: unknown): string | undefined {
   }
 
   const type = Reflect.get(value, "type");
-  const delta = Reflect.get(value, "delta");
+  // AI SDK uses "textDelta" not "delta"
+  const delta = Reflect.get(value, "textDelta") ?? Reflect.get(value, "delta");
 
   if (type !== "text-delta") {
     return undefined;
