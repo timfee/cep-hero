@@ -164,7 +164,7 @@ export async function POST(req: Request) {
     },
   });
 
-  // Return stream with structured data annotations when available
+  // Return stream response
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
     getMessageMetadata: () => {
