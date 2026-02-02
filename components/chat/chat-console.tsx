@@ -1,6 +1,6 @@
-import { SendHorizontal, HelpCircle, Loader2, RefreshCcwIcon, CopyIcon } from "lucide-react";
-import { useMemo, useCallback } from "react";
 import { getToolName, isToolUIPart } from "ai";
+import { HelpCircle, RefreshCcwIcon, CopyIcon } from "lucide-react";
+import { useCallback } from "react";
 
 import type {
   EvidencePayload,
@@ -23,7 +23,7 @@ import {
 import { EvidencePanel } from "@/components/ai-elements/evidence-panel";
 // Domain-specific components
 import { HypothesesList } from "@/components/ai-elements/hypothesis-card";
-import { Loader, ThinkingIndicator } from "@/components/ai-elements/loader";
+import { Loader } from "@/components/ai-elements/loader";
 import {
   Message,
   MessageContent,
@@ -55,8 +55,8 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { useChatContext } from "@/components/chat/chat-context";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
 import { OrgUnitsList } from "./org-units-list";
 
 interface MessageMetadata {
