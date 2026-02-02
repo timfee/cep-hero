@@ -1,0 +1,57 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_INSTALLED",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "malicious-ext-id-12345" },
+              { "name": "EXTENSION_NAME", "value": "Free VPN Pro (MALICIOUS)" },
+              { "name": "INSTALL_TYPE", "value": "USER_INSTALLED" },
+              { "name": "DEVICE_ID", "value": "device-abc123" },
+              { "name": "MACHINE_NAME", "value": "LAPTOP-SALES-007" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:05:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_INSTALLED",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "malicious-ext-id-12345" },
+              { "name": "EXTENSION_NAME", "value": "Free VPN Pro (MALICIOUS)" },
+              { "name": "INSTALL_TYPE", "value": "USER_INSTALLED" },
+              { "name": "DEVICE_ID", "value": "device-xyz789" },
+              { "name": "MACHINE_NAME", "value": "DESKTOP-MARKETING-012" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "chromeReports": {
+    "installedApps": {
+      "extensionId": "malicious-ext-id-12345",
+      "extensionName": "Free VPN Pro (MALICIOUS)",
+      "installedCount": 2,
+      "devices": [
+        { "deviceId": "device-abc123", "machineName": "LAPTOP-SALES-007" },
+        { "deviceId": "device-xyz789", "machineName": "DESKTOP-MARKETING-012" }
+      ]
+    }
+  }
+}

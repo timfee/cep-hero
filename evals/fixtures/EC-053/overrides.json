@@ -1,0 +1,66 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_CRASH",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "cjpalhdlnbpafiamejdnhcphjbkeiagm" },
+              { "name": "EXTENSION_NAME", "value": "Password Vault Pro" },
+              { "name": "CRASH_TYPE", "value": "RENDERER_CRASH" },
+              { "name": "CRASH_COUNT", "value": "5" },
+              { "name": "DEVICE_ID", "value": "device-abc123" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:05:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_CRASH",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "cjpalhdlnbpafiamejdnhcphjbkeiagm" },
+              { "name": "EXTENSION_NAME", "value": "Password Vault Pro" },
+              { "name": "CRASH_TYPE", "value": "SERVICE_WORKER_CRASH" },
+              { "name": "CRASH_COUNT", "value": "8" },
+              { "name": "DEVICE_ID", "value": "device-abc123" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:08:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_REQUEST_TYPE",
+            "name": "EXTENSION_STATE_CHANGE",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "cjpalhdlnbpafiamejdnhcphjbkeiagm" },
+              { "name": "EXTENSION_NAME", "value": "Password Vault Pro" },
+              { "name": "NEW_STATE", "value": "CORRUPTED" },
+              { "name": "REPAIR_REQUIRED", "value": "true" },
+              { "name": "DEVICE_ID", "value": "device-abc123" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

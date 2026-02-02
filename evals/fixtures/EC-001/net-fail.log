@@ -1,0 +1,5 @@
+{"time":"2026-01-20T04:02:22.802Z","type":"DNS_REQUEST","params":{"hostname":"clients.google.com","source":"SYSTEM"}}
+{"time":"2026-01-20T04:02:25.802Z","type":"DNS_RESPONSE","params":{"hostname":"clients.google.com","error":"ERR_NAME_NOT_RESOLVED","net_error":-105}}
+{"time":"2026-01-20T04:02:26.102Z","type":"SOCKET_CONNECT","params":{"address":"142.250.72.14","port":443,"protocol":"TCP"}}
+{"time":"2026-01-20T04:02:31.102Z","type":"SOCKET_CONNECT_JOB_RESULT","params":{"error":"ERR_CONNECTION_TIMED_OUT","net_error":-118}}
+{"time":"2026-01-20T04:02:31.302Z","type":"HTTP_TRANSACTION_SEND_REQUEST","params":{"url":"https://clients.google.com/endpoint","method":"GET","error":"ERR_CONNECTION_FAILED","net_error":-109}}

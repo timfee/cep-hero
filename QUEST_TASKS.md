@@ -30,8 +30,9 @@ This document tracks progress on overhauling the CEP-Hero evaluation system. Pro
 
 - [x] Create QUEST_INSTRUCTIONS.md with comprehensive eval documentation
 - [x] Create QUEST_TASKS.md for progress tracking
-- [ ] Update main README.md with clear evals section
-- [ ] Update evals/README.md to be more actionable
+- [x] Update main README.md with clear evals section
+- [x] Update evals/README.md to be more actionable
+- [x] Research and document AI SDK loop control and workflow patterns
 
 ---
 
@@ -108,33 +109,33 @@ For each eval case, assess:
 | EC-011 | Endpoint Verification cannot recover key    | [ ]      | No       |       |
 | EC-012 | Endpoint Verification service worker bug    | [ ]      | No       |       |
 
-### enrollment (7 cases)
+### enrollment (7 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                         | Reviewed | Fixtures | Notes |
 | ------ | --------------------------------------------- | -------- | -------- | ----- |
-| EC-001 | Network connectivity during enrollment        | [ ]      | Yes      |       |
-| EC-002 | Enrollment error codes                        | [ ]      | Yes      |       |
-| EC-004 | Duplicate machine identifier after VM cloning | [ ]      | No       |       |
-| EC-018 | CEP enrollment/connectors not registering     | [ ]      | No       |       |
-| EC-046 | Enrollment token issues                       | [ ]      | No       |       |
-| EC-069 | Enrollment token wrong OU                     | [ ]      | No       |       |
-| EC-070 | Enrollment permission denied                  | [ ]      | No       |       |
+| EC-001 | Network connectivity during enrollment        | [x]      | Yes      | Created net-fail.log and eventlog-wifi-fail.txt with connection failures |
+| EC-002 | Enrollment error codes                        | [x]      | Yes      | Uses EC-003/update_engine.log with 402 error. Good match. |
+| EC-004 | Duplicate machine identifier after VM cloning | [x]      | Yes      | Added audit events showing duplicate DEVICE_ID and browsers array |
+| EC-018 | CEP enrollment/connectors not registering     | [x]      | Yes      | Empty browsers/events list with valid token not applied |
+| EC-046 | Enrollment token issues                       | [x]      | Yes      | enrollmentToken with status: "expired" |
+| EC-069 | Enrollment token wrong OU                     | [x]      | Yes      | Token targeting customers/C00000000 instead of Enroll-Eng OU |
+| EC-070 | Enrollment permission denied                  | [x]      | Yes      | errors.enrollBrowser: "PERMISSION_DENIED" |
 
-### events (2 cases)
+### events (2 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                             | Reviewed | Fixtures | Notes |
 | ------ | --------------------------------- | -------- | -------- | ----- |
-| EC-052 | Performance degradation telemetry | [ ]      | No       |       |
-| EC-062 | Event reporting off               | [ ]      | No       |       |
+| EC-052 | Performance degradation telemetry | [x]      | Yes      | chromeReports with CPU/memory metrics showing "Legacy Ad Blocker Pro" at 45% CPU |
+| EC-062 | Event reporting off               | [x]      | Yes      | CloudReporting disabled in connectorPolicies for Events-Off OU |
 
-### extensions (4 cases)
+### extensions (4 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                            | Reviewed | Fixtures | Notes |
 | ------ | -------------------------------- | -------- | -------- | ----- |
-| EC-043 | Force-install extension failures | [ ]      | No       |       |
-| EC-044 | Permission increase blocking     | [ ]      | No       |       |
-| EC-045 | Malicious extension removal      | [ ]      | No       |       |
-| EC-053 | Corrupt extension state          | [ ]      | No       |       |
+| EC-043 | Force-install extension failures | [x]      | Yes      | EXTENSION_INSTALL_FAILED with CRX_FETCH_FAILED and MANIFEST_INVALID errors |
+| EC-044 | Permission increase blocking     | [x]      | Yes      | EXTENSION_DISABLED with PERMISSIONS_INCREASE reason |
+| EC-045 | Malicious extension removal      | [x]      | Yes      | Extension installed on 2 devices, needs blocklisting |
+| EC-053 | Corrupt extension state          | [x]      | Yes      | EXTENSION_CRASH events leading to CORRUPTED state |
 
 ### integration (4 cases)
 
@@ -278,3 +279,68 @@ EVAL_USE_BASE=1 bun run evals:verbose
 1. Begin reviewing individual eval cases
 2. Create fixtures for cases that need them
 3. Update main README.md with clear evals section
+
+### Session 2: 2026-02-02
+
+**Completed:**
+
+- Fixed line number reference in QUEST_INSTRUCTIONS.md to use search pattern instead
+- Verified fixtures column accuracy in QUEST_TASKS.md (already correct)
+- Confirmed main README.md already has comprehensive evals section
+- Researched AI SDK documentation (loop-control, workflows, building-agents)
+- Expanded QUEST_INSTRUCTIONS.md with detailed AI SDK patterns:
+  - Content-based, tool-based, and budget-aware stopping conditions
+  - prepareStep callback for dynamic execution
+  - Five workflow patterns (Sequential, Routing, Parallel, Orchestrator-Worker, Evaluator-Optimizer)
+  - Implementation recommendations for phased execution
+- Improved evals/README.md with:
+  - Decision tree for handling failed evals
+  - Detailed "How to add a new eval" walkthrough
+  - Iteration workflow section
+  - Cross-references to QUEST files
+
+**Key Insight:** Current `stepCountIs(5)` is too simplistic. Should implement semantic stopping conditions (e.g., stop when diagnosis is complete) rather than arbitrary step limits.
+
+**Phase 2 Progress (same session):**
+
+Reviewed and created fixtures for all 7 enrollment category cases:
+
+| Case | Status | Fixture Created |
+|------|--------|-----------------|
+| EC-001 | ✅ Complete | Created net-fail.log with ERR_NAME_NOT_RESOLVED, ERR_CONNECTION_TIMED_OUT |
+| EC-002 | ✅ Good | Already has 402 error in update_engine.log |
+| EC-004 | ✅ Complete | Audit events + browsers array showing duplicate DEVICE_ID |
+| EC-018 | ✅ Complete | Empty browsers/events with valid but unapplied token |
+| EC-046 | ✅ Complete | enrollmentToken with status: "expired" |
+| EC-069 | ✅ Complete | Token targeting root (customers/C00000000) instead of OU |
+| EC-070 | ✅ Complete | errors.enrollBrowser: "PERMISSION_DENIED" |
+
+**Infrastructure extended:**
+- Added `enrollmentToken` and `browsers` fields to FixtureData type
+- Extended fixture-executor to read enrollmentToken with status/error injection
+- Extended loadFixtureData to handle new fields
+
+**Eval run (test mode):** All 7 cases ran successfully (failures expected in test mode since synthetic responses don't contain evidence markers)
+
+**Continued in same session - Events & Extensions:**
+
+Created fixtures for events category (2 cases):
+- EC-052: chromeReports with appUsageMetrics showing "Legacy Ad Blocker Pro" at 45% CPU
+- EC-062: CloudReporting disabled in connectorPolicies for Events-Off OU
+
+Created fixtures for extensions category (4 cases):
+- EC-043: EXTENSION_INSTALL_FAILED with CRX_FETCH_FAILED and MANIFEST_INVALID
+- EC-044: EXTENSION_DISABLED with PERMISSIONS_INCREASE reason
+- EC-045: Malicious extension on 2 devices, needs blocklisting
+- EC-053: EXTENSION_CRASH events leading to CORRUPTED state
+
+**Total Progress:** 13/85 cases now have fixtures
+- enrollment: 7 ✅
+- events: 2 ✅
+- extensions: 4 ✅
+
+**Next Session Should:**
+
+1. Run evals against live server to establish true baseline
+2. Review endpoint category (4 cases)
+3. Continue with remaining categories

@@ -12,10 +12,10 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "fixtures": [
-        "evals/fixtures/EC-019/net.log",
-        "evals/fixtures/EC-021/eventlog.txt"
+        "evals/fixtures/EC-001/net-fail.log",
+        "evals/fixtures/EC-001/eventlog-wifi-fail.txt"
       ],
-      "required_evidence": ["net.log", "eventlog"],
+      "required_evidence": ["ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION", "deauth", "wifi"],
       "assertions": [],
       "cleanup": []
     },
@@ -60,6 +60,8 @@
       "tags": ["enrollment", "devices"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-004/overrides.json"],
+      "required_evidence": ["DUPLICATE", "machine", "VM", "clone", "sysprep"],
       "assertions": [],
       "cleanup": []
     },
@@ -242,6 +244,8 @@
       "tags": ["enrollment", "connectors"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-018/overrides.json"],
+      "required_evidence": ["license", "token", "enrollment", "managed"],
       "assertions": [],
       "cleanup": []
     },
@@ -635,6 +639,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-043/overrides.json"],
+      "required_evidence": ["EXTENSION_INSTALL_FAILED", "CRX_FETCH", "manifest", "force"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -652,6 +658,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-044/overrides.json"],
+      "required_evidence": ["PERMISSIONS_INCREASE", "EXTENSION_DISABLED", "webRequest", "allowlist"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -669,6 +677,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-045/overrides.json"],
+      "required_evidence": ["malicious", "installed", "blocklist", "devices"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -686,6 +696,8 @@
       "tags": ["enrollment"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-046/overrides.json"],
+      "required_evidence": ["expired", "token", "new"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -788,6 +800,8 @@
       "tags": ["telemetry"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-052/overrides.json"],
+      "required_evidence": ["Legacy Ad Blocker", "CPU", "extension", "disable"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -805,6 +819,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-053/overrides.json"],
+      "required_evidence": ["EXTENSION_CRASH", "CORRUPTED", "repair", "reinstall"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -934,6 +950,8 @@
       "tags": ["events"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-062/overrides.json"],
+      "required_evidence": ["CloudReporting", "disabled", "Events-Off", "enable"],
       "assertions": [],
       "cleanup": []
     },
@@ -1025,6 +1043,8 @@
       "tags": ["enrollment"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-069/overrides.json"],
+      "required_evidence": ["targetResource", "root", "OU", "Enroll-Eng"],
       "assertions": [],
       "cleanup": []
     },
@@ -1038,6 +1058,8 @@
       "tags": ["enrollment"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-070/overrides.json"],
+      "required_evidence": ["PERMISSION_DENIED", "role", "admin"],
       "assertions": [],
       "cleanup": []
     },

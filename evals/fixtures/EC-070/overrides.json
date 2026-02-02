@@ -1,0 +1,5 @@
+{
+  "errors": {
+    "enrollBrowser": "PERMISSION_DENIED: The caller does not have permission to create enrollment tokens. Required role: Chrome Browser Cloud Management Admin or Groups Admin."
+  }
+}
