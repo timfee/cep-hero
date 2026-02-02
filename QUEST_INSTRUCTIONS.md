@@ -224,11 +224,10 @@ User: "The exact prompt the user would ask"
 {
   "id": "EC-086",
   "title": "Your scenario title",
-  "category": "diagnostics",
+  "category": "policy",
   "source_refs": ["YourSource-1"],
   "case_file": "evals/cases/EC-086-your-scenario-title.md",
   "mode": "rubric",
-  "requires_live_data": false,
   "tags": ["relevant", "tags"],
   "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
   "fixtures": [],
@@ -248,21 +247,25 @@ User: "The exact prompt the user would ask"
 EVAL_IDS=EC-086 EVAL_USE_BASE=1 bun run evals:run:by-id
 ```
 
-## Eval Categories Explained
+## Eval Categories
 
-The current three categories reflect the historical origin of the eval cases, not a principled taxonomy. Future reorganization should consider grouping by:
+Evals are organized by failure domain to make it easier to find related cases and identify coverage gaps. The 15 categories are:
 
-- **Failure mode**: What type of problem is being diagnosed (policy, connector, DLP, enrollment, etc.)
-- **Complexity**: Single-turn vs multi-turn, simple vs compound issues
-- **Data requirements**: Deterministic (fixture-only) vs live data needed
-
-### Current Categories
-
-**Common Challenges (EC-001–EC-026)**: Log-driven, deterministic scenarios based on common support issues. These use fixture data like net logs, event logs, and update engine logs.
-
-**Diagnostics (EC-027–EC-056)**: Architectural diagnostic scenarios that may require live data. These test the AI's ability to diagnose complex policy and configuration issues.
-
-**Test Plan (EC-057–EC-082)**: Live troubleshooting scenarios from the original test plan. These were designed for end-to-end testing with real Google API interactions.
+- **policy** (15 cases): Policy application, precedence, inheritance, schema issues
+- **dlp** (9 cases): Data Loss Prevention rules, detection, false positives
+- **connector** (8 cases): Chrome connectors (bulk, web, file transfer, print)
+- **system** (7 cases): API quota, rate limits, reference docs, general system issues
+- **enrollment** (7 cases): Device/browser enrollment, tokens, permissions
+- **security** (6 cases): Safe Browsing, access levels, encryption, CAA
+- **network** (6 cases): Connectivity, proxy, firewall, SSL inspection
+- **devices** (6 cases): Device management, org units, deprovisioning
+- **integration** (4 cases): Citrix SPA and other third-party integrations
+- **extensions** (4 cases): Extension management, force-install, permissions
+- **endpoint** (4 cases): Endpoint Verification sync and key recovery
+- **browser** (3 cases): Browser crashes, performance, profile issues
+- **auth** (3 cases): Authentication, tokens, session revocation
+- **events** (2 cases): Event reporting and telemetry
+- **updates** (1 case): ChromeOS auto-update issues
 
 ## Best Practices
 

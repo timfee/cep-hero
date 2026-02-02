@@ -18,7 +18,6 @@ export type EvalCase = {
   source_refs: string[];
   case_file: string;
   mode: string;
-  requires_live_data: boolean;
   tags: string[];
   conversation_script: unknown[];
   expected_schema: string[];
