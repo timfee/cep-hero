@@ -1,7 +1,8 @@
 "use client";
 
-import { getToolName, isToolUIPart } from "ai";
 import type { UIMessage } from "ai";
+
+import { getToolName, isToolUIPart } from "ai";
 import ReactMarkdown from "react-markdown";
 
 import { cn } from "@/lib/utils";

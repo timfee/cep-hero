@@ -5,35 +5,33 @@ import useSWR from "swr";
 
 import { cn } from "@/lib/utils";
 
-import { EntityName } from "./entity-name";
-
-const fetcher = (url: string) => fetch(url).then((res) => res.json());
-
-type ConnectorStatus = {
-  id: string;
-  name: string;
-  status: "healthy" | "degraded" | "error" | "offline";
-  issues: string[];
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) {
+    throw new Error(`Failed to fetch: ${res.status}`);
+  }
+  return res.json();
 };
 
-type SuggestedAction = {
-  id: string;
-  description: string;
-  command: string;
-  parameters?: Record<string, string>;
-  severity: "critical" | "high" | "medium" | "low";
-  impact?: string;
+type PostureCard = {
+  label: string;
+  status: "healthy" | "warning" | "critical" | "error";
+  detail: string;
+  source: string;
+  action?: string;
+  lastUpdated?: string;
 };
 
 type OverviewData = {
   headline: string;
   summary: string;
-  connectors: ConnectorStatus[];
-  suggestedActions: SuggestedAction[];
+  postureCards: PostureCard[];
+  suggestions: string[];
+  sources: string[];
 };
 
 type DashboardOverviewProps = {
-  onAction: (command: string, parameters?: Record<string, string>) => void;
+  onAction: (command: string) => void;
 };
 
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
@@ -59,11 +57,10 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
     );
   }
 
-  const unhealthyConnectors = (data.connectors || []).filter(
+  const unhealthyCards = data.postureCards.filter(
     (c) => c.status !== "healthy"
   );
-  const hasIssues =
-    unhealthyConnectors.length > 0 || (data.suggestedActions || []).length > 0;
+  const hasIssues = unhealthyCards.length > 0 || data.suggestions.length > 0;
 
   return (
     <div className="h-full overflow-y-auto">
@@ -79,74 +76,70 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
 
         {hasIssues ? (
           <div className="space-y-12">
-            {unhealthyConnectors.length > 0 && (
+            {unhealthyCards.length > 0 && (
               <section>
                 <h2 className="mb-6 text-sm font-medium text-muted-foreground">
                   Needs attention
                 </h2>
                 <div className="space-y-3">
-                  {unhealthyConnectors.map((connector) => (
+                  {unhealthyCards.map((card, idx) => (
                     <button
-                      key={connector.id}
+                      key={idx}
                       type="button"
-                      onClick={() =>
-                        onAction("diagnoseConnector", {
-                          connectorId: connector.id,
-                        })
-                      }
+                      onClick={() => card.action && onAction(card.action)}
+                      disabled={!card.action}
                       className={cn(
                         "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
                         "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
                         "transition-all duration-200",
-                        "hover:border-white/15 hover:bg-white/[0.08]"
+                        card.action &&
+                          "hover:border-white/15 hover:bg-white/[0.08]",
+                        !card.action && "cursor-default"
                       )}
                     >
                       <div className="flex items-center gap-4">
                         <span
                           className={cn(
                             "h-2.5 w-2.5 rounded-full",
-                            connector.status === "degraded" &&
+                            card.status === "warning" &&
                               "bg-(--color-status-warning)",
-                            connector.status === "error" &&
+                            card.status === "critical" &&
                               "bg-(--color-status-error)",
-                            connector.status === "offline" &&
-                              "bg-muted-foreground"
+                            card.status === "error" &&
+                              "bg-(--color-status-error)"
                           )}
                         />
                         <div>
                           <div className="flex items-center gap-2">
-                            <EntityName>{connector.name}</EntityName>
-                            <span className="text-muted-foreground">
-                              is {connector.status}
+                            <span className="font-medium text-foreground">
+                              {card.label}
                             </span>
                           </div>
-                          {connector.issues[0] && (
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {connector.issues[0]}
-                            </p>
-                          )}
+                          <p className="mt-1 text-sm text-muted-foreground">
+                            {card.detail}
+                          </p>
                         </div>
                       </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      {card.action && (
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      )}
                     </button>
                   ))}
                 </div>
               </section>
             )}
 
-            {(data.suggestedActions || []).length > 0 && (
+            {data.suggestions.length > 0 && (
               <section>
                 <h2 className="mb-6 text-sm font-medium text-muted-foreground">
-                  Suggested actions
+                  Suggestions
                 </h2>
                 <div className="space-y-3">
-                  {data.suggestedActions.map((action) => (
+                  {data.suggestions.map((suggestion, idx) => (
                     <button
-                      key={action.id}
+                      key={idx}
                       type="button"
-                      onClick={() =>
-                        onAction(action.command, action.parameters)
-                      }
+                      onClick={() => onAction(suggestion)}
                       className={cn(
                         "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
                         "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
@@ -155,28 +148,8 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                       )}
                     >
                       <div className="flex items-center gap-4">
-                        <span
-                          className={cn(
-                            "h-2.5 w-2.5 rounded-full",
-                            action.severity === "critical" &&
-                              "bg-(--color-status-error)",
-                            action.severity === "high" &&
-                              "bg-(--color-status-warning)",
-                            action.severity === "medium" &&
-                              "bg-(--color-status-info)",
-                            action.severity === "low" && "bg-muted-foreground"
-                          )}
-                        />
-                        <div>
-                          <p className="text-foreground">
-                            {action.description}
-                          </p>
-                          {action.impact && (
-                            <p className="mt-1 text-sm text-muted-foreground">
-                              {action.impact}
-                            </p>
-                          )}
-                        </div>
+                        <span className="h-2.5 w-2.5 rounded-full bg-(--color-status-info)" />
+                        <p className="text-foreground">{suggestion}</p>
                       </div>
                       <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
                     </button>
@@ -195,6 +168,14 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
               No issues require your attention
             </p>
           </div>
+        )}
+
+        {data.sources.length > 0 && (
+          <footer className="mt-12 border-t border-white/10 pt-6">
+            <p className="text-xs text-muted-foreground">
+              Sources: {data.sources.join(", ")}
+            </p>
+          </footer>
         )}
       </div>
     </div>
