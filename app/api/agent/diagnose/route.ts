@@ -82,16 +82,28 @@ export async function POST(req: Request) {
 
   const executor = new CepToolExecutor(accessTokenResponse.accessToken);
 
-  const [eventsResult, dlpResult, connectorResult, docsResult, policyResult] =
-    await Promise.all([
-      executor.getChromeEvents({ maxResults: 25 }),
-      executor.listDLPRules({ includeHelp: false }),
-      executor.getChromeConnectorConfiguration(),
-      searchDocs(knowledgeQuery ?? prompt, 1),
-      searchPolicies(knowledgeQuery ?? prompt, 1),
-    ]);
+  const [
+    eventsResult,
+    dlpResult,
+    connectorResult,
+    authDebugResult,
+    docsResult,
+    policyResult,
+  ] = await Promise.all([
+    executor.getChromeEvents({ maxResults: 25 }),
+    executor.listDLPRules({ includeHelp: false }),
+    executor.getChromeConnectorConfiguration(),
+    executor.debugAuth(),
+    searchDocs(knowledgeQuery ?? prompt, 1),
+    searchPolicies(knowledgeQuery ?? prompt, 1),
+  ]);
 
-  const evidence = buildEvidence({ eventsResult, dlpResult, connectorResult });
+  const evidence = buildEvidence({
+    eventsResult,
+    dlpResult,
+    connectorResult,
+    authDebugResult,
+  });
 
   const knowledgeReference = docsResult.hits[0] ?? policyResult.hits[0];
 
@@ -143,12 +155,14 @@ function buildEvidence({
   eventsResult,
   dlpResult,
   connectorResult,
+  authDebugResult,
 }: {
   eventsResult: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>>;
   dlpResult: Awaited<ReturnType<CepToolExecutor["listDLPRules"]>>;
   connectorResult: Awaited<
     ReturnType<CepToolExecutor["getChromeConnectorConfiguration"]>
   >;
+  authDebugResult: Awaited<ReturnType<CepToolExecutor["debugAuth"]>>;
 }) {
   const checks: Array<{
     name: string;
@@ -164,6 +178,10 @@ function buildEvidence({
     summary: string;
     referenceUrl?: string;
   }> = [];
+  const requiredScopes = [
+    "https://www.googleapis.com/auth/admin.directory.orgunit",
+    "https://www.googleapis.com/auth/chrome.management.policy",
+  ];
 
   if ("events" in eventsResult) {
     const count = eventsResult.events?.length ?? 0;
@@ -240,6 +258,39 @@ function buildEvidence({
       detail: connectorResult.error,
     });
     gaps.push({ missing: "Connector policies", why: connectorResult.error });
+  }
+
+  if ("scope" in authDebugResult) {
+    const scopes = (authDebugResult.scope ?? "").split(" ").filter(Boolean);
+    const missing = requiredScopes.filter((scope) => !scopes.includes(scope));
+    checks.push({
+      name: "Auth scopes",
+      status: missing.length === 0 ? "pass" : "fail",
+      source: "OAuth tokeninfo",
+      detail:
+        missing.length === 0
+          ? "All required scopes present"
+          : `Missing: ${missing.join(", ")}`,
+    });
+    if (missing.length > 0) {
+      gaps.push({
+        missing: "Admin scopes",
+        why: `Token lacks required scopes: ${missing.join(", ")}`,
+      });
+      signals.push({
+        type: "auth-scopes",
+        source: "OAuth tokeninfo",
+        summary: `Missing scopes: ${missing.join(", ")}`,
+      });
+    }
+  } else if ("error" in authDebugResult) {
+    checks.push({
+      name: "Auth scopes",
+      status: "unknown",
+      source: "OAuth tokeninfo",
+      detail: authDebugResult.error,
+    });
+    gaps.push({ missing: "Token scope insight", why: authDebugResult.error });
   }
 
   return {

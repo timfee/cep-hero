@@ -133,7 +133,9 @@ export async function diagnose(
         process.env.GOOGLE_TOKEN_EMAIL
       );
     } catch (error) {
-      return syntheticDiagnosis("Missing Google access token for live diagnostics.");
+      return syntheticDiagnosis(
+        "Missing Google access token for live diagnostics."
+      );
     }
   }
 
@@ -143,14 +145,21 @@ export async function diagnose(
 
   const executor = new CepToolExecutor(accessToken);
 
-  const [eventsResult, dlpResult, connectorResult, docsResult, policyResult] =
-    await Promise.all([
-      executor.getChromeEvents({ maxResults: 50 }),
-      executor.listDLPRules({ includeHelp: false }),
-      executor.getChromeConnectorConfiguration(),
-      searchDocs(prompt, 1),
-      searchPolicies(prompt, 1),
-    ]);
+  const [
+    eventsResult,
+    dlpResult,
+    connectorResult,
+    authDebugResult,
+    docsResult,
+    policyResult,
+  ] = await Promise.all([
+    executor.getChromeEvents({ maxResults: 50 }),
+    executor.listDLPRules({ includeHelp: false }),
+    executor.getChromeConnectorConfiguration(),
+    executor.debugAuth(),
+    searchDocs(prompt, 1),
+    searchPolicies(prompt, 1),
+  ]);
 
   const connectorPolicies =
     "value" in connectorResult && Array.isArray(connectorResult.value)
@@ -163,6 +172,7 @@ export async function diagnose(
     dlpResult,
     connectorResult,
     connectorAnalysis,
+    authDebugResult,
   });
 
   if (connectorPolicies.length === 0) {
@@ -269,6 +279,7 @@ function buildEvidence({
   dlpResult,
   connectorResult,
   connectorAnalysis,
+  authDebugResult,
 }: {
   eventsResult: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>>;
   dlpResult: Awaited<ReturnType<CepToolExecutor["listDLPRules"]>>;
@@ -276,6 +287,7 @@ function buildEvidence({
     ReturnType<CepToolExecutor["getChromeConnectorConfiguration"]>
   >;
   connectorAnalysis: ReturnType<typeof analyzeConnectorPolicies>;
+  authDebugResult: Awaited<ReturnType<CepToolExecutor["debugAuth"]>>;
 }) {
   const checks: Array<{
     name: string;
@@ -292,6 +304,10 @@ function buildEvidence({
     referenceUrl?: string;
   }> = [];
   const nextSteps: string[] = [];
+  const requiredScopes = [
+    "https://www.googleapis.com/auth/admin.directory.orgunit",
+    "https://www.googleapis.com/auth/chrome.management.policy",
+  ];
 
   if ("events" in eventsResult) {
     const count = eventsResult.events?.length ?? 0;
@@ -389,6 +405,40 @@ function buildEvidence({
       detail: connectorResult.error,
     });
     gaps.push({ missing: "Connector policies", why: connectorResult.error });
+  }
+
+  if ("scope" in authDebugResult) {
+    const scopes = (authDebugResult.scope ?? "").split(" ").filter(Boolean);
+    const missing = requiredScopes.filter((scope) => !scopes.includes(scope));
+    checks.push({
+      name: "Auth scopes",
+      status: missing.length === 0 ? "pass" : "fail",
+      source: "OAuth tokeninfo",
+      detail:
+        missing.length === 0
+          ? "All required scopes present"
+          : `Missing: ${missing.join(", ")}`,
+    });
+    if (missing.length > 0) {
+      gaps.push({
+        missing: "Admin scopes",
+        why: `Token lacks required scopes: ${missing.join(", ")}`,
+      });
+      nextSteps.push(
+        `Re-authenticate with required scopes: ${requiredScopes.join(", ")}`
+      );
+    }
+  } else if ("error" in authDebugResult) {
+    checks.push({
+      name: "Auth scopes",
+      status: "unknown",
+      source: "OAuth tokeninfo",
+      detail: authDebugResult.error,
+    });
+    gaps.push({
+      missing: "Token scope insight",
+      why: authDebugResult.error,
+    });
   }
 
   return {

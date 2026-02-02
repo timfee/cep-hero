@@ -85,7 +85,7 @@
   --sidebar-accent-foreground: oklch(0.2 0.02 260);
   --sidebar-border: oklch(0.9 0.01 260);
   --sidebar-ring: oklch(0.45 0.2 230);
-  
+
   /* Custom semantic tokens for status indicators */
   --status-positive: oklch(0.55 0.2 155);
   --status-positive-foreground: oklch(0.98 0.02 155);
@@ -127,7 +127,7 @@
   --sidebar-accent-foreground: oklch(0.95 0.01 260);
   --sidebar-border: oklch(1 0 0 / 8%);
   --sidebar-ring: oklch(0.65 0.15 230);
-  
+
   /* Custom semantic tokens for status indicators */
   --status-positive: oklch(0.7 0.18 155);
   --status-positive-foreground: oklch(0.95 0.02 155);
