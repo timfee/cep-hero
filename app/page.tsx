@@ -1,91 +1,45 @@
 "use client";
 
-import {
-  AlertTriangle,
-  ArrowRight,
-  Bolt,
-  Network,
-  ShieldCheck,
-  Telescope,
-} from "lucide-react";
+import { ArrowRight, MessageSquare, LogOut, User } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { ChatConsole } from "@/components/chat/ChatConsole";
+import { ChatConsole } from "@/components/chat/chat-console";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/use-auth";
 import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import {
-  DashboardPanel,
-  DashboardPanelActions,
-  DashboardPanelContent,
-  DashboardPanelDescription,
-  DashboardPanelHeader,
-  DashboardPanelTitle,
-} from "@/components/ui/dashboard-panel";
-import { Separator } from "@/components/ui/separator";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { authClient } from "@/lib/auth-client";
-import { cn } from "@/lib/utils";
-
-type OverviewCard = {
-  label: string;
-  value: string;
-  note: string;
-  source: string;
-  action: string;
-  lastUpdated?: string;
-};
-
-type OverviewData = {
-  headline: string;
-  summary: string;
-  postureCards: OverviewCard[];
-  suggestions: string[];
-  sources: string[];
-};
-
-const DEFAULT_SUGGESTIONS = [
-  "Show recent Chrome events",
-  "List connector policies and targets",
-  "Check DLP rules and alerts",
-  "Retry connector fetch",
-];
+  type OverviewData,
+  normalizeOverview,
+  createDefaultOverview,
+  DEFAULT_SUGGESTIONS,
+  QUICK_ACTIONS,
+} from "@/lib/overview";
 
 export default function Home() {
+  const router = useRouter();
+  const { user, isLoading, isAuthenticated, signOut } = useAuth();
   const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
 
+  // Redirect to sign-in if not authenticated
   useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/sign-in");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Fetch overview data
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     let active = true;
     async function load() {
       try {
         const res = await fetch("/api/overview");
-        if (res.status === 401) {
-          setAuthError(
-            "Sign in with Google and grant required admin scopes to run CEP tools."
-          );
-          return;
-        }
-        if (!res.ok) {
-          throw new Error(`overview ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`overview ${res.status}`);
         const data = await res.json();
         if (!active) return;
-        setOverview(
-          normalizeOverview(data) ?? {
-            headline: "Fleet posture",
-            summary: "",
-            postureCards: [],
-            suggestions: DEFAULT_SUGGESTIONS,
-            sources: [],
-          }
-        );
-      } catch (error) {
+        setOverview(normalizeOverview(data) ?? createDefaultOverview());
+      } catch {
         if (!active) return;
         setOverview(null);
       }
@@ -94,54 +48,12 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const suggestions = useMemo(() => {
     if (overview?.suggestions?.length) return overview.suggestions;
-    return DEFAULT_SUGGESTIONS;
+    return [...DEFAULT_SUGGESTIONS];
   }, [overview]);
-
-  if (authError) {
-    return (
-      <main className="min-h-screen bg-background text-foreground">
-        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12 text-center">
-          <div className="space-y-3">
-            <p className="text-xs font-medium uppercase tracking-widest text-primary">
-              CEP Command Center
-            </p>
-            <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
-              Authentication required
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {authError} Once signed in, retry the action.
-            </p>
-          </div>
-          <div className="flex justify-center">
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full gap-2"
-              onClick={async () => {
-                await authClient.signIn.social({
-                  provider: "google",
-                  callbackURL: "/",
-                });
-              }}
-            >
-              Sign in with Google
-            </Button>
-          </div>
-        </div>
-      </main>
-    );
-  }
-
-  const primaryActions = [
-    "Retry connector fetch",
-    "List connector policies",
-    "Check org units",
-    "Check auth scopes",
-  ];
 
   const dispatchCommand = (command: string) => {
     document.dispatchEvent(
@@ -149,256 +61,156 @@ export default function Home() {
     );
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace("/sign-in");
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        {/* Hero Header Section */}
-        <header className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-widest text-primary">
-                CEP Command Center
-              </p>
-              <h1 className="text-2xl font-semibold text-foreground sm:text-3xl text-balance">
-                Diagnose, remediate, and verify in one view
-              </h1>
-              <p className="max-w-xl text-sm text-muted-foreground leading-relaxed">
-                Live actions, curated prompts, and posture snapshots to keep
-                connectors and DLP healthy.
-              </p>
-            </div>
-            <div
-              className="flex flex-wrap gap-3"
-              role="status"
-              aria-label="System status indicators"
-            >
-              <StatusBadge
-                icon={ShieldCheck}
-                label="Auth"
-                value="Active"
-                status="positive"
-              />
-              <StatusBadge
-                icon={Network}
-                label="MCP"
-                value="Online"
-                status="positive"
-              />
-              <StatusBadge
-                icon={Telescope}
-                label="Insights"
-                value={overview?.headline ?? "Ready"}
-                status="info"
-              />
-            </div>
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Header with User Info */}
+        <header className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">
+              CEP Command Center
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Chrome Enterprise Premium diagnostics and remediation
+            </p>
           </div>
-          <Separator className="my-4" />
-          <div
-            className="grid grid-cols-2 gap-3 md:grid-cols-4"
-            role="region"
-            aria-label="Key metrics"
-          >
-            {statCards(overview).map((stat) => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
-          </div>
+          {user && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt=""
+                    className="h-6 w-6 rounded-full"
+                  />
+                ) : (
+                  <User className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm text-foreground">
+                  {user.name || user.email}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </header>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Chat Console - Primary Content */}
-          <div className="lg:col-span-2">
+        {/* Main Layout */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Primary: Chat Console */}
+          <div className="min-h-[600px]">
             <ChatConsole />
           </div>
 
-          {/* Sidebar Panels */}
-          <aside
-            className="flex flex-col gap-4"
-            aria-label="Quick actions and suggestions"
-          >
-            {/* Playbooks Panel */}
-            <DashboardPanel>
-              <DashboardPanelHeader>
-                <DashboardPanelTitle>Playbooks</DashboardPanelTitle>
-                <DashboardPanelDescription>
-                  One-click guided flows
-                </DashboardPanelDescription>
-              </DashboardPanelHeader>
-              <DashboardPanelContent>
-                <DashboardPanelActions>
-                  {primaryActions.map((action) => (
-                    <Button
-                      key={action}
-                      variant="secondary"
-                      className="justify-between text-left"
-                      onClick={() => dispatchCommand(action)}
-                    >
-                      <span>{action}</span>
-                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  ))}
-                </DashboardPanelActions>
-              </DashboardPanelContent>
-            </DashboardPanel>
-
-            {/* Suggested Prompts Panel */}
-            <DashboardPanel>
-              <DashboardPanelHeader>
-                <DashboardPanelTitle>Suggested prompts</DashboardPanelTitle>
-                <DashboardPanelDescription>
-                  Ask or click to run
-                </DashboardPanelDescription>
-              </DashboardPanelHeader>
-              <DashboardPanelContent>
-                <DashboardPanelActions>
-                  {suggestions.map((suggestion) => (
-                    <Button
-                      key={suggestion}
-                      variant="ghost"
-                      className="justify-start text-left text-muted-foreground hover:text-foreground"
-                      onClick={() => dispatchCommand(suggestion)}
-                    >
-                      {suggestion}
-                    </Button>
-                  ))}
-                </DashboardPanelActions>
-              </DashboardPanelContent>
-            </DashboardPanel>
-
-            {/* Posture Cards Panel */}
-            <DashboardPanel>
-              <DashboardPanelHeader>
-                <DashboardPanelTitle>Posture cards</DashboardPanelTitle>
-                <DashboardPanelDescription>
-                  Tap a card to drill in
-                </DashboardPanelDescription>
-              </DashboardPanelHeader>
-              <DashboardPanelContent className="flex flex-col gap-3">
-                {(overview?.postureCards ?? []).slice(0, 4).map((card) => (
-                  <Card
-                    key={card.label}
-                    className="border-border bg-accent/50 transition-colors hover:border-primary/40"
+          {/* Sidebar */}
+          <aside className="space-y-5">
+            {/* Quick Actions */}
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Quick Actions
+              </h2>
+              <div className="space-y-2">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => dispatchCommand(action.label)}
+                    className="group flex w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent"
                   >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">{card.label}</CardTitle>
-                      <CardDescription>
-                        {card.source || "Chrome fleet"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                      <div className="text-lg font-semibold text-foreground">
-                        {card.value}
-                      </div>
-                      {card.note && (
-                        <p className="text-xs text-muted-foreground">
-                          {card.note}
-                        </p>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="mt-1 w-fit"
-                        onClick={() => dispatchCommand(card.action)}
-                      >
-                        {card.action || "Ask about this"}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    <div>
+                      <span className="text-sm font-medium text-foreground">
+                        {action.label}
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        {action.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
                 ))}
-                {(overview?.postureCards?.length ?? 0) === 0 && (
-                  <div className="rounded-lg border border-border bg-muted/50 px-3 py-4 text-center text-xs text-muted-foreground">
-                    No posture cards yet. Try running &quot;Show recent Chrome
-                    events&quot;.
+              </div>
+            </section>
+
+            {/* Suggestions */}
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Suggested Prompts
+              </h2>
+              <div className="space-y-1">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => dispatchCommand(suggestion)}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Status Summary */}
+            {overview && overview.postureCards.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Fleet Status
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {overview.postureCards.slice(0, 4).map((card) => (
+                      <button
+                        key={card.label}
+                        onClick={() => dispatchCommand(card.action)}
+                        className="text-left transition-opacity hover:opacity-70"
+                      >
+                        <div className="text-2xl font-semibold text-foreground">
+                          {card.value}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {card.label}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                )}
-              </DashboardPanelContent>
-            </DashboardPanel>
+                </div>
+              </section>
+            )}
           </aside>
         </div>
       </div>
     </main>
-  );
-}
-
-function normalizeOverview(data: unknown): OverviewData | null {
-  if (!data || typeof data !== "object") return null;
-  const obj = data as Record<string, unknown>;
-  const postureCards = Array.isArray(obj.postureCards)
-    ? (obj.postureCards as OverviewCard[])
-    : [];
-  return {
-    headline: typeof obj.headline === "string" ? obj.headline : "Fleet posture",
-    summary: typeof obj.summary === "string" ? obj.summary : "",
-    postureCards,
-    suggestions: Array.isArray(obj.suggestions)
-      ? (obj.suggestions as string[])
-      : [],
-    sources: Array.isArray(obj.sources) ? (obj.sources as string[]) : [],
-  };
-}
-
-type StatProps = {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  status?: "positive" | "warning" | "info";
-};
-
-function statCards(overview: OverviewData | null): StatProps[] {
-  const cards = overview?.postureCards ?? [];
-  const first = cards[0]?.value ?? "---";
-  const second = cards[1]?.value ?? "---";
-  const third = cards[2]?.value ?? "---";
-  const fourth = cards[3]?.value ?? "---";
-  return [
-    {
-      label: cards[0]?.label ?? "Events",
-      value: String(first),
-      icon: Bolt,
-      status: "info",
-    },
-    {
-      label: cards[1]?.label ?? "DLP Rules",
-      value: String(second),
-      icon: ShieldCheck,
-      status: "info",
-    },
-    {
-      label: cards[2]?.label ?? "Connectors",
-      value: String(third),
-      icon: Network,
-      status: "warning",
-    },
-    {
-      label: cards[3]?.label ?? "Findings",
-      value: String(fourth),
-      icon: AlertTriangle,
-      status: "warning",
-    },
-  ];
-}
-
-function StatCard({ label, value, icon: Icon, status = "info" }: StatProps) {
-  return (
-    <div
-      className="rounded-xl border border-border bg-accent/50 px-4 py-3"
-      role="group"
-      aria-label={`${label}: ${value}`}
-    >
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        <Icon
-          className={cn(
-            "h-4 w-4",
-            status === "positive" && "text-status-positive",
-            status === "warning" && "text-status-warning",
-            status === "info" && "text-status-info"
-          )}
-          aria-hidden="true"
-        />
-        <span>{label}</span>
-      </div>
-      <div className="pt-1 text-2xl font-semibold text-foreground">{value}</div>
-    </div>
   );
 }

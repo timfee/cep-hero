@@ -40,7 +40,7 @@ const ShimmerComponent = ({
       animate={{ backgroundPosition: "0% center" }}
       className={cn(
         "relative inline-block bg-[length:250%_100%,auto] bg-clip-text text-transparent",
-        "[--bg:linear-gradient(90deg,#0000_calc(50%-var(--spread)),var(--color-background),#0000_calc(50%+var(--spread)))] [background-repeat:no-repeat,padding-box]",
+        "[--bg:linear-gradient(90deg,#0000_calc(50%-var(--spread)),var(--color-primary),#0000_calc(50%+var(--spread)))] [background-repeat:no-repeat,padding-box]",
         className
       )}
       initial={{ backgroundPosition: "100% center" }}
@@ -54,7 +54,7 @@ const ShimmerComponent = ({
       transition={{
         repeat: Number.POSITIVE_INFINITY,
         duration,
-        ease: "linear",
+        ease: [0.4, 0, 0.2, 1], // Custom easing for smoother animation
       }}
     >
       {children}
@@ -63,3 +63,30 @@ const ShimmerComponent = ({
 };
 
 export const Shimmer = memo(ShimmerComponent);
+
+// Pulse shimmer variant for more subtle loading states
+export interface PulseShimmerProps {
+  className?: string;
+  width?: string | number;
+  height?: string | number;
+}
+
+export const PulseShimmer = memo(
+  ({ className, width = "100%", height = 16 }: PulseShimmerProps) => (
+    <motion.div
+      className={cn("rounded bg-muted", className)}
+      style={{ width, height }}
+      animate={{
+        opacity: [0.4, 0.7, 0.4],
+        scale: [1, 1.005, 1],
+      }}
+      transition={{
+        duration: 1.8,
+        repeat: Infinity,
+        ease: "easeInOut",
+      }}
+    />
+  )
+);
+
+PulseShimmer.displayName = "PulseShimmer";

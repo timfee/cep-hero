@@ -94,16 +94,21 @@ export const ChainOfThoughtHeader = memo(
           )}
           {...props}
         >
-          <BrainIcon className="size-4" />
+          <motion.div
+            animate={{ scale: [1, 1.05, 1] }}
+            transition={{ duration: 2, repeat: Infinity }}
+          >
+            <BrainIcon className="size-4" />
+          </motion.div>
           <span className="flex-1 text-left">
             {children ?? "Chain of Thought"}
           </span>
-          <ChevronDownIcon
-            className={cn(
-              "size-4 transition-transform",
-              isOpen ? "rotate-180" : "rotate-0"
-            )}
-          />
+          <motion.div
+            animate={{ rotate: isOpen ? 180 : 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+          >
+            <ChevronDownIcon className="size-4" />
+          </motion.div>
         </CollapsibleTrigger>
       </Collapsible>
     );
@@ -134,27 +139,43 @@ export const ChainOfThoughtStep = memo(
     };
 
     return (
-      <div
-        className={cn(
-          "flex gap-2 text-sm",
-          statusStyles[status],
-          "fade-in-0 slide-in-from-top-2 animate-in",
-          className
-        )}
+      <motion.div
+        initial={{ opacity: 0, x: -10 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ duration: 0.3, ease: "easeOut" }}
+        className={cn("flex gap-2 text-sm", statusStyles[status], className)}
         {...props}
       >
         <div className="relative mt-0.5">
-          <Icon className="size-4" />
-          <div className="absolute top-7 bottom-0 left-1/2 -mx-px w-px bg-border" />
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ duration: 0.2, delay: 0.1 }}
+          >
+            <Icon className="size-4" />
+          </motion.div>
+          <motion.div
+            initial={{ height: 0 }}
+            animate={{ height: "100%" }}
+            transition={{ duration: 0.3, delay: 0.2 }}
+            className="absolute top-7 bottom-0 left-1/2 -mx-px w-px bg-border"
+          />
         </div>
         <div className="flex-1 space-y-2 overflow-hidden">
           <div>{label}</div>
           {description && (
-            <div className="text-muted-foreground text-xs">{description}</div>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.15 }}
+              className="text-muted-foreground text-xs"
+            >
+              {description}
+            </motion.div>
           )}
           {children}
         </div>
-      </div>
+      </motion.div>
     );
   }
 );
@@ -194,16 +215,25 @@ export const ChainOfThoughtContent = memo(
 
     return (
       <Collapsible open={isOpen}>
-        <CollapsibleContent
-          className={cn(
-            "mt-2 space-y-3",
-            "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
-            className
+        <AnimatePresence>
+          {isOpen && (
+            <CollapsibleContent forceMount asChild>
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.25, ease: "easeOut" }}
+                className={cn(
+                  "mt-2 space-y-3 overflow-hidden text-popover-foreground",
+                  className
+                )}
+                {...props}
+              >
+                {children}
+              </motion.div>
+            </CollapsibleContent>
           )}
-          {...props}
-        >
-          {children}
-        </CollapsibleContent>
+        </AnimatePresence>
       </Collapsible>
     );
   }

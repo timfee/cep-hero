@@ -57,21 +57,67 @@ export const getStatusBadge = (status: ToolPart["state"]) => {
     "output-denied": "Denied",
   };
 
+  const isActive = status === "input-streaming" || status === "input-available";
+
   const icons: Record<ToolPart["state"], ReactNode> = {
-    "input-streaming": <CircleIcon className="size-4" />,
-    "input-available": <ClockIcon className="size-4 animate-pulse" />,
-    "approval-requested": <ClockIcon className="size-4 text-yellow-600" />,
-    "approval-responded": <CheckCircleIcon className="size-4 text-blue-600" />,
-    "output-available": <CheckCircleIcon className="size-4 text-green-600" />,
-    "output-error": <XCircleIcon className="size-4 text-red-600" />,
-    "output-denied": <XCircleIcon className="size-4 text-orange-600" />,
+    "input-streaming": (
+      <motion.div
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity }}
+      >
+        <CircleIcon className="size-3.5" />
+      </motion.div>
+    ),
+    "input-available": (
+      <motion.div
+        animate={{ rotate: 360 }}
+        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+      >
+        <ClockIcon className="size-3.5" />
+      </motion.div>
+    ),
+    "approval-requested": <ClockIcon className="size-3.5 text-yellow-600" />,
+    "approval-responded": (
+      <CheckCircleIcon className="size-3.5 text-blue-600" />
+    ),
+    "output-available": (
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 10 }}
+      >
+        <CheckCircleIcon className="size-3.5 text-green-600" />
+      </motion.div>
+    ),
+    "output-error": (
+      <motion.div
+        initial={{ scale: 0 }}
+        animate={{ scale: 1 }}
+        transition={{ type: "spring", stiffness: 200, damping: 10 }}
+      >
+        <XCircleIcon className="size-3.5 text-red-600" />
+      </motion.div>
+    ),
+    "output-denied": <XCircleIcon className="size-3.5 text-orange-600" />,
   };
 
   return (
-    <Badge className="gap-1.5 rounded-full text-xs" variant="secondary">
-      {icons[status]}
-      {labels[status]}
-    </Badge>
+    <motion.div
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.2 }}
+    >
+      <Badge
+        className={cn(
+          "gap-1.5 rounded-full text-xs transition-colors",
+          isActive && "bg-primary/10 text-primary"
+        )}
+        variant="secondary"
+      >
+        {icons[status]}
+        {labels[status]}
+      </Badge>
+    </motion.div>
   );
 };
 
@@ -85,35 +131,53 @@ export const ToolHeader = ({
 }: ToolHeaderProps) => {
   const derivedName =
     type === "dynamic-tool" ? toolName : type.split("-").slice(1).join("-");
+  const isRunning = state === "input-available" || state === "input-streaming";
 
   return (
     <CollapsibleTrigger
       className={cn(
-        "flex w-full items-center justify-between gap-4 p-3",
+        "flex w-full items-center justify-between gap-4 p-3 transition-colors hover:bg-muted/50",
         className
       )}
       {...props}
     >
       <div className="flex items-center gap-2">
-        <WrenchIcon className="size-4 text-muted-foreground" />
+        <motion.div
+          animate={isRunning ? { rotate: [0, 180, 360] } : {}}
+          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        >
+          <WrenchIcon className="size-4 text-muted-foreground" />
+        </motion.div>
         <span className="font-medium text-sm">{title ?? derivedName}</span>
         {getStatusBadge(state)}
       </div>
-      <ChevronDownIcon className="size-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
+      <motion.div
+        initial={false}
+        animate={{ rotate: 0 }}
+        className="group-data-[state=open]:rotate-180 transition-transform"
+      >
+        <ChevronDownIcon className="size-4 text-muted-foreground" />
+      </motion.div>
     </CollapsibleTrigger>
   );
 };
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
-export const ToolContent = ({ className, ...props }: ToolContentProps) => (
-  <CollapsibleContent
-    className={cn(
-      "data-[state=closed]:fade-out-0 data-[state=closed]:slide-out-to-top-2 data-[state=open]:slide-in-from-top-2 text-popover-foreground outline-none data-[state=closed]:animate-out data-[state=open]:animate-in",
-      className
-    )}
-    {...props}
-  />
+export const ToolContent = ({
+  className,
+  children,
+  ...props
+}: ToolContentProps) => (
+  <CollapsibleContent className={cn("overflow-hidden", className)} {...props}>
+    <motion.div
+      initial={{ opacity: 0, y: -8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2, ease: "easeOut" }}
+    >
+      {children}
+    </motion.div>
+  </CollapsibleContent>
 );
 
 export type ToolInputProps = ComponentProps<"div"> & {
