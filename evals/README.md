@@ -155,11 +155,40 @@ Example (trimmed):
 
 ## What to do when a result is wrong
 
-Example: EC-019 runs with fixtures and the response ignores `net-export`. The
-report fails with missing evidence. That tells us the eval is working, not that
-the assistant is correct.
+When an eval fails, use this decision tree:
 
-Failing report (trimmed):
+```
+Eval Failed
+    │
+    ├── Is the AI response actually wrong?
+    │   │
+    │   ├── YES → The AI needs improvement
+    │   │   │
+    │   │   ├── Missing data? → Add/improve fixtures
+    │   │   ├── Wrong reasoning? → Improve system instructions
+    │   │   ├── Missing capability? → Add/improve tools
+    │   │   └── Missing knowledge? → Add RAG content or enable web search
+    │   │
+    │   └── NO → The eval is too strict
+    │       │
+    │       ├── Loosen required_evidence terms
+    │       ├── Accept alternative valid phrasings
+    │       └── Review if the expected behavior is realistic
+    │
+    └── Is this a one-off or pattern?
+        │
+        ├── ONE-OFF → Fix this specific case
+        │   └── Adjust fixture, prompt, or evidence requirements
+        │
+        └── PATTERN → Fix systemically
+            └── Update system instructions, tools, or workflow
+            └── Run full eval suite to verify fix doesn't break others
+```
+
+### Example walkthrough
+
+EC-019 runs with fixtures and the response ignores `net-export`. The report
+fails with missing evidence:
 
 ```json
 {
@@ -170,29 +199,107 @@ Failing report (trimmed):
 }
 ```
 
-Fix options:
+**Diagnosis**: The eval caught a real problem - the AI mentioned "net logs"
+generically but didn't reference the specific `net-export` tool.
 
-1. **Tighten the eval**
-   - Add `required_evidence` terms in `registry.json`. The runner automatically
-     checks for these terms in the response. If it fails, the response is out of spec.
+**Fix options** (in order of preference):
 
-2. **Adjust the fixture**
-   - Add the exact log strings you expect the assistant to mention.
-   - Keep fixtures short so the model is less likely to ignore them.
+1. **Adjust the fixture** - Add explicit net-export data so the AI has something
+   concrete to reference. Keep fixtures short so the model notices them.
 
-3. **Adjust the prompt**
-   - Add a short note in the case file, such as “Use net-export and log-net-log”.
+2. **Adjust the prompt** - Make the case file prompt more specific: "The user
+   has already captured a net-export log. Analyze it."
 
-In short: if the assistant ignores the fixture, use strict evidence to catch
-it, then refine the fixture or prompt to guide the response.
+3. **Improve system instructions** - If this is a pattern (AI ignores provided
+   logs), add general guidance about always referencing provided data.
+
+4. **Tighten the eval** - If the AI should mention `net-export` but the evidence
+   check is missing, add it to `required_evidence` in `registry.json`.
+
+**Anti-pattern**: Don't loosen evidence requirements just to make the eval pass.
+That defeats the purpose.
 
 ## When to add a new eval
 
-Add a case when you ship a new troubleshooting path, fix a bug that should
-never regress, or see a customer failure mode you want to lock down.
+Add a case when you:
+
+- **Ship a new troubleshooting path** - Lock down the expected behavior before it regresses
+- **Fix a bug** - Prevent the same failure mode from returning
+- **See a customer failure** - Capture real-world scenarios
+- **Identify a coverage gap** - Run the eval suite and notice missing scenarios
 
 ## How to add a new eval
 
-1. Create a case file in `cases/` with an EC ID.
-2. Add an entry in `registry.json` with tags, schema, and fixtures.
-3. Run it in isolation: `EVAL_IDS=EC-### EVAL_USE_BASE=1 bun run evals`.
+**Step 1**: Create a case file in `cases/EC-###-descriptive-name.md`:
+
+```markdown
+# EC-086: Your scenario title
+
+## Summary
+Brief description of the troubleshooting scenario.
+
+## Reproduction
+1. Steps to reproduce the issue
+2. What conditions trigger it
+3. What the user observes
+
+## Conversation
+User: "The exact prompt the user would ask"
+
+## Expected result
+- What the diagnosis should identify
+- What evidence should be referenced
+- What next steps should be recommended
+
+## Cleanup
+- Any cleanup steps if using live data
+```
+
+**Step 2**: Add entry in `registry.json`:
+
+```json
+{
+  "id": "EC-086",
+  "title": "Your scenario title",
+  "category": "policy",
+  "source_refs": ["YourSource-1"],
+  "case_file": "evals/cases/EC-086-your-scenario-title.md",
+  "mode": "rubric",
+  "tags": ["relevant", "tags"],
+  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+  "fixtures": [],
+  "required_evidence": ["key", "terms"],
+  "rubric": { "min_score": 2, "criteria": ["diagnosis", "evidence", "next"] }
+}
+```
+
+**Step 3**: Optionally create fixtures in `evals/fixtures/EC-086/overrides.json`.
+
+**Step 4**: Run in isolation and iterate:
+
+```bash
+EVAL_IDS=EC-086 EVAL_USE_BASE=1 bun run evals
+```
+
+## Iteration workflow
+
+When working on an eval, use this tight feedback loop:
+
+```bash
+# Terminal 1: Keep server running
+bun run dev
+
+# Terminal 2: Run specific eval repeatedly
+EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals:fast
+
+# After changes, re-run immediately
+# Check evals/reports/EC-057-*.json for detailed output
+```
+
+## Further reading
+
+For comprehensive documentation including AI SDK patterns, loop control best
+practices, and the full eval improvement roadmap, see:
+
+- **[QUEST_INSTRUCTIONS.md](../QUEST_INSTRUCTIONS.md)** - Complete guide
+- **[QUEST_TASKS.md](../QUEST_TASKS.md)** - Progress tracking
