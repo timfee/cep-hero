@@ -47,7 +47,7 @@ describe("CEP evals: common challenges", () => {
       return;
     }
     await ensureEvalServer({ chatUrl, manageServer });
-  });
+  }, 30000);
 
   afterAll(() => {
     if (cases.length === 0) {

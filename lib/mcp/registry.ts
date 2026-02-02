@@ -53,6 +53,11 @@ export const EnrollBrowserSchema = z.object({
 export const GetConnectorConfigSchema = z.object({});
 
 /**
+ * Schema for listing Org Units.
+ */
+export const ListOrgUnitsSchema = z.object({});
+
+/**
  * Inputs for the fleet overview tool.
  */
 export const GetFleetOverviewSchema = z.object({
@@ -395,6 +400,99 @@ export class CepToolExecutor {
         error: message ?? "Unknown error",
         suggestion:
           "Check 'Cloud Identity API' enablement and DLP Read permissions.",
+      };
+    }
+  }
+
+  /**
+   * List all organizational units for the customer.
+   */
+  async listOrgUnits() {
+    const service = googleApis.admin({
+      version: "directory_v1",
+      auth: this.auth,
+    });
+
+    console.log("[org-units] request");
+    await this.logApi("google.request.org-units", {
+      endpoint:
+        "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+      method: "GET",
+      params: { customerId: this.customerId, type: "all" },
+    });
+
+    const start = Date.now();
+    try {
+      if (!service.orgunits?.list) {
+        return {
+          error: "Directory orgunit client unavailable",
+          suggestion: "Confirm Admin SDK is enabled and has correct scopes.",
+        };
+      }
+
+      const res = await service.orgunits.list({
+        customerId: this.customerId,
+        type: "all",
+      });
+
+      console.log(
+        "[org-units] response",
+        JSON.stringify({
+          count: res.data.organizationUnits?.length ?? 0,
+        })
+      );
+
+      recordActivity({
+        id: crypto.randomUUID(),
+        url: "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+        method: "GET",
+        status: 200,
+        durationMs: Date.now() - start,
+        responsePreview: `units=${res.data.organizationUnits?.length ?? 0}`,
+        timestamp: Date.now(),
+        kind: "workspace",
+      });
+
+      await this.logApi("google.response.org-units", {
+        status: "ok",
+        count: res.data.organizationUnits?.length ?? 0,
+      });
+
+      // Map to a cleaner structure
+      const units = (res.data.organizationUnits ?? []).map((ou) => ({
+        orgUnitId: ou.orgUnitId,
+        name: ou.name,
+        orgUnitPath: ou.orgUnitPath,
+        parentOrgUnitId: ou.parentOrgUnitId,
+        description: ou.description,
+      }));
+
+      return { orgUnits: units };
+    } catch (error: unknown) {
+      const { code, message, errors } = getErrorDetails(error);
+      console.log(
+        "[org-units] error",
+        JSON.stringify({ code, message, errors })
+      );
+      await this.logApi("google.error.org-units", {
+        code,
+        message,
+        errors,
+      });
+      recordActivity({
+        id: crypto.randomUUID(),
+        url: "https://admin.googleapis.com/admin/directory/v1/customer/my_customer/orgunits",
+        method: "GET",
+        status: normalizeStatus(code),
+        durationMs: Date.now() - start,
+        responsePreview: message ?? "Unknown error",
+        timestamp: Date.now(),
+        kind: "workspace",
+      });
+      return {
+        error: message ?? "Unknown error",
+        suggestion:
+          "Check 'Admin SDK' enablement and Org Unit Read permissions.",
       };
     }
   }
