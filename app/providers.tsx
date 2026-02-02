@@ -7,32 +7,18 @@ import {
   useContext,
   useEffect,
   useMemo,
-  useRef,
   useState,
-  useLayoutEffect,
+  useSyncExternalStore,
 } from "react";
 
 import { ChatProvider } from "@/components/chat/chat-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { activityStore } from "@/lib/activity-store";
 import { cn } from "@/lib/utils";
-
-type ActivityEntry = {
-  id: string;
-  url: string;
-  method: string;
-  status: number | "error";
-  durationMs: number;
-  responsePreview?: string;
-  timestamp: number;
-  kind: "mcp" | "workspace";
-};
-
-type ActivityFilter = "all" | "mcp" | "workspace";
+import { ActivityEntry, ActivityFilter } from "@/types/activity";
 
 type ActivityLogContextValue = {
-  entries: ActivityEntry[];
-  log: (entry: ActivityEntry) => void;
   setOpen: (open: boolean) => void;
   setFilter: (filter: ActivityFilter) => void;
   filter: ActivityFilter;
@@ -52,165 +38,12 @@ export function useActivityLog() {
   return useActivityLogContext();
 }
 
-function useFetchInstrumentation(
-  log: (entry: ActivityEntry) => void,
-  isOpen: boolean
-) {
-  const isPatchedRef = useRef(false);
-  const isOpenRef = useRef(isOpen);
-
-  useLayoutEffect(() => {
-    isOpenRef.current = isOpen;
-  }, [isOpen]);
-
-  useEffect(() => {
-    if (typeof window === "undefined" || isPatchedRef.current) {
-      return;
-    }
-    const originalFetch = window.fetch;
-    isPatchedRef.current = true;
-
-    type FetchArgs = Parameters<typeof originalFetch>;
-
-    async function fetchPatched(
-      ...args: FetchArgs
-    ): ReturnType<typeof originalFetch> {
-      const [input, init] = args;
-      const requestUrl = getRequestUrl(input);
-      const method = (init?.method || getRequestMethod(input)).toUpperCase();
-      const start = performance.now();
-      const id = crypto.randomUUID
-        ? crypto.randomUUID()
-        : Math.random().toString(36).slice(2);
-      const timestamp = Date.now();
-
-      const isMcp = requestUrl.includes("/api/mcp");
-      const isWorkspace =
-        /https?:\/\/(.*\.)?(googleapis\.com|google\.com)(\/|$)/i.test(
-          requestUrl
-        );
-
-      let kind: ActivityEntry["kind"] | null = null;
-      if (isMcp) {
-        kind = "mcp";
-      } else if (isWorkspace) {
-        kind = "workspace";
-      }
-
-      if (!kind) {
-        return originalFetch(...args);
-      }
-
-      try {
-        const response = await originalFetch(...args);
-        const durationMs = Math.max(0, Math.round(performance.now() - start));
-
-        // Capture streaming MCP responses by logging immediately if MCP (body may not be readable)
-        if (kind === "mcp") {
-          log({
-            id,
-            url: requestUrl,
-            method,
-            status: response.status,
-            durationMs,
-            responsePreview: "MCP stream",
-            timestamp,
-            kind,
-          });
-          return response;
-        }
-        const contentType =
-          response.headers.get("content-type")?.toLowerCase() ?? "";
-        const shouldReadBody =
-          !contentType.includes("event-stream") &&
-          !contentType.includes("octet-stream");
-
-        let responsePreview: string | undefined;
-
-        if (kind === "workspace") {
-          const contentType =
-            response.headers.get("content-type")?.toLowerCase() ?? "";
-          responsePreview =
-            `${response.status} ${response.statusText || ""} ${contentType}`.trim();
-        } else if (shouldReadBody) {
-          try {
-            const clone = response.clone();
-            const text = await clone.text();
-            responsePreview = text.replace(/\s+/g, " ").trim().slice(0, 320);
-          } catch {
-            // Ignore body parsing errors to avoid interfering with streaming responses
-          }
-        }
-
-        log({
-          id,
-          url: requestUrl,
-          method,
-          status: response.status,
-          durationMs,
-          responsePreview,
-          timestamp,
-          kind,
-        });
-
-        return response;
-      } catch (error) {
-        const durationMs = Math.max(0, Math.round(performance.now() - start));
-        const preview =
-          error instanceof Error ? error.message : "Unknown error";
-        log({
-          id,
-          url: requestUrl,
-          method,
-          status: "error",
-          durationMs,
-          responsePreview: preview,
-          timestamp,
-          kind,
-        });
-        throw error;
-      }
-    }
-
-    const patchedFetch = fetchPatched as typeof window.fetch;
-    Object.assign(patchedFetch, originalFetch);
-    window.fetch = patchedFetch;
-
-    return () => {
-      window.fetch = originalFetch;
-      isPatchedRef.current = false;
-    };
-  }, [log]);
-}
-
-/**
- * Resolve a URL string from a fetch input.
- */
-function getRequestUrl(input: RequestInfo | URL): string {
-  if (typeof input === "string") {
-    return input;
-  }
-
-  if (input instanceof Request) {
-    return input.url;
-  }
-
-  return input.href;
-}
-
-/**
- * Resolve an HTTP method from a fetch input.
- */
-function getRequestMethod(input: RequestInfo | URL): string {
-  if (input instanceof Request) {
-    return input.method;
-  }
-
-  return "GET";
-}
-
 function ActivityPanel({ isOpen }: { isOpen: boolean }) {
-  const { entries, setOpen, filter, setFilter } = useActivityLogContext();
+  const { filter, setFilter, setOpen } = useActivityLogContext();
+  const entries = useSyncExternalStore(
+    activityStore.subscribe,
+    activityStore.getSnapshot
+  );
 
   const items = useMemo(() => {
     const filtered =
@@ -364,19 +197,12 @@ function ActivityPanel({ isOpen }: { isOpen: boolean }) {
 }
 
 export function Providers({ children }: { children: React.ReactNode }) {
-  const [entries, setEntries] = useState<ActivityEntry[]>([]);
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<ActivityFilter>("all");
 
-  const log = useCallback((entry: ActivityEntry) => {
-    setEntries((current) => [entry, ...current].slice(0, 50));
-  }, []);
-
-  useFetchInstrumentation(log, isOpen);
-
   const value = useMemo<ActivityLogContextValue>(
-    () => ({ entries, log, setOpen: setIsOpen, filter, setFilter }),
-    [entries, log, filter]
+    () => ({ setOpen: setIsOpen, filter, setFilter }),
+    [filter]
   );
 
   return (

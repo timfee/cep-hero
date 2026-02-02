@@ -48,3 +48,5 @@ debug.log
 .opencode
 package-lock.json
 pnpm-lock.yaml
+
+storage
