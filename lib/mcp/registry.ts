@@ -534,27 +534,29 @@ export class CepToolExecutor {
     ];
 
     // Resolve the actual customer ID from the Chrome Policy API
-    // The API returns the real customer ID in the policy schema names
+    // Only resolve when using the "my_customer" alias to avoid extra API calls
     let resolvedCustomerId = this.customerId;
-    try {
-      const schemaRes = await service.customers.policySchemas.list({
-        parent: `customers/${this.customerId}`,
-        pageSize: 1,
-      });
-      const schemaName = schemaRes.data.policySchemas?.[0]?.name ?? "";
-      const match = schemaName.match(/customers\/([^/]+)\//);
-      if (match?.[1]) {
-        resolvedCustomerId = match[1];
+    if (this.customerId === "my_customer") {
+      try {
+        const schemaRes = await service.customers.policySchemas.list({
+          parent: `customers/${this.customerId}`,
+          pageSize: 1,
+        });
+        const schemaName = schemaRes.data.policySchemas?.[0]?.name ?? "";
+        const match = schemaName.match(/customers\/([^/]+)\//);
+        if (match?.[1]) {
+          resolvedCustomerId = match[1];
+          console.log(
+            "[connector-config] resolved customer ID:",
+            resolvedCustomerId
+          );
+        }
+      } catch {
         console.log(
-          "[connector-config] resolved customer ID:",
-          resolvedCustomerId
+          "[connector-config] could not resolve customer ID, using default:",
+          this.customerId
         );
       }
-    } catch (error) {
-      console.log(
-        "[connector-config] could not resolve customer ID, using default:",
-        this.customerId
-      );
     }
 
     const start = Date.now();
