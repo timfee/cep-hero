@@ -101,9 +101,38 @@ const FleetOverviewResponseSchema = z.object({
       source: z.string(),
       action: z.string(),
       lastUpdated: z.string().optional(),
+      status: z
+        .enum(["healthy", "warning", "critical", "info"])
+        .optional()
+        .describe("Visual status indicator for the card"),
+      progress: z
+        .number()
+        .min(0)
+        .max(100)
+        .optional()
+        .describe("Progress percentage (0-100) if applicable"),
+      priority: z
+        .number()
+        .min(1)
+        .max(10)
+        .optional()
+        .describe("Priority for sorting (1=highest, 10=lowest)"),
     })
   ),
-  suggestions: z.array(z.string()),
+  suggestions: z.array(
+    z.object({
+      text: z.string().describe("The suggestion text"),
+      action: z.string().describe("The command to execute when clicked"),
+      priority: z
+        .number()
+        .min(1)
+        .max(10)
+        .describe("Priority for sorting (1=highest)"),
+      category: z
+        .enum(["security", "compliance", "monitoring", "optimization"])
+        .describe("Category of the suggestion"),
+    })
+  ),
   sources: z.array(z.string()),
 });
 
@@ -205,9 +234,66 @@ async function summarizeFleetOverview(
   const result = await generateObject({
     model: googleModel("gemini-2.0-flash-001"),
     schema: FleetOverviewResponseSchema,
-    system:
-      "You are the CEP onboarding assistant. Use the provided facts to describe the fleet state. Do not invent data. If facts are empty or errors exist, state them clearly.",
-    prompt: `Facts:\n${JSON.stringify(facts, null, 2)}\n\nContext JSON:\n${JSON.stringify(context, null, 2)}\n\nKnowledge:\n${JSON.stringify(knowledge, null, 2)}\n\nGuidelines:\n- Headline must start with "I just reviewed your Chrome fleet."\n- Summary must reference real counts from facts or explicitly say data is missing.\n- Posture cards must use counts from facts, include a source + action prompt, and include lastUpdated when available.\n- Sources must list the concrete API surfaces used (Admin SDK Reports, Cloud Identity, Chrome Policy).\n- Suggestions must be action-oriented and tied to observed gaps or errors.\n`,
+    system: `You are the Chrome Enterprise Premium assistant (CEP assistant) - a knowledgeable Chrome Enterprise Premium expert who helps IT admins secure and manage their browser fleet. You're direct, helpful, and focused on actionable insights. Never be generic or vague.`,
+    prompt: `Analyze this Chrome Enterprise fleet data and generate a compelling overview.
+
+## Fleet Facts
+${JSON.stringify(facts, null, 2)}
+
+## Raw API Data
+${JSON.stringify(context, null, 2)}
+
+## Knowledge Context
+${JSON.stringify(knowledge, null, 2)}
+
+## Output Requirements
+
+### Headline
+Write a single sentence that captures the most important insight about this fleet. Make it specific, insight-driven, and grounded in the data. Examples:
+- "Your fleet has 50 DLP rules but no connector policies - data may be leaking."
+- "I found 3 security gaps that need your attention."
+- "Your Chrome fleet looks healthy, but event reporting could be improved."
+Avoid overly generic headlines; focus on what's most actionable or notable.
+
+### Summary
+2-3 sentences explaining the current state. Be specific about what's configured and what's missing. Reference actual numbers. If there are issues, lead with them.
+
+### Posture Cards (generate 3-5 cards, prioritized by importance)
+Each card should represent a meaningful security or compliance metric:
+
+1. **DLP Coverage** - Are DLP rules configured? How many? Status: healthy if >0 rules, warning if 0.
+2. **Event Monitoring** - Are Chrome events being captured? Status based on event count and recency.
+3. **Connector Policies** - Are data connectors configured? Status: critical if 0, healthy if configured.
+4. **Browser Security** - Cookie encryption, incognito mode, Safe Browsing status (infer from connector policies if available).
+
+For each card:
+- \`label\`: Clear, human name (e.g., "Data Protection Rules", "Security Events", "Connector Status")
+- \`value\`: The metric (e.g., "50 rules", "10 events", "Not configured")
+- \`note\`: Contextual, human-readable insight (NOT dates like "2026-01-20", but things like "Protecting sensitive data" or "No rules configured yet")
+- \`status\`: "healthy" (green), "warning" (yellow), "critical" (red), or "info" (blue)
+- \`progress\`: Optional 0-100 percentage if applicable
+- \`priority\`: 1-10 (1=most important, show critical issues first)
+- \`action\`: Command to run when clicked (e.g., "List data protection rules", "Show recent security events")
+- \`lastUpdated\`: ISO timestamp if available
+
+### Suggestions (generate 2-4 actionable suggestions based on gaps)
+Prioritize by impact. Each suggestion must have:
+- \`text\`: Clear, action-oriented text explaining what to do and why
+- \`action\`: The exact command to execute
+- \`priority\`: 1-10 (1=most urgent)
+- \`category\`: "security", "compliance", "monitoring", or "optimization"
+
+**Suggestion Examples Based on Common Gaps:**
+- If dlpRuleCount is 0: "Set up a DLP audit rule to monitor all traffic for sensitive data like SSNs and credit cards"
+- If connectorPolicyCount is 0: "Configure connector policies to enable real-time data protection"
+- If eventCount is low: "Enable Chrome event reporting to get visibility into browser activity"
+- If events exist but no DLP: "Your fleet is generating events but has no DLP rules - add rules to protect sensitive data"
+
+Do NOT suggest generic things like "Review connector settings" - be specific about what action to take and why.
+
+### Sources
+List the actual API sources used: "Admin SDK Reports", "Cloud Identity", "Chrome Policy"
+`,
   });
 
   return result.object;
@@ -890,41 +976,110 @@ export class CepToolExecutor {
 
       return summary;
     } catch {
+      const hasDlpRules = facts.dlpRuleCount > 0;
+      const hasConnectors = facts.connectorPolicyCount > 0;
+      const hasEvents = facts.eventCount > 0;
+
+      const suggestions: FleetOverviewResponse["suggestions"] = [];
+
+      if (!hasDlpRules) {
+        suggestions.push({
+          text: "Set up a DLP audit rule to monitor all traffic for sensitive data like SSNs and credit cards",
+          action: "Help me set up DLP to audit all traffic for sensitive data",
+          priority: 1,
+          category: "security",
+        });
+      }
+
+      if (!hasConnectors) {
+        suggestions.push({
+          text: "Configure connector policies to enable real-time data protection across your fleet",
+          action: "Help me configure connector policies for data protection",
+          priority: 2,
+          category: "security",
+        });
+      }
+
+      if (!hasEvents) {
+        suggestions.push({
+          text: "Enable Chrome event reporting to get visibility into browser activity",
+          action: "How do I enable Chrome event reporting?",
+          priority: 3,
+          category: "monitoring",
+        });
+      }
+
+      if (suggestions.length === 0) {
+        suggestions.push({
+          text: "Review your security posture and identify optimization opportunities",
+          action: "Analyze my fleet security posture",
+          priority: 5,
+          category: "optimization",
+        });
+      }
+
+      const missingItems = [
+        !hasDlpRules && "DLP rules",
+        !hasConnectors && "connector policies",
+      ].filter(Boolean);
+
+      const headline =
+        hasDlpRules && hasConnectors
+          ? "Your Chrome fleet is configured, but let's verify everything is working."
+          : missingItems.length === 2
+            ? "Your fleet is missing DLP rules and connector policies - your data may not be protected."
+            : `Your fleet has no ${missingItems[0]} configured - this is a security gap.`;
+
       return {
-        headline: "I just reviewed your Chrome fleet.",
+        headline,
         summary:
-          "I could not synthesize a full summary, but here is what I can see.",
+          "I could not generate a full AI summary, but here's what I found from your fleet data.",
         postureCards: [
           {
-            label: "Recent events",
-            value: `${facts.eventCount}`,
-            note: "Chrome activity logs",
-            source: "Admin SDK Reports",
-            action: "Show recent Chrome events",
-            lastUpdated: facts.latestEventAt ?? new Date().toISOString(),
-          },
-          {
-            label: "DLP rules",
-            value: `${facts.dlpRuleCount}`,
-            note: "Customer DLP policies",
+            label: "Data Protection Rules",
+            value:
+              facts.dlpRuleCount > 0
+                ? `${facts.dlpRuleCount} rules`
+                : "Not configured",
+            note: hasDlpRules
+              ? "Protecting sensitive data"
+              : "No rules to detect sensitive data",
             source: "Cloud Identity",
-            action: "List active DLP rules",
+            action: "List data protection rules",
             lastUpdated: new Date().toISOString(),
+            status: hasDlpRules ? "healthy" : "critical",
+            priority: hasDlpRules ? 3 : 1,
           },
           {
-            label: "Connector policies",
-            value: `${facts.connectorPolicyCount}`,
-            note: "Connector policy resolve",
+            label: "Security Events",
+            value:
+              facts.eventCount > 0 ? `${facts.eventCount} events` : "No events",
+            note: hasEvents
+              ? "Browser activity being monitored"
+              : "Event reporting may be disabled",
+            source: "Admin SDK Reports",
+            action: "Show recent security events",
+            lastUpdated: facts.latestEventAt ?? new Date().toISOString(),
+            status: hasEvents ? "healthy" : "warning",
+            priority: hasEvents ? 4 : 2,
+          },
+          {
+            label: "Connector Policies",
+            value:
+              facts.connectorPolicyCount > 0
+                ? `${facts.connectorPolicyCount} policies`
+                : "Not configured",
+            note: hasConnectors
+              ? "Data connectors active"
+              : "No connector policies configured",
             source: "Chrome Policy",
-            action: "Check connector configuration",
+            action: "Review connector configuration",
             lastUpdated: new Date().toISOString(),
+            status: hasConnectors ? "healthy" : "critical",
+            priority: hasConnectors ? 5 : 3,
           },
         ],
-        suggestions: [
-          "List active DLP rules",
-          "Show recent Chrome events",
-          "Check connector configuration",
-        ],
+        suggestions,
         sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
       };
     }
