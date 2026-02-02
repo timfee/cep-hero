@@ -1,19 +1,11 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { motion, AnimatePresence } from "motion/react";
-import { SendHorizontal, Sparkles } from "lucide-react";
+import { AnimatePresence } from "motion/react";
+import { SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
-import {
-  DashboardPanel,
-  DashboardPanelContent,
-  DashboardPanelDescription,
-  DashboardPanelHeader,
-  DashboardPanelTitle,
-} from "@/components/ui/dashboard-panel";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { ChatMessage } from "./chat-message";
 
 export function ChatConsole() {
@@ -32,7 +24,7 @@ export function ChatConsole() {
     }
   }, [messages, isStreaming]);
 
-  // Listen for cross-page action dispatches (e.g., overview cards)
+  // Listen for cross-page action dispatches
   useEffect(() => {
     const handler = (event: Event) => {
       const detail = (event as CustomEvent).detail as { command?: string };
@@ -56,132 +48,84 @@ export function ChatConsole() {
   };
 
   return (
-    <DashboardPanel className="flex h-full min-h-[500px] flex-col">
-      {/* Header */}
-      <DashboardPanelHeader className="flex items-center gap-3">
-        <motion.div
-          className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10"
-          aria-hidden="true"
-          animate={isStreaming ? { scale: [1, 1.05, 1] } : {}}
-          transition={{ duration: 1.5, repeat: Infinity }}
-        >
-          <Sparkles className="h-4 w-4 text-primary" />
-        </motion.div>
-        <div className="flex-1">
-          <DashboardPanelTitle>CEP Assistant</DashboardPanelTitle>
-          <DashboardPanelDescription>
-            Guided fixes with actions
-          </DashboardPanelDescription>
-        </div>
-      </DashboardPanelHeader>
-
+    <div className="flex h-full min-h-[600px] flex-col rounded-lg border border-border bg-card">
       {/* Messages Area */}
-      <DashboardPanelContent className="flex-1 overflow-hidden p-0">
-        <div
-          ref={scrollRef}
-          className="h-full space-y-4 overflow-y-auto px-4 py-4"
-          role="log"
-          aria-label="Chat messages"
-          aria-live="polite"
-        >
-          <AnimatePresence mode="popLayout">
-            {/* Empty state */}
-            {messages.length === 0 && !isStreaming && (
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="flex h-full flex-col items-center justify-center text-center"
-              >
-                <motion.div
-                  className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10"
-                  animate={{ scale: [1, 1.05, 1] }}
-                  transition={{ duration: 3, repeat: Infinity }}
-                >
-                  <Sparkles className="h-6 w-6 text-primary" />
-                </motion.div>
-                <h3 className="text-sm font-medium text-foreground">
-                  Start a conversation
-                </h3>
-                <p className="mt-1 max-w-xs text-xs text-muted-foreground">
-                  Ask about Chrome Enterprise Premium configurations, connector
-                  issues, or DLP policies.
-                </p>
-              </motion.div>
-            )}
+      <div
+        ref={scrollRef}
+        className="flex-1 overflow-y-auto"
+        role="log"
+        aria-label="Chat messages"
+        aria-live="polite"
+      >
+        <AnimatePresence mode="popLayout">
+          {/* Empty state */}
+          {messages.length === 0 && !isStreaming && (
+            <div className="flex h-full flex-col items-center justify-center p-8 text-center">
+              <div className="mb-3 text-4xl">?</div>
+              <h3 className="text-base font-medium text-foreground">
+                How can I help?
+              </h3>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                Ask about Chrome Enterprise Premium configurations, connector
+                issues, or DLP policies.
+              </p>
+            </div>
+          )}
 
-            {/* Messages */}
-            {messages.map((message, index) => (
-              <ChatMessage
-                key={message.id}
-                message={message}
-                isStreaming={isStreaming}
-                isLast={index === messages.length - 1}
-                onAction={handleAction}
-              />
-            ))}
+          {/* Messages */}
+          {messages.map((message, index) => (
+            <ChatMessage
+              key={message.id}
+              message={message}
+              isStreaming={isStreaming}
+              isLast={index === messages.length - 1}
+              onAction={handleAction}
+            />
+          ))}
 
-            {/* Streaming placeholder when submitted but no messages yet */}
-            {isStreaming && messages.length > 0 && status === "submitted" && (
-              <motion.div
-                key="streaming-placeholder"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              >
-                <ChatMessage
-                  message={{
-                    id: "streaming",
-                    role: "assistant",
-                    content: "",
-                    parts: [],
-                  }}
-                  isStreaming={true}
-                  isLast={true}
-                  onAction={handleAction}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </DashboardPanelContent>
+          {/* Streaming placeholder */}
+          {isStreaming && messages.length > 0 && status === "submitted" && (
+            <ChatMessage
+              message={{
+                id: "streaming",
+                role: "assistant",
+                content: "",
+                parts: [],
+              }}
+              isStreaming={true}
+              isLast={true}
+              onAction={handleAction}
+            />
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Input Form */}
       <form
         onSubmit={handleSubmit}
-        className="flex items-center gap-2 border-t border-border bg-muted/50 px-4 py-3"
+        className="flex items-center gap-3 border-t border-border p-4"
       >
-        <label htmlFor="chat-input" className="sr-only">
-          Message input
-        </label>
-        <Input
+        <input
           id="chat-input"
           ref={inputRef}
+          type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder={
-            isStreaming
-              ? "Assistant is responding..."
-              : "Ask CEP or trigger an action"
-          }
-          className="flex-1"
+          placeholder={isStreaming ? "Thinking..." : "Type a message..."}
+          className="flex-1 bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none"
           disabled={isStreaming}
-          aria-describedby={isStreaming ? "streaming-status" : undefined}
+          aria-label="Message input"
         />
-        {isStreaming && (
-          <span id="streaming-status" className="sr-only">
-            Assistant is currently responding. Please wait.
-          </span>
-        )}
         <Button
           type="submit"
           disabled={isStreaming || !input.trim()}
-          size="icon"
+          size="sm"
+          variant="default"
           aria-label="Send message"
         >
           <SendHorizontal className="h-4 w-4" />
         </Button>
       </form>
-    </DashboardPanel>
+    </div>
   );
 }

@@ -3,33 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { ChatConsole } from "@/components/chat/chat-console";
-import {
-  DashboardPanel,
-  DashboardPanelActions,
-  DashboardPanelContent,
-  DashboardPanelDescription,
-  DashboardPanelHeader,
-  DashboardPanelTitle,
-} from "@/components/ui/dashboard-panel";
-import { StatusBadge } from "@/components/ui/status-badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import {
-  AlertTriangle,
-  ArrowRight,
-  Bolt,
-  Network,
-  ShieldCheck,
-  Telescope,
-} from "lucide-react";
+import { ArrowRight, MessageSquare } from "lucide-react";
 
 type OverviewCard = {
   label: string;
@@ -55,18 +31,22 @@ const DEFAULT_SUGGESTIONS = [
   "Retry connector fetch",
 ];
 
+const QUICK_ACTIONS = [
+  { label: "Retry connector fetch", description: "Re-check connector status" },
+  { label: "List connector policies", description: "View all policies" },
+  { label: "Check org units", description: "Inspect OU structure" },
+  { label: "Check auth scopes", description: "Verify permissions" },
+];
+
 export default function Home() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [overviewError, setOverviewError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
         const res = await fetch("/api/overview");
-        if (!res.ok) {
-          throw new Error(`overview ${res.status}`);
-        }
+        if (!res.ok) throw new Error(`overview ${res.status}`);
         const data = await res.json();
         if (!active) return;
         setOverview(
@@ -78,11 +58,9 @@ export default function Home() {
             sources: [],
           }
         );
-        setOverviewError(null);
-      } catch (error) {
+      } catch {
         if (!active) return;
         setOverview(null);
-        setOverviewError("Unable to load overview");
       }
     }
     void load();
@@ -96,13 +74,6 @@ export default function Home() {
     return DEFAULT_SUGGESTIONS;
   }, [overview]);
 
-  const primaryActions = [
-    "Retry connector fetch",
-    "List connector policies",
-    "Check org units",
-    "Check auth scopes",
-  ];
-
   const dispatchCommand = (command: string) => {
     document.dispatchEvent(
       new CustomEvent("cep-action", { detail: { command } })
@@ -110,163 +81,98 @@ export default function Home() {
   };
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto flex max-w-6xl flex-col gap-6 px-6 py-8">
-        {/* Hero Header Section */}
-        <header className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="space-y-2">
-              <p className="text-xs font-medium uppercase tracking-widest text-primary">
-                CEP Command Center
-              </p>
-              <h1 className="text-2xl font-semibold text-foreground sm:text-3xl text-balance">
-                Diagnose, remediate, and verify in one view
-              </h1>
-              <p className="max-w-xl text-sm text-muted-foreground leading-relaxed">
-                Live actions, curated prompts, and posture snapshots to keep
-                connectors and DLP healthy.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-3" role="status" aria-label="System status indicators">
-              <StatusBadge
-                icon={ShieldCheck}
-                label="Auth"
-                value="Active"
-                status="positive"
-              />
-              <StatusBadge
-                icon={Network}
-                label="MCP"
-                value="Online"
-                status="positive"
-              />
-              <StatusBadge
-                icon={Telescope}
-                label="Insights"
-                value={overview?.headline ?? "Ready"}
-                status="info"
-              />
-            </div>
-          </div>
-          <Separator className="my-4" />
-          <div
-            className="grid grid-cols-2 gap-3 md:grid-cols-4"
-            role="region"
-            aria-label="Key metrics"
-          >
-            {statCards(overview).map((stat) => (
-              <StatCard key={stat.label} {...stat} />
-            ))}
-          </div>
+    <main className="min-h-screen bg-background">
+      <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+        {/* Minimal Header */}
+        <header className="mb-6">
+          <h1 className="text-lg font-semibold text-foreground">
+            CEP Command Center
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Chrome Enterprise Premium diagnostics and remediation
+          </p>
         </header>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          {/* Chat Console - Primary Content */}
-          <div className="lg:col-span-2">
+        {/* Main Layout */}
+        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+          {/* Primary: Chat Console */}
+          <div className="min-h-[600px]">
             <ChatConsole />
           </div>
 
-          {/* Sidebar Panels */}
-          <aside className="flex flex-col gap-4" aria-label="Quick actions and suggestions">
-            {/* Playbooks Panel */}
-            <DashboardPanel>
-              <DashboardPanelHeader>
-                <DashboardPanelTitle>Playbooks</DashboardPanelTitle>
-                <DashboardPanelDescription>
-                  One-click guided flows
-                </DashboardPanelDescription>
-              </DashboardPanelHeader>
-              <DashboardPanelContent>
-                <DashboardPanelActions>
-                  {primaryActions.map((action) => (
-                    <Button
-                      key={action}
-                      variant="secondary"
-                      className="justify-between text-left"
-                      onClick={() => dispatchCommand(action)}
-                    >
-                      <span>{action}</span>
-                      <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                    </Button>
-                  ))}
-                </DashboardPanelActions>
-              </DashboardPanelContent>
-            </DashboardPanel>
-
-            {/* Suggested Prompts Panel */}
-            <DashboardPanel>
-              <DashboardPanelHeader>
-                <DashboardPanelTitle>Suggested prompts</DashboardPanelTitle>
-                <DashboardPanelDescription>
-                  Ask or click to run
-                </DashboardPanelDescription>
-              </DashboardPanelHeader>
-              <DashboardPanelContent>
-                <DashboardPanelActions>
-                  {suggestions.map((suggestion) => (
-                    <Button
-                      key={suggestion}
-                      variant="ghost"
-                      className="justify-start text-left text-muted-foreground hover:text-foreground"
-                      onClick={() => dispatchCommand(suggestion)}
-                    >
-                      {suggestion}
-                    </Button>
-                  ))}
-                </DashboardPanelActions>
-              </DashboardPanelContent>
-            </DashboardPanel>
-
-            {/* Posture Cards Panel */}
-            <DashboardPanel>
-              <DashboardPanelHeader>
-                <DashboardPanelTitle>Posture cards</DashboardPanelTitle>
-                <DashboardPanelDescription>
-                  Tap a card to drill in
-                </DashboardPanelDescription>
-              </DashboardPanelHeader>
-              <DashboardPanelContent className="flex flex-col gap-3">
-                {(overview?.postureCards ?? []).slice(0, 4).map((card) => (
-                  <Card
-                    key={card.label}
-                    className="border-border bg-accent/50 transition-colors hover:border-primary/40"
+          {/* Sidebar */}
+          <aside className="space-y-5">
+            {/* Quick Actions */}
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Quick Actions
+              </h2>
+              <div className="space-y-2">
+                {QUICK_ACTIONS.map((action) => (
+                  <button
+                    key={action.label}
+                    onClick={() => dispatchCommand(action.label)}
+                    className="group flex w-full items-center justify-between rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent"
                   >
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm">{card.label}</CardTitle>
-                      <CardDescription>
-                        {card.source || "Chrome fleet"}
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="flex flex-col gap-2">
-                      <div className="text-lg font-semibold text-foreground">
-                        {card.value}
-                      </div>
-                      {card.note && (
-                        <p className="text-xs text-muted-foreground">
-                          {card.note}
-                        </p>
-                      )}
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="secondary"
-                        className="mt-1 w-fit"
-                        onClick={() => dispatchCommand(card.action)}
-                      >
-                        {card.action || "Ask about this"}
-                      </Button>
-                    </CardContent>
-                  </Card>
+                    <div>
+                      <span className="text-sm font-medium text-foreground">
+                        {action.label}
+                      </span>
+                      <p className="text-xs text-muted-foreground">
+                        {action.description}
+                      </p>
+                    </div>
+                    <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100" />
+                  </button>
                 ))}
-                {(overview?.postureCards?.length ?? 0) === 0 && (
-                  <div className="rounded-lg border border-border bg-muted/50 px-3 py-4 text-center text-xs text-muted-foreground">
-                    No posture cards yet. Try running &quot;Show recent Chrome
-                    events&quot;.
+              </div>
+            </section>
+
+            {/* Suggestions */}
+            <section>
+              <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                Suggested Prompts
+              </h2>
+              <div className="space-y-1">
+                {suggestions.map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    onClick={() => dispatchCommand(suggestion)}
+                    className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                  >
+                    <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span>{suggestion}</span>
+                  </button>
+                ))}
+              </div>
+            </section>
+
+            {/* Status Summary */}
+            {overview && overview.postureCards.length > 0 && (
+              <section>
+                <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Fleet Status
+                </h2>
+                <div className="rounded-lg border border-border bg-card p-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    {overview.postureCards.slice(0, 4).map((card) => (
+                      <button
+                        key={card.label}
+                        onClick={() => dispatchCommand(card.action)}
+                        className="text-left transition-opacity hover:opacity-70"
+                      >
+                        <div className="text-2xl font-semibold text-foreground">
+                          {card.value}
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          {card.label}
+                        </div>
+                      </button>
+                    ))}
                   </div>
-                )}
-              </DashboardPanelContent>
-            </DashboardPanel>
+                </div>
+              </section>
+            )}
           </aside>
         </div>
       </div>
@@ -289,69 +195,4 @@ function normalizeOverview(data: unknown): OverviewData | null {
       : [],
     sources: Array.isArray(obj.sources) ? (obj.sources as string[]) : [],
   };
-}
-
-type StatProps = {
-  label: string;
-  value: string;
-  icon: React.ComponentType<{ className?: string }>;
-  status?: "positive" | "warning" | "info";
-};
-
-function statCards(overview: OverviewData | null): StatProps[] {
-  const cards = overview?.postureCards ?? [];
-  const first = cards[0]?.value ?? "---";
-  const second = cards[1]?.value ?? "---";
-  const third = cards[2]?.value ?? "---";
-  const fourth = cards[3]?.value ?? "---";
-  return [
-    {
-      label: cards[0]?.label ?? "Events",
-      value: String(first),
-      icon: Bolt,
-      status: "info",
-    },
-    {
-      label: cards[1]?.label ?? "DLP Rules",
-      value: String(second),
-      icon: ShieldCheck,
-      status: "info",
-    },
-    {
-      label: cards[2]?.label ?? "Connectors",
-      value: String(third),
-      icon: Network,
-      status: "warning",
-    },
-    {
-      label: cards[3]?.label ?? "Findings",
-      value: String(fourth),
-      icon: AlertTriangle,
-      status: "warning",
-    },
-  ];
-}
-
-function StatCard({ label, value, icon: Icon, status = "info" }: StatProps) {
-  return (
-    <div
-      className="rounded-xl border border-border bg-accent/50 px-4 py-3"
-      role="group"
-      aria-label={`${label}: ${value}`}
-    >
-      <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-widest text-muted-foreground">
-        <Icon
-          className={cn(
-            "h-4 w-4",
-            status === "positive" && "text-status-positive",
-            status === "warning" && "text-status-warning",
-            status === "info" && "text-status-info"
-          )}
-          aria-hidden="true"
-        />
-        <span>{label}</span>
-      </div>
-      <div className="pt-1 text-2xl font-semibold text-foreground">{value}</div>
-    </div>
-  );
 }

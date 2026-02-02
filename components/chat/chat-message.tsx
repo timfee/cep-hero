@@ -1,22 +1,15 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
-import { Sparkles, User } from "lucide-react";
 import type { Message as AIMessage } from "ai";
 import { memo, useState, useEffect } from "react";
 
-import {
-  Message,
-  MessageContent,
-} from "@/components/ai-elements/message";
 import {
   Reasoning,
   ReasoningTrigger,
   ReasoningContent,
 } from "@/components/ai-elements/reasoning";
 import { StreamingText, ThinkingIndicator } from "@/components/ai-elements/streaming-text";
-import { DiagnosisCard } from "@/components/ai-elements/diagnosis-card";
 import { HypothesesList } from "@/components/ai-elements/hypothesis-card";
 import { EvidencePanel } from "@/components/ai-elements/evidence-panel";
 import { ConnectorStatus } from "@/components/ai-elements/connector-status";
@@ -25,12 +18,10 @@ import { NextStepsPanel } from "@/components/ai-elements/next-steps-panel";
 import { MissingQuestionsList } from "@/components/ai-elements/missing-questions";
 import { ActionButtons, type ActionItem } from "@/components/ai-elements/action-buttons";
 import type {
-  DiagnosisPayload,
   EvidencePayload,
   ConnectorAnalysis,
   Hypothesis,
   MissingQuestion,
-  Reference,
 } from "@/types/chat";
 
 export interface ChatMessageProps {
@@ -87,46 +78,20 @@ export const ChatMessage = memo(function ChatMessage({
   const evidence = metadata?.evidence;
   const actions = metadata?.actions;
 
-  // Parse diagnosis from text if present
-  const diagnosisMatch = mainText.match(/^Diagnosis:\s*(.+?)(?=\n|$)/m);
-  const diagnosis = diagnosisMatch?.[1];
-
-  // Get text without diagnosis prefix for cleaner display
-  const displayText = diagnosis
-    ? mainText.replace(/^Diagnosis:\s*.+?\n?/, "").trim()
-    : mainText;
-
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.2 }}
+    <div
+      className={cn(
+        "px-4 py-4",
+        isUser ? "bg-transparent" : "bg-muted/30"
+      )}
     >
-      <Message from={isUser ? "user" : "assistant"}>
-        {/* Avatar and role label */}
-        <div className="flex items-center gap-2">
-          <motion.div
-            className={cn(
-              "flex h-7 w-7 shrink-0 items-center justify-center rounded-full border",
-              isUser
-                ? "border-border bg-muted text-muted-foreground"
-                : "border-primary/20 bg-primary/10 text-primary"
-            )}
-            initial={{ scale: 0.8 }}
-            animate={{ scale: 1 }}
-          >
-            {isUser ? (
-              <User className="h-3.5 w-3.5" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-          </motion.div>
-          <span className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
-            {isUser ? "You" : "Assistant"}
-          </span>
+      <div className="mx-auto max-w-3xl">
+        {/* Role label */}
+        <div className="mb-2 text-xs font-medium text-muted-foreground">
+          {isUser ? "You" : "Assistant"}
         </div>
 
-        <div className="ml-9 space-y-4">
+        <div className="space-y-3">
           {/* Inline reasoning - shown before text, auto-collapses */}
           {!isUser && reasoningText && (
             <Reasoning
@@ -141,22 +106,14 @@ export const ChatMessage = memo(function ChatMessage({
 
           {/* Streaming indicator when waiting for response */}
           {showStreamingCursor && !mainText && !reasoningText && (
-            <ThinkingIndicator message="Analyzing" />
-          )}
-
-          {/* Diagnosis card - prominent display */}
-          {!isUser && diagnosis && (
-            <DiagnosisCard
-              diagnosis={diagnosis}
-              reference={null}
-            />
+            <ThinkingIndicator message="Thinking" />
           )}
 
           {/* Main text content */}
-          {displayText && (
-            <MessageContent className="max-w-none">
-              <StreamingText text={displayText} isStreaming={showStreamingCursor} />
-            </MessageContent>
+          {mainText && (
+            <div className="text-sm leading-relaxed text-foreground">
+              <StreamingText text={mainText} isStreaming={showStreamingCursor} />
+            </div>
           )}
 
           {/* Connector status alert */}
@@ -197,7 +154,7 @@ export const ChatMessage = memo(function ChatMessage({
             <ActionButtons actions={actions} onAction={onAction} />
           )}
         </div>
-      </Message>
-    </motion.div>
+      </div>
+    </div>
   );
 });
