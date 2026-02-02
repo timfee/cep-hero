@@ -163,31 +163,9 @@ export async function POST(req: Request) {
     },
   });
 
-  // Return stream with structured data annotations when available
+  // Return stream response
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
-    getMessageMetadata: () => {
-      if (!diagnosisResult || "error" in diagnosisResult) return undefined;
-      
-      // Build structured evidence for the UI
-      const evidence = {
-        planSteps: diagnosisResult.planSteps,
-        hypotheses: diagnosisResult.hypotheses,
-        nextSteps: diagnosisResult.nextSteps,
-        missingQuestions: diagnosisResult.missingQuestions,
-        evidence: diagnosisResult.evidence,
-        connectorAnalysis: diagnosisResult.evidence?.connectorAnalysis,
-      };
-      
-      // Build action buttons from next steps
-      const actions = diagnosisResult.nextSteps?.map((step, i) => ({
-        id: `next-step-${i}`,
-        label: step,
-        command: step,
-      })) ?? [];
-      
-      return { evidence, actions };
-    },
   });
 }
 
