@@ -22,15 +22,15 @@ The eval system uses fixture injection to provide deterministic test data to the
 
 The system consists of several interconnected parts:
 
-**Registry** (`evals/registry.json`): The source of truth for all eval cases. Each entry defines the case ID, title, category, tags, expected response schema, fixture references, required evidence markers, and rubric criteria.
+**Registry** (`evals/registry.json`): The source of truth for all 85 eval cases organized into 15 failure-domain categories. Each entry defines the case ID, title, category, tags, expected response schema, fixture references, required evidence markers, and rubric criteria.
 
 **Case Files** (`evals/cases/EC-###-*.md`): Human-readable scenario descriptions including the user prompt, expected behavior, and cleanup steps. These serve as both documentation and the source of prompts for eval runs.
 
 **Fixtures** (`evals/fixtures/`): Deterministic data that simulates API responses. The `base/api-base.json` file provides a baseline snapshot of org units, policy schemas, and audit events. Case-specific overrides in `EC-###/overrides.json` customize the baseline for specific scenarios.
 
-**Test Files** (`evals/*.test.ts`): Bun test files that load the registry, build prompts, call the chat API with fixtures, and validate responses against expected schemas and evidence markers.
+**Eval Runner** (`evals/lib/`): Standalone eval execution engine that does NOT depend on bun:test. This separation ensures evals assess AI behavior quality while unit tests (in `tests/`) verify code correctness.
 
-**Test Helpers** (`lib/test-helpers/`): Shared utilities for loading fixtures, building prompts, asserting response structure, scoring rubrics, and writing reports.
+**Test Helpers** (`lib/test-helpers/`): Shared utilities including `eval-server.ts` for server lifecycle management and `chat-client.ts` for HTTP client interactions.
 
 ### How Fixture Injection Works
 
@@ -59,55 +59,49 @@ bun run dev
 Run all evals (with server management):
 
 ```bash
-bun run evals:run
+EVAL_USE_BASE=1 bun run evals
 ```
 
 Run all evals (server already running):
 
 ```bash
-bun run evals:run:fast
+EVAL_USE_BASE=1 bun run evals:fast
 ```
 
 Run a specific category:
 
 ```bash
-bun run evals:run:diag:fast    # Diagnostics (EC-027–EC-056)
-bun run evals:run:plan:fast    # Test Plan (EC-057–EC-082)
-bun run evals:run:common:fast  # Common Challenges (EC-001–EC-026)
+EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=policy EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=dlp EVAL_USE_BASE=1 bun run evals
 ```
 
 Run specific cases by ID:
 
 ```bash
-EVAL_IDS=EC-057,EC-058 bun run evals:run:by-id
+EVAL_IDS=EC-057,EC-058 EVAL_USE_BASE=1 bun run evals
 ```
 
 Run cases by tag:
 
 ```bash
-EVAL_TAGS=dlp,connectors bun run evals:run:by-tag
+EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
 ```
 
 ### Environment Variables
 
 Control eval behavior with these environment variables:
 
-| Variable                       | Purpose                                                        |
-| ------------------------------ | -------------------------------------------------------------- |
-| `EVAL_USE_BASE=1`              | Load base fixtures from `evals/fixtures/base/api-base.json`    |
-| `EVAL_USE_FIXTURES=1`          | Load case-specific overrides from `evals/fixtures/EC-###/`     |
-| `EVAL_FAKE_CHAT=1`             | Return synthetic responses without calling the AI (fast mode)  |
-| `EVAL_IDS`                     | Comma-separated list of case IDs to run                        |
-| `EVAL_CATEGORY`                | Filter by category (diagnostics, test_plan, common_challenges) |
-| `EVAL_TAGS`                    | Comma-separated list of tags to filter by                      |
-| `EVAL_LIMIT`                   | Maximum number of cases to run                                 |
-| `EVAL_STRICT_EVIDENCE=1`       | Fail if required evidence markers are missing                  |
-| `EVAL_RUBRIC_STRICT=1`         | Fail if rubric score is below minimum                          |
-| `EVAL_WARN_MISSING_EVIDENCE=1` | Log (don't fail) when evidence is missing                      |
-| `EVAL_WARN_RUBRIC=1`           | Log (don't fail) when rubric score is low                      |
-| `EVAL_SERIAL=1`                | Run cases sequentially instead of in parallel                  |
-| `EVAL_CASE_PAUSE_MS`           | Delay between cases (default: 250ms)                           |
-| `EVAL_MANAGE_SERVER=0`         | Skip automatic server lifecycle management                     |
+| Variable               | Purpose                                                                                                                                                        |
+| ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `EVAL_USE_BASE=1`      | Load base fixtures from `evals/fixtures/base/api-base.json`                                                                                                    |
+| `EVAL_USE_FIXTURES=1`  | Load case-specific overrides from `evals/fixtures/EC-###/`                                                                                                     |
+| `EVAL_TEST_MODE=1`     | Return synthetic responses without calling the AI (fast mode)                                                                                                  |
+| `EVAL_IDS`             | Comma-separated list of case IDs to run                                                                                                                        |
+| `EVAL_CATEGORY`        | Filter by category (policy, dlp, connector, system, enrollment, security, network, devices, integration, extensions, endpoint, browser, auth, events, updates) |
+| `EVAL_TAGS`            | Comma-separated list of tags to filter by                                                                                                                      |
+| `EVAL_MANAGE_SERVER=0` | Skip automatic server lifecycle management                                                                                                                     |
+| `EVAL_VERBOSE=1`       | Enable verbose output                                                                                                                                          |
 
 ### Recommended Workflows
 
@@ -118,19 +112,19 @@ For development iteration:
 bun run dev
 
 # Run specific case repeatedly as you iterate
-EVAL_IDS=EC-057 EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 bun run evals:run:by-id
+EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals:fast
 ```
 
 For comprehensive testing:
 
 ```bash
-EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 EVAL_STRICT_EVIDENCE=1 bun run evals:run:fast
+EVAL_USE_BASE=1 bun run evals:fast
 ```
 
 For quota-safe CI:
 
 ```bash
-EVAL_FAKE_CHAT=1 bun run evals:run
+EVAL_TEST_MODE=1 bun run evals
 ```
 
 ## Understanding Eval Results
@@ -244,7 +238,7 @@ User: "The exact prompt the user would ask"
 4. **Run the eval in isolation**:
 
 ```bash
-EVAL_IDS=EC-086 EVAL_USE_BASE=1 bun run evals:run:by-id
+EVAL_IDS=EC-086 EVAL_USE_BASE=1 bun run evals
 ```
 
 ## Eval Categories
@@ -301,11 +295,16 @@ CEP-Hero uses the Vercel AI SDK. When improving the system, consider these patte
 
 ### Loop Control
 
-The default step limit is 20. For complex diagnostic scenarios, you may need to adjust this. Use `stopWhen` conditions to control when the agent stops:
+**IMPORTANT**: CEP-Hero currently uses `stopWhen: stepCountIs(5)` in `lib/chat/chat-service.ts` (line 170). This is significantly lower than the AI SDK default of 20 steps.
 
-- `stepCountIs(n)`: Stop after n steps
+This limit may need to be increased or made dynamic for complex diagnostic scenarios. The user has explicitly requested researching dynamic loop control per AI SDK best practices.
+
+Options for improvement:
+
+- `stepCountIs(n)`: Stop after n steps (current approach)
 - `hasToolCall('toolName')`: Stop after calling a specific tool
 - Custom conditions based on response content
+- Dynamic limits based on query complexity
 
 ### Workflow Patterns
 

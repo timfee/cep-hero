@@ -125,10 +125,10 @@ CEP-Hero uses two types of quality assurance: **unit tests** for code correctnes
 bun test
 
 # Run evals (start server first in another terminal with `bun run dev`)
-EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 bun run evals:run:fast
+EVAL_USE_BASE=1 bun run evals
 
 # Run a specific eval
-EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals:run:by-id
+EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals
 ```
 
 ### Understanding Evals
@@ -149,15 +149,15 @@ For comprehensive eval documentation, see:
 
 ```bash
 # Run all evals (server already running)
-bun run evals:run:fast
+EVAL_USE_BASE=1 bun run evals:fast
 
 # Run by category
-bun run evals:run:diag:fast    # Diagnostics
-bun run evals:run:plan:fast    # Test Plan
-bun run evals:run:common:fast  # Common Challenges
+EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=policy EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=dlp EVAL_USE_BASE=1 bun run evals
 
 # Run with strict checking
-EVAL_STRICT_EVIDENCE=1 EVAL_USE_BASE=1 bun run evals:run:fast
+EVAL_STRICT_EVIDENCE=1 EVAL_USE_BASE=1 bun run evals
 
 # Capture live fixtures
 bun run fixtures:capture

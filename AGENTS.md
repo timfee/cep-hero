@@ -123,14 +123,14 @@ The system uses dependency injection to swap between production and eval modes:
 - **`IToolExecutor`** interface (`lib/mcp/types.ts`) - Contract for tool execution
 - **`CepToolExecutor`** (`lib/mcp/registry.ts`) - Production implementation calling Google APIs
 - **`FixtureToolExecutor`** (`lib/mcp/fixture-executor.ts`) - Eval implementation returning fixture data
-- **`loadEvalFixtures()`** (`lib/test-helpers/eval-runner.ts`) - Loads and merges fixture data
+- **Eval Runner** (`evals/lib/runner.ts`) - Standalone eval execution engine (no bun:test dependency)
 
 ### Adding New Eval Cases
 
 1. Create a case file in `evals/cases/EC-###.md` with the user prompt
 2. Add the case to `evals/registry.json` with expected schema and rubric
 3. Optionally create `evals/fixtures/EC-###/overrides.json` for case-specific data
-4. Run with `EVAL_IDS="EC-###" EVAL_USE_BASE=1 bun run evals:run`
+4. Run with `EVAL_IDS="EC-###" EVAL_USE_BASE=1 bun run evals`
 
 ### Fixture Data Structure
 
@@ -149,13 +149,16 @@ type FixtureData = {
 
 ```bash
 # With fixture injection (recommended)
-EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 bun run evals:run
+EVAL_USE_BASE=1 bun run evals
 
 # Specific cases
-EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals:run
+EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals
 
-# Fast mode (no AI calls)
-EVAL_FAKE_CHAT=1 bun run evals:run
+# Fast mode (server already running)
+EVAL_USE_BASE=1 bun run evals:fast
+
+# Test mode (no AI calls)
+EVAL_TEST_MODE=1 bun run evals
 ```
 
 ## When Oxlint + Oxfmt Can't Help
