@@ -1,5 +1,6 @@
 "use client";
 
+import { X } from "lucide-react";
 import {
   createContext,
   useCallback,
@@ -10,10 +11,10 @@ import {
   useState,
   useLayoutEffect,
 } from "react";
-import { Button } from "@/components/ui/button";
+
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { X } from "lucide-react";
 
 type ActivityEntry = {
   id: string;
@@ -242,7 +243,11 @@ function ActivityPanel({ isOpen }: { isOpen: boolean }) {
         </div>
         <div className="flex items-center gap-2">
           {/* Filter Tabs */}
-          <div className="flex gap-1" role="tablist" aria-label="Filter activity">
+          <div
+            className="flex gap-1"
+            role="tablist"
+            aria-label="Filter activity"
+          >
             {filterOptions.map((option) => (
               <button
                 key={option.value}
@@ -342,7 +347,9 @@ function ActivityPanel({ isOpen }: { isOpen: boolean }) {
                   </div>
                   {entry.responsePreview && (
                     <div className="mt-2 rounded-md border border-border bg-muted/50 px-2 py-2 font-mono text-xs text-muted-foreground">
-                      <span className="line-clamp-2">{entry.responsePreview}</span>
+                      <span className="line-clamp-2">
+                        {entry.responsePreview}
+                      </span>
                     </div>
                   )}
                 </li>

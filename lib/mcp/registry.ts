@@ -438,6 +438,7 @@ export class CepToolExecutor {
 
       let rootOrgUnitId = "";
       let rootOrgUnitPath = "";
+      let ouFetchError: string | null = null;
       try {
         const orgUnits = listOrgUnits
           ? await listOrgUnits({ customerId: this.customerId, type: "all" })
@@ -448,9 +449,10 @@ export class CepToolExecutor {
         rootOrgUnitId = resolved.id;
         rootOrgUnitPath = resolved.path;
       } catch (error) {
+        ouFetchError = getErrorMessage(error);
         console.log(
           "[connector-config] root-ou error",
-          JSON.stringify({ message: getErrorMessage(error) })
+          JSON.stringify({ message: ouFetchError })
         );
       }
 
@@ -462,6 +464,18 @@ export class CepToolExecutor {
           : "",
         rootOrgUnitPath ? `orgunits/${rootOrgUnitPath.replace(/^\//, "")}` : "",
       ].filter(Boolean);
+
+      if (targetCandidates.length === 0) {
+        return {
+          error: "Could not determine policy target (root org unit).",
+          detail:
+            ouFetchError ??
+            "No organization units were returned; ensure the token can read org units.",
+          suggestion:
+            "Re-authenticate with https://www.googleapis.com/auth/admin.directory.orgunit scope and retry.",
+          policySchemas,
+        };
+      }
 
       const resolveErrors: Array<{ targetResource: string; message: string }> =
         [];
@@ -556,6 +570,55 @@ export class CepToolExecutor {
           "Check Chrome Policy API permissions and policy schema access.",
         policySchemas,
       };
+    }
+  }
+
+  /**
+   * Debug the current access token scopes and expiry.
+   */
+  async debugAuth() {
+    const start = Date.now();
+    const token = await this.auth.getAccessToken();
+    const accessToken = token?.token;
+
+    if (!accessToken) {
+      return { error: "No access token available in client" };
+    }
+
+    try {
+      const res = await fetch(
+        `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
+      );
+      const data = (await res.json()) as {
+        scope?: string;
+        expires_in?: number;
+        issued_to?: string;
+        audience?: string;
+        error?: string;
+      };
+
+      recordActivity({
+        id: crypto.randomUUID(),
+        url: "https://www.googleapis.com/oauth2/v1/tokeninfo",
+        method: "GET",
+        status: res.status,
+        durationMs: Date.now() - start,
+        responsePreview: data.scope ?? data.error ?? "(no scope)",
+        timestamp: Date.now(),
+        kind: "workspace",
+      });
+
+      if (!res.ok || data.error) {
+        return { error: data.error ?? `tokeninfo ${res.status}` };
+      }
+
+      return {
+        scope: data.scope ?? "",
+        expiresIn: data.expires_in,
+        issuedTo: data.issued_to ?? data.audience,
+      };
+    } catch (error) {
+      return { error: getErrorMessage(error) };
     }
   }
 

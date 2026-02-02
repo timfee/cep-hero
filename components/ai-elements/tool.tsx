@@ -1,14 +1,8 @@
 "use client";
 
-import { Badge } from "@/components/ui/badge";
-import {
-  Collapsible,
-  CollapsibleContent,
-  CollapsibleTrigger,
-} from "@/components/ui/collapsible";
-import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
+import type { ComponentProps, ReactNode } from "react";
+
 import {
   CheckCircleIcon,
   ChevronDownIcon,
@@ -17,8 +11,16 @@ import {
   WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
-import { isValidElement, useState } from "react";
+import { isValidElement } from "react";
+
+import { Badge } from "@/components/ui/badge";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { cn } from "@/lib/utils";
+
 import { CodeBlock } from "./code-block";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
@@ -75,7 +77,9 @@ export const getStatusBadge = (status: ToolPart["state"]) => {
       </motion.div>
     ),
     "approval-requested": <ClockIcon className="size-3.5 text-yellow-600" />,
-    "approval-responded": <CheckCircleIcon className="size-3.5 text-blue-600" />,
+    "approval-responded": (
+      <CheckCircleIcon className="size-3.5 text-blue-600" />
+    ),
     "output-available": (
       <motion.div
         initial={{ scale: 0 }}
@@ -160,7 +164,11 @@ export const ToolHeader = ({
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
-export const ToolContent = ({ className, children, ...props }: ToolContentProps) => (
+export const ToolContent = ({
+  className,
+  children,
+  ...props
+}: ToolContentProps) => (
   <CollapsibleContent className={cn("overflow-hidden", className)} {...props}>
     <motion.div
       initial={{ opacity: 0, y: -8 }}

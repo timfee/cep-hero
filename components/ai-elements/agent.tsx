@@ -1,5 +1,11 @@
 "use client";
 
+import type { Tool } from "ai";
+import type { ComponentProps } from "react";
+
+import { BotIcon } from "lucide-react";
+import { memo } from "react";
+
 import {
   Accordion,
   AccordionContent,
@@ -8,10 +14,7 @@ import {
 } from "@/components/ui/accordion";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import type { Tool } from "ai";
-import { BotIcon } from "lucide-react";
-import type { ComponentProps } from "react";
-import { memo } from "react";
+
 import { CodeBlock } from "./code-block";
 
 export type AgentProps = ComponentProps<"div">;
@@ -77,14 +80,12 @@ export const AgentInstructions = memo(
 
 export type AgentToolsProps = ComponentProps<typeof Accordion>;
 
-export const AgentTools = memo(
-  ({ className, ...props }: AgentToolsProps) => (
-    <div className={cn("space-y-2", className)}>
-      <span className="font-medium text-muted-foreground text-sm">Tools</span>
-      <Accordion className="rounded-md border" {...props} />
-    </div>
-  )
-);
+export const AgentTools = memo(({ className, ...props }: AgentToolsProps) => (
+  <div className={cn("space-y-2", className)}>
+    <span className="font-medium text-muted-foreground text-sm">Tools</span>
+    <Accordion className="rounded-md border" {...props} />
+  </div>
+));
 
 export type AgentToolProps = ComponentProps<typeof AccordionItem> & {
   tool: Tool;

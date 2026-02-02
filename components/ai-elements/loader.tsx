@@ -1,8 +1,10 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import type { HTMLAttributes } from "react";
+
+import { motion } from "motion/react";
+
+import { cn } from "@/lib/utils";
 
 export type LoaderProps = HTMLAttributes<HTMLDivElement> & {
   size?: number;

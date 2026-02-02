@@ -1,6 +1,16 @@
 "use client";
 
+import type { ComponentProps, ReactNode } from "react";
+
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import {
+  BrainIcon,
+  ChevronDownIcon,
+  DotIcon,
+  type LucideIcon,
+} from "lucide-react";
+import { createContext, memo, useContext, useMemo } from "react";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -8,15 +18,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "motion/react";
-import {
-  BrainIcon,
-  ChevronDownIcon,
-  DotIcon,
-  type LucideIcon,
-} from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
-import { createContext, memo, useContext, useMemo } from "react";
 
 interface ChainOfThoughtContextValue {
   isOpen: boolean;
@@ -142,11 +143,7 @@ export const ChainOfThoughtStep = memo(
         initial={{ opacity: 0, x: -10 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.3, ease: "easeOut" }}
-        className={cn(
-          "flex gap-2 text-sm",
-          statusStyles[status],
-          className
-        )}
+        className={cn("flex gap-2 text-sm", statusStyles[status], className)}
         {...props}
       >
         <div className="relative mt-0.5">
