@@ -9,6 +9,8 @@ type ChatContextValue = {
   input: string;
   setInput: (value: string) => void;
   sendMessage: ReturnType<typeof useChat>["sendMessage"];
+  stop: ReturnType<typeof useChat>["stop"];
+  regenerate: ReturnType<typeof useChat>["regenerate"];
 };
 
 const ChatContext = createContext<ChatContextValue | null>(null);
@@ -16,11 +18,11 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
 
-  const { messages, status, sendMessage } = useChat();
+  const { messages, status, sendMessage, stop, regenerate } = useChat();
 
   const value = useMemo<ChatContextValue>(
-    () => ({ messages, status, input, setInput, sendMessage }),
-    [messages, status, input, sendMessage]
+    () => ({ messages, status, input, setInput, sendMessage, stop, regenerate }),
+    [messages, status, input, sendMessage, stop, regenerate]
   );
 
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;

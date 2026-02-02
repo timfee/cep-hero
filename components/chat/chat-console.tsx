@@ -1,7 +1,6 @@
-"use client";
-
-import { SendHorizontal, HelpCircle, Loader2 } from "lucide-react";
+import { SendHorizontal, HelpCircle, Loader2, RefreshCcwIcon, CopyIcon } from "lucide-react";
 import { useMemo, useCallback } from "react";
+import { getToolName, isToolUIPart } from "ai";
 
 import type {
   EvidencePayload,
@@ -29,14 +28,18 @@ import {
   Message,
   MessageContent,
   MessageResponse,
+  MessageActions,
+  MessageAction,
 } from "@/components/ai-elements/message";
 import { MissingQuestionsList } from "@/components/ai-elements/missing-questions";
 import { NextStepsPanel } from "@/components/ai-elements/next-steps-panel";
 import { PlanSteps } from "@/components/ai-elements/plan-steps";
 import {
   PromptInput,
+  PromptInputBody,
   PromptInputTextarea,
   PromptInputSubmit,
+  PromptInputFooter,
   type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import {
@@ -44,9 +47,17 @@ import {
   ReasoningTrigger,
   ReasoningContent,
 } from "@/components/ai-elements/reasoning";
+import {
+  Tool,
+  ToolHeader,
+  ToolContent,
+  ToolInput,
+  ToolOutput,
+} from "@/components/ai-elements/tool";
 import { useChatContext } from "@/components/chat/chat-context";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { OrgUnitsList } from "./org-units-list";
 
 interface MessageMetadata {
   evidence?: {
@@ -61,19 +72,18 @@ interface MessageMetadata {
 }
 
 export function ChatConsole() {
-  const { messages, sendMessage, status, input, setInput } = useChatContext();
+  const { messages, sendMessage, status, input, setInput, stop, regenerate } =
+    useChatContext();
 
   const isStreaming = status === "submitted" || status === "streaming";
-  const isSubmitting = status === "submitted";
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
       const trimmed = message.text?.trim();
       if (!trimmed) return;
-      setInput("");
       void sendMessage({ text: trimmed });
     },
-    [setInput, sendMessage]
+    [sendMessage]
   );
 
   const handleAction = useCallback(
@@ -83,16 +93,13 @@ export function ChatConsole() {
     [sendMessage]
   );
 
-  // Stable message keys - use ID if available, otherwise index-based
-  const memoizedMessages = useMemo(() => messages, [messages]);
-
   return (
-    <div className="flex min-h-150 flex-col rounded-lg border border-border bg-card lg:min-h-175">
+    <div className="flex h-full flex-col rounded-lg border border-border bg-card">
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
-        <ConversationContent className="p-0 lg:p-1">
+        <ConversationContent className="p-4 lg:p-6">
           {/* Empty state */}
-          {memoizedMessages.length === 0 && !isStreaming && (
+          {messages.length === 0 && !isStreaming && (
             <ConversationEmptyState
               icon={<HelpCircle className="h-8 w-8" />}
               title="How can I help?"
@@ -101,102 +108,163 @@ export function ChatConsole() {
           )}
 
           {/* Messages */}
-          {memoizedMessages.map((message, index) => {
+          {messages.map((message, index) => {
             const isUser = message.role === "user";
-            const isLast = index === memoizedMessages.length - 1;
-            const showStreamingCursor = isStreaming && isLast && !isUser;
+            const isLast = index === messages.length - 1;
             const metadata = message.metadata as MessageMetadata | undefined;
-            // Use stable keys - prefer message.id, fallback to content hash
-            const messageKey = message.id || `msg-${index}-${message.role}`;
-
-            // Extract parts with stable references
-            const textParts = message.parts.filter((p) => p.type === "text");
-            const reasoningParts = message.parts.filter(
-              (p) => p.type === "reasoning"
-            );
-
-            const mainText = textParts
-              .map((p) =>
-                "text" in p && typeof p.text === "string" ? p.text : ""
-              )
-              .filter(Boolean)
-              .join("\n");
-            const reasoningText = reasoningParts
-              .map((p) =>
-                "reasoning" in p && typeof p.reasoning === "string"
-                  ? p.reasoning
-                  : ""
-              )
-              .filter(Boolean)
-              .join("\n");
             const evidence = metadata?.evidence;
             const actions = metadata?.actions;
 
             return (
-              <Message
-                key={messageKey}
-                from={message.role}
-                className={cn(
-                  "px-4 py-4 lg:px-6 lg:py-5",
-                  isUser ? "bg-transparent" : "bg-muted",
-                  // Prevent layout shift during streaming
-                  "will-change-transform"
-                )}
-              >
-                {/* Role label */}
-                <div className="text-xs font-medium text-muted-foreground">
-                  {isUser ? "You" : "Assistant"}
-                </div>
+              <div key={message.id || index} className="space-y-4">
+                {message.parts.map((part, i) => {
+                  const partKey = `${message.id || index}-${i}`;
 
-                <MessageContent className="space-y-3 lg:space-y-4">
-                  {/* Reasoning */}
-                  {!isUser && reasoningText && (
-                    <Reasoning isStreaming={showStreamingCursor} defaultOpen>
-                      <ReasoningTrigger />
-                      <ReasoningContent>{reasoningText}</ReasoningContent>
-                    </Reasoning>
-                  )}
+                  if (part.type === "reasoning") {
+                    return (
+                      <Reasoning
+                        key={partKey}
+                        isStreaming={isStreaming && isLast}
+                        defaultOpen
+                      >
+                        <ReasoningTrigger />
+                        <ReasoningContent>{part.text}</ReasoningContent>
+                      </Reasoning>
+                    );
+                  }
 
-                  {/* Thinking indicator */}
-                  {showStreamingCursor && !mainText && !reasoningText && (
-                    <ThinkingIndicator message="Thinking" />
-                  )}
+                  if (part.type === "text") {
+                    return (
+                      <Message
+                        key={partKey}
+                        from={message.role}
+                        className={cn(
+                          isUser ? "bg-transparent" : "bg-muted p-4 lg:p-6"
+                        )}
+                      >
+                        <MessageContent>
+                          <MessageResponse>{part.text}</MessageResponse>
+                        </MessageContent>
+                        {!isUser && (
+                          <MessageActions>
+                            <MessageAction
+                              onClick={() => regenerate()}
+                              tooltip="Regenerate"
+                            >
+                              <RefreshCcwIcon className="size-4" />
+                            </MessageAction>
+                            <MessageAction
+                              onClick={() =>
+                                navigator.clipboard.writeText(part.text)
+                              }
+                              tooltip="Copy"
+                            >
+                              <CopyIcon className="size-4" />
+                            </MessageAction>
+                          </MessageActions>
+                        )}
+                      </Message>
+                    );
+                  }
 
-                  {/* Main text with streaming markdown support */}
-                  {mainText && <MessageResponse>{mainText}</MessageResponse>}
+                  if (isToolUIPart(part)) {
+                    const toolName = getToolName(part);
+                    const toolPart = part as any; // Cast to access state/input/output safely if needed
 
-                  {/* Domain-specific structured data */}
-                  {!isUser && evidence?.connectorAnalysis?.flag && (
-                    <ConnectorStatus analysis={evidence.connectorAnalysis} />
-                  )}
+                    // 1. Suggest Actions -> Action Buttons
+                    if (
+                      toolName === "suggestActions" &&
+                      toolPart.state === "output-available"
+                    ) {
+                      const actions = (toolPart.input as { actions: string[] })
+                        ?.actions;
+                      if (actions && actions.length > 0) {
+                        return (
+                          <div key={partKey} className="pl-4 lg:pl-6">
+                            <ActionButtons
+                              actions={actions.map((action, idx) => ({
+                                id: `action-${idx}`,
+                                label: action,
+                                command: action,
+                              }))}
+                              onAction={handleAction}
+                              disabled={isStreaming}
+                            />
+                          </div>
+                        );
+                      }
+                      return null;
+                    }
 
-                  {!isUser &&
-                    evidence?.planSteps &&
-                    evidence.planSteps.length > 0 && (
+                    // 2. List Org Units -> Custom Card List
+                    if (
+                      toolName === "listOrgUnits" &&
+                      toolPart.state === "output-available"
+                    ) {
+                      return (
+                        <div key={partKey} className="pl-4 lg:pl-6">
+                          <OrgUnitsList data={toolPart.output} />
+                        </div>
+                      );
+                    }
+
+                    // 3. Default -> Collapsible Tool View
+                    return (
+                      <Tool key={partKey}>
+                        <ToolHeader
+                          type={toolPart.type}
+                          state={toolPart.state}
+                          toolName={toolName}
+                        />
+                        <ToolContent>
+                          <ToolInput input={toolPart.input} />
+                          {toolPart.state === "output-available" && (
+                            <ToolOutput
+                              output={toolPart.output}
+                              errorText={undefined}
+                            />
+                          )}
+                          {toolPart.state === "output-error" && (
+                            <ToolOutput
+                              output={undefined}
+                              errorText={toolPart.error}
+                            />
+                          )}
+                        </ToolContent>
+                      </Tool>
+                    );
+                  }
+
+                  return null;
+                })}
+
+                {/* Domain-specific structured data rendered after parts */}
+                {!isUser && (
+                  <div className="space-y-4 pl-4 lg:pl-6">
+                    {evidence?.connectorAnalysis?.flag && (
+                      <ConnectorStatus analysis={evidence.connectorAnalysis} />
+                    )}
+
+                    {evidence?.planSteps && evidence.planSteps.length > 0 && (
                       <PlanSteps steps={evidence.planSteps} />
                     )}
 
-                  {!isUser && evidence?.evidence && (
-                    <EvidencePanel evidence={evidence.evidence} />
-                  )}
+                    {evidence?.evidence && (
+                      <EvidencePanel evidence={evidence.evidence} />
+                    )}
 
-                  {!isUser &&
-                    evidence?.hypotheses &&
-                    evidence.hypotheses.length > 0 && (
+                    {evidence?.hypotheses && evidence.hypotheses.length > 0 && (
                       <HypothesesList hypotheses={evidence.hypotheses} />
                     )}
 
-                  {!isUser &&
-                    evidence?.missingQuestions &&
-                    evidence.missingQuestions.length > 0 && (
-                      <MissingQuestionsList
-                        questions={evidence.missingQuestions}
-                      />
-                    )}
+                    {evidence?.missingQuestions &&
+                      evidence.missingQuestions.length > 0 && (
+                        <MissingQuestionsList
+                          questions={evidence.missingQuestions}
+                        />
+                      )}
 
-                  {!isUser &&
-                    evidence?.nextSteps &&
-                    evidence.nextSteps.length > 0 && (
+                    {evidence?.nextSteps && evidence.nextSteps.length > 0 && (
                       <NextStepsPanel
                         steps={evidence.nextSteps}
                         onStepClick={handleAction}
@@ -204,76 +272,43 @@ export function ChatConsole() {
                       />
                     )}
 
-                  {!isUser && actions && actions.length > 0 && (
-                    <ActionButtons
-                      actions={actions}
-                      onAction={handleAction}
-                      disabled={isStreaming}
-                    />
-                  )}
-                </MessageContent>
-              </Message>
+                    {actions && actions.length > 0 && (
+                      <ActionButtons
+                        actions={actions}
+                        onAction={handleAction}
+                        disabled={isStreaming}
+                      />
+                    )}
+                  </div>
+                )}
+              </div>
             );
           })}
 
-          {/* Streaming loader */}
-          {status === "submitted" && (
-            <Loader
-              className="mx-4 my-4 text-muted-foreground"
-              variant="dots"
-            />
-          )}
+          {/* Submitted state loader */}
+          {status === "submitted" && <Loader variant="dots" />}
         </ConversationContent>
 
         <ConversationScrollButton />
       </Conversation>
 
-      {/* Input using PromptInput */}
-      <PromptInput
-        onSubmit={handleSubmit}
-        className="border-t border-border p-4 lg:p-5"
-      >
-        <div className="flex items-center gap-3">
-          <PromptInputTextarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={
-              isSubmitting
-                ? "Sending..."
-                : isStreaming
-                  ? "Waiting for response..."
-                  : "Type a message..."
-            }
-            disabled={isStreaming}
-            aria-disabled={isStreaming}
-            className={cn(
-              "min-h-0 flex-1 resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 lg:text-base",
-              isStreaming && "opacity-60"
-            )}
-            rows={1}
-          />
-          <PromptInputSubmit asChild>
-            <Button
-              type="submit"
-              disabled={isStreaming || !input.trim()}
-              size="sm"
-              variant="default"
-              aria-label={isSubmitting ? "Sending message" : "Send message"}
-              aria-busy={isSubmitting}
-              className={cn(
-                "cursor-pointer transition-all",
-                isStreaming && "cursor-not-allowed opacity-50"
-              )}
-            >
-              {isSubmitting ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : (
-                <SendHorizontal className="h-4 w-4" />
-              )}
-            </Button>
-          </PromptInputSubmit>
-        </div>
-      </PromptInput>
+      {/* Input using PromptInput subcomponents */}
+      <div className="border-t p-4 lg:p-6">
+        <PromptInput onSubmit={handleSubmit} className="relative">
+          <PromptInputBody>
+            <PromptInputTextarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              placeholder="What would you like to know?"
+              className="min-h-16 pr-12"
+            />
+          </PromptInputBody>
+          <PromptInputFooter>
+            <div /> {/* Spacer */}
+            <PromptInputSubmit status={status} onStop={stop} />
+          </PromptInputFooter>
+        </PromptInput>
+      </div>
     </div>
   );
 }

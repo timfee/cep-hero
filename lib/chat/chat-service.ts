@@ -10,7 +10,9 @@ import {
   GetConnectorConfigSchema,
   GetFleetOverviewSchema,
   ListDLPRulesSchema,
+  ListOrgUnitsSchema,
 } from "@/lib/mcp/registry";
+import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 import { ChatMessage } from "./request-utils";
 
@@ -19,7 +21,14 @@ export const maxDuration = 30;
 const debugAuthSchema = z.object({});
 
 const systemPrompt =
-  "You are CEP Hero. Answer concisely, then offer actions. Use tools only when needed and summarize results instead of dumping raw output. If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
+  "You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium. Your goal is to identify the root cause of issues, not just answer questions. " +
+  "Analyze returned data critically. If you see generic names or IDs (e.g. 'rule-1', 'policy-A'), warn the user that this makes debugging difficult and suggest inspecting specific items. " +
+  "When a tool returns a list (like org units, rules, events), you MUST parse the list and present a summary or a markdown table of the key items, along with analysis of any potential issues or patterns. Do not rely on the user to read the raw tool output. " +
+  "If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. " +
+  "Use the 'lookupKnowledge' tool to search for documentation and policies when you need to verify error codes, configuration requirements, or concept definitions. " +
+  "You MUST use the 'suggestActions' tool to present follow-up options or next steps. Do NOT list next steps as text in your message body. The UI requires this tool to display clickable buttons. " +
+  "Example: Instead of writing 'You can try to fetch events or check rules', call `suggestActions({ actions: ['Get recent Chrome events', 'List DLP rules'] })`. " +
+  "Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
 
 interface CreateChatStreamParams {
   messages: ChatMessage[];
@@ -51,6 +60,21 @@ export async function createChatStream({
     messages: [{ role: "system", content: systemPrompt }, ...messages],
     stopWhen: stepCountIs(5),
     tools: {
+      lookupKnowledge: tool({
+        description:
+          "Search the knowledge base for documentation and policy definitions.",
+        inputSchema: z.object({
+          query: z.string().describe("The search query string"),
+        }),
+        execute: async ({ query }) => {
+          const [docs, policies] = await Promise.all([
+            searchDocs(query),
+            searchPolicies(query),
+          ]);
+          return { docs, policies };
+        },
+      }),
+
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
         inputSchema: GetChromeEventsSchema,
@@ -76,6 +100,12 @@ export async function createChatStream({
         execute: async (args) => await executor.enrollBrowser(args),
       }),
 
+      listOrgUnits: tool({
+        description: "List all organizational units (OUs).",
+        inputSchema: ListOrgUnitsSchema,
+        execute: async () => await executor.listOrgUnits(),
+      }),
+
       getFleetOverview: tool({
         description: "Summarize fleet posture from live CEP data.",
         inputSchema: GetFleetOverviewSchema,
@@ -86,6 +116,17 @@ export async function createChatStream({
         description: "Inspect access token scopes and expiry.",
         inputSchema: debugAuthSchema,
         execute: async () => await executor.debugAuth(),
+      }),
+
+      suggestActions: tool({
+        description:
+          "Suggest follow-up actions to the user. Use this to provide clickable buttons for next steps.",
+        inputSchema: z.object({
+          actions: z.array(z.string()).describe("List of action commands"),
+        }),
+        execute: async ({ actions }) => {
+          return { actions };
+        },
       }),
 
       runDiagnosis: tool({
@@ -105,27 +146,33 @@ export async function createChatStream({
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
     messageMetadata: () => {
-      if (!diagnosisResult || "error" in diagnosisResult) {
+      // Build structured evidence for the UI from diagnosis
+      const evidence =
+        diagnosisResult && !("error" in diagnosisResult)
+          ? {
+              planSteps: diagnosisResult.planSteps,
+              hypotheses: diagnosisResult.hypotheses,
+              nextSteps: diagnosisResult.nextSteps,
+              missingQuestions: diagnosisResult.missingQuestions,
+              evidence: diagnosisResult.evidence,
+              connectorAnalysis: diagnosisResult.evidence?.connectorAnalysis,
+            }
+          : undefined;
+
+      // Build action buttons from next steps (diagnosis) OR generic actions (if we track them)
+      // For now, rely on diagnosisResult or client-side handling of 'suggestActions' tool result
+      const actions =
+        diagnosisResult && !("error" in diagnosisResult)
+          ? diagnosisResult.nextSteps?.map((step, i) => ({
+              id: `next-step-${i}`,
+              label: step,
+              command: step,
+            }))
+          : [];
+
+      if (!evidence && actions.length === 0) {
         return undefined;
       }
-
-      // Build structured evidence for the UI
-      const evidence = {
-        planSteps: diagnosisResult.planSteps,
-        hypotheses: diagnosisResult.hypotheses,
-        nextSteps: diagnosisResult.nextSteps,
-        missingQuestions: diagnosisResult.missingQuestions,
-        evidence: diagnosisResult.evidence,
-        connectorAnalysis: diagnosisResult.evidence?.connectorAnalysis,
-      };
-
-      // Build action buttons from next steps
-      const actions =
-        diagnosisResult.nextSteps?.map((step, i) => ({
-          id: `next-step-${i}`,
-          label: step,
-          command: step,
-        })) ?? [];
 
       return { evidence, actions };
     },

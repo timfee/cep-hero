@@ -9,6 +9,7 @@ import {
   EnrollBrowserSchema,
   GetConnectorConfigSchema,
   GetFleetOverviewSchema,
+  ListOrgUnitsSchema,
 } from "@/lib/mcp/registry";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
@@ -58,6 +59,18 @@ export function createMcpServer(accessToken: string) {
     EnrollBrowserSchema.shape,
     async (args) => {
       const result = await executor.enrollBrowser(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    }
+  );
+
+  server.tool(
+    "listOrgUnits",
+    "List all organizational units (OUs).",
+    ListOrgUnitsSchema.shape,
+    async (_args) => {
+      const result = await executor.listOrgUnits();
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       };

@@ -57,7 +57,7 @@ describe("CEP evals: diagnostics", () => {
     if (manageServer) {
       await ensureEvalServer({ chatUrl, manageServer });
     }
-  });
+  }, 30000);
 
   afterAll(() => {
     if (cases.length === 0) {
