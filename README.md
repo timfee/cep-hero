@@ -1,4 +1,4 @@
-# Chrome Enterprise Premium (CEP) - MCP Server & AI Agent
+# CEP Hero - MCP Server & AI Agent
 
 This project does two things:
 
@@ -16,7 +16,7 @@ To run this application, you must create a Google Cloud Project and configure OA
 ### 1. Create Google Cloud Project & Enable APIs
 
 1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
-2.  Create a new project (e.g., `cep-admin-hero`).
+2.  Create a new project (e.g., `cep-hero`).
 3.  **Enable the following APIs** (API & Services > Library):
     - **Admin SDK** (`admin.googleapis.com`)
     - **Chrome Management API** (`chromemanagement.googleapis.com`)
@@ -41,7 +41,7 @@ To run this application, you must create a Google Cloud Project and configure OA
 1.  Go to **APIs & Services > Credentials**.
 2.  Click **Create Credentials > OAuth client ID**.
 3.  Application type: **Web application**.
-4.  Name: `CEP App`.
+4.  Name: `CEP Hero`.
 5.  **Authorized Redirect URIs** (Add BOTH):
     - `http://localhost:3000/api/auth/callback/google` (Web UI)
     - `http://localhost:3000/callback` (CLI Login script)

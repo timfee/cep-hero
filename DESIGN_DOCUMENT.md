@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document defines the architecture for a CEP troubleshooting assistant that combines deterministic evidence gathering with probabilistic reasoning. The system is designed to feel AI-first while staying grounded in real data and safe operations.
+This document defines the architecture for CEP Hero, a troubleshooting assistant that combines deterministic evidence gathering with probabilistic reasoning. The system is designed to feel AI-first while staying grounded in real data and safe operations.
 
 ## Goals
 

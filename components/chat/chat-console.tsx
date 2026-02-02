@@ -87,7 +87,7 @@ export function ChatConsole() {
   const memoizedMessages = useMemo(() => messages, [messages]);
 
   return (
-    <div className="flex min-h-150 flex-col rounded-lg border border-border bg-card lg:min-h-[700px]">
+    <div className="flex min-h-150 flex-col rounded-lg border border-border bg-card lg:min-h-175">
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
         <ConversationContent className="p-0 lg:p-1">

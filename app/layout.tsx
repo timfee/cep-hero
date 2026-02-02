@@ -16,8 +16,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "CEP AI Admin Hero",
-  description: "Gemini CLI for Chrome Enterprise Premium",
+  title: "CEP Hero",
+  description: "CEP Hero - Troubleshooting Assistant",
 };
 
 export default function RootLayout({
