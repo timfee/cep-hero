@@ -15,17 +15,11 @@ import {
   DEFAULT_SUGGESTIONS,
   QUICK_ACTIONS,
 } from "@/lib/overview";
-import { cn } from "@/lib/utils";
-
-// Animation orchestration states
-type IntroState = "loading" | "ready" | "visible";
-
 export default function Home() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, signOut } = useAuth();
   const { sendMessage, setInput } = useChatContext();
   const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [introState, setIntroState] = useState<IntroState>("loading");
   const [dataReady, setDataReady] = useState(false);
 
   // Redirect to sign-in if not authenticated
@@ -35,7 +29,7 @@ export default function Home() {
     }
   }, [isLoading, isAuthenticated, router]);
 
-  // Fetch overview data with animation sync
+  // Fetch overview data
   useEffect(() => {
     if (!isAuthenticated) return;
 
@@ -60,27 +54,6 @@ export default function Home() {
     };
   }, [isAuthenticated]);
 
-  // Orchestrate intro animation - trigger when both auth and data are ready
-  useEffect(() => {
-    if (!isLoading && isAuthenticated && dataReady) {
-      // Small delay to ensure DOM is ready
-      let frameId: number | null = null;
-      const timer = setTimeout(() => {
-        setIntroState("ready");
-        // Trigger visible state after a brief moment
-        frameId = requestAnimationFrame(() => {
-          setIntroState("visible");
-        });
-      }, 100);
-      return () => {
-        clearTimeout(timer);
-        if (frameId !== null) {
-          cancelAnimationFrame(frameId);
-        }
-      };
-    }
-  }, [isLoading, isAuthenticated, dataReady]);
-
   const suggestions = useMemo(() => {
     if (overview?.suggestions?.length) return overview.suggestions;
     return [...DEFAULT_SUGGESTIONS];
@@ -100,21 +73,21 @@ export default function Home() {
     }
   };
 
-  // Show cinematic loading state
-  if (isLoading || !isAuthenticated || introState === "loading") {
+  // Show loading state
+  if (isLoading || !isAuthenticated || !dataReady) {
     return (
-      <main className="linear-bg flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center bg-background">
         <div className="relative z-10 flex flex-col items-center gap-6">
           {/* Animated logo/brand mark */}
           <div className="relative">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 animate-pulse" />
-            <div className="absolute inset-0 h-12 w-12 rounded-xl border border-primary/20 animate-ping opacity-20" />
+            <div className="h-12 w-12 rounded-xl bg-muted animate-pulse" />
+            <div className="absolute inset-0 h-12 w-12 rounded-xl border border-primary animate-ping opacity-20" />
           </div>
           <div className="flex flex-col items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground animate-fade-in">
+            <h1 className="text-lg font-semibold text-foreground">
               CEP Command Center
             </h1>
-            <p className="text-sm text-muted-foreground animate-fade-in delay-150">
+            <p className="text-sm text-muted-foreground">
               Initializing...
             </p>
           </div>
@@ -128,18 +101,11 @@ export default function Home() {
     return null;
   }
 
-  const isVisible = introState === "visible";
-
   return (
-    <main className="linear-bg min-h-screen">
+    <main className="min-h-screen bg-background">
       <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-10 lg:py-8 xl:px-12 xl:py-10">
-        {/* Header with User Info - Stagger 1 */}
-        <header
-          className={cn(
-            "mb-6 flex items-start justify-between lg:mb-8 xl:mb-10",
-            isVisible && "animate-fade-up delay-0"
-          )}
-        >
+        {/* Header with User Info */}
+        <header className="mb-6 flex items-start justify-between lg:mb-8 xl:mb-10">
           <div>
             <h1 className="text-lg font-semibold text-foreground">
               CEP Command Center
@@ -150,7 +116,7 @@ export default function Home() {
           </div>
           {user && (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-card/80 backdrop-blur-sm px-3 py-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
                 {user.image ? (
                   <img
                     src={user.image}
@@ -169,7 +135,7 @@ export default function Home() {
                 size="sm"
                 onClick={handleSignOut}
                 aria-label="Sign out"
-                className="hover:bg-card/80"
+                className="hover:bg-muted"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -179,36 +145,24 @@ export default function Home() {
 
         {/* Main Layout */}
         <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:gap-8 xl:grid-cols-[1fr_380px] xl:gap-10">
-          {/* Primary: Chat Console - Stagger 2 */}
-          <div
-            className={cn(
-              "min-h-[600px] lg:min-h-[700px]",
-              isVisible && "animate-scale-fade delay-150"
-            )}
-          >
+          {/* Primary: Chat Console */}
+          <div className="min-h-[600px] lg:min-h-[700px]">
             <ChatConsole />
           </div>
 
-          {/* Sidebar - Stagger 3+ */}
+          {/* Sidebar */}
           <aside className="space-y-5 lg:space-y-6 xl:space-y-8">
             {/* Quick Actions */}
-            <section className={cn(isVisible && "animate-fade-up delay-300")}>
+            <section>
               <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Quick Actions
               </h2>
               <div className="space-y-2">
-                {QUICK_ACTIONS.map((action, idx) => (
+                {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.label}
                     onClick={() => dispatchCommand(action.label)}
-                    className={cn(
-                      "group flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card/80 backdrop-blur-sm px-4 py-3 text-left transition-all hover:border-foreground/20 hover:bg-accent/80 active:scale-[0.99] lg:px-5 lg:py-4",
-                      isVisible && "animate-fade-up",
-                      idx === 0 && "delay-300",
-                      idx === 1 && "delay-400",
-                      idx === 2 && "delay-500",
-                      idx === 3 && "delay-600"
-                    )}
+                    className="group flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent lg:px-5 lg:py-4"
                   >
                     <div>
                       <span className="text-sm font-medium text-foreground">
@@ -225,23 +179,16 @@ export default function Home() {
             </section>
 
             {/* Suggestions */}
-            <section className={cn(isVisible && "animate-fade-up delay-500")}>
+            <section>
               <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Suggested Prompts
               </h2>
               <div className="space-y-1">
-                {suggestions.map((suggestion, idx) => (
+                {suggestions.map((suggestion) => (
                   <button
                     key={suggestion}
                     onClick={() => dispatchCommand(suggestion)}
-                    className={cn(
-                      "flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground active:scale-[0.99] lg:px-4 lg:py-2.5",
-                      isVisible && "animate-fade-in",
-                      idx === 0 && "delay-500",
-                      idx === 1 && "delay-600",
-                      idx === 2 && "delay-700",
-                      idx === 3 && "delay-800"
-                    )}
+                    className="flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:px-4 lg:py-2.5"
                   >
                     <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
                     <span>{suggestion}</span>
@@ -252,24 +199,17 @@ export default function Home() {
 
             {/* Status Summary */}
             {overview && overview.postureCards.length > 0 && (
-              <section className={cn(isVisible && "animate-fade-up delay-600")}>
+              <section>
                 <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Fleet Status
                 </h2>
-                <div className="rounded-lg border border-border bg-card/80 backdrop-blur-sm p-4 lg:p-5">
+                <div className="rounded-lg border border-border bg-card p-4 lg:p-5">
                   <div className="grid grid-cols-2 gap-4 lg:gap-5">
-                    {overview.postureCards.slice(0, 4).map((card, idx) => (
+                    {overview.postureCards.slice(0, 4).map((card) => (
                       <button
                         key={card.label}
                         onClick={() => dispatchCommand(card.action)}
-                        className={cn(
-                          "cursor-pointer text-left transition-all hover:opacity-70 active:scale-[0.98]",
-                          isVisible && "animate-fade-in",
-                          idx === 0 && "delay-600",
-                          idx === 1 && "delay-700",
-                          idx === 2 && "delay-800",
-                          idx === 3 && "delay-900"
-                        )}
+                        className="cursor-pointer text-left transition-colors hover:opacity-70"
                       >
                         <div className="text-2xl font-semibold text-foreground">
                           {card.value}
