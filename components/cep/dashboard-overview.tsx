@@ -1,8 +1,21 @@
 "use client";
 
-import { ArrowRight, RefreshCw } from "lucide-react";
+import {
+  ArrowRight,
+  RefreshCw,
+  Shield,
+  AlertTriangle,
+  AlertCircle,
+  Info,
+} from "lucide-react";
 import { useCallback, useState } from "react";
 import useSWR from "swr";
+
+import type {
+  Suggestion,
+  PostureCardStatus,
+  OverviewData,
+} from "@/lib/overview";
 
 import { PulseShimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
@@ -17,21 +30,37 @@ const fetcher = async (url: string) => {
   return res.json();
 };
 
-type PostureCard = {
-  label: string;
-  value: string;
-  note: string;
-  source: string;
-  action: string;
-  lastUpdated?: string;
+const STATUS_CONFIG: Record<
+  PostureCardStatus,
+  { color: string; bgColor: string; icon: typeof Shield }
+> = {
+  healthy: {
+    color: "text-emerald-400",
+    bgColor: "bg-emerald-500/20",
+    icon: Shield,
+  },
+  warning: {
+    color: "text-amber-400",
+    bgColor: "bg-amber-500/20",
+    icon: AlertTriangle,
+  },
+  critical: {
+    color: "text-red-400",
+    bgColor: "bg-red-500/20",
+    icon: AlertCircle,
+  },
+  info: {
+    color: "text-blue-400",
+    bgColor: "bg-blue-500/20",
+    icon: Info,
+  },
 };
 
-type OverviewData = {
-  headline: string;
-  summary: string;
-  postureCards: PostureCard[];
-  suggestions: string[];
-  sources: string[];
+const CATEGORY_COLORS: Record<Suggestion["category"], string> = {
+  security: "border-red-500/30 hover:border-red-500/50",
+  compliance: "border-amber-500/30 hover:border-amber-500/50",
+  monitoring: "border-blue-500/30 hover:border-blue-500/50",
+  optimization: "border-emerald-500/30 hover:border-emerald-500/50",
 };
 
 type DashboardOverviewProps = {
@@ -138,37 +167,77 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                   Fleet posture
                 </h2>
                 <div className="space-y-3">
-                  {data.postureCards.map((card, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => onAction(card.action)}
-                      className={cn(
-                        "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
-                        "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
-                        "transition-all duration-200",
-                        "hover:border-white/15 hover:bg-white/[0.08]"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-status-info)]" />
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium text-foreground">
-                              {card.label}
-                            </span>
-                            <span className="text-muted-foreground">
-                              {card.value}
-                            </span>
+                  {[...data.postureCards]
+                    .sort((a, b) => (a.priority ?? 5) - (b.priority ?? 5))
+                    .map((card, idx) => {
+                      const status = card.status ?? "info";
+                      const config = STATUS_CONFIG[status];
+                      const StatusIcon = config.icon;
+
+                      return (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => onAction(card.action)}
+                          className={cn(
+                            "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
+                            "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
+                            "transition-all duration-200",
+                            "hover:border-white/15 hover:bg-white/[0.08]"
+                          )}
+                        >
+                          <div className="flex items-center gap-4">
+                            <div
+                              className={cn(
+                                "flex h-10 w-10 items-center justify-center rounded-full",
+                                config.bgColor
+                              )}
+                            >
+                              <StatusIcon
+                                className={cn("h-5 w-5", config.color)}
+                              />
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3">
+                                <span className="font-medium text-foreground">
+                                  {card.label}
+                                </span>
+                                <span
+                                  className={cn(
+                                    "rounded-full px-2.5 py-0.5 text-xs font-medium",
+                                    config.bgColor,
+                                    config.color
+                                  )}
+                                >
+                                  {card.value}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-sm text-muted-foreground">
+                                {card.note}
+                              </p>
+                              {typeof card.progress === "number" && (
+                                <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+                                  <div
+                                    className={cn(
+                                      "h-full rounded-full transition-all duration-500",
+                                      status === "healthy"
+                                        ? "bg-emerald-500"
+                                        : status === "warning"
+                                          ? "bg-amber-500"
+                                          : status === "critical"
+                                            ? "bg-red-500"
+                                            : "bg-blue-500"
+                                    )}
+                                    style={{ width: `${card.progress}%` }}
+                                  />
+                                </div>
+                              )}
+                            </div>
                           </div>
-                          <p className="mt-1 text-sm text-muted-foreground">
-                            {card.note}
-                          </p>
-                        </div>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
-                    </button>
-                  ))}
+                          <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                        </button>
+                      );
+                    })}
                 </div>
               </section>
             )}
@@ -176,28 +245,48 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
             {data.suggestions.length > 0 && (
               <section>
                 <h2 className="mb-6 text-sm font-medium text-muted-foreground">
-                  Suggestions
+                  Recommended actions
                 </h2>
                 <div className="space-y-3">
-                  {data.suggestions.map((suggestion, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => onAction(suggestion)}
-                      className={cn(
-                        "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
-                        "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
-                        "transition-all duration-200",
-                        "hover:border-white/15 hover:bg-white/[0.08]"
-                      )}
-                    >
-                      <div className="flex items-center gap-4">
-                        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-status-info)]" />
-                        <p className="text-foreground">{suggestion}</p>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
-                    </button>
-                  ))}
+                  {[...data.suggestions]
+                    .sort((a, b) => a.priority - b.priority)
+                    .map((suggestion, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => onAction(suggestion.action)}
+                        className={cn(
+                          "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
+                          "border bg-white/[0.04] backdrop-blur-xl",
+                          "transition-all duration-200",
+                          CATEGORY_COLORS[suggestion.category]
+                        )}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div
+                            className={cn(
+                              "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold",
+                              suggestion.category === "security"
+                                ? "bg-red-500/20 text-red-400"
+                                : suggestion.category === "compliance"
+                                  ? "bg-amber-500/20 text-amber-400"
+                                  : suggestion.category === "monitoring"
+                                    ? "bg-blue-500/20 text-blue-400"
+                                    : "bg-emerald-500/20 text-emerald-400"
+                            )}
+                          >
+                            {idx + 1}
+                          </div>
+                          <div>
+                            <p className="text-foreground">{suggestion.text}</p>
+                            <p className="mt-1 text-xs capitalize text-muted-foreground">
+                              {suggestion.category}
+                            </p>
+                          </div>
+                        </div>
+                        <ArrowRight className="h-4 w-4 text-muted-foreground opacity-0 transition-all duration-150 group-hover:translate-x-0.5 group-hover:opacity-100" />
+                      </button>
+                    ))}
                 </div>
               </section>
             )}

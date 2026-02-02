@@ -2,6 +2,8 @@
  * Overview data types and utilities for the CEP Hero dashboard.
  */
 
+export type PostureCardStatus = "healthy" | "warning" | "critical" | "info";
+
 export type OverviewCard = {
   label: string;
   value: string;
@@ -9,28 +11,70 @@ export type OverviewCard = {
   source: string;
   action: string;
   lastUpdated?: string;
+  status?: PostureCardStatus;
+  progress?: number;
+  priority?: number;
+};
+
+export type SuggestionCategory =
+  | "security"
+  | "compliance"
+  | "monitoring"
+  | "optimization";
+
+export type Suggestion = {
+  text: string;
+  action: string;
+  priority: number;
+  category: SuggestionCategory;
 };
 
 export type OverviewData = {
   headline: string;
   summary: string;
   postureCards: OverviewCard[];
-  suggestions: string[];
+  suggestions: Suggestion[];
   sources: string[];
 };
 
-export const DEFAULT_SUGGESTIONS = [
-  "Show recent Chrome events",
-  "List connector policies and targets",
-  "Check DLP rules and alerts",
-  "Retry connector fetch",
-] as const;
+export const DEFAULT_SUGGESTIONS: Suggestion[] = [
+  {
+    text: "Set up a DLP audit rule to monitor all traffic for sensitive data",
+    action: "Help me set up DLP to audit all traffic for sensitive data",
+    priority: 1,
+    category: "security",
+  },
+  {
+    text: "Enable cookie encryption and disable incognito mode for better security",
+    action: "Help me turn on cookie encryption and disable incognito mode",
+    priority: 2,
+    category: "security",
+  },
+  {
+    text: "Review your connector policies to ensure data protection is active",
+    action: "Review connector configuration",
+    priority: 3,
+    category: "compliance",
+  },
+  {
+    text: "Check recent security events for any suspicious activity",
+    action: "Show recent security events",
+    priority: 4,
+    category: "monitoring",
+  },
+];
 
 export const QUICK_ACTIONS = [
-  { label: "Retry connector fetch", description: "Re-check connector status" },
-  { label: "List connector policies", description: "View all policies" },
-  { label: "Check org units", description: "Inspect OU structure" },
-  { label: "Check auth scopes", description: "Verify permissions" },
+  {
+    label: "Set up DLP monitoring",
+    description: "Audit all traffic for sensitive data",
+  },
+  {
+    label: "Secure browsers",
+    description: "Cookie encryption & disable incognito",
+  },
+  { label: "Review connectors", description: "Check data protection policies" },
+  { label: "View security events", description: "Recent browser activity" },
 ] as const;
 
 /**
@@ -46,13 +90,15 @@ export function normalizeOverview(data: unknown): OverviewData | null {
     ? (obj.postureCards as OverviewCard[]).filter(isValidPostureCard)
     : [];
 
+  const suggestions = Array.isArray(obj.suggestions)
+    ? (obj.suggestions as Suggestion[]).filter(isValidSuggestion)
+    : [];
+
   return {
     headline: typeof obj.headline === "string" ? obj.headline : "Fleet posture",
     summary: typeof obj.summary === "string" ? obj.summary : "",
     postureCards,
-    suggestions: Array.isArray(obj.suggestions)
-      ? (obj.suggestions as string[]).filter((s) => typeof s === "string")
-      : [],
+    suggestions,
     sources: Array.isArray(obj.sources)
       ? (obj.sources as string[]).filter((s) => typeof s === "string")
       : [],
@@ -69,6 +115,20 @@ function isValidPostureCard(card: unknown): card is OverviewCard {
     typeof c.label === "string" &&
     typeof c.value === "string" &&
     typeof c.action === "string"
+  );
+}
+
+/**
+ * Type guard for validating suggestion structure.
+ */
+function isValidSuggestion(suggestion: unknown): suggestion is Suggestion {
+  if (!suggestion || typeof suggestion !== "object") return false;
+  const s = suggestion as Record<string, unknown>;
+  return (
+    typeof s.text === "string" &&
+    typeof s.action === "string" &&
+    typeof s.priority === "number" &&
+    typeof s.category === "string"
   );
 }
 

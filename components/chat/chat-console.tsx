@@ -1,5 +1,5 @@
 import { getToolName, isToolUIPart } from "ai";
-import { HelpCircle, RefreshCcwIcon, CopyIcon } from "lucide-react";
+import { RefreshCcwIcon, CopyIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 
 import type { ToolPart } from "@/components/ai-elements/tool";
@@ -18,7 +18,6 @@ import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-polici
 import {
   Conversation,
   ConversationContent,
-  ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
 import { DlpRulesCard } from "@/components/ai-elements/dlp-rules-card";
@@ -94,20 +93,20 @@ const FALLBACK_ACTIONS: ActionItem[] = [
 
 const EMPTY_STATE_ACTIONS: ActionItem[] = [
   {
-    id: "empty-connector-config",
-    label: "Review connector settings",
-    command: "Review connector settings",
+    id: "empty-dlp-setup",
+    label: "Set up DLP monitoring",
+    command: "Help me set up DLP to audit all traffic for sensitive data",
     primary: true,
   },
   {
-    id: "empty-dlp-rules",
-    label: "List data protection rules",
-    command: "List data protection rules",
+    id: "empty-browser-security",
+    label: "Secure my browsers",
+    command: "Help me turn on cookie encryption and disable incognito mode",
   },
   {
-    id: "empty-events",
-    label: "Show recent security events",
-    command: "Show recent security events",
+    id: "empty-connector-config",
+    label: "Configure connectors",
+    command: "Help me configure connector policies for data protection",
   },
 ];
 
@@ -211,17 +210,27 @@ export function ChatConsole() {
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
         <ConversationContent className="p-4 lg:p-6">
-          {/* Empty state with starter prompts */}
+          {/* Empty state styled as a contextual system message */}
           {messages.length === 0 && !isStreaming && (
-            <ConversationEmptyState
-              icon={<HelpCircle className="h-8 w-8" />}
-              title="How can I help?"
-              description="Ask about Chrome Enterprise Premium configurations, connector issues, or DLP policies."
-            >
-              <div className="mt-6 space-y-4">
-                <p className="text-xs font-medium text-muted-foreground">
-                  Quick actions
-                </p>
+            <div className="space-y-4">
+              <Message from="assistant" className="bg-muted p-4 lg:p-6">
+                <MessageContent>
+                  <MessageResponse>
+                    {`Hey there! I'm your Chrome Enterprise Premium assistant. I've been looking at your fleet data and I'm ready to help you strengthen your security posture.
+
+A few things I can help you with right now:
+
+**Get protected fast** - I can walk you through setting up DLP rules to catch sensitive data like SSNs and credit cards before they leave your network.
+
+**Lock down browsers** - Cookie encryption and disabling incognito mode are quick wins that make a real difference.
+
+**See what's happening** - I can pull up your recent security events and help you spot anything unusual.
+
+What would you like to tackle first?`}
+                  </MessageResponse>
+                </MessageContent>
+              </Message>
+              <div className="pl-4 lg:pl-6">
                 <ActionButtons
                   actions={EMPTY_STATE_ACTIONS}
                   onAction={handleAction}
@@ -229,7 +238,7 @@ export function ChatConsole() {
                   resetKey={status}
                 />
               </div>
-            </ConversationEmptyState>
+            </div>
           )}
 
           {/* Messages */}
