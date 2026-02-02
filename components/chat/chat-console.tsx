@@ -90,13 +90,30 @@ export function ChatConsole() {
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
         <ConversationContent className="p-4 lg:p-6">
-          {/* Empty state */}
+          {/* Empty state with starter prompts */}
           {messages.length === 0 && !isStreaming && (
             <ConversationEmptyState
               icon={<HelpCircle className="h-8 w-8" />}
               title="How can I help?"
               description="Ask about Chrome Enterprise Premium configurations, connector issues, or DLP policies."
-            />
+            >
+              <div className="mt-6 flex flex-wrap justify-center gap-2">
+                {[
+                  "Run a fleet health check",
+                  "Show recent security events",
+                  "Check my DLP rules",
+                  "Diagnose connector issues",
+                ].map((prompt) => (
+                  <button
+                    key={prompt}
+                    onClick={() => handleAction(prompt)}
+                    className="rounded-full border border-border bg-background px-4 py-2 text-sm text-foreground transition-colors hover:bg-muted"
+                  >
+                    {prompt}
+                  </button>
+                ))}
+              </div>
+            </ConversationEmptyState>
           )}
 
           {/* Messages */}

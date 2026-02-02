@@ -1,6 +1,7 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
+import { useCallback, useState } from "react";
 import useSWR from "swr";
 
 import { cn } from "@/lib/utils";
@@ -35,16 +36,48 @@ type DashboardOverviewProps = {
 };
 
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
-  const { data, error, isLoading } = useSWR<OverviewData>(
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data, error, isLoading, mutate } = useSWR<OverviewData>(
     "/api/overview",
     fetcher,
-    { refreshInterval: 60000 }
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      keepPreviousData: true,
+    }
   );
 
-  if (isLoading) {
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    await mutate();
+    setIsRefreshing(false);
+  }, [mutate]);
+
+  if (isLoading && !data) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <span className="text-muted-foreground">Loading...</span>
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-8 py-16">
+          <header className="mb-16">
+            <div className="h-10 w-3/4 animate-pulse rounded-lg bg-white/[0.06]" />
+            <div className="mt-5 space-y-2">
+              <div className="h-5 w-full animate-pulse rounded bg-white/[0.04]" />
+              <div className="h-5 w-5/6 animate-pulse rounded bg-white/[0.04]" />
+            </div>
+          </header>
+          <section>
+            <div className="mb-6 h-4 w-24 animate-pulse rounded bg-white/[0.04]" />
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <div
+                  key={i}
+                  className="h-24 animate-pulse rounded-2xl border border-white/10 bg-white/[0.04]"
+                  style={{ animationDelay: `${i * 100}ms` }}
+                />
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
@@ -64,9 +97,22 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-8 py-16">
         <header className="mb-16">
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground">
-            {data.headline}
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+              {data.headline}
+            </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+              aria-label="Refresh dashboard"
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+              />
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
             {data.summary}
           </p>

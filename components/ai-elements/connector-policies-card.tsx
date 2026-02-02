@@ -1,8 +1,15 @@
 "use client";
 
+import { InfoIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { ConnectorStatus } from "@/components/ai-elements/connector-status";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TOOLTIPS } from "@/lib/terminology";
 
 type ResolvedPolicy = {
   policyTargetKey?: { targetResource?: string | null };
@@ -102,14 +109,24 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
       <ConnectorStatus analysis={analysis} />
 
       <div className="rounded-md border border-border bg-background">
-        <div className="border-b border-border px-3 py-2">
-          <p className="text-sm font-medium text-foreground">
-            Connector policy targets
-          </p>
-          <p className="text-xs text-muted-foreground">
-            Attempted targets:{" "}
-            {output.attemptedTargets?.join(", ") || "unknown"}
-          </p>
+        <div className="border-b border-border px-4 py-3">
+          <div className="flex items-center gap-2">
+            <p className="text-sm font-medium text-foreground">Policy Scope</p>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <InfoIcon className="h-3.5 w-3.5 cursor-help text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent className="max-w-xs">
+                <p>{TOOLTIPS.policyScope}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+          {output.attemptedTargets && output.attemptedTargets.length > 0 && (
+            <p className="text-xs text-muted-foreground">
+              Checked {output.attemptedTargets.length} location
+              {output.attemptedTargets.length !== 1 ? "s" : ""}
+            </p>
+          )}
         </div>
         {policies.length === 0 ? (
           <div className="px-3 py-2 text-sm text-muted-foreground">
