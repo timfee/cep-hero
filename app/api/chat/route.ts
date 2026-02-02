@@ -34,7 +34,16 @@ export async function POST(req: Request) {
   const { session, accessToken, isTestMode } = authResult;
 
   // 2. Parse Request Body
-  const body = await req.json();
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return new Response(
+      JSON.stringify({ error: "Invalid JSON body." }),
+      { status: 400 }
+    );
+  }
+
   const messagesFromBody = getMessagesFromBody(body);
   const inlinePrompt = extractInlinePrompt(body);
   const prompt = getLastUserMessage(messagesFromBody) || inlinePrompt;
