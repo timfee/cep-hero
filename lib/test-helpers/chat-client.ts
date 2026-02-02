@@ -3,8 +3,8 @@ import { expect } from "bun:test";
 import type { FixtureData } from "@/lib/mcp/types";
 
 const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
-const USE_FAKE_CHAT = process.env.EVAL_FAKE_CHAT === "1";
-const ALLOW_FAKE_ON_ERROR = process.env.EVAL_FAKE_CHAT_FALLBACK === "1";
+const USE_FAKE_CHAT = process.env.EVAL_TEST_MODE === "1";
+const ALLOW_FAKE_ON_ERROR = process.env.EVAL_TEST_MODE_FALLBACK === "1";
 const CHAT_TIMEOUT_MS = Number.parseInt(
   process.env.EVAL_CHAT_TIMEOUT_MS ?? "60000",
   10

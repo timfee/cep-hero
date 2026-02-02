@@ -139,6 +139,7 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-066": "connector",
   "EC-067": "connector",
   "EC-080": "connector",
+  "EC-082": "connector",
 
   // DLP
   "EC-033": "dlp",
@@ -182,6 +183,7 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-030": "security",
   "EC-032": "security",
   "EC-063": "security",
+  "EC-085": "security",
 
   // Updates
   "EC-003": "updates",
