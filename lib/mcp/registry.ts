@@ -58,6 +58,24 @@ export const GetConnectorConfigSchema = z.object({});
 export const ListOrgUnitsSchema = z.object({});
 
 /**
+ * Schema for drafting a policy change for user review.
+ * This tool does NOT execute changes - it returns a structured proposal
+ * that the UI renders as a confirmation card.
+ */
+export const DraftPolicyChangeSchema = z.object({
+  policyName: z.string().describe("The human-readable name of the policy"),
+  proposedValue: z.any().describe("The JSON value to set"),
+  targetUnit: z
+    .string()
+    .describe("The Org Unit ID or path to apply this policy to"),
+  reasoning: z.string().describe("Why this change is recommended"),
+  adminConsoleUrl: z
+    .string()
+    .optional()
+    .describe("Direct link to Admin Console page for manual configuration"),
+});
+
+/**
  * Inputs for the fleet overview tool.
  */
 export const GetFleetOverviewSchema = z.object({
@@ -931,6 +949,25 @@ export class CepToolExecutor {
       });
       return { error: getErrorMessage(error) };
     }
+  }
+
+  /**
+   * Draft a policy change for user review.
+   * This does NOT execute changes - it returns a structured proposal
+   * that the UI renders as a confirmation card for the user to approve.
+   */
+  async draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
+    return {
+      _type: "ui.confirmation" as const,
+      title: `Proposed Change: ${args.policyName}`,
+      description: args.reasoning,
+      diff: args.proposedValue,
+      target: args.targetUnit,
+      adminConsoleUrl:
+        args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
+      intent: "update_policy",
+      status: "pending_approval",
+    };
   }
 
   /**

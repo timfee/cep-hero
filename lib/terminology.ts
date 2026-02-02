@@ -53,8 +53,30 @@ export const TOOLTIPS: Record<string, string> = {
 };
 
 /**
+ * Convert camelCase to Title Case (e.g., "getChromeEvents" -> "Get Chrome Events")
+ */
+function camelCaseToTitle(name: string): string {
+  const withSpaces = name
+    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replace(/[_-]+/g, " ")
+    .trim();
+
+  if (!withSpaces) {
+    return "";
+  }
+
+  return withSpaces
+    .split(/\s+/)
+    .map(
+      (word) =>
+        word.charAt(0).toUpperCase() + (word.length > 1 ? word.slice(1) : "")
+    )
+    .join(" ");
+}
+
+/**
  * Format a tool name for display in the UI.
  */
 export function humanizeToolName(toolName: string): string {
-  return TERMINOLOGY[toolName] ?? toolName.replace(/([A-Z])/g, " $1").trim();
+  return TERMINOLOGY[toolName] ?? camelCaseToTitle(toolName);
 }
