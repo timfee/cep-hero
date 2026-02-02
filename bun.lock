@@ -53,6 +53,7 @@
         "remark-gfm": "latest",
         "shiki": "latest",
         "streamdown": "latest",
+        "swr": "latest",
         "tailwind-merge": "latest",
         "tokenlens": "latest",
         "turndown": "latest",

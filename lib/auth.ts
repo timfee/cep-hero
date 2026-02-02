@@ -1,14 +1,18 @@
 import { betterAuth } from "better-auth";
+import { nextCookies } from "better-auth/next-js";
+
+import { getRequiredEnv } from "./utils";
 
 export const auth = betterAuth({
-  baseURL: process.env.BETTER_AUTH_URL ?? "http://localhost:3000",
-  secret: process.env.BETTER_AUTH_SECRET ?? "better-auth-dev-secret-change-me",
+  logger: {
+    level: "debug",
+  },
   socialProviders: {
     google: {
       clientId: getRequiredEnv("GOOGLE_CLIENT_ID"),
       clientSecret: getRequiredEnv("GOOGLE_CLIENT_SECRET"),
       accessType: "offline",
-      prompt: "select_account consent",
+      prompt: "consent",
       scope: [
         "openid",
         "email",
@@ -26,28 +30,18 @@ export const auth = betterAuth({
       ],
     },
   },
-  account: {
-    storeAccountCookie: true,
-    storeStateStrategy: "cookie",
-  },
+
+  plugins: [nextCookies()],
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 60 * 60 * 24 * 7,
-      refreshCache: true,
-      strategy: "jwe",
+      maxAge: 12 * 60 * 60, // 12 hour cache duration
+      strategy: "jwe", // can be "jwt" or "compact"
+      refreshCache: true, // Enable stateless refresh
     },
   },
+  account: {
+    storeStateStrategy: "cookie",
+    storeAccountCookie: true, // Store account data after OAuth flow in a cookie (useful for database-less flows)
+  },
 });
-
-/**
- * Resolve a required environment variable.
- */
-function getRequiredEnv(name: string): string {
-  const value = process.env[name];
-  if (!value) {
-    throw new Error(`Missing ${name} environment variable`);
-  }
-
-  return value;
-}
