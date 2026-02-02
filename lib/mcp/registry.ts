@@ -2,6 +2,7 @@ import { google as googleModel } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { OAuth2Client } from "google-auth-library";
 import { google as googleApis, chromepolicy_v1 } from "googleapis";
+import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 
 import type { VectorSearchResult } from "@/lib/upstash/search";
@@ -161,6 +162,94 @@ type OrgUnit = {
   parentOrgUnitId?: string | null;
   orgUnitPath?: string | null;
 };
+
+/**
+ * Standardized API error response with reauth detection.
+ */
+interface ApiErrorResult {
+  error: string;
+  suggestion: string;
+  requiresReauth: boolean;
+}
+
+/**
+ * Context for API operations, used for error messages.
+ */
+interface ApiContext {
+  name: string;
+  defaultSuggestion: string;
+}
+
+/**
+ * Registry of API contexts with their default error suggestions.
+ */
+const API_CONTEXTS = {
+  "chrome-events": {
+    name: "Chrome Events",
+    defaultSuggestion:
+      "Ensure the 'Admin SDK' API is enabled in GCP and the user has 'Reports' privileges.",
+  },
+  "dlp-rules": {
+    name: "DLP Rules",
+    defaultSuggestion:
+      "Check 'Cloud Identity API' enablement and DLP Read permissions.",
+  },
+  "org-units": {
+    name: "Org Units",
+    defaultSuggestion:
+      "Check 'Admin SDK' enablement and Org Unit Read permissions.",
+  },
+  "enroll-browser": {
+    name: "Browser Enrollment",
+    defaultSuggestion:
+      "Ensure 'Chrome Browser Cloud Management API' is enabled and caller has Chrome policy admin rights.",
+  },
+  "connector-config": {
+    name: "Connector Config",
+    defaultSuggestion:
+      "Check Chrome Policy API permissions and policy schema access.",
+  },
+} as const satisfies Record<string, ApiContext>;
+
+type ApiContextKey = keyof typeof API_CONTEXTS;
+
+const SESSION_EXPIRED_SUGGESTION =
+  "Your session has expired. Please sign in again to continue.";
+
+/**
+ * Check if an error requires re-authentication based on HTTP status code.
+ *
+ * Only checks HTTP status codes (401, 403) - no brittle string matching.
+ * Note: google-auth-library already auto-retries on 401/403 with token refresh.
+ * If the error reaches application code, token refresh has already failed.
+ */
+function requiresReauthentication(code: number | string | undefined): boolean {
+  const numericCode = typeof code === "string" ? parseInt(code, 10) : code;
+  return (
+    numericCode === StatusCodes.UNAUTHORIZED ||
+    numericCode === StatusCodes.FORBIDDEN
+  );
+}
+
+/**
+ * Create a standardized API error response.
+ */
+function createApiError(
+  error: unknown,
+  contextKey: ApiContextKey
+): ApiErrorResult {
+  const { code, message } = getErrorDetails(error);
+  const context = API_CONTEXTS[contextKey];
+  const requiresReauth = requiresReauthentication(code);
+
+  return {
+    error: message ?? "Unknown error",
+    suggestion: requiresReauth
+      ? SESSION_EXPIRED_SUGGESTION
+      : context.defaultSuggestion,
+    requiresReauth,
+  };
+}
 
 function normalizeResource(value: string): string {
   const trimmed = value.trim();
@@ -373,11 +462,7 @@ export class CepToolExecutor {
         errors,
         pageToken,
       });
-      return {
-        error: message ?? "Unknown error",
-        suggestion:
-          "Ensure the 'Admin SDK' API is enabled in GCP and the user has 'Reports' privileges.",
-      };
+      return createApiError(error, "chrome-events");
     }
   }
 
@@ -456,11 +541,7 @@ export class CepToolExecutor {
         message,
         errors,
       });
-      return {
-        error: message ?? "Unknown error",
-        suggestion:
-          "Check 'Cloud Identity API' enablement and DLP Read permissions.",
-      };
+      return createApiError(error, "dlp-rules");
     }
   }
 
@@ -527,11 +608,7 @@ export class CepToolExecutor {
         message,
         errors,
       });
-      return {
-        error: message ?? "Unknown error",
-        suggestion:
-          "Check 'Admin SDK' enablement and Org Unit Read permissions.",
-      };
+      return createApiError(error, "org-units");
     }
   }
 
@@ -618,11 +695,7 @@ export class CepToolExecutor {
         message,
         errors,
       });
-      return {
-        error: message ?? "Unknown error",
-        suggestion:
-          "Ensure 'Chrome Browser Cloud Management API' is enabled and caller has Chrome policy admin rights.",
-      };
+      return createApiError(error, "enroll-browser");
     }
   }
 
@@ -844,9 +917,7 @@ export class CepToolExecutor {
         errors,
       });
       return {
-        error: message ?? "Unknown error",
-        suggestion:
-          "Check Chrome Policy API permissions and policy schema access.",
+        ...createApiError(error, "connector-config"),
         policySchemas,
         targetResource: attemptedTargets[0],
         attemptedTargets,
