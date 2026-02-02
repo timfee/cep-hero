@@ -251,11 +251,11 @@ ${JSON.stringify(knowledge, null, 2)}
 ## Output Requirements
 
 ### Headline
-Write a single sentence that captures the most important insight about this fleet. Examples:
+Write a single sentence that captures the most important insight about this fleet. Make it specific, insight-driven, and grounded in the data. Examples:
 - "Your fleet has 50 DLP rules but no connector policies - data may be leaking."
 - "I found 3 security gaps that need your attention."
 - "Your Chrome fleet looks healthy, but event reporting could be improved."
-Do NOT use generic headlines like "I just reviewed your Chrome fleet."
+Avoid overly generic headlines; focus on what's most actionable or notable.
 
 ### Summary
 2-3 sentences explaining the current state. Be specific about what's configured and what's missing. Reference actual numbers. If there are issues, lead with them.
@@ -1150,11 +1150,20 @@ export class CepToolExecutor {
         });
       }
 
+      const missingItems = [
+        !hasDlpRules && "DLP rules",
+        !hasConnectors && "connector policies",
+      ].filter(Boolean);
+
+      const headline =
+        hasDlpRules && hasConnectors
+          ? "Your Chrome fleet is configured, but let's verify everything is working."
+          : missingItems.length === 2
+            ? "Your fleet is missing DLP rules and connector policies - your data may not be protected."
+            : `Your fleet has no ${missingItems[0]} configured - this is a security gap.`;
+
       return {
-        headline:
-          hasDlpRules && hasConnectors
-            ? "Your Chrome fleet is configured, but let's verify everything is working."
-            : `I found ${[!hasDlpRules && "no DLP rules", !hasConnectors && "no connector policies"].filter(Boolean).join(" and ")} - your data may not be protected.`,
+        headline,
         summary:
           "I could not generate a full AI summary, but here's what I found from your fleet data.",
         postureCards: [
