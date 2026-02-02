@@ -1,7 +1,7 @@
 "use client";
 
-import { SendHorizontal, HelpCircle } from "lucide-react";
-import { useMemo } from "react";
+import { SendHorizontal, HelpCircle, Loader2 } from "lucide-react";
+import { useMemo, memo, useCallback } from "react";
 
 import type {
   EvidencePayload,
@@ -46,6 +46,7 @@ import {
 } from "@/components/ai-elements/reasoning";
 import { Button } from "@/components/ui/button";
 import { useChatContext } from "@/components/chat/chat-context";
+import { cn } from "@/lib/utils";
 
 interface MessageMetadata {
   evidence?: {
@@ -63,25 +64,27 @@ export function ChatConsole() {
   const { messages, sendMessage, status, input, setInput } = useChatContext();
 
   const isStreaming = status === "submitted" || status === "streaming";
+  const isSubmitting = status === "submitted";
 
-  const handleSubmit = (message: PromptInputMessage) => {
+  const handleSubmit = useCallback((message: PromptInputMessage) => {
     const trimmed = message.text?.trim();
     if (!trimmed) return;
     setInput("");
     void sendMessage({ text: trimmed });
-  };
+  }, [setInput, sendMessage]);
 
-  const handleAction = (command: string) => {
+  const handleAction = useCallback((command: string) => {
     void sendMessage({ text: command });
-  };
+  }, [sendMessage]);
 
+  // Stable message keys - use ID if available, otherwise index-based
   const memoizedMessages = useMemo(() => messages, [messages]);
 
   return (
-    <div className="flex h-full min-h-[600px] flex-col rounded-lg border border-border bg-card">
+    <div className="flex h-full min-h-[600px] flex-col rounded-lg border border-border bg-card lg:min-h-[700px]">
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
-        <ConversationContent className="p-0">
+        <ConversationContent className="p-0 lg:p-1">
           {/* Empty state */}
           {memoizedMessages.length === 0 && !isStreaming && (
             <ConversationEmptyState
@@ -97,11 +100,10 @@ export function ChatConsole() {
             const isLast = index === memoizedMessages.length - 1;
             const showStreamingCursor = isStreaming && isLast && !isUser;
             const metadata = message.metadata as MessageMetadata | undefined;
-            const messageKey = message.id
-              ? `${message.id}-${index}`
-              : `message-${index}`;
+            // Use stable keys - prefer message.id, fallback to content hash
+            const messageKey = message.id || `msg-${index}-${message.role}`;
 
-            // Extract parts
+            // Extract parts with stable references
             const textParts = message.parts.filter((p) => p.type === "text");
             const reasoningParts = message.parts.filter(
               (p) => p.type === "reasoning"
@@ -128,16 +130,19 @@ export function ChatConsole() {
               <Message
                 key={messageKey}
                 from={message.role}
-                className={
-                  isUser ? "bg-transparent px-4 py-4" : "bg-muted/30 px-4 py-4"
-                }
+                className={cn(
+                  "px-4 py-4 lg:px-6 lg:py-5",
+                  isUser ? "bg-transparent" : "bg-muted/30",
+                  // Prevent layout shift during streaming
+                  "will-change-contents"
+                )}
               >
                 {/* Role label */}
                 <div className="text-xs font-medium text-muted-foreground">
                   {isUser ? "You" : "Assistant"}
                 </div>
 
-                <MessageContent className="space-y-3">
+                <MessageContent className="space-y-3 lg:space-y-4">
                   {/* Reasoning */}
                   {!isUser && reasoningText && (
                     <Reasoning isStreaming={showStreamingCursor} defaultOpen>
@@ -189,11 +194,16 @@ export function ChatConsole() {
                       <NextStepsPanel
                         steps={evidence.nextSteps}
                         onStepClick={handleAction}
+                        disabled={isStreaming}
                       />
                     )}
 
                   {!isUser && actions && actions.length > 0 && (
-                    <ActionButtons actions={actions} onAction={handleAction} />
+                    <ActionButtons 
+                      actions={actions} 
+                      onAction={handleAction}
+                      disabled={isStreaming}
+                    />
                   )}
                 </MessageContent>
               </Message>
@@ -215,15 +225,19 @@ export function ChatConsole() {
       {/* Input using PromptInput */}
       <PromptInput
         onSubmit={handleSubmit}
-        className="border-t border-border p-4"
+        className="border-t border-border p-4 lg:p-5"
       >
         <div className="flex items-center gap-3">
           <PromptInputTextarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isStreaming ? "Thinking..." : "Type a message..."}
+            placeholder={isSubmitting ? "Sending..." : isStreaming ? "Waiting for response..." : "Type a message..."}
             disabled={isStreaming}
-            className="min-h-0 flex-1 resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0"
+            aria-disabled={isStreaming}
+            className={cn(
+              "min-h-0 flex-1 resize-none border-0 bg-transparent p-0 text-sm shadow-none focus-visible:ring-0 lg:text-base",
+              isStreaming && "opacity-60"
+            )}
             rows={1}
           />
           <PromptInputSubmit asChild>
@@ -232,9 +246,18 @@ export function ChatConsole() {
               disabled={isStreaming || !input.trim()}
               size="sm"
               variant="default"
-              aria-label="Send message"
+              aria-label={isSubmitting ? "Sending message" : "Send message"}
+              aria-busy={isSubmitting}
+              className={cn(
+                "cursor-pointer transition-all",
+                isStreaming && "cursor-not-allowed opacity-50"
+              )}
             >
-              <SendHorizontal className="h-4 w-4" />
+              {isSubmitting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <SendHorizontal className="h-4 w-4" />
+              )}
             </Button>
           </PromptInputSubmit>
         </div>
