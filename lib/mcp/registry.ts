@@ -373,10 +373,13 @@ export class CepToolExecutor {
         errors,
         pageToken,
       });
+      const requiresReauth = isTokenExpiredError(code, message);
       return {
         error: message ?? "Unknown error",
-        suggestion:
-          "Ensure the 'Admin SDK' API is enabled in GCP and the user has 'Reports' privileges.",
+        suggestion: requiresReauth
+          ? "Your session has expired. Please sign in again to continue."
+          : "Ensure the 'Admin SDK' API is enabled in GCP and the user has 'Reports' privileges.",
+        requiresReauth,
       };
     }
   }
@@ -456,10 +459,13 @@ export class CepToolExecutor {
         message,
         errors,
       });
+      const requiresReauth = isTokenExpiredError(code, message);
       return {
         error: message ?? "Unknown error",
-        suggestion:
-          "Check 'Cloud Identity API' enablement and DLP Read permissions.",
+        suggestion: requiresReauth
+          ? "Your session has expired. Please sign in again to continue."
+          : "Check 'Cloud Identity API' enablement and DLP Read permissions.",
+        requiresReauth,
       };
     }
   }
@@ -527,10 +533,13 @@ export class CepToolExecutor {
         message,
         errors,
       });
+      const requiresReauth = isTokenExpiredError(code, message);
       return {
         error: message ?? "Unknown error",
-        suggestion:
-          "Check 'Admin SDK' enablement and Org Unit Read permissions.",
+        suggestion: requiresReauth
+          ? "Your session has expired. Please sign in again to continue."
+          : "Check 'Admin SDK' enablement and Org Unit Read permissions.",
+        requiresReauth,
       };
     }
   }
@@ -618,10 +627,13 @@ export class CepToolExecutor {
         message,
         errors,
       });
+      const requiresReauth = isTokenExpiredError(code, message);
       return {
         error: message ?? "Unknown error",
-        suggestion:
-          "Ensure 'Chrome Browser Cloud Management API' is enabled and caller has Chrome policy admin rights.",
+        suggestion: requiresReauth
+          ? "Your session has expired. Please sign in again to continue."
+          : "Ensure 'Chrome Browser Cloud Management API' is enabled and caller has Chrome policy admin rights.",
+        requiresReauth,
       };
     }
   }
@@ -843,13 +855,16 @@ export class CepToolExecutor {
         message,
         errors,
       });
+      const requiresReauth = isTokenExpiredError(code, message);
       return {
         error: message ?? "Unknown error",
-        suggestion:
-          "Check Chrome Policy API permissions and policy schema access.",
+        suggestion: requiresReauth
+          ? "Your session has expired. Please sign in again to continue."
+          : "Check Chrome Policy API permissions and policy schema access.",
         policySchemas,
         targetResource: attemptedTargets[0],
         attemptedTargets,
+        requiresReauth,
       };
     }
   }
@@ -1084,6 +1099,28 @@ export class CepToolExecutor {
       };
     }
   }
+}
+
+/**
+ * Check if an error indicates token expiration requiring re-authentication.
+ * Returns true for 401 errors or messages indicating invalid credentials.
+ */
+function isTokenExpiredError(
+  code: number | string | undefined,
+  message: string | undefined
+): boolean {
+  if (code === 401 || code === "401") {
+    return true;
+  }
+  if (
+    message &&
+    (message.includes("Request had invalid authentication credentials") ||
+      message.includes("Invalid Credentials") ||
+      message.includes("Token has been expired or revoked"))
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /**
