@@ -29,6 +29,7 @@ import {
 } from "@/components/ui/dashboard-panel";
 import { Separator } from "@/components/ui/separator";
 import { StatusBadge } from "@/components/ui/status-badge";
+import { authClient } from "@/lib/auth-client";
 import { cn } from "@/lib/utils";
 
 type OverviewCard = {
@@ -57,13 +58,19 @@ const DEFAULT_SUGGESTIONS = [
 
 export default function Home() {
   const [overview, setOverview] = useState<OverviewData | null>(null);
-  const [overviewError, setOverviewError] = useState<string | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
     async function load() {
       try {
         const res = await fetch("/api/overview");
+        if (res.status === 401) {
+          setAuthError(
+            "Sign in with Google and grant required admin scopes to run CEP tools."
+          );
+          return;
+        }
         if (!res.ok) {
           throw new Error(`overview ${res.status}`);
         }
@@ -78,11 +85,9 @@ export default function Home() {
             sources: [],
           }
         );
-        setOverviewError(null);
       } catch (error) {
         if (!active) return;
         setOverview(null);
-        setOverviewError("Unable to load overview");
       }
     }
     void load();
@@ -95,6 +100,41 @@ export default function Home() {
     if (overview?.suggestions?.length) return overview.suggestions;
     return DEFAULT_SUGGESTIONS;
   }, [overview]);
+
+  if (authError) {
+    return (
+      <main className="min-h-screen bg-background text-foreground">
+        <div className="mx-auto flex max-w-3xl flex-col gap-6 px-6 py-12 text-center">
+          <div className="space-y-3">
+            <p className="text-xs font-medium uppercase tracking-widest text-primary">
+              CEP Command Center
+            </p>
+            <h1 className="text-2xl font-semibold text-foreground sm:text-3xl">
+              Authentication required
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              {authError} Once signed in, retry the action.
+            </p>
+          </div>
+          <div className="flex justify-center">
+            <Button
+              size="lg"
+              variant="outline"
+              className="w-full gap-2"
+              onClick={async () => {
+                await authClient.signIn.social({
+                  provider: "google",
+                  callbackURL: "/",
+                });
+              }}
+            >
+              Sign in with Google
+            </Button>
+          </div>
+        </div>
+      </main>
+    );
+  }
 
   const primaryActions = [
     "Retry connector fetch",

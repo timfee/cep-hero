@@ -401,6 +401,15 @@ async function maybeHandleAction({
     return handleCheckAuthScopes(accessToken);
   }
 
+  if (
+    normalized.includes("review events") ||
+    normalized.includes("show recent chrome events") ||
+    normalized.includes("show events") ||
+    normalized.includes("list events")
+  ) {
+    return handleShowEvents(accessToken);
+  }
+
   return null;
 }
 
@@ -503,6 +512,35 @@ async function handleCheckAuthScopes(
   } catch (error) {
     return {
       message: `Scope check failed: ${getErrorMessage(error)}`,
+      status: "error",
+    };
+  }
+}
+
+async function handleShowEvents(accessToken: string): Promise<ActionResult> {
+  const executor = new CepToolExecutor(accessToken);
+  try {
+    const result = await executor.getChromeEvents({ maxResults: 25 });
+    if ("error" in result) {
+      return {
+        message: `Events lookup failed: ${result.error}`,
+        status: "error",
+      };
+    }
+    const events = result.events ?? [];
+    const sample = events.slice(0, 5).map((evt) => {
+      const id = evt.id?.uniqueQualifier ?? "(no id)";
+      const time = evt.id?.time ?? "(no time)";
+      return `- ${time} :: ${id}`;
+    });
+    const lines = [
+      `Chrome events fetched: ${events.length}`,
+      ...(sample.length ? ["Sample:", ...sample] : []),
+    ];
+    return { message: lines.join("\n"), status: "ok" };
+  } catch (error) {
+    return {
+      message: `Events lookup failed: ${getErrorMessage(error)}`,
       status: "error",
     };
   }
