@@ -55,9 +55,12 @@ export async function POST(req: Request) {
       : [];
 
   if (messages.length === 0) {
+    console.warn("POST /api/chat: Empty messages received.", {
+      body: typeof body === "object" ? body : safeJsonPreview(body),
+    });
     return new Response(
-      JSON.stringify({ error: "Message content is required." }),
-      { status: 400 }
+      "I didn't receive a message. Please try again.",
+      { status: 200 }
     );
   }
 
