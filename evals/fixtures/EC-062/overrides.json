@@ -1,0 +1,38 @@
+{
+  "auditEvents": {
+    "items": []
+  },
+  "connectorPolicies": [
+    {
+      "targetKey": { "targetResource": "orgunits/03ph8a2z221pcso" },
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": false,
+          "reportExtensionsAndPlugins": false,
+          "reportMachineId": false,
+          "reportSafeBrowsingWarnings": false,
+          "reportPolicyData": false,
+          "reportSystemInformation": false,
+          "reportUserBrowsingData": false,
+          "reportVersionData": false
+        }
+      },
+      "sourceKey": { "targetResource": "orgunits/03ph8a2z221pcso" }
+    }
+  ],
+  "orgUnits": [
+    {
+      "orgUnitId": "id:03ph8a2z23yjui6",
+      "orgUnitPath": "/",
+      "name": "cep-netnew.cc",
+      "parentOrgUnitId": null
+    },
+    {
+      "orgUnitId": "id:03ph8a2z221pcso",
+      "orgUnitPath": "/Events-Off",
+      "name": "Events-Off",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    }
+  ]
+}

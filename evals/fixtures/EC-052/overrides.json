@@ -1,0 +1,59 @@
+{
+  "chromeReports": {
+    "appUsageMetrics": [
+      {
+        "appId": "nmmhkkegccagdldgiimedpiccmgmieda",
+        "appType": "EXTENSION",
+        "appName": "Legacy Ad Blocker Pro",
+        "cpuUsagePercent": 45.2,
+        "memoryUsageMB": 890,
+        "activeTabCount": 0,
+        "crashCount": 3,
+        "reportTime": "2026-01-20T04:00:00.000Z"
+      },
+      {
+        "appId": "gighmmpiobklfepjocnamgkkbiglidom",
+        "appType": "EXTENSION",
+        "appName": "uBlock Origin",
+        "cpuUsagePercent": 2.1,
+        "memoryUsageMB": 45,
+        "activeTabCount": 0,
+        "crashCount": 0,
+        "reportTime": "2026-01-20T04:00:00.000Z"
+      },
+      {
+        "appId": "cjpalhdlnbpafiamejdnhcphjbkeiagm",
+        "appType": "EXTENSION",
+        "appName": "Password Manager",
+        "cpuUsagePercent": 0.5,
+        "memoryUsageMB": 22,
+        "activeTabCount": 0,
+        "crashCount": 0,
+        "reportTime": "2026-01-20T04:00:00.000Z"
+      }
+    ]
+  },
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "EXTENSION_PERFORMANCE_TYPE",
+            "name": "EXTENSION_HIGH_CPU",
+            "parameters": [
+              { "name": "EXTENSION_ID", "value": "nmmhkkegccagdldgiimedpiccmgmieda" },
+              { "name": "EXTENSION_NAME", "value": "Legacy Ad Blocker Pro" },
+              { "name": "CPU_PERCENT", "value": "45.2" },
+              { "name": "MEMORY_MB", "value": "890" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

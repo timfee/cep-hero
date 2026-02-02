@@ -639,6 +639,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-043/overrides.json"],
+      "required_evidence": ["EXTENSION_INSTALL_FAILED", "CRX_FETCH", "manifest", "force"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -656,6 +658,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-044/overrides.json"],
+      "required_evidence": ["PERMISSIONS_INCREASE", "EXTENSION_DISABLED", "webRequest", "allowlist"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -673,6 +677,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-045/overrides.json"],
+      "required_evidence": ["malicious", "installed", "blocklist", "devices"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -794,6 +800,8 @@
       "tags": ["telemetry"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-052/overrides.json"],
+      "required_evidence": ["Legacy Ad Blocker", "CPU", "extension", "disable"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -811,6 +819,8 @@
       "tags": ["extensions"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-053/overrides.json"],
+      "required_evidence": ["EXTENSION_CRASH", "CORRUPTED", "repair", "reinstall"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -940,6 +950,8 @@
       "tags": ["events"],
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+      "overrides": ["evals/fixtures/EC-062/overrides.json"],
+      "required_evidence": ["CloudReporting", "disabled", "Events-Off", "enable"],
       "assertions": [],
       "cleanup": []
     },
