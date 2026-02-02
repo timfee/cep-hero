@@ -164,10 +164,12 @@ export async function POST(req: Request) {
     },
   });
 
-  // Return stream response
+  // Return stream with structured data annotations when available
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
-    getMessageMetadata: () => {
+    messageMetadata: ({ part }) => {
+      // Only attach metadata when streaming finishes
+      if (part.type !== "finish") return undefined;
       if (!diagnosisResult || "error" in diagnosisResult) return undefined;
 
       // Build structured evidence for the UI

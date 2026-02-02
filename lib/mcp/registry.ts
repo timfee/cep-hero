@@ -533,13 +533,37 @@ export class CepToolExecutor {
       "chrome.users.DataLeakPreventionReportingEnabled",
     ];
 
+    // Resolve the actual customer ID from the Chrome Policy API
+    // The API returns the real customer ID in the policy schema names
+    let resolvedCustomerId = this.customerId;
+    try {
+      const schemaRes = await service.customers.policySchemas.list({
+        parent: `customers/${this.customerId}`,
+        pageSize: 1,
+      });
+      const schemaName = schemaRes.data.policySchemas?.[0]?.name ?? "";
+      const match = schemaName.match(/customers\/([^/]+)\//);
+      if (match?.[1]) {
+        resolvedCustomerId = match[1];
+        console.log(
+          "[connector-config] resolved customer ID:",
+          resolvedCustomerId
+        );
+      }
+    } catch (error) {
+      console.log(
+        "[connector-config] could not resolve customer ID, using default:",
+        this.customerId
+      );
+    }
+
     const start = Date.now();
     await this.logApi("google.request.connector-config", {
       endpoint:
         "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
       method: "POST",
       policySchemas,
-      customerId: this.customerId,
+      customerId: resolvedCustomerId,
     });
     let targetCandidates: string[] = [];
     const attemptedTargets: string[] = [];
@@ -596,11 +620,11 @@ export class CepToolExecutor {
               "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
             method: "POST",
             policySchemas,
-            customerId: this.customerId,
+            customerId: resolvedCustomerId,
             targetResource,
           });
           const res = await service.customers.policies.resolve({
-            customer: `customers/${this.customerId}`,
+            customer: `customers/${resolvedCustomerId}`,
             requestBody: {
               policySchemaFilter: policySchemas.join(","),
               pageSize: 100,
