@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@vercel/analytics";
 import { Chrome, Lock } from "lucide-react";
 import Image from "next/image";
 import { useState } from "react";
@@ -11,6 +12,7 @@ export default function SignInPage() {
   const [isLoading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
+    await track("Sign In Clicked");
     await authClient.signIn.social({
       provider: "google",
       callbackURL: "/",

@@ -1,3 +1,6 @@
+"use client";
+
+import { track } from "@vercel/analytics";
 import { getToolName, isToolUIPart } from "ai";
 import { RefreshCcwIcon, CopyIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
@@ -264,6 +267,7 @@ export function ChatConsole() {
     (message: PromptInputMessage) => {
       const trimmed = message.text?.trim();
       if (!trimmed) return;
+      track("Chat Message Sent");
       void sendMessage({ text: trimmed });
     },
     [sendMessage]
@@ -342,15 +346,19 @@ export function ChatConsole() {
                         {!isUser && (
                           <MessageActions>
                             <MessageAction
-                              onClick={() => regenerate()}
+                              onClick={async () => {
+                                await track("Response Regenerated");
+                                regenerate();
+                              }}
                               tooltip="Regenerate"
                             >
                               <RefreshCcwIcon className="size-4" />
                             </MessageAction>
                             <MessageAction
-                              onClick={() =>
-                                navigator.clipboard.writeText(part.text)
-                              }
+                              onClick={async () => {
+                                await track("Response Copied");
+                                await navigator.clipboard.writeText(part.text);
+                              }}
                               tooltip="Copy"
                             >
                               <CopyIcon className="size-4" />
