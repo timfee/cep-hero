@@ -5,10 +5,10 @@ export async function GET(req: Request) {
   const session = await auth.api.getSession({
     headers: req.headers,
   });
-
   if (!session) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  console.log("HERE", req.headers);
 
   const accessTokenResponse = await auth.api.getAccessToken({
     body: {

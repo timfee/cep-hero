@@ -1,44 +1,29 @@
 "use client";
 
-import { Shield, Chrome, Lock } from "lucide-react";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { Chrome, Lock } from "lucide-react";
+import Image from "next/image";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { useAuth } from "@/hooks/use-auth";
+import { authClient } from "@/lib/auth-client";
 
 export default function SignInPage() {
-  const router = useRouter();
-  const { isAuthenticated, isLoading, error, signInWithGoogle } = useAuth();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated && !isLoading) {
-      router.replace("/");
-    }
-  }, [isAuthenticated, isLoading, router]);
+  const [isLoading, setLoading] = useState(false);
 
   const handleGoogleSignIn = async () => {
-    try {
-      await signInWithGoogle();
-    } catch {
-      // Error is handled by the hook and displayed below
-    }
+    await authClient.signIn.social({
+      provider: "google",
+      callbackURL: "/",
+      fetchOptions: {
+        onRequest: () => {
+          setLoading(true);
+        },
+        onResponse: () => {
+          setLoading(false);
+        },
+      },
+    });
   };
-
-  // Show loading state while checking auth
-  if (isLoading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-          <p className="text-sm text-muted-foreground">
-            Checking authentication...
-          </p>
-        </div>
-      </main>
-    );
-  }
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -46,7 +31,7 @@ export default function SignInPage() {
         {/* Logo and Title */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
-            <Shield className="h-7 w-7 text-primary" />
+            <Image src="/icon.png" alt="CEP Hero" height="50" width="50" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -63,13 +48,6 @@ export default function SignInPage() {
               diagnostics.
             </p>
           </div>
-
-          {/* Error Display */}
-          {error && (
-            <div className="mb-4 rounded-md border border-destructive bg-destructive/10 px-3 py-2">
-              <p className="text-sm text-destructive">{error.message}</p>
-            </div>
-          )}
 
           {/* Google Sign In Button */}
           <Button
