@@ -1,6 +1,6 @@
 import { getToolName, isToolUIPart } from "ai";
 import { HelpCircle, RefreshCcwIcon, CopyIcon } from "lucide-react";
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 
 import type { ToolPart } from "@/components/ai-elements/tool";
 import type {
@@ -10,7 +10,10 @@ import type {
   SuggestedActionsOutput,
 } from "@/types/chat";
 
-import { ActionButtons } from "@/components/ai-elements/action-buttons";
+import {
+  ActionButtons,
+  type ActionItem,
+} from "@/components/ai-elements/action-buttons";
 import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-policies-card";
 import {
   Conversation,
@@ -63,11 +66,129 @@ type OrgUnitsOutput = {
   }>;
 };
 
+const CONFIRM_PATTERN = /^confirm\b/i;
+const CANCEL_PATTERN = /^(cancel|no)\b/i;
+
+const FALLBACK_ACTIONS: ActionItem[] = [
+  {
+    id: "fallback-connector-config",
+    label: "Review connector settings",
+    command: "Review connector settings",
+  },
+  {
+    id: "fallback-dlp-rules",
+    label: "List data protection rules",
+    command: "List data protection rules",
+  },
+  {
+    id: "fallback-events",
+    label: "Show recent security events",
+    command: "Show recent security events",
+  },
+  {
+    id: "fallback-org-units",
+    label: "List organizational units",
+    command: "List organizational units",
+  },
+];
+
+const EMPTY_STATE_ACTIONS: ActionItem[] = [
+  {
+    id: "empty-connector-config",
+    label: "Review connector settings",
+    command: "Review connector settings",
+    primary: true,
+  },
+  {
+    id: "empty-dlp-rules",
+    label: "List data protection rules",
+    command: "List data protection rules",
+  },
+  {
+    id: "empty-events",
+    label: "Show recent security events",
+    command: "Show recent security events",
+  },
+];
+
+/**
+ * Map string actions to ActionItem objects with confirm/cancel detection.
+ */
+function mapActionsForSuggestion(actions: string[], key: string): ActionItem[] {
+  const normalizedActions = actions.map((a) => a.trim()).filter(Boolean);
+  const hasConfirm = normalizedActions.some((a) => CONFIRM_PATTERN.test(a));
+
+  return normalizedActions.map((action, idx) => {
+    const isConfirm = CONFIRM_PATTERN.test(action);
+    const isCancel = CANCEL_PATTERN.test(action);
+
+    return {
+      id: `${key}-${idx}`,
+      label: action,
+      command: action,
+      primary: hasConfirm ? isConfirm : idx === 0 && !isCancel,
+    };
+  });
+}
+
 export function ChatConsole() {
   const { messages, sendMessage, status, input, setInput, stop, regenerate } =
     useChatContext();
 
   const isStreaming = status === "submitted" || status === "streaming";
+
+  const fallbackActions = useMemo(() => FALLBACK_ACTIONS, []);
+
+  /**
+   * Extract suggested actions from a message's tool parts.
+   */
+  const getSuggestedActionsForMessage = useCallback(
+    (message: (typeof messages)[number]) => {
+      const entries = message.parts
+        .map((part, idx) => ({ part, idx }))
+        .filter(
+          ({ part }) =>
+            isToolUIPart(part) && getToolName(part) === "suggestActions"
+        )
+        .map(({ part, idx }) => {
+          const toolPart = part as ToolPart;
+          if (toolPart.state !== "output-available") return null;
+          const actions =
+            (toolPart.output as SuggestedActionsOutput)?.actions ?? [];
+          return {
+            key: `${message.id ?? "msg"}-${idx}`,
+            actions,
+          };
+        })
+        .filter(
+          (entry): entry is { key: string; actions: string[] } => entry !== null
+        );
+
+      return entries.at(-1) ?? null;
+    },
+    []
+  );
+
+  /**
+   * Derive actions to render: use suggested actions if available, otherwise fallback.
+   */
+  const deriveActions = useCallback(
+    (
+      suggestedActions: { key: string; actions?: string[] } | null,
+      streaming: boolean
+    ): ActionItem[] => {
+      if (suggestedActions) {
+        return mapActionsForSuggestion(
+          suggestedActions.actions ?? [],
+          suggestedActions.key
+        );
+      }
+
+      if (streaming) return [];
+      return fallbackActions;
+    },
+    [fallbackActions]
+  );
 
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
@@ -90,19 +211,37 @@ export function ChatConsole() {
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
         <ConversationContent className="p-4 lg:p-6">
-          {/* Empty state */}
+          {/* Empty state with starter prompts */}
           {messages.length === 0 && !isStreaming && (
             <ConversationEmptyState
               icon={<HelpCircle className="h-8 w-8" />}
               title="How can I help?"
               description="Ask about Chrome Enterprise Premium configurations, connector issues, or DLP policies."
-            />
+            >
+              <div className="mt-6 space-y-4">
+                <p className="text-xs font-medium text-muted-foreground">
+                  Quick actions
+                </p>
+                <ActionButtons
+                  actions={EMPTY_STATE_ACTIONS}
+                  onAction={handleAction}
+                  disabled={isStreaming}
+                  resetKey={status}
+                />
+              </div>
+            </ConversationEmptyState>
           )}
 
           {/* Messages */}
           {messages.map((message, index) => {
             const isUser = message.role === "user";
             const isLast = index === messages.length - 1;
+            const suggestedActions = getSuggestedActionsForMessage(message);
+            const actionsToRender = deriveActions(
+              suggestedActions,
+              isStreaming
+            );
+
             return (
               <div key={message.id || index} className="space-y-4">
                 {message.parts.map((part, i) => {
@@ -113,7 +252,6 @@ export function ChatConsole() {
                       <Reasoning
                         key={partKey}
                         isStreaming={isStreaming && isLast}
-                        defaultOpen
                       >
                         <ReasoningTrigger />
                         <ReasoningContent>{part.text}</ReasoningContent>
@@ -159,29 +297,8 @@ export function ChatConsole() {
                     const toolName = getToolName(part);
                     const toolPart = part as ToolPart;
 
-                    // 1. Suggest Actions -> Action Buttons
-                    if (
-                      toolName === "suggestActions" &&
-                      toolPart.state === "output-available"
-                    ) {
-                      const actions = (
-                        toolPart.output as SuggestedActionsOutput
-                      )?.actions;
-                      if (actions && actions.length > 0) {
-                        return (
-                          <div key={partKey} className="pl-4 lg:pl-6">
-                            <ActionButtons
-                              actions={actions.map((action, idx) => ({
-                                id: `action-${idx}`,
-                                label: action,
-                                command: action,
-                              }))}
-                              onAction={handleAction}
-                              disabled={isStreaming}
-                            />
-                          </div>
-                        );
-                      }
+                    // 1. Suggest Actions -> Skip inline rendering (moved to end of message)
+                    if (toolName === "suggestActions") {
                       return null;
                     }
 
@@ -282,6 +399,18 @@ export function ChatConsole() {
 
                   return null;
                 })}
+
+                {/* Action buttons at end of assistant messages */}
+                {!isUser && isLast && actionsToRender.length > 0 && (
+                  <div className="pl-4 lg:pl-6">
+                    <ActionButtons
+                      actions={actionsToRender}
+                      onAction={handleAction}
+                      disabled={isStreaming}
+                      resetKey={`${message.id ?? index}-${status}`}
+                    />
+                  </div>
+                )}
               </div>
             );
           })}

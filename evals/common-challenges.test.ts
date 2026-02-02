@@ -11,6 +11,7 @@ import {
   assertRequiredEvidence,
   buildEvalPrompt,
   createRunId,
+  loadEvalFixtures,
   writeEvalReport,
 } from "@/lib/test-helpers/eval-runner";
 import {
@@ -88,6 +89,7 @@ describe("CEP evals: common challenges", () => {
         overrides: evalCase.overrides,
         caseId: evalCase.id,
       });
+      const fixtures = loadEvalFixtures(evalCase.id);
       const start = performance.now();
       let status: "pass" | "fail" = "pass";
       let failure: unknown = undefined;
@@ -96,7 +98,7 @@ describe("CEP evals: common challenges", () => {
       let schemaMatched = false;
 
       try {
-        const resp = await callChat(prompt);
+        const resp = await callChat(prompt, { fixtures });
         responseText = resp.text;
         responseMetadata = resp.metadata;
         schemaMatched = assertStructuredResponse({

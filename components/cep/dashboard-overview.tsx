@@ -1,9 +1,13 @@
 "use client";
 
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, RefreshCw } from "lucide-react";
+import { useCallback, useState } from "react";
 import useSWR from "swr";
 
+import { PulseShimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
+
+const SKELETON_STAGGER_DELAY_MS = 100;
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -35,16 +39,57 @@ type DashboardOverviewProps = {
 };
 
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
-  const { data, error, isLoading } = useSWR<OverviewData>(
+  const [isRefreshing, setIsRefreshing] = useState(false);
+
+  const { data, error, isLoading, mutate } = useSWR<OverviewData>(
     "/api/overview",
     fetcher,
-    { refreshInterval: 60000 }
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      keepPreviousData: true,
+    }
   );
 
-  if (isLoading) {
+  const handleRefresh = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await mutate();
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [mutate]);
+
+  if (isLoading && !data) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <span className="text-muted-foreground">Loading...</span>
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto max-w-3xl px-8 py-16">
+          <header className="mb-16">
+            <PulseShimmer height={40} width="75%" className="rounded-lg" />
+            <div className="mt-5 space-y-2">
+              <PulseShimmer height={20} width="100%" className="rounded" />
+              <PulseShimmer height={20} width="85%" className="rounded" />
+            </div>
+          </header>
+          <section>
+            <PulseShimmer height={16} width={96} className="mb-6 rounded" />
+            <div className="space-y-3">
+              {[0, 1, 2].map((i) => (
+                <div
+                  key={i}
+                  style={{
+                    animationDelay: `${i * SKELETON_STAGGER_DELAY_MS}ms`,
+                  }}
+                >
+                  <PulseShimmer
+                    height={96}
+                    className="rounded-2xl border border-white/10"
+                  />
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
       </div>
     );
   }
@@ -64,9 +109,22 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-8 py-16">
         <header className="mb-16">
-          <h1 className="text-4xl font-semibold tracking-tight text-foreground">
-            {data.headline}
-          </h1>
+          <div className="flex items-start justify-between gap-4">
+            <h1 className="text-4xl font-semibold tracking-tight text-foreground">
+              {data.headline}
+            </h1>
+            <button
+              onClick={handleRefresh}
+              disabled={isRefreshing}
+              className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+              aria-label="Refresh dashboard"
+            >
+              <RefreshCw
+                className={cn("h-4 w-4", isRefreshing && "animate-spin")}
+              />
+              {isRefreshing ? "Refreshing..." : "Refresh"}
+            </button>
+          </div>
           <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
             {data.summary}
           </p>

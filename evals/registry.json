@@ -1284,6 +1284,48 @@
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "assertions": [],
       "cleanup": []
+    },
+    {
+      "id": "EC-084",
+      "title": "DLP audit rule setup for all traffic",
+      "category": "test_plan",
+      "source_refs": ["TestPlan-DLP-Audit"],
+      "case_file": "evals/cases/EC-084-dlp-audit-rule-all-traffic.md",
+      "mode": "rubric",
+      "requires_live_data": false,
+      "tags": ["dlp", "audit", "policy"],
+      "conversation_script": [],
+      "expected_schema": ["diagnosis", "evidence", "next_steps"],
+      "fixtures": ["evals/fixtures/EC-084/overrides.json"],
+      "overrides": ["evals/fixtures/EC-084/overrides.json"],
+      "required_evidence": ["dlp", "policy"],
+      "rubric": {
+        "min_score": 2,
+        "criteria": ["diagnosis", "evidence", "next", "admin_console_link"]
+      },
+      "assertions": [],
+      "cleanup": []
+    },
+    {
+      "id": "EC-085",
+      "title": "Browser security - cookie encryption and disable incognito",
+      "category": "test_plan",
+      "source_refs": ["TestPlan-Browser-Security"],
+      "case_file": "evals/cases/EC-085-browser-security-cookie-incognito.md",
+      "mode": "rubric",
+      "requires_live_data": false,
+      "tags": ["security", "cookies", "incognito", "policy"],
+      "conversation_script": [],
+      "expected_schema": ["diagnosis", "evidence", "next_steps"],
+      "fixtures": ["evals/fixtures/EC-085/overrides.json"],
+      "overrides": ["evals/fixtures/EC-085/overrides.json"],
+      "required_evidence": ["connector", "policy"],
+      "rubric": {
+        "min_score": 2,
+        "criteria": ["diagnosis", "evidence", "next", "admin_console_link"]
+      },
+      "assertions": [],
+      "cleanup": []
     }
   ]
 }

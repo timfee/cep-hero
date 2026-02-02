@@ -12,6 +12,7 @@ import {
   buildEvalPrompt,
   createRunId,
   enforceRubric,
+  loadEvalFixtures,
   scoreRubric,
   writeEvalReport,
 } from "@/lib/test-helpers/eval-runner";
@@ -110,6 +111,7 @@ describe("CEP evals: test plan", () => {
           overrides: evalCase.overrides,
           caseId: evalCase.id,
         });
+        const fixtures = loadEvalFixtures(evalCase.id);
         const start = performance.now();
         let status: "pass" | "fail" = "pass";
         let failure: unknown = undefined;
@@ -119,7 +121,7 @@ describe("CEP evals: test plan", () => {
         let rubricScore: number | undefined;
 
         try {
-          const resp = await callChat(prompt);
+          const resp = await callChat(prompt, { fixtures });
           responseText = resp.text;
           responseMetadata = resp.metadata;
           schemaMatched = assertStructuredResponse({

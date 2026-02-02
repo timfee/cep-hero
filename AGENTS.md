@@ -112,6 +112,52 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 - Don't use `.only` or `.skip` in committed code
 - Keep test suites reasonably flat - avoid excessive `describe` nesting
 
+## Evaluation Framework
+
+The eval framework tests AI diagnostic capabilities using fixture injection for deterministic, reproducible results.
+
+### Architecture
+
+The system uses dependency injection to swap between production and eval modes:
+
+- **`IToolExecutor`** interface (`lib/mcp/types.ts`) - Contract for tool execution
+- **`CepToolExecutor`** (`lib/mcp/registry.ts`) - Production implementation calling Google APIs
+- **`FixtureToolExecutor`** (`lib/mcp/fixture-executor.ts`) - Eval implementation returning fixture data
+- **`loadEvalFixtures()`** (`lib/test-helpers/eval-runner.ts`) - Loads and merges fixture data
+
+### Adding New Eval Cases
+
+1. Create a case file in `evals/cases/EC-###.md` with the user prompt
+2. Add the case to `evals/registry.json` with expected schema and rubric
+3. Optionally create `evals/fixtures/EC-###/overrides.json` for case-specific data
+4. Run with `EVAL_IDS="EC-###" EVAL_USE_BASE=1 bun run evals:run`
+
+### Fixture Data Structure
+
+```typescript
+type FixtureData = {
+  orgUnits?: Array<{ orgUnitId; name; orgUnitPath; parentOrgUnitId }>;
+  auditEvents?: { items: Array<ChromeEvent>; nextPageToken?: string };
+  dlpRules?: Array<{ id; displayName; description; resourceName; consoleUrl }>;
+  connectorPolicies?: Array<{ targetKey; value; sourceKey }>;
+  policySchemas?: Array<{ name; policyDescription }>;
+  errors?: { chromeEvents?; dlpRules?; connectorConfig?; orgUnits? };
+};
+```
+
+### Running Evals
+
+```bash
+# With fixture injection (recommended)
+EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 bun run evals:run
+
+# Specific cases
+EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals:run
+
+# Fast mode (no AI calls)
+EVAL_FAKE_CHAT=1 bun run evals:run
+```
+
 ## When Oxlint + Oxfmt Can't Help
 
 Oxlint + Oxfmt's linter will catch most issues automatically. Focus your attention on:

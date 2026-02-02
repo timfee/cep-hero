@@ -2,8 +2,11 @@ import { google } from "@ai-sdk/google";
 import { generateObject, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 
+import type { IToolExecutor } from "@/lib/mcp/types";
+
 import {
   CepToolExecutor,
+  DraftPolicyChangeSchema,
   EnrollBrowserSchema,
   GetChromeEventsSchema,
   GetConnectorConfigSchema,
@@ -19,15 +22,48 @@ export const maxDuration = 30;
 
 const debugAuthSchema = z.object({});
 
-const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium. Your goal is to identify root causes, not just answer questions.
+const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium. Your goal is to identify root causes and guide administrators through solutions.
 
-# Operating principles
+# Your Capabilities
+You CAN:
+- Fetch and analyze Chrome events, DLP rules, and connector configurations
+- Diagnose policy scoping issues and configuration problems
+- Explain what needs to be changed and why
+- Provide step-by-step guidance with Admin Console links
+- Generate enrollment tokens for Chrome Browser Cloud Management
+- Draft policy change proposals using the draftPolicyChange tool
+
+You CANNOT:
+- Directly modify policies, rules, or configurations in the Admin Console
+- Enable or disable features without user confirmation
+- Execute changes on behalf of the administrator
+
+# Policy Change Workflow (Draft & Commit Pattern)
+When you identify an issue requiring configuration changes:
+1. First, explain the issue and what needs to change
+2. Use the draftPolicyChange tool to propose the change with:
+   - policyName: Human-readable name (e.g., "Enable Cookie Encryption")
+   - proposedValue: The JSON configuration to apply
+   - targetUnit: The Org Unit ID to apply this to
+   - reasoning: Why this change is recommended
+3. The UI will render a confirmation card for the user to review
+4. Wait for user to say "Confirm" or "Cancel" before proceeding
+5. If confirmed, provide the Admin Console link and step-by-step instructions
+
+# Operating Principles
 - Think in steps; decide what to inspect next based on results.
 - Use tools in parallel when possible; avoid redundant calls.
-- Always summarize tool outputs (tables/lists) instead of dumping raw JSON.
-- Use the 'suggestActions' tool to provide clickable follow-ups; do not embed next steps as plain text.
-- Do not rely on any single "diagnose" or "runDiagnosis" tool; use atomic tools and evidence.
+- Always summarize tool outputs in plain language instead of dumping raw JSON.
+- Break down complex fixes into numbered steps the admin can follow.
 - Keep responses in plain text; tool outputs are rendered separately in the UI.
+
+# CRITICAL: Always Suggest Next Steps
+You MUST call suggestActions at the end of EVERY response with 2-4 relevant options.
+Example actions based on context:
+- After showing events: "Filter by error events", "Show DLP violations only", "Check connector config"
+- After diagnosis: "Confirm this change", "Cancel", "Show me the Admin Console steps"
+- After policy draft: "Confirm", "Cancel", "Modify the proposal"
+- General: "Run another diagnostic", "Check authentication", "List organizational units"
 
 # Standard Operating Procedure for investigations
 1) If the user reports fleet-wide issues or policies not applying, start by calling:
@@ -37,13 +73,22 @@ const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Ente
 2) Analyze connector policy targeting. If any policies target customers, flag mis-scoping and recommend org unit/group targeting.
 3) If events are empty or errors occur, call debugAuth to inspect scopes/expiry.
 4) If tool outputs include errors, codes, or unfamiliar terms, call searchPolicies or searchDocs to ground the error before proposing fixes.
-5) Present findings concisely and propose next actions via suggestActions.
+5) Present findings concisely with remediation steps.
+6) REQUIRED: Call suggestActions with relevant follow-up options.
+
+# Admin Console Deep Links (use these in your explanations)
+- DLP Rules: https://admin.google.com/ac/chrome/dlp
+- Connector Policies: https://admin.google.com/ac/chrome/settings/security
+- Chrome Browser Management: https://admin.google.com/ac/chrome/browsers
+- Organizational Units: https://admin.google.com/ac/orgunits
+- Chrome Policies: https://admin.google.com/ac/chrome/settings
 
 Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.`;
 
 interface CreateChatStreamParams {
   messages: ChatMessage[];
   accessToken: string;
+  executor?: IToolExecutor;
 }
 
 /**
@@ -57,8 +102,10 @@ interface CreateChatStreamParams {
 export async function createChatStream({
   messages,
   accessToken,
+  executor: providedExecutor,
 }: CreateChatStreamParams) {
-  const executor = new CepToolExecutor(accessToken);
+  const executor: IToolExecutor =
+    providedExecutor ?? (new CepToolExecutor(accessToken) as IToolExecutor);
 
   // 1. Analyze intent and proactively retrieve knowledge (RAG)
   const lastUserMessage = messages
@@ -174,6 +221,13 @@ export async function createChatStream({
         execute: async ({ actions }) => {
           return { actions };
         },
+      }),
+
+      draftPolicyChange: tool({
+        description:
+          "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
+        inputSchema: DraftPolicyChangeSchema,
+        execute: async (args) => await executor.draftPolicyChange(args),
       }),
     },
   });

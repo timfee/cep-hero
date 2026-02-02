@@ -1,0 +1,86 @@
+{
+  "dlpRules": [
+    {
+      "id": "dlp-rule-001",
+      "displayName": "PII Detection Rule",
+      "description": "Detects personally identifiable information",
+      "resourceName": "policies/dlp-rule-001",
+      "consoleUrl": "https://admin.google.com/ac/chrome/dlp"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "targetKey": { "targetResource": "orgunits/03ph8a2z23yjui6" },
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": { "enableCloudReporting": true }
+      },
+      "sourceKey": { "targetResource": "orgunits/03ph8a2z23yjui6" }
+    }
+  ],
+  "orgUnits": [
+    {
+      "orgUnitId": "id:03ph8a2z23yjui6",
+      "orgUnitPath": "/",
+      "name": "Root Organization",
+      "parentOrgUnitId": null,
+      "description": "Root organizational unit"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z221pcso",
+      "orgUnitPath": "/Engineering",
+      "name": "Engineering",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6",
+      "description": "Engineering department"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "uniqueQualifier": "-58716657015301156",
+          "applicationName": "chrome"
+        },
+        "actor": {
+          "email": "user@example.com",
+          "profileId": "12345"
+        },
+        "events": [
+          {
+            "type": "BROWSER_SECURITY_EVENT",
+            "name": "INCOGNITO_MODE_USED",
+            "parameters": [
+              { "name": "EVENT_RESULT", "value": "ALLOWED" },
+              { "name": "BROWSER_VERSION", "value": "144.0.7559.59" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T03:55:00.000Z",
+          "uniqueQualifier": "-58716657015301157",
+          "applicationName": "chrome"
+        },
+        "actor": {
+          "email": "user2@example.com",
+          "profileId": "12346"
+        },
+        "events": [
+          {
+            "type": "COOKIE_EVENT",
+            "name": "UNENCRYPTED_COOKIE_ACCESS",
+            "parameters": [
+              { "name": "EVENT_RESULT", "value": "DETECTED" },
+              { "name": "DOMAIN", "value": "example.com" }
+            ]
+          }
+        ]
+      }
+    ],
+    "nextPageToken": null
+  }
+}
