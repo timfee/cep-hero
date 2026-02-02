@@ -109,17 +109,17 @@ For each eval case, assess:
 | EC-011 | Endpoint Verification cannot recover key    | [ ]      | No       |       |
 | EC-012 | Endpoint Verification service worker bug    | [ ]      | No       |       |
 
-### enrollment (7 cases)
+### enrollment (7 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                         | Reviewed | Fixtures | Notes |
 | ------ | --------------------------------------------- | -------- | -------- | ----- |
-| EC-001 | Network connectivity during enrollment        | [x]      | Partial  | Uses EC-019/EC-021 fixtures. net.log shows SUCCESS not failure - mismatch. eventlog.txt wifi deauth is correct. Need failing network fixture. |
-| EC-002 | Enrollment error codes                        | [x]      | Yes      | Uses EC-003/update_engine.log with 402 error. Good match. Could add -105 DNS error example. |
-| EC-004 | Duplicate machine identifier after VM cloning | [x]      | No       | Needs: API response showing duplicate device IDs in BrowserManagement.browsers |
-| EC-018 | CEP enrollment/connectors not registering     | [x]      | No       | Needs: Empty browsers list + enrollment token status showing not applied |
-| EC-046 | Enrollment token issues                       | [x]      | No       | Needs: Enrollment token API response with expired/revoked status |
-| EC-069 | Enrollment token wrong OU                     | [x]      | No       | Needs: Token details showing targetResource=root instead of OU |
-| EC-070 | Enrollment permission denied                  | [x]      | No       | Needs: API 403 error response with PERMISSION_DENIED |
+| EC-001 | Network connectivity during enrollment        | [x]      | Yes      | Created net-fail.log and eventlog-wifi-fail.txt with connection failures |
+| EC-002 | Enrollment error codes                        | [x]      | Yes      | Uses EC-003/update_engine.log with 402 error. Good match. |
+| EC-004 | Duplicate machine identifier after VM cloning | [x]      | Yes      | Added audit events showing duplicate DEVICE_ID and browsers array |
+| EC-018 | CEP enrollment/connectors not registering     | [x]      | Yes      | Empty browsers/events list with valid token not applied |
+| EC-046 | Enrollment token issues                       | [x]      | Yes      | enrollmentToken with status: "expired" |
+| EC-069 | Enrollment token wrong OU                     | [x]      | Yes      | Token targeting customers/C00000000 instead of Enroll-Eng OU |
+| EC-070 | Enrollment permission denied                  | [x]      | Yes      | errors.enrollBrowser: "PERMISSION_DENIED" |
 
 ### events (2 cases)
 
@@ -303,21 +303,27 @@ EVAL_USE_BASE=1 bun run evals:verbose
 
 **Phase 2 Progress (same session):**
 
-Reviewed all 7 enrollment category cases:
+Reviewed and created fixtures for all 7 enrollment category cases:
 
-| Case | Status | Fixture Assessment |
-|------|--------|-------------------|
-| EC-001 | Reviewed | net.log shows SUCCESS - needs failure fixture |
-| EC-002 | Good | Has 402 error in update_engine.log |
-| EC-004 | Needs fixture | Duplicate device ID response |
-| EC-018 | Needs fixture | Empty browsers list |
-| EC-046 | Needs fixture | Expired token response |
-| EC-069 | Needs fixture | Token with wrong targetResource |
-| EC-070 | Needs fixture | 403 PERMISSION_DENIED response |
+| Case | Status | Fixture Created |
+|------|--------|-----------------|
+| EC-001 | ✅ Complete | Created net-fail.log with ERR_NAME_NOT_RESOLVED, ERR_CONNECTION_TIMED_OUT |
+| EC-002 | ✅ Good | Already has 402 error in update_engine.log |
+| EC-004 | ✅ Complete | Audit events + browsers array showing duplicate DEVICE_ID |
+| EC-018 | ✅ Complete | Empty browsers/events with valid but unapplied token |
+| EC-046 | ✅ Complete | enrollmentToken with status: "expired" |
+| EC-069 | ✅ Complete | Token targeting root (customers/C00000000) instead of OU |
+| EC-070 | ✅ Complete | errors.enrollBrowser: "PERMISSION_DENIED" |
+
+**Infrastructure extended:**
+- Added `enrollmentToken` and `browsers` fields to FixtureData type
+- Extended fixture-executor to read enrollmentToken with status/error injection
+- Extended loadFixtureData to handle new fields
+
+**Eval run (test mode):** All 7 cases ran successfully (failures expected in test mode since synthetic responses don't contain evidence markers)
 
 **Next Session Should:**
 
-1. Create missing fixtures for EC-004, EC-018, EC-046, EC-069, EC-070
-2. Fix EC-001 fixture (add failing network sample)
-3. Run enrollment evals to establish baseline
-4. Continue to next category (events or extensions)
+1. Run enrollment evals against live server to establish true baseline
+2. Review and improve evals based on AI responses
+3. Continue to next category (events - 2 cases)

@@ -82,6 +82,43 @@ export class FixtureToolExecutor implements IToolExecutor {
   async enrollBrowser(
     _args: z.infer<typeof EnrollBrowserSchema>
   ): Promise<EnrollBrowserResult> {
+    // Check for error injection
+    if (this.fixtures.errors?.enrollBrowser) {
+      return {
+        error: this.fixtures.errors.enrollBrowser,
+        suggestion:
+          "Ensure the caller has Chrome policy admin rights and the API is enabled.",
+      };
+    }
+
+    // Check for custom enrollment token fixture
+    if (this.fixtures.enrollmentToken) {
+      const { token, expiresAt, status, error } = this.fixtures.enrollmentToken;
+
+      // If token has error or bad status, return error
+      if (error) {
+        return { error, suggestion: "Check enrollment token configuration." };
+      }
+      if (status === "expired") {
+        return {
+          error: "Enrollment token has expired",
+          suggestion: "Generate a new enrollment token.",
+        };
+      }
+      if (status === "revoked") {
+        return {
+          error: "Enrollment token has been revoked",
+          suggestion: "Generate a new enrollment token.",
+        };
+      }
+
+      return {
+        enrollmentToken: token ?? "fixture-enrollment-token-12345",
+        expiresAt: expiresAt ?? null,
+      };
+    }
+
+    // Default successful response
     return {
       enrollmentToken: "fixture-enrollment-token-12345",
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
@@ -238,6 +275,10 @@ export function loadFixtureData(
     chromeReports: isPlainObject(merged.chromeReports)
       ? (merged.chromeReports as Record<string, unknown>)
       : undefined,
+    enrollmentToken: isPlainObject(merged.enrollmentToken)
+      ? (merged.enrollmentToken as FixtureData["enrollmentToken"])
+      : undefined,
+    browsers: Array.isArray(merged.browsers) ? merged.browsers : undefined,
     errors: isPlainObject(merged.errors)
       ? (merged.errors as FixtureData["errors"])
       : undefined,
