@@ -177,7 +177,7 @@ export const EventsTable = memo(function EventsTable({
               )}
             >
               {notable ? (
-                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
               ) : (
                 <Activity
                   className={cn(
@@ -192,13 +192,13 @@ export const EventsTable = memo(function EventsTable({
                   <span
                     className={cn(
                       "truncate text-sm font-medium",
-                      notable ? "text-amber-400" : "text-foreground"
+                      notable ? "text-amber-600" : "text-foreground"
                     )}
                   >
                     {humanizeEventName(primary?.name ?? primary?.type)}
                   </span>
                   {notable && (
-                    <span className="shrink-0 rounded bg-amber-500/20 px-1 py-0.5 text-[10px] font-semibold uppercase text-amber-400">
+                    <span className="shrink-0 rounded bg-amber-600/20 px-1 py-0.5 text-[10px] font-semibold uppercase text-amber-700">
                       Alert
                     </span>
                   )}
