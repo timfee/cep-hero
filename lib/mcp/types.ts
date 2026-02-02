@@ -186,10 +186,27 @@ export type FixtureData = {
   }>;
   policySchemas?: Array<{ name?: string; policyDescription?: string }>;
   chromeReports?: Record<string, unknown>;
+  enrollmentToken?: {
+    token?: string;
+    expiresAt?: string | null;
+    targetResource?: string;
+    status?: "valid" | "expired" | "revoked";
+    error?: string;
+  };
+  browsers?: Array<{
+    deviceId?: string;
+    machineName?: string;
+    browserVersion?: string;
+    lastActivityTime?: string;
+    orgUnitPath?: string;
+    enrolledTime?: string;
+  }>;
   errors?: {
     chromeEvents?: string;
     dlpRules?: string;
     connectorConfig?: string;
     orgUnits?: string;
+    enrollBrowser?: string;
+    browsers?: string;
   };
 };

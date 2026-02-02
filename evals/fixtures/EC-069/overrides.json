@@ -1,0 +1,22 @@
+{
+  "enrollmentToken": {
+    "token": "token-targeting-root-xyz789",
+    "expiresAt": "2026-12-31T23:59:59.000Z",
+    "targetResource": "customers/C00000000",
+    "status": "valid"
+  },
+  "orgUnits": [
+    {
+      "orgUnitId": "id:03ph8a2z23yjui6",
+      "orgUnitPath": "/",
+      "name": "cep-netnew.cc",
+      "parentOrgUnitId": null
+    },
+    {
+      "orgUnitId": "id:03ph8a2z221pcso",
+      "orgUnitPath": "/Enroll-Eng",
+      "name": "Enroll-Eng",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6"
+    }
+  ]
+}

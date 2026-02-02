@@ -1,0 +1,86 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "applicationName": "chrome"
+        },
+        "actor": {
+          "email": "vm-clone-user@example.com"
+        },
+        "events": [
+          {
+            "type": "BROWSER_ENROLLMENT_TYPE",
+            "name": "BROWSER_ENROLLED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "DUPLICATE-ID-abc123def456" },
+              { "name": "MACHINE_NAME", "value": "VM-Clone-A" },
+              { "name": "BROWSER_VERSION", "value": "144.0.7559.59" },
+              { "name": "DEVICE_PLATFORM", "value": "Windows 10" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:05:45.123Z",
+          "applicationName": "chrome"
+        },
+        "actor": {
+          "email": "vm-clone-user@example.com"
+        },
+        "events": [
+          {
+            "type": "BROWSER_ENROLLMENT_TYPE",
+            "name": "BROWSER_ENROLLED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "DUPLICATE-ID-abc123def456" },
+              { "name": "MACHINE_NAME", "value": "VM-Clone-B" },
+              { "name": "BROWSER_VERSION", "value": "144.0.7559.59" },
+              { "name": "DEVICE_PLATFORM", "value": "Windows 10" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:10:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "POLICY_CONFLICT_TYPE",
+            "name": "POLICY_CONFLICT_DETECTED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "DUPLICATE-ID-abc123def456" },
+              { "name": "CONFLICT_REASON", "value": "DUPLICATE_MACHINE_IDENTIFIER" },
+              { "name": "AFFECTED_MACHINES", "value": "VM-Clone-A, VM-Clone-B" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "browsers": [
+    {
+      "deviceId": "DUPLICATE-ID-abc123def456",
+      "machineName": "VM-Clone-A",
+      "browserVersion": "144.0.7559.59",
+      "lastActivityTime": "2026-01-20T04:02:22.802Z",
+      "orgUnitPath": "/Engineering",
+      "enrolledTime": "2026-01-15T10:00:00.000Z"
+    },
+    {
+      "deviceId": "DUPLICATE-ID-abc123def456",
+      "machineName": "VM-Clone-B",
+      "browserVersion": "144.0.7559.59",
+      "lastActivityTime": "2026-01-20T04:05:45.123Z",
+      "orgUnitPath": "/Engineering",
+      "enrolledTime": "2026-01-20T04:05:00.000Z"
+    }
+  ]
+}
