@@ -1,11 +1,7 @@
 import { google as googleModel } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { OAuth2Client } from "google-auth-library";
-import {
-  google as googleApis,
-  chromemanagement_v1,
-  chromepolicy_v1,
-} from "googleapis";
+import { google as googleApis, chromepolicy_v1 } from "googleapis";
 import { z } from "zod";
 
 import type { VectorSearchResult } from "@/lib/upstash/search";
@@ -417,7 +413,9 @@ export class CepToolExecutor {
         policySchemaId: string;
         policyTargetKey: { targetResource: string };
       };
-    }) => Promise<{ data: { name?: string | null; expirationTime?: string | null } }>;
+    }) => Promise<{
+      data: { name?: string | null; expirationTime?: string | null };
+    }>;
 
     const customers = service.customers as unknown as {
       policies?: {
@@ -427,8 +425,7 @@ export class CepToolExecutor {
     const normalizedTargetResource = orgUnitId
       ? buildOrgUnitTargetResource(orgUnitId)
       : "";
-    const targetResource =
-      normalizedTargetResource || "customers/my_customer";
+    const targetResource = normalizedTargetResource || "customers/my_customer";
     console.log("[enroll-browser] request", { orgUnitId, targetResource });
     await this.logApi("google.request.enroll-browser", {
       endpoint:
@@ -555,7 +552,6 @@ export class CepToolExecutor {
       });
 
       let rootOrgUnitId = "";
-      let rootOrgUnitPath = "";
       let ouFetchError: string | null = null;
       try {
         if (!directory.orgunits?.list) {
@@ -569,7 +565,6 @@ export class CepToolExecutor {
           orgUnits?.data.organizationUnits ?? []
         );
         rootOrgUnitId = resolved.id;
-        rootOrgUnitPath = resolved.path;
       } catch (error) {
         ouFetchError = getErrorMessage(error);
         console.log(
@@ -582,10 +577,11 @@ export class CepToolExecutor {
         new Set(
           [
             rootOrgUnitId ? buildOrgUnitTargetResource(rootOrgUnitId) : "",
-            rootOrgUnitPath ? buildOrgUnitTargetResource(rootOrgUnitPath) : "",
-            // Fall back to the root org unit target resource.
-            "orgunits/my_customer",
-          ].filter(Boolean)
+            // Fall back to empty string for customer-level policies.
+            // Note: rootOrgUnitPath is not used here because paths (like "/Engineering")
+            // are not valid for the orgunits/ prefix - only numeric IDs work.
+            "",
+          ].filter((v) => v !== undefined)
         )
       );
 
