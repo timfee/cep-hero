@@ -121,10 +121,10 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
               </TooltipContent>
             </Tooltip>
           </div>
-          {output.attemptedTargets && output.attemptedTargets.length > 0 && (
+          {(output.attemptedTargets?.length ?? 0) > 0 && (
             <p className="text-xs text-muted-foreground">
-              Checked {output.attemptedTargets.length} location
-              {output.attemptedTargets.length !== 1 ? "s" : ""}
+              Checked {output.attemptedTargets?.length} location
+              {output.attemptedTargets?.length !== 1 ? "s" : ""}
             </p>
           )}
         </div>
