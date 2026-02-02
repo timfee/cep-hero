@@ -1120,20 +1120,21 @@ export class CepToolExecutor {
  * Check if an error indicates token expiration requiring re-authentication.
  * Returns true for 401 errors or messages indicating invalid credentials.
  */
-function isTokenExpiredError(
+export function isTokenExpiredError(
   code: number | string | undefined,
   message: string | undefined
 ): boolean {
   const numericCode =
     typeof code === "string" ? Number.parseInt(code, 10) : code;
 
-  if (numericCode === HTTP_UNAUTHORIZED) {
+  if (!Number.isNaN(numericCode) && numericCode === HTTP_UNAUTHORIZED) {
     return true;
   }
 
   if (message) {
+    const lowerMessage = message.toLowerCase();
     for (const pattern of TOKEN_EXPIRATION_PATTERNS) {
-      if (message.includes(pattern)) {
+      if (lowerMessage.includes(pattern.toLowerCase())) {
         return true;
       }
     }
