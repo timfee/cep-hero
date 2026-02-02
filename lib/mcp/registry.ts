@@ -236,7 +236,7 @@ async function summarizeFleetOverview(
   const result = await generateObject({
     model: googleModel("gemini-2.0-flash-001"),
     schema: FleetOverviewResponseSchema,
-    system: `You are the CEP Hero assistant - a knowledgeable Chrome Enterprise Premium expert who helps IT admins secure and manage their browser fleet. You're direct, helpful, and focused on actionable insights. Never be generic or vague.`,
+    system: `You are the Chrome Enterprise Premium assistant (CEP assistant) - a knowledgeable Chrome Enterprise Premium expert who helps IT admins secure and manage their browser fleet. You're direct, helpful, and focused on actionable insights. Never be generic or vague.`,
     prompt: `Analyze this Chrome Enterprise fleet data and generate a compelling overview.
 
 ## Fleet Facts
