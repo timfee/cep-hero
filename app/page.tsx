@@ -126,11 +126,11 @@ export default function Home() {
 
   return (
     <main className="linear-bg min-h-screen">
-      <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="relative z-10 mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-10 lg:py-8 xl:px-12 xl:py-10">
         {/* Header with User Info - Stagger 1 */}
         <header
           className={cn(
-            "mb-6 flex items-start justify-between",
+            "mb-6 flex items-start justify-between lg:mb-8 xl:mb-10",
             isVisible && "animate-fade-up delay-0"
           )}
         >
@@ -172,11 +172,11 @@ export default function Home() {
         </header>
 
         {/* Main Layout */}
-        <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="grid gap-6 lg:grid-cols-[1fr_340px] lg:gap-8 xl:grid-cols-[1fr_380px] xl:gap-10">
           {/* Primary: Chat Console - Stagger 2 */}
           <div
             className={cn(
-              "min-h-[600px]",
+              "min-h-[600px] lg:min-h-[700px]",
               isVisible && "animate-scale-fade delay-150"
             )}
           >
@@ -184,7 +184,7 @@ export default function Home() {
           </div>
 
           {/* Sidebar - Stagger 3+ */}
-          <aside className="space-y-5">
+          <aside className="space-y-5 lg:space-y-6 xl:space-y-8">
             {/* Quick Actions */}
             <section
               className={cn(isVisible && "animate-fade-up delay-300")}
@@ -198,7 +198,7 @@ export default function Home() {
                     key={action.label}
                     onClick={() => dispatchCommand(action.label)}
                     className={cn(
-                      "group flex w-full items-center justify-between rounded-lg border border-border bg-card/80 backdrop-blur-sm px-4 py-3 text-left transition-all hover:border-foreground/20 hover:bg-accent/80",
+                      "group flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card/80 backdrop-blur-sm px-4 py-3 text-left transition-all hover:border-foreground/20 hover:bg-accent/80 active:scale-[0.99] lg:px-5 lg:py-4",
                       isVisible && "animate-fade-up",
                       idx === 0 && "delay-300",
                       idx === 1 && "delay-400",
@@ -233,7 +233,7 @@ export default function Home() {
                     key={suggestion}
                     onClick={() => dispatchCommand(suggestion)}
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground",
+                      "flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground active:scale-[0.99] lg:px-4 lg:py-2.5",
                       isVisible && "animate-fade-in",
                       idx === 0 && "delay-500",
                       idx === 1 && "delay-600",
@@ -255,14 +255,14 @@ export default function Home() {
                 <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Fleet Status
                 </h2>
-                <div className="rounded-lg border border-border bg-card/80 backdrop-blur-sm p-4">
-                  <div className="grid grid-cols-2 gap-4">
+                <div className="rounded-lg border border-border bg-card/80 backdrop-blur-sm p-4 lg:p-5">
+                  <div className="grid grid-cols-2 gap-4 lg:gap-5">
                     {overview.postureCards.slice(0, 4).map((card, idx) => (
                       <button
                         key={card.label}
                         onClick={() => dispatchCommand(card.action)}
                         className={cn(
-                          "text-left transition-opacity hover:opacity-70",
+                          "cursor-pointer text-left transition-all hover:opacity-70 active:scale-[0.98]",
                           isVisible && "animate-fade-in",
                           idx === 0 && "delay-600",
                           idx === 1 && "delay-700"
