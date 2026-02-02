@@ -1,47 +1,36 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
+import { ArrowRight, MessageSquare, LogOut, User } from "lucide-react";
 
 import { ChatConsole } from "@/components/chat/chat-console";
 import { Button } from "@/components/ui/button";
-import { cn } from "@/lib/utils";
-import { ArrowRight, MessageSquare } from "lucide-react";
-
-type OverviewCard = {
-  label: string;
-  value: string;
-  note: string;
-  source: string;
-  action: string;
-  lastUpdated?: string;
-};
-
-type OverviewData = {
-  headline: string;
-  summary: string;
-  postureCards: OverviewCard[];
-  suggestions: string[];
-  sources: string[];
-};
-
-const DEFAULT_SUGGESTIONS = [
-  "Show recent Chrome events",
-  "List connector policies and targets",
-  "Check DLP rules and alerts",
-  "Retry connector fetch",
-];
-
-const QUICK_ACTIONS = [
-  { label: "Retry connector fetch", description: "Re-check connector status" },
-  { label: "List connector policies", description: "View all policies" },
-  { label: "Check org units", description: "Inspect OU structure" },
-  { label: "Check auth scopes", description: "Verify permissions" },
-];
+import { useAuth } from "@/hooks/use-auth";
+import {
+  type OverviewData,
+  normalizeOverview,
+  createDefaultOverview,
+  DEFAULT_SUGGESTIONS,
+  QUICK_ACTIONS,
+} from "@/lib/overview";
 
 export default function Home() {
+  const router = useRouter();
+  const { user, isLoading, isAuthenticated, signOut } = useAuth();
   const [overview, setOverview] = useState<OverviewData | null>(null);
 
+  // Redirect to sign-in if not authenticated
   useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      router.replace("/sign-in");
+    }
+  }, [isLoading, isAuthenticated, router]);
+
+  // Fetch overview data
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
     let active = true;
     async function load() {
       try {
@@ -49,15 +38,7 @@ export default function Home() {
         if (!res.ok) throw new Error(`overview ${res.status}`);
         const data = await res.json();
         if (!active) return;
-        setOverview(
-          normalizeOverview(data) ?? {
-            headline: "Fleet posture",
-            summary: "",
-            postureCards: [],
-            suggestions: DEFAULT_SUGGESTIONS,
-            sources: [],
-          }
-        );
+        setOverview(normalizeOverview(data) ?? createDefaultOverview());
       } catch {
         if (!active) return;
         setOverview(null);
@@ -67,11 +48,11 @@ export default function Home() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [isAuthenticated]);
 
   const suggestions = useMemo(() => {
     if (overview?.suggestions?.length) return overview.suggestions;
-    return DEFAULT_SUGGESTIONS;
+    return [...DEFAULT_SUGGESTIONS];
   }, [overview]);
 
   const dispatchCommand = (command: string) => {
@@ -80,17 +61,71 @@ export default function Home() {
     );
   };
 
+  const handleSignOut = async () => {
+    try {
+      await signOut();
+      router.replace("/sign-in");
+    } catch {
+      // Error handled by hook
+    }
+  };
+
+  // Show loading state while checking auth
+  if (isLoading) {
+    return (
+      <main className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading...</p>
+        </div>
+      </main>
+    );
+  }
+
+  // Don't render if not authenticated (will redirect)
+  if (!isAuthenticated) {
+    return null;
+  }
+
   return (
     <main className="min-h-screen bg-background">
       <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-        {/* Minimal Header */}
-        <header className="mb-6">
-          <h1 className="text-lg font-semibold text-foreground">
-            CEP Command Center
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Chrome Enterprise Premium diagnostics and remediation
-          </p>
+        {/* Header with User Info */}
+        <header className="mb-6 flex items-start justify-between">
+          <div>
+            <h1 className="text-lg font-semibold text-foreground">
+              CEP Command Center
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Chrome Enterprise Premium diagnostics and remediation
+            </p>
+          </div>
+          {user && (
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
+                {user.image ? (
+                  <img
+                    src={user.image}
+                    alt=""
+                    className="h-6 w-6 rounded-full"
+                  />
+                ) : (
+                  <User className="h-4 w-4 text-muted-foreground" />
+                )}
+                <span className="text-sm text-foreground">
+                  {user.name || user.email}
+                </span>
+              </div>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleSignOut}
+                aria-label="Sign out"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
         </header>
 
         {/* Main Layout */}
@@ -178,21 +213,4 @@ export default function Home() {
       </div>
     </main>
   );
-}
-
-function normalizeOverview(data: unknown): OverviewData | null {
-  if (!data || typeof data !== "object") return null;
-  const obj = data as Record<string, unknown>;
-  const postureCards = Array.isArray(obj.postureCards)
-    ? (obj.postureCards as OverviewCard[])
-    : [];
-  return {
-    headline: typeof obj.headline === "string" ? obj.headline : "Fleet posture",
-    summary: typeof obj.summary === "string" ? obj.summary : "",
-    postureCards,
-    suggestions: Array.isArray(obj.suggestions)
-      ? (obj.suggestions as string[])
-      : [],
-    sources: Array.isArray(obj.sources) ? (obj.sources as string[]) : [],
-  };
 }
