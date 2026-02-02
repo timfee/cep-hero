@@ -17,45 +17,45 @@
 
 ## Completed Units (Ready for Integration)
 
-| File                                  | Session | Unit Test | Timestamp           |
-| ------------------------------------- | ------- | --------- | ------------------- |
-| evals/registry.json                   | ses_1   | n/a       | 2026-02-01T11:44:30 |
-| tests/evals/common-challenges.test.ts | ses_2   | n/a       | 2026-02-01T12:30:40 |
-| tests/evals/diagnostics.test.ts       | ses_2   | n/a       | 2026-02-01T12:30:40 |
-| tests/evals/test-plan.test.ts         | ses_2   | n/a       | 2026-02-01T12:30:40 |
-| package.json                          | ses_2   | n/a       | 2026-02-01T12:30:40 |
-| lib/test-helpers/eval-runner.ts       | ses_worker_base_delta | n/a | 2026-02-01T13:54:50 |
-| tests/evals/common-challenges.test.ts | ses_worker_base_delta | n/a | 2026-02-01T13:54:50 |
-| tests/evals/diagnostics.test.ts       | ses_worker_base_delta | n/a | 2026-02-01T13:54:50 |
-| tests/evals/test-plan.test.ts         | ses_worker_base_delta | n/a | 2026-02-01T13:54:50 |
-| evals/fixtures/EC-003/overrides.json  | ses_worker_base_delta | n/a | 2026-02-01T13:54:50 |
-| evals/registry.json                   | ses_worker_base_delta | n/a | 2026-02-01T13:54:50 |
-| evals/README.md                       | ses_worker_docs_base_delta   | n/a       | 2026-02-01T13:52:20 |
-| README.md                             | ses_worker_docs_base_delta   | n/a       | 2026-02-01T13:52:20 |
-| SETUP.md                              | ses_worker_docs_base_delta   | n/a       | 2026-02-01T13:52:20 |
-| lib/test-helpers/chat-client.ts       | ses_worker_sync_fix | n/a | 2026-02-01T14:22:00 |
-| lib/test-helpers/chat-client.ts       | ses_worker_sync_investigate | n/a | 2026-02-01T14:20:45 |
-| scripts/index-helpcenter.ts           | ses_worker_sync_rootcause | n/a | 2026-02-01T14:18:15 |
-| evals/fixtures/base/api-base.json     | ses_worker_fixtures_capture  | n/a       | 2026-02-01T14:19:10 |
-| evals/fixtures/base/api-base.json     | ses_worker_fixtures_refresh | n/a       | 2026-02-01T14:18:56 |
-| tests/evals/common-challenges.test.ts | commander | pass | 2026-02-01T14:24:19 |
-| tests/evals/diagnostics.test.ts (EVAL_LIMIT=1) | commander | pass | 2026-02-01T14:39:04 |
-| tests/evals/test-plan.test.ts (EVAL_LIMIT=1) | commander | pass | 2026-02-01T14:39:17 |
-| tests/evals/diagnostics.test.ts (EVAL_FAKE_CHAT=1) | commander | pass | 2026-02-01T14:48:09 |
-| tests/evals/test-plan.test.ts (EVAL_FAKE_CHAT=1) | commander | pass | 2026-02-01T14:48:16 |
-| tests/evals/diagnostics.test.ts (real chat) | commander | timeout | 2026-02-01T14:46:36 |
-| tests/evals/diagnostics.test.ts (EVAL_FAKE_CHAT_FALLBACK=1) | commander | timeout | 2026-02-01T15:00:34 |
-| tests/evals/common-challenges.test.ts + diagnostics.test.ts + test-plan.test.ts (EVAL_FAKE_CHAT=1) | commander | pass | 2026-02-01T14:56:41 |
-| tests/evals/diagnostics.test.ts | ses_4 | n/a | 2026-02-01T23:08:39 |
-| tests/evals/test-plan.test.ts | ses_4 | n/a | 2026-02-01T23:08:39 |
-| tests/evals/diagnostics.test.ts | ses_worker_eval_pacing | n/a | 2026-02-01T23:09:08 |
-| tests/evals/test-plan.test.ts | ses_worker_eval_pacing | n/a | 2026-02-01T23:09:08 |
-| app/api/chat/route.ts | ses_worker_eval_stub | lsp pass; tests timeout | 2026-02-01T23:10:06 |
-| lib/test-helpers/chat-client.ts | ses_worker_eval_stub | lsp pass; tests timeout | 2026-02-01T23:10:06 |
-| tests/evals/diagnostics.test.ts | commander | pass (EVAL_TEST_MODE=1) | 2026-02-01T23:19:36 |
-| tests/evals/test-plan.test.ts | commander | pass (EVAL_TEST_MODE=1) | 2026-02-01T23:19:40 |
-| tests/evals/diagnostics.test.ts | commander | timeout (real chat 120s) | 2026-02-01T23:30:25 |
-| tests/evals/test-plan.test.ts | commander | timeout (real chat 120s) | 2026-02-01T23:32:29 |
+| File                                                                                               | Session                     | Unit Test                | Timestamp           |
+| -------------------------------------------------------------------------------------------------- | --------------------------- | ------------------------ | ------------------- |
+| evals/registry.json                                                                                | ses_1                       | n/a                      | 2026-02-01T11:44:30 |
+| tests/evals/common-challenges.test.ts                                                              | ses_2                       | n/a                      | 2026-02-01T12:30:40 |
+| tests/evals/diagnostics.test.ts                                                                    | ses_2                       | n/a                      | 2026-02-01T12:30:40 |
+| tests/evals/test-plan.test.ts                                                                      | ses_2                       | n/a                      | 2026-02-01T12:30:40 |
+| package.json                                                                                       | ses_2                       | n/a                      | 2026-02-01T12:30:40 |
+| lib/test-helpers/eval-runner.ts                                                                    | ses_worker_base_delta       | n/a                      | 2026-02-01T13:54:50 |
+| tests/evals/common-challenges.test.ts                                                              | ses_worker_base_delta       | n/a                      | 2026-02-01T13:54:50 |
+| tests/evals/diagnostics.test.ts                                                                    | ses_worker_base_delta       | n/a                      | 2026-02-01T13:54:50 |
+| tests/evals/test-plan.test.ts                                                                      | ses_worker_base_delta       | n/a                      | 2026-02-01T13:54:50 |
+| evals/fixtures/EC-003/overrides.json                                                               | ses_worker_base_delta       | n/a                      | 2026-02-01T13:54:50 |
+| evals/registry.json                                                                                | ses_worker_base_delta       | n/a                      | 2026-02-01T13:54:50 |
+| evals/README.md                                                                                    | ses_worker_docs_base_delta  | n/a                      | 2026-02-01T13:52:20 |
+| README.md                                                                                          | ses_worker_docs_base_delta  | n/a                      | 2026-02-01T13:52:20 |
+| SETUP.md                                                                                           | ses_worker_docs_base_delta  | n/a                      | 2026-02-01T13:52:20 |
+| lib/test-helpers/chat-client.ts                                                                    | ses_worker_sync_fix         | n/a                      | 2026-02-01T14:22:00 |
+| lib/test-helpers/chat-client.ts                                                                    | ses_worker_sync_investigate | n/a                      | 2026-02-01T14:20:45 |
+| scripts/index-helpcenter.ts                                                                        | ses_worker_sync_rootcause   | n/a                      | 2026-02-01T14:18:15 |
+| evals/fixtures/base/api-base.json                                                                  | ses_worker_fixtures_capture | n/a                      | 2026-02-01T14:19:10 |
+| evals/fixtures/base/api-base.json                                                                  | ses_worker_fixtures_refresh | n/a                      | 2026-02-01T14:18:56 |
+| tests/evals/common-challenges.test.ts                                                              | commander                   | pass                     | 2026-02-01T14:24:19 |
+| tests/evals/diagnostics.test.ts (EVAL_LIMIT=1)                                                     | commander                   | pass                     | 2026-02-01T14:39:04 |
+| tests/evals/test-plan.test.ts (EVAL_LIMIT=1)                                                       | commander                   | pass                     | 2026-02-01T14:39:17 |
+| tests/evals/diagnostics.test.ts (EVAL_FAKE_CHAT=1)                                                 | commander                   | pass                     | 2026-02-01T14:48:09 |
+| tests/evals/test-plan.test.ts (EVAL_FAKE_CHAT=1)                                                   | commander                   | pass                     | 2026-02-01T14:48:16 |
+| tests/evals/diagnostics.test.ts (real chat)                                                        | commander                   | timeout                  | 2026-02-01T14:46:36 |
+| tests/evals/diagnostics.test.ts (EVAL_FAKE_CHAT_FALLBACK=1)                                        | commander                   | timeout                  | 2026-02-01T15:00:34 |
+| tests/evals/common-challenges.test.ts + diagnostics.test.ts + test-plan.test.ts (EVAL_FAKE_CHAT=1) | commander                   | pass                     | 2026-02-01T14:56:41 |
+| tests/evals/diagnostics.test.ts                                                                    | ses_4                       | n/a                      | 2026-02-01T23:08:39 |
+| tests/evals/test-plan.test.ts                                                                      | ses_4                       | n/a                      | 2026-02-01T23:08:39 |
+| tests/evals/diagnostics.test.ts                                                                    | ses_worker_eval_pacing      | n/a                      | 2026-02-01T23:09:08 |
+| tests/evals/test-plan.test.ts                                                                      | ses_worker_eval_pacing      | n/a                      | 2026-02-01T23:09:08 |
+| app/api/chat/route.ts                                                                              | ses_worker_eval_stub        | lsp pass; tests timeout  | 2026-02-01T23:10:06 |
+| lib/test-helpers/chat-client.ts                                                                    | ses_worker_eval_stub        | lsp pass; tests timeout  | 2026-02-01T23:10:06 |
+| tests/evals/diagnostics.test.ts                                                                    | commander                   | pass (EVAL_TEST_MODE=1)  | 2026-02-01T23:19:36 |
+| tests/evals/test-plan.test.ts                                                                      | commander                   | pass (EVAL_TEST_MODE=1)  | 2026-02-01T23:19:40 |
+| tests/evals/diagnostics.test.ts                                                                    | commander                   | timeout (real chat 120s) | 2026-02-01T23:30:25 |
+| tests/evals/test-plan.test.ts                                                                      | commander                   | timeout (real chat 120s) | 2026-02-01T23:32:29 |
 
 ## Pending Integration
 

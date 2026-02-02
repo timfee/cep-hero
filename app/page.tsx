@@ -1,27 +1,5 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-
-import { ChatConsole } from "@/components/chat/ChatConsole";
-import {
-  DashboardPanel,
-  DashboardPanelActions,
-  DashboardPanelContent,
-  DashboardPanelDescription,
-  DashboardPanelHeader,
-  DashboardPanelTitle,
-} from "@/components/ui/dashboard-panel";
-import { StatusBadge } from "@/components/ui/status-badge";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { cn } from "@/lib/utils";
 import {
   AlertTriangle,
   ArrowRight,
@@ -30,6 +8,28 @@ import {
   ShieldCheck,
   Telescope,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+
+import { ChatConsole } from "@/components/chat/ChatConsole";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  DashboardPanel,
+  DashboardPanelActions,
+  DashboardPanelContent,
+  DashboardPanelDescription,
+  DashboardPanelHeader,
+  DashboardPanelTitle,
+} from "@/components/ui/dashboard-panel";
+import { Separator } from "@/components/ui/separator";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { cn } from "@/lib/utils";
 
 type OverviewCard = {
   label: string;
@@ -127,7 +127,11 @@ export default function Home() {
                 connectors and DLP healthy.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3" role="status" aria-label="System status indicators">
+            <div
+              className="flex flex-wrap gap-3"
+              role="status"
+              aria-label="System status indicators"
+            >
               <StatusBadge
                 icon={ShieldCheck}
                 label="Auth"
@@ -168,7 +172,10 @@ export default function Home() {
           </div>
 
           {/* Sidebar Panels */}
-          <aside className="flex flex-col gap-4" aria-label="Quick actions and suggestions">
+          <aside
+            className="flex flex-col gap-4"
+            aria-label="Quick actions and suggestions"
+          >
             {/* Playbooks Panel */}
             <DashboardPanel>
               <DashboardPanelHeader>

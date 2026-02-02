@@ -4,12 +4,14 @@ import { useChat } from "@ai-sdk/react";
 import { SendHorizontal, Sparkles, User } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+import { Loader } from "@/components/ai-elements/loader";
 import {
   Message,
   MessageAction,
   MessageActions,
   MessageContent,
 } from "@/components/ai-elements/message";
+import { Button } from "@/components/ui/button";
 import {
   DashboardPanel,
   DashboardPanelContent,
@@ -17,10 +19,8 @@ import {
   DashboardPanelHeader,
   DashboardPanelTitle,
 } from "@/components/ui/dashboard-panel";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { Loader } from "@/components/ai-elements/loader";
 
 export function ChatConsole() {
   const { messages, sendMessage, status } = useChat();
@@ -104,7 +104,7 @@ export function ChatConsole() {
             </div>
           )}
 
-          {messages.map((message) => {
+          {messages.map((message, index) => {
             const isUser = message.role === "user";
             const actions = (message.metadata as Record<string, unknown>)
               ?.actions as
@@ -117,7 +117,10 @@ export function ChatConsole() {
               | undefined;
 
             return (
-              <Message key={message.id} from={isUser ? "user" : "assistant"}>
+              <Message
+                key={`${message.id ?? "msg"}-${index}`}
+                from={isUser ? "user" : "assistant"}
+              >
                 <div className="flex items-center gap-2">
                   <div
                     className={cn(

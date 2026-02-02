@@ -77,4 +77,50 @@ describe("buildEvidence connector handling", () => {
     expect(connectorCheck?.status).toBe("pass");
     expect(evidence.connectorAnalysis?.flag).toBe(false);
   });
+
+  it("surfaces missing required scopes when auth debug shows gaps", () => {
+    const evidence = buildEvidenceForTest({
+      eventsResult: { events: [] },
+      dlpResult: { rules: [] },
+      connectorResult: {
+        status: "Resolved",
+        policySchemas: [],
+        value: makeConnectorPolicies(["orgunits/root"]),
+        targetResource: "orgunits/root",
+      },
+      authDebugResult: {
+        scope: "https://www.googleapis.com/auth/admin.directory.user",
+        expiresIn: 1000,
+        issuedTo: undefined,
+      },
+    });
+
+    const authCheck = evidence.checks?.find((c) => c.name === "Auth scopes");
+    expect(authCheck?.status).toBe("fail");
+    expect(
+      evidence.gaps?.some((gap) =>
+        gap.why.includes("Token lacks required scopes")
+      )
+    ).toBe(true);
+  });
+
+  it("records connector resolve errors as gaps", () => {
+    const evidence = buildEvidenceForTest({
+      eventsResult: { events: [] },
+      dlpResult: { rules: [] },
+      connectorResult: {
+        error: "Could not determine policy target (root org unit).",
+        suggestion: "Re-authenticate",
+        policySchemas: [],
+      },
+    });
+
+    const connectorCheck = evidence.checks?.find(
+      (c) => c.name === "Connector policies"
+    );
+    expect(connectorCheck?.status).toBe("unknown");
+    expect(
+      evidence.gaps?.some((gap) => gap.missing.includes("Connector policies"))
+    ).toBe(true);
+  });
 });

@@ -11,6 +11,7 @@ export function buildEvidenceForTest({
   dlpResult,
   connectorResult,
   connectorAnalysis,
+  authDebugResult,
 }: {
   eventsResult: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>>;
   dlpResult: Awaited<ReturnType<CepToolExecutor["listDLPRules"]>>;
@@ -18,6 +19,7 @@ export function buildEvidenceForTest({
     ReturnType<CepToolExecutor["getChromeConnectorConfiguration"]>
   >;
   connectorAnalysis?: ReturnType<typeof analyzeConnectorPolicies>;
+  authDebugResult?: Awaited<ReturnType<CepToolExecutor["debugAuth"]>>;
 }): EvidencePayload {
   const analysis =
     connectorAnalysis ??
@@ -30,6 +32,10 @@ export function buildEvidenceForTest({
   const checks: EvidencePayload["checks"] = [];
   const gaps: EvidencePayload["gaps"] = [];
   const signals: EvidencePayload["signals"] = [];
+  const requiredScopes = [
+    "https://www.googleapis.com/auth/admin.directory.orgunit",
+    "https://www.googleapis.com/auth/chrome.management.policy",
+  ];
 
   // Events minimal handling for tests
   if ("events" in eventsResult) {
@@ -78,6 +84,47 @@ export function buildEvidenceForTest({
             "Policies are applied at customer level; must target org units or groups.",
         });
       }
+    }
+  } else if ("error" in connectorResult) {
+    checks.push({
+      name: "Connector policies",
+      status: "unknown",
+      source: "Chrome Policy",
+      detail: connectorResult.error,
+    });
+    gaps.push({
+      missing: "Connector policies",
+      why: connectorResult.error,
+    });
+  }
+
+  if (authDebugResult) {
+    if ("scope" in authDebugResult) {
+      const scopes = authDebugResult.scope?.split(" ").filter(Boolean) ?? [];
+      const missing = requiredScopes.filter((scope) => !scopes.includes(scope));
+      checks.push({
+        name: "Auth scopes",
+        status: missing.length === 0 ? "pass" : "fail",
+        source: "OAuth tokeninfo",
+        detail:
+          missing.length === 0
+            ? "All required scopes present"
+            : `Missing: ${missing.join(", ")}`,
+      });
+      if (missing.length) {
+        gaps.push({
+          missing: "Admin scopes",
+          why: `Token lacks required scopes: ${missing.join(", ")}`,
+        });
+      }
+    } else if ("error" in authDebugResult) {
+      checks.push({
+        name: "Auth scopes",
+        status: "unknown",
+        source: "OAuth tokeninfo",
+        detail: authDebugResult.error,
+      });
+      gaps.push({ missing: "Token scope insight", why: authDebugResult.error });
     }
   }
 
