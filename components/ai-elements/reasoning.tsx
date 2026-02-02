@@ -43,7 +43,7 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
   duration?: number;
 };
 
-const AUTO_CLOSE_DELAY = 1000;
+const AUTO_CLOSE_DELAY = 5000;
 const MS_IN_S = 1000;
 
 export const Reasoning = memo(
@@ -123,7 +123,13 @@ export type ReasoningTriggerProps = ComponentProps<
 };
 
 const ThinkingAnimation = () => (
-  <span className="text-muted-foreground">Thinking...</span>
+  <span className="flex items-center gap-2 text-primary">
+    <span className="relative flex h-2 w-2">
+      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-75" />
+      <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+    </span>
+    Analyzing...
+  </span>
 );
 
 const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
@@ -148,7 +154,7 @@ export const ReasoningTrigger = memo(
     return (
       <CollapsibleTrigger
         className={cn(
-          "flex w-full items-center gap-2 text-muted-foreground text-sm transition-colors hover:text-foreground",
+          "flex w-full items-center gap-2 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-sm text-foreground transition-all hover:border-primary/40 hover:bg-primary/10",
           className
         )}
         {...props}
@@ -186,7 +192,7 @@ export const ReasoningContent = memo(
       <CollapsibleContent>
         <div
           className={cn(
-            "mt-2 text-xs text-muted-foreground leading-relaxed",
+            "mt-3 rounded-lg border border-primary/10 bg-primary/5 p-4 text-sm text-foreground/80 leading-relaxed",
             className
           )}
           {...props}
