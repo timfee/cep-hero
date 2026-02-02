@@ -5,7 +5,7 @@
  * Usage:
  *   bun evals/run.ts                    # Run all evals
  *   EVAL_IDS=EC-001,EC-002 bun evals/run.ts  # Run specific cases
- *   EVAL_CATEGORY=diagnostics bun evals/run.ts  # Run by category
+ *   EVAL_CATEGORY=connector bun evals/run.ts  # Run by category
  *   EVAL_TAGS=enrollment bun evals/run.ts  # Run by tag
  *
  * Environment variables:

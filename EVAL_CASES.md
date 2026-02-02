@@ -12,7 +12,7 @@ conversation examples aligned with the test suite.
 
 ## Conventions
 
-- Case IDs are stable (`EC-001` .. `EC-082`).
+- Case IDs are stable (`EC-001` .. `EC-085`).
 - Test coverage is noted in the index.
 - Each case includes: Summary, Reproduction, Conversation, Expected result,
   Cleanup.
