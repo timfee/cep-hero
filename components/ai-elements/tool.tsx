@@ -2,8 +2,8 @@
 
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
 import type { ComponentProps, ReactNode } from "react";
-import { motion } from "framer-motion";
 
+import { motion } from "framer-motion";
 import {
   CheckCircleIcon,
   ChevronDownIcon,

@@ -1,7 +1,7 @@
 "use client";
 
-import { memo, useState } from "react";
 import { Loader2 } from "lucide-react";
+import { memo, useState, useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -27,6 +27,16 @@ export const ActionButtons = memo(function ActionButtons({
   disabled: globalDisabled,
 }: ActionButtonsProps) {
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   if (actions.length === 0) return null;
 
@@ -35,16 +45,23 @@ export const ActionButtons = memo(function ActionButtons({
     const cmd = action.command ?? action.label ?? action.id;
     setLoadingId(action.id);
     onAction?.(cmd);
+    // Clear any existing timeout before setting a new one
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+    }
     // Reset loading state after a short delay (action will typically navigate or update state)
-    setTimeout(() => setLoadingId(null), 1500);
+    timeoutRef.current = setTimeout(() => setLoadingId(null), 1500);
   };
 
   return (
     <div className={cn("flex flex-wrap gap-2 lg:gap-3", className)}>
       {actions.map((action) => {
         const isLoading = loadingId === action.id;
-        const isDisabled = globalDisabled || action.disabled || (loadingId !== null && !isLoading);
-        
+        const isDisabled =
+          globalDisabled ||
+          action.disabled ||
+          (loadingId !== null && !isLoading);
+
         return (
           <button
             key={action.id}
