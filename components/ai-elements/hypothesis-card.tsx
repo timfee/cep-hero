@@ -51,7 +51,7 @@ export const HypothesisCard = memo(function HypothesisCard({
           className
         )}
       >
-        <CollapsibleTrigger className="flex w-full items-start gap-2 p-3 text-left transition-colors hover:bg-muted/30">
+        <CollapsibleTrigger className="flex w-full cursor-pointer items-start gap-2 p-3 text-left transition-colors hover:bg-muted/30 lg:p-4">
           <Lightbulb className="h-3.5 w-3.5 shrink-0 text-muted-foreground mt-0.5" />
           <div className="min-w-0 flex-1 space-y-2">
             <p className="text-sm text-foreground leading-snug">
@@ -122,7 +122,7 @@ export const HypothesesList = memo(function HypothesesList({
       {!showAll && hiddenCount > 0 && (
         <button
           onClick={() => setShowAll(true)}
-          className="text-xs text-muted-foreground hover:text-foreground"
+          className="cursor-pointer text-xs text-muted-foreground transition-colors hover:text-foreground"
         >
           Show {hiddenCount} more
         </button>

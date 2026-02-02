@@ -107,6 +107,9 @@ export async function POST(req: Request) {
 
   const executor = new CepToolExecutor(accessTokenResponse.accessToken);
 
+  // Track structured data from diagnosis tool for message metadata
+  let diagnosisResult: Awaited<ReturnType<typeof diagnose>> | null = null;
+
   const result = streamText({
     model: google("gemini-2.0-flash-001"),
     messages: [{ role: "system", content: systemPrompt }, ...messages],
@@ -144,12 +147,41 @@ export async function POST(req: Request) {
       runDiagnosis: tool({
         description: "Run full diagnosis and return structured answer.",
         inputSchema: z.object({ prompt: z.string() }),
-        execute: async (args) => await diagnose(req, args.prompt),
+        execute: async (args) => {
+          const result = await diagnose(req, args.prompt);
+          diagnosisResult = result;
+          return result;
+        },
       }),
     },
   });
 
-  return result.toUIMessageStreamResponse();
+  // Return stream with structured data annotations when available
+  return result.toUIMessageStreamResponse({
+    sendReasoning: true,
+    getMessageMetadata: () => {
+      if (!diagnosisResult || "error" in diagnosisResult) return undefined;
+      
+      // Build structured evidence for the UI
+      const evidence = {
+        planSteps: diagnosisResult.planSteps,
+        hypotheses: diagnosisResult.hypotheses,
+        nextSteps: diagnosisResult.nextSteps,
+        missingQuestions: diagnosisResult.missingQuestions,
+        evidence: diagnosisResult.evidence,
+        connectorAnalysis: diagnosisResult.evidence?.connectorAnalysis,
+      };
+      
+      // Build action buttons from next steps
+      const actions = diagnosisResult.nextSteps?.map((step, i) => ({
+        id: `next-step-${i}`,
+        label: step,
+        command: step,
+      })) ?? [];
+      
+      return { evidence, actions };
+    },
+  });
 }
 
 /**
