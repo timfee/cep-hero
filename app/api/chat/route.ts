@@ -15,7 +15,7 @@ import { writeDebugLog } from "@/lib/debug-log";
 export const maxDuration = 30;
 
 /**
- * Handle streaming CEP diagnosis chat responses.
+ * Handle streaming CEP chat responses.
  */
 export async function POST(req: Request) {
   // 1. Authenticate and handle Test Mode logic
@@ -77,6 +77,5 @@ export async function POST(req: Request) {
   return createChatStream({
     messages,
     accessToken,
-    req,
   });
 }
