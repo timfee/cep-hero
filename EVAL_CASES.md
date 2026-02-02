@@ -19,33 +19,31 @@ conversation examples aligned with the test suite.
 
 ## Running evals
 
-- Start the server once (recommended for speed):
-  - `bun run dev`
-- Then run evals without server management:
-  - `bun run evals:run:fast`
-- Or run a single group without server management:
-  - `bun run evals:run:diag:fast`
-- Enable fixtures for deterministic log-driven cases:
-  - `EVAL_USE_FIXTURES=1 bun run evals:run:common:fast`
-- Enforce strict evidence checks (optional):
-  - `EVAL_STRICT_EVIDENCE=1 bun run evals:run:diag:fast`
-- Enforce rubric scoring (optional):
-  - `EVAL_RUBRIC_STRICT=1 bun run evals:run:diag:fast`
-- Use fixtures + strict evidence together:
-  - `EVAL_USE_FIXTURES=1 EVAL_STRICT_EVIDENCE=1 bun run evals:run:common:fast`
-- Warning-only gates (optional):
-  - `EVAL_WARN_MISSING_EVIDENCE=1 bun run evals:run:diag:fast`
-  - `EVAL_WARN_RUBRIC=1 bun run evals:run:diag:fast`
+Start the server once (recommended for speed):
 
-- Run a single eval by ID:
-  - `EVAL_IDS=EC-075 bun run evals:run:by-id`
-- Run only Test Plan evals:
-  - `bun run evals:run:plan`
-- Run only Diagnostics evals:
-  - `bun run evals:run:diag`
-- Run only Common Challenges evals:
-  - `bun run evals:run:common`
-- Run by tags (comma-separated):
-  - `EVAL_TAGS=dlp,connectors bun run evals:run:by-tag`
-- Limit the number of cases:
-  - `EVAL_LIMIT=5 bun run evals:run:diag`
+```bash
+bun run dev
+```
+
+Then run evals:
+
+```bash
+# Run all evals
+EVAL_USE_BASE=1 bun run evals
+
+# Run all evals (server already running)
+EVAL_USE_BASE=1 bun run evals:fast
+
+# Run a single eval by ID
+EVAL_IDS=EC-075 EVAL_USE_BASE=1 bun run evals
+
+# Run by category
+EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=policy EVAL_USE_BASE=1 bun run evals
+
+# Run by tags
+EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
+
+# Test mode (no AI calls)
+EVAL_TEST_MODE=1 bun run evals
+```

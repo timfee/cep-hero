@@ -1,25 +1,22 @@
 # CEP evals
 
-This directory holds eval definitions and run artifacts for the CEP assistant.
-Each eval is a short, well-defined scenario that checks whether the assistant responds in the right shape and with the right evidence.
+This directory holds eval definitions and run artifacts for the CEP assistant. Each eval is a short, well-defined scenario that checks whether the assistant responds in the right shape and with the right evidence.
 
 ## What is an eval
 
-An eval is a behavior check for a scenario. It answers a simple question: given
-this input, do we get a response with the right diagnosis, evidence, and next
-steps? It is not a unit test of a function. It is a contract for expected
-behavior.
+An eval is a behavior check for a scenario. It answers a simple question: given this input, do we get a response with the right diagnosis, evidence, and next steps? It is not a unit test of a function. It is a contract for expected behavior.
 
 ## What is a test
 
-Tests read the registry, call `/api/chat`, and enforce the response contract. By default they run in parallel with a small per-case pause.
+Tests (in `tests/` directory) verify code correctness with deterministic outcomes. Evals (here) assess AI behavior quality along multiple dimensions.
 
 ## Structure
 
-- `registry.json` contains the source of truth for all evals.
-- `cases/` contains one Markdown file per eval case.
-- `fixtures/` contains deterministic log samples and API snapshots.
-- `reports/` contains JSON output per run (gitignored).
+- `registry.json` - Source of truth for all 85 eval cases, organized by 15 failure-domain categories
+- `cases/` - One Markdown file per eval case (EC-001 through EC-085)
+- `fixtures/` - Deterministic log samples and API snapshots
+- `lib/` - Standalone eval runner (no bun:test dependency)
+- `reports/` - JSON output per run (gitignored)
 
 ## Running evals
 
@@ -29,41 +26,42 @@ Start the server once:
 bun run dev
 ```
 
-Then run evals without server management:
+Then run evals:
 
 ```bash
-bun run evals:run
-bun run evals:run:diag:fast
-bun run evals:run:plan:fast
-EVAL_USE_FIXTURES=1 bun run evals:run:common:fast
+# Run all evals
+EVAL_USE_BASE=1 bun run evals
+
+# Run without server management (faster if server already running)
+EVAL_USE_BASE=1 bun run evals:fast
+
+# Run with verbose output
+EVAL_USE_BASE=1 bun run evals:verbose
 ```
 
 Run a single eval:
 
 ```bash
-EVAL_IDS=EC-075 bun run evals:run:by-id
+EVAL_IDS=EC-075 EVAL_USE_BASE=1 bun run evals
 ```
 
-Run by tag or pattern:
+Run by category or tag:
 
 ```bash
-EVAL_TAGS=dlp,connectors bun run evals:run:by-tag
-TEST_PATTERN="EC-0(1|2|3)" bun run evals:run:pattern
+EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
 ```
 
-## Gates (configurable)
+## Environment variables
 
-Strict gates fail the run. Warning gates only log.
-
-- `EVAL_STRICT_EVIDENCE=1` enforces required evidence.
-- `EVAL_RUBRIC_STRICT=1` enforces rubric minimums.
-- `EVAL_WARN_MISSING_EVIDENCE=1` logs evidence gaps.
-- `EVAL_WARN_RUBRIC=1` logs rubric gaps.
-- `EVAL_USE_FIXTURES=1` attaches fixture text to prompts.
-- `EVAL_USE_BASE=1` attaches the base API snapshot.
-- `EVAL_TEST_MODE=1` asks `/api/chat` for a lightweight synthetic response when you run evals with base/fixtures. Use it to avoid quota and latency; real chat stays the default.
-
-Current fixtures are thin (EC-001/002/003 only). Add short, focused fixtures under `evals/fixtures/EC-###/` and reference them in `registry.json` when a case needs concrete evidence. Tests log per-case progress with `[eval][diagnostics]` / `[eval][test-plan]` prefixes.
+- `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
+- `EVAL_USE_FIXTURES=1` - Load case-specific overrides from `evals/fixtures/EC-###/`
+- `EVAL_IDS=EC-001,EC-002` - Run specific eval IDs
+- `EVAL_CATEGORY=connector` - Run evals in a category
+- `EVAL_TAGS=dlp` - Run evals with specific tags
+- `EVAL_MANAGE_SERVER=0` - Skip server lifecycle management
+- `EVAL_VERBOSE=1` - Enable verbose output
+- `EVAL_TEST_MODE=1` - Return synthetic responses (avoids quota/latency)
 
 ## Base snapshot + overrides
 
@@ -194,4 +192,4 @@ never regress, or see a customer failure mode you want to lock down.
 
 1. Create a case file in `cases/` with an EC ID.
 2. Add an entry in `registry.json` with tags, schema, and fixtures.
-3. Run it in isolation: `EVAL_IDS=EC-### bun run test:eval-id`.
+3. Run it in isolation: `EVAL_IDS=EC-### EVAL_USE_BASE=1 bun run evals`.
