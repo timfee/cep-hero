@@ -40,3 +40,6 @@
 - Stabilization plan: add per-case pacing queue between eval cases (~350ms default for real chat); introduce `/api/chat` test-mode stub gated by env flag to skip quota-heavy Cloud Identity/Reports calls; real chat remains default; chat-client sets the flag only for eval runs.
 - Eval overrides: JSON object overrides deep-merge onto `evals/fixtures/base/api-base.json` when `EVAL_USE_BASE=1`.
 - Precedence: base snapshot → registry/per-case overrides (in order) → fixtures appended after the merged base block.
+- Chat backend now streams via `streamText` in `app/api/chat/route.ts` with tool calls (CepToolExecutor) and no hardcoded next-steps overrides; `stream-diagnose.ts` delegates to the route.
+- Frontend chat state flows through `ChatContext` provider (no document CustomEvents); quick actions call context `sendMessage` directly.
+- CepToolExecutor hardening: resource normalization for org units, connector target logging, pagination support for `getChromeEvents`.

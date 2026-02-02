@@ -12,6 +12,7 @@ import {
   useLayoutEffect,
 } from "react";
 
+import { ChatProvider } from "@/components/chat/chat-context";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -380,8 +381,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <ActivityLogContext.Provider value={value}>
-      {children}
-      <ActivityPanel isOpen={isOpen} />
+      <ChatProvider>
+        {children}
+        <ActivityPanel isOpen={isOpen} />
+      </ChatProvider>
     </ActivityLogContext.Provider>
   );
 }

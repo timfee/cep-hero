@@ -1,7 +1,11 @@
 import { google as googleModel } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { OAuth2Client } from "google-auth-library";
-import { google as googleApis, chromepolicy_v1 } from "googleapis";
+import {
+  google as googleApis,
+  chromemanagement_v1,
+  chromepolicy_v1,
+} from "googleapis";
 import { z } from "zod";
 
 import type { VectorSearchResult } from "@/lib/upstash/search";
@@ -19,6 +23,10 @@ export const GetChromeEventsSchema = z.object({
     .number()
     .optional()
     .describe("Number of events to fetch (default 10)"),
+  pageToken: z
+    .string()
+    .optional()
+    .describe("Optional page token for pagination"),
 });
 
 /**
@@ -108,6 +116,29 @@ type OrgUnit = {
   orgUnitPath?: string | null;
 };
 
+function normalizeResource(value: string): string {
+  const trimmed = value.trim();
+  const stripped = trimmed.replace(/^id:/, "");
+  return stripped.replace(/\/{2,}/g, "/");
+}
+
+function buildOrgUnitTargetResource(value: string): string {
+  const normalized = normalizeResource(value);
+  if (!normalized || normalized === "/") {
+    return "";
+  }
+  const withoutLeading = normalized.startsWith("/")
+    ? normalized.slice(1)
+    : normalized;
+  if (
+    withoutLeading.startsWith("orgunits/") ||
+    withoutLeading.startsWith("customers/")
+  ) {
+    return normalizeResource(withoutLeading);
+  }
+  return normalizeResource(`orgunits/${withoutLeading}`);
+}
+
 /**
  * Extract deterministic fleet signals from tool outputs.
  */
@@ -189,12 +220,13 @@ export class CepToolExecutor {
    */
   async getChromeEvents({
     maxResults = 10,
+    pageToken,
   }: z.infer<typeof GetChromeEventsSchema>) {
-    console.log("[chrome-events] request", { maxResults });
+    console.log("[chrome-events] request", { maxResults, pageToken });
     await this.logApi("google.request.chrome-events", {
       endpoint: "https://admin.googleapis.com/admin/reports_v1/activities",
       method: "GET",
-      params: { maxResults, customerId: this.customerId },
+      params: { maxResults, pageToken, customerId: this.customerId },
     });
     const service = googleApis.admin({
       version: "reports_v1",
@@ -207,12 +239,14 @@ export class CepToolExecutor {
         applicationName: "chrome",
         maxResults,
         customerId: this.customerId,
+        pageToken,
       });
       console.log(
         "[chrome-events] response",
         JSON.stringify({
           count: res.data.items?.length ?? 0,
           sample: res.data.items?.[0]?.id,
+          nextPageToken: res.data.nextPageToken ?? null,
         })
       );
       recordActivity({
@@ -221,7 +255,7 @@ export class CepToolExecutor {
         method: "GET",
         status: 200,
         durationMs: Date.now() - start,
-        responsePreview: `items=${res.data.items?.length ?? 0}`,
+        responsePreview: `items=${res.data.items?.length ?? 0}, nextPageToken=${res.data.nextPageToken ?? ""}`,
         timestamp: Date.now(),
         kind: "workspace",
       });
@@ -229,8 +263,12 @@ export class CepToolExecutor {
         status: "ok",
         count: res.data.items?.length ?? 0,
         sample: res.data.items?.[0]?.id,
+        nextPageToken: res.data.nextPageToken ?? null,
       });
-      return { events: res.data.items || [] };
+      return {
+        events: res.data.items || [],
+        nextPageToken: res.data.nextPageToken ?? null,
+      };
     } catch (error: unknown) {
       const { code, message, errors } = getErrorDetails(error);
       console.log(
@@ -241,6 +279,7 @@ export class CepToolExecutor {
         code,
         message,
         errors,
+        pageToken,
       });
       recordActivity({
         id: crypto.randomUUID(),
@@ -270,7 +309,6 @@ export class CepToolExecutor {
       version: "v1",
       auth: this.auth,
     });
-    const listPolicies = getPoliciesList(service);
     console.log("[dlp-rules] request");
     await this.logApi("google.request.dlp-rules", {
       endpoint: "https://cloudidentity.googleapis.com/v1/policies",
@@ -279,14 +317,14 @@ export class CepToolExecutor {
     });
     const start = Date.now();
     try {
-      if (!listPolicies) {
+      if (!service.policies?.list) {
         return {
           error: "Cloud Identity policy client unavailable",
           suggestion: "Confirm Cloud Identity API is enabled for this project.",
         };
       }
 
-      const res = await listPolicies({
+      const res = await service.policies.list({
         filter: `customer == "customers/${this.customerId}"`,
       });
       console.log(
@@ -373,8 +411,25 @@ export class CepToolExecutor {
       version: "v1",
       auth: this.auth,
     });
-    const createEnrollment = getEnrollmentCreate(service);
-    console.log("[enroll-browser] request", { orgUnitId });
+    type EnrollmentCreate = (args: {
+      parent: string;
+      requestBody: {
+        policySchemaId: string;
+        policyTargetKey: { targetResource: string };
+      };
+    }) => Promise<{ data: { name?: string | null; expirationTime?: string | null } }>;
+
+    const customers = service.customers as unknown as {
+      policies?: {
+        networks?: { enrollments?: { create?: EnrollmentCreate } };
+      };
+    };
+    const normalizedTargetResource = orgUnitId
+      ? buildOrgUnitTargetResource(orgUnitId)
+      : "";
+    const targetResource =
+      normalizedTargetResource || "customers/my_customer";
+    console.log("[enroll-browser] request", { orgUnitId, targetResource });
     await this.logApi("google.request.enroll-browser", {
       endpoint:
         "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
@@ -382,11 +437,12 @@ export class CepToolExecutor {
       body: {
         customer: this.customerId,
         orgUnitId,
+        targetResource,
       },
     });
     const start = Date.now();
     try {
-      if (!createEnrollment) {
+      if (!customers.policies?.networks?.enrollments?.create) {
         return {
           error: "Chrome Management enrollment client unavailable",
           suggestion:
@@ -394,12 +450,12 @@ export class CepToolExecutor {
         };
       }
 
-      const res = await createEnrollment({
+      const res = await customers.policies.networks.enrollments.create({
         parent: `customers/${this.customerId}`,
         requestBody: {
           policySchemaId: "chrome.users.EnrollmentToken",
           policyTargetKey: {
-            targetResource: orgUnitId ?? "customers/my_customer",
+            targetResource,
           },
         },
       });
@@ -495,15 +551,18 @@ export class CepToolExecutor {
         version: "directory_v1",
         auth: this.auth,
       });
-      const listOrgUnits = getOrgUnitsList(directory);
 
       let rootOrgUnitId = "";
       let rootOrgUnitPath = "";
       let ouFetchError: string | null = null;
       try {
-        const orgUnits = listOrgUnits
-          ? await listOrgUnits({ customerId: this.customerId, type: "all" })
-          : undefined;
+        if (!directory.orgunits?.list) {
+          throw new Error("Directory orgunit client unavailable");
+        }
+        const orgUnits = await directory.orgunits.list({
+          customerId: this.customerId,
+          type: "all",
+        });
         const resolved = resolveRootOrgUnit(
           orgUnits?.data.organizationUnits ?? []
         );
@@ -517,14 +576,20 @@ export class CepToolExecutor {
         );
       }
 
-      const targetCandidates = [
-        rootOrgUnitId ? `orgunits/${rootOrgUnitId}` : "",
-        rootOrgUnitPath ? `orgunits/${rootOrgUnitPath}` : "",
-        rootOrgUnitPath
-          ? `orgunits/${encodeURIComponent(rootOrgUnitPath)}`
-          : "",
-        rootOrgUnitPath ? `orgunits/${rootOrgUnitPath.replace(/^\//, "")}` : "",
-      ].filter(Boolean);
+      const targetCandidates = Array.from(
+        new Set(
+          [
+            rootOrgUnitId ? buildOrgUnitTargetResource(rootOrgUnitId) : "",
+            rootOrgUnitPath ? buildOrgUnitTargetResource(rootOrgUnitPath) : "",
+            rootOrgUnitPath
+              ? buildOrgUnitTargetResource(encodeURIComponent(rootOrgUnitPath))
+              : "",
+            rootOrgUnitPath
+              ? buildOrgUnitTargetResource(rootOrgUnitPath.replace(/^\//, ""))
+              : "",
+          ].filter(Boolean)
+        )
+      );
 
       if (targetCandidates.length === 0) {
         return {
@@ -542,6 +607,14 @@ export class CepToolExecutor {
         [];
       for (const targetResource of targetCandidates) {
         try {
+          await this.logApi("google.request.connector-config", {
+            endpoint:
+              "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
+            method: "POST",
+            policySchemas,
+            customerId: this.customerId,
+            targetResource,
+          });
           const res = await service.customers.policies.resolve({
             customer: `customers/${this.customerId}`,
             requestBody: {
@@ -570,7 +643,7 @@ export class CepToolExecutor {
             method: "POST",
             status: 200,
             durationMs: Date.now() - start,
-            responsePreview: `policies=${res.data.resolvedPolicies?.length ?? 0}`,
+            responsePreview: `policies=${res.data.resolvedPolicies?.length ?? 0}, target=${targetResource}`,
             timestamp: Date.now(),
             kind: "workspace",
           });
@@ -593,9 +666,24 @@ export class CepToolExecutor {
             targetResource,
           };
         } catch (error) {
+          const message = getErrorMessage(error);
+          recordActivity({
+            id: crypto.randomUUID(),
+            url: "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
+            method: "POST",
+            status: normalizeStatus(getErrorDetails(error).code),
+            durationMs: Date.now() - start,
+            responsePreview: `target=${targetResource}, error=${message}`,
+            timestamp: Date.now(),
+            kind: "workspace",
+          });
+          await this.logApi("google.error.connector-config", {
+            message,
+            targetResource,
+          });
           resolveErrors.push({
             targetResource,
-            message: getErrorMessage(error),
+            message,
           });
         }
       }
@@ -861,11 +949,10 @@ function resolveRootOrgUnit(units: OrgUnit[]): { id: string; path: string } {
 
   const root = units.find((unit) => unit.orgUnitPath === "/");
   const fallback = root ?? units[0];
-  const id = (fallback?.orgUnitId ?? fallback?.parentOrgUnitId ?? "").replace(
-    /^id:/,
-    ""
+  const id = normalizeResource(
+    fallback?.orgUnitId ?? fallback?.parentOrgUnitId ?? ""
   );
-  const path = fallback?.orgUnitPath ?? (id ? "/" : "");
+  const path = normalizeResource(fallback?.orgUnitPath ?? (id ? "/" : ""));
 
   return { id, path };
 }
@@ -883,93 +970,4 @@ function getPolicyTargetResource(policy?: ResolvedPolicy): string | undefined {
  */
 function normalizeStatus(code?: number | string): number | "error" {
   return typeof code === "number" ? code : "error";
-}
-
-/**
- * Resolve Cloud Identity policies list handler.
- */
-function getPoliciesList(
-  service: unknown
-):
-  | ((args: {
-      filter: string;
-    }) => Promise<{ data: { policies?: Array<{ name?: string | null }> } }>)
-  | null {
-  if (!service || typeof service !== "object") {
-    return null;
-  }
-
-  const policies = Reflect.get(service, "policies");
-  if (!policies || typeof policies !== "object") {
-    return null;
-  }
-
-  const list = Reflect.get(policies, "list");
-  return typeof list === "function" ? list.bind(policies) : null;
-}
-
-/**
- * Resolve Chrome Management enrollment handler.
- */
-function getEnrollmentCreate(service: unknown):
-  | ((args: {
-      parent: string;
-      requestBody: {
-        policySchemaId: string;
-        policyTargetKey: { targetResource: string };
-      };
-    }) => Promise<{
-      data: { name?: string | null; expirationTime?: string | null };
-    }>)
-  | null {
-  if (!service || typeof service !== "object") {
-    return null;
-  }
-
-  const customers = Reflect.get(service, "customers");
-  if (!customers || typeof customers !== "object") {
-    return null;
-  }
-
-  const policies = Reflect.get(customers, "policies");
-  if (!policies || typeof policies !== "object") {
-    return null;
-  }
-
-  const networks = Reflect.get(policies, "networks");
-  if (!networks || typeof networks !== "object") {
-    return null;
-  }
-
-  const enrollments = Reflect.get(networks, "enrollments");
-  if (!enrollments || typeof enrollments !== "object") {
-    return null;
-  }
-
-  const create = Reflect.get(enrollments, "create");
-  return typeof create === "function" ? create.bind(enrollments) : null;
-}
-
-/**
- * Resolve Directory API org unit list handler.
- */
-function getOrgUnitsList(
-  service: unknown
-):
-  | ((args: {
-      customerId: string;
-      type: string;
-    }) => Promise<{ data: { organizationUnits?: OrgUnit[] } }>)
-  | null {
-  if (!service || typeof service !== "object") {
-    return null;
-  }
-
-  const orgunits = Reflect.get(service, "orgunits");
-  if (!orgunits || typeof orgunits !== "object") {
-    return null;
-  }
-
-  const list = Reflect.get(orgunits, "list");
-  return typeof list === "function" ? list.bind(orgunits) : null;
 }

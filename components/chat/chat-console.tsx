@@ -1,8 +1,7 @@
 "use client";
 
-import { useChat } from "@ai-sdk/react";
 import { SendHorizontal, HelpCircle } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 
 import type {
   EvidencePayload,
@@ -46,6 +45,7 @@ import {
   ReasoningContent,
 } from "@/components/ai-elements/reasoning";
 import { Button } from "@/components/ui/button";
+import { useChatContext } from "@/components/chat/chat-context";
 
 interface MessageMetadata {
   evidence?: {
@@ -60,21 +60,9 @@ interface MessageMetadata {
 }
 
 export function ChatConsole() {
-  const { messages, sendMessage, status } = useChat();
-  const [input, setInput] = useState("");
+  const { messages, sendMessage, status, input, setInput } = useChatContext();
 
   const isStreaming = status === "submitted" || status === "streaming";
-
-  // Listen for cross-page action dispatches
-  useEffect(() => {
-    const handler = (event: Event) => {
-      const detail = (event as CustomEvent).detail as { command?: string };
-      if (!detail?.command) return;
-      void sendMessage({ text: detail.command });
-    };
-    document.addEventListener("cep-action", handler);
-    return () => document.removeEventListener("cep-action", handler);
-  }, [sendMessage]);
 
   const handleSubmit = (message: PromptInputMessage) => {
     const trimmed = message.text?.trim();
@@ -87,13 +75,15 @@ export function ChatConsole() {
     void sendMessage({ text: command });
   };
 
+  const memoizedMessages = useMemo(() => messages, [messages]);
+
   return (
     <div className="flex h-full min-h-[600px] flex-col rounded-lg border border-border bg-card">
       {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
         <ConversationContent className="p-0">
           {/* Empty state */}
-          {messages.length === 0 && !isStreaming && (
+          {memoizedMessages.length === 0 && !isStreaming && (
             <ConversationEmptyState
               icon={<HelpCircle className="h-8 w-8" />}
               title="How can I help?"
@@ -102,9 +92,9 @@ export function ChatConsole() {
           )}
 
           {/* Messages */}
-          {messages.map((message, index) => {
+          {memoizedMessages.map((message, index) => {
             const isUser = message.role === "user";
-            const isLast = index === messages.length - 1;
+            const isLast = index === memoizedMessages.length - 1;
             const showStreamingCursor = isStreaming && isLast && !isUser;
             const metadata = message.metadata as MessageMetadata | undefined;
             const messageKey = message.id

@@ -1,21 +1,31 @@
-import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
-import { google as googleApis } from "googleapis";
-import { randomUUID } from "node:crypto";
-
-import type { DiagnosisError, DiagnosisResult } from "@/types/chat";
+import { google } from "@ai-sdk/google";
+import { streamText, tool } from "ai";
+import { z } from "zod";
 
 import { diagnose } from "@/app/api/chat/diagnose";
 import { auth } from "@/lib/auth";
 import { writeDebugLog } from "@/lib/debug-log";
-import { CepToolExecutor } from "@/lib/mcp/registry";
+import {
+  CepToolExecutor,
+  EnrollBrowserSchema,
+  GetChromeEventsSchema,
+  GetConnectorConfigSchema,
+  GetFleetOverviewSchema,
+  ListDLPRulesSchema,
+} from "@/lib/mcp/registry";
 
 export const maxDuration = 30;
 const EVAL_TEST_MODE_ENABLED = process.env.EVAL_TEST_MODE === "1";
+
+const debugAuthSchema = z.object({});
 
 type ChatMessage = {
   role: "system" | "user" | "assistant";
   content: string;
 };
+
+const systemPrompt =
+  "You are the CEP troubleshooting assistant. Answer concisely, then offer actions. Use tools only when needed and summarize results instead of dumping raw output. If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
 
 /**
  * Handle streaming CEP diagnosis chat responses.
@@ -75,8 +85,15 @@ export async function POST(req: Request) {
   }
 
   const body = await req.json();
-  const messages = getMessagesFromBody(body);
-  const prompt = getLastUserMessage(messages) || extractInlinePrompt(body);
+  const messagesFromBody = getMessagesFromBody(body);
+  const inlinePrompt = extractInlinePrompt(body);
+  const prompt = getLastUserMessage(messagesFromBody) || inlinePrompt;
+
+  const messages: ChatMessage[] = messagesFromBody.length
+    ? messagesFromBody
+    : inlinePrompt
+      ? [{ role: "user", content: inlinePrompt }]
+      : [];
 
   await writeDebugLog("chat.request", {
     prompt,
@@ -88,199 +105,51 @@ export async function POST(req: Request) {
     bodyPreview: safeJsonPreview(body),
   });
 
-  const accessToken = accessTokenResponse.accessToken;
+  const executor = new CepToolExecutor(accessTokenResponse.accessToken);
 
-  const actionResponse = await maybeHandleAction({
-    command: prompt.toLowerCase(),
-    accessToken,
-  });
-  if (actionResponse) {
-    await writeDebugLog("chat.action", {
-      command: prompt,
-      status: actionResponse.status,
-    });
-
-    const messageId = randomUUID();
-
-    const stream = createUIMessageStream({
-      execute: async ({ writer }) => {
-        writer.write({
-          type: "start",
-          messageId,
-          messageMetadata: {},
-        });
-        writer.write({ type: "text-start", id: messageId });
-        writer.write({
-          type: "text-delta",
-          id: messageId,
-          delta: actionResponse.message,
-        });
-        writer.write({ type: "text-end", id: messageId });
-        writer.write({ type: "finish", messageMetadata: {} });
-      },
-      onError: () => "An error occurred while streaming.",
-    });
-
-    await writeDebugLog("chat.response.action", {
-      messageId,
-      status: actionResponse.status,
-      messageLength: actionResponse.message.length,
-    });
-
-    return createUIMessageStreamResponse({ stream });
-  }
-
-  const diagnosis = await diagnose(req, prompt);
-
-  if (isDiagnosisError(diagnosis)) {
-    return new Response(
-      JSON.stringify({ error: diagnosis.error ?? "Diagnosis failed" }),
-      { status: 500 }
-    );
-  }
-
-  const diag = diagnosis;
-
-  const answer = diag.diagnosis ?? "Unable to diagnose right now.";
-  const reference =
-    diag.reference && diag.reference.url?.startsWith("http")
-      ? diag.reference
-      : null;
-  const nextSteps = diag.nextSteps ?? [];
-  const hypotheses = diag.hypotheses ?? [];
-  const planSteps = diag.planSteps ?? [];
-  const missingQuestions = diag.missingQuestions ?? [];
-  const connectorAnalysis = diag.evidence?.connectorAnalysis;
-  const actions = [
-    {
-      id: "retry-connector-fetch",
-      label: "Retry connector fetch",
-      command: "retry connector fetch",
-      primary: true,
+  const result = streamText({
+    model: google("gemini-2.0-flash-001"),
+    messages: [{ role: "system", content: systemPrompt }, ...messages],
+    tools: {
+      getChromeEvents: tool({
+        description: "Get recent Chrome events.",
+        inputSchema: GetChromeEventsSchema,
+        execute: async (args) => await executor.getChromeEvents(args),
+      }),
+      getChromeConnectorConfiguration: tool({
+        description: "Fetch Chrome connector configuration policies.",
+        inputSchema: GetConnectorConfigSchema,
+        execute: async () => await executor.getChromeConnectorConfiguration(),
+      }),
+      listDLPRules: tool({
+        description: "List DLP rules from Cloud Identity.",
+        inputSchema: ListDLPRulesSchema,
+        execute: async (args) => await executor.listDLPRules(args),
+      }),
+      enrollBrowser: tool({
+        description: "Generate a Chrome Browser Cloud Management enrollment token.",
+        inputSchema: EnrollBrowserSchema,
+        execute: async (args) => await executor.enrollBrowser(args),
+      }),
+      getFleetOverview: tool({
+        description: "Summarize fleet posture from live CEP data.",
+        inputSchema: GetFleetOverviewSchema,
+        execute: async (args) => await executor.getFleetOverview(args),
+      }),
+      debugAuth: tool({
+        description: "Inspect access token scopes and expiry.",
+        inputSchema: debugAuthSchema,
+        execute: async () => await executor.debugAuth(),
+      }),
+      runDiagnosis: tool({
+        description: "Run full diagnosis and return structured answer.",
+        inputSchema: z.object({ prompt: z.string() }),
+        execute: async (args) => await diagnose(req, args.prompt),
+      }),
     },
-    {
-      id: "list-connector-policies",
-      label: "List connector policies",
-      command: "list connector policies",
-    },
-    {
-      id: "check-org-units",
-      label: "Check org units",
-      command: "list org units",
-    },
-    {
-      id: "check-auth-scopes",
-      label: "Check auth scopes",
-      command: "check auth scopes",
-    },
-  ];
-
-  const lines: string[] = [];
-  lines.push(`Diagnosis: ${answer}`);
-
-  if (connectorAnalysis?.flag) {
-    lines.push(
-      `Connector scope issue: policies look mis-scoped (sample target: ${connectorAnalysis.sampleTarget ?? "unknown"}).`
-    );
-  }
-
-  if (planSteps.length) {
-    lines.push(`What I checked:`);
-    lines.push(...planSteps.map((step) => `- ${step}`));
-  }
-
-  if (hypotheses.length) {
-    lines.push(`Hypotheses:`);
-    lines.push(
-      ...hypotheses.slice(0, 3).map((h) => {
-        const pct = Math.round((h.confidence ?? 0) * 100);
-        return `- ${h.cause} (${pct}% confidence)`;
-      })
-    );
-  }
-
-  // Override next steps to a focused set when connector policies are missing
-  const focusedNextSteps = [
-    "Fetch connector policies for orgunits/my_customer",
-    "Validate admin scopes on current token",
-    "List org units to confirm targeting",
-  ];
-  lines.push(`Next steps (pick one):`);
-  lines.push(...focusedNextSteps.map((step) => `- ${step}`));
-
-  if (missingQuestions.length) {
-    lines.push(`Need from you:`);
-    lines.push(
-      ...missingQuestions.map(
-        (q) => `- ${q.question}${q.why ? ` (why: ${q.why})` : ""}`
-      )
-    );
-  }
-
-  if (reference) {
-    lines.push(`Reference: ${reference.title} - ${reference.url}`);
-  }
-
-  const finalAssistantMessage = lines.join("\n");
-
-  const messageId = randomUUID();
-
-  const stream = createUIMessageStream({
-    execute: async ({ writer }) => {
-      writer.write({
-        type: "start",
-        messageId,
-        messageMetadata: {
-          evidence: {
-            planSteps,
-            hypotheses,
-            nextSteps,
-            missingQuestions,
-            evidence: diag.evidence,
-            connectorAnalysis,
-          },
-          actions,
-        },
-      });
-      writer.write({ type: "text-start", id: messageId });
-
-      writer.write({
-        type: "text-delta",
-        id: messageId,
-        delta: finalAssistantMessage,
-      });
-      writer.write({ type: "text-end", id: messageId });
-      writer.write({
-        type: "finish",
-        messageMetadata: {
-          evidence: {
-            planSteps,
-            hypotheses,
-            nextSteps,
-            missingQuestions,
-            evidence: diag.evidence,
-            connectorAnalysis,
-          },
-          actions,
-        },
-      });
-    },
-    onError: () => "An error occurred while streaming.",
   });
 
-  await writeDebugLog("chat.response.diagnosis", {
-    messageId,
-    planSteps: planSteps.length,
-    hypotheses: hypotheses.length,
-    nextSteps: nextSteps.length,
-    missingQuestions: missingQuestions.length,
-    hasConnectorAnalysis: Boolean(connectorAnalysis?.flag),
-    textLength: finalAssistantMessage.length,
-  });
-
-  return createUIMessageStreamResponse({
-    stream,
-  });
+  return result.toUIMessageStreamResponse();
 }
 
 /**
@@ -389,209 +258,6 @@ function stringifyContent(raw: unknown): string {
   return "";
 }
 
-type ActionResult = { message: string; status: "ok" | "error" };
-
-async function maybeHandleAction({
-  command,
-  accessToken,
-}: {
-  command: string;
-  accessToken: string;
-}): Promise<ActionResult | null> {
-  const normalized = command.trim().toLowerCase();
-  if (!normalized) return null;
-
-  if (
-    normalized.includes("retry connector fetch") ||
-    normalized.includes("list connector policies")
-  ) {
-    return handleConnectorFetch(accessToken);
-  }
-
-  if (
-    normalized.includes("check org units") ||
-    normalized.includes("list org units")
-  ) {
-    return handleListOrgUnits(accessToken);
-  }
-
-  if (
-    normalized.includes("check auth scopes") ||
-    normalized.includes("validate admin scopes")
-  ) {
-    return handleCheckAuthScopes(accessToken);
-  }
-
-  if (
-    normalized.includes("review events") ||
-    normalized.includes("show recent chrome events") ||
-    normalized.includes("show events") ||
-    normalized.includes("list events")
-  ) {
-    return handleShowEvents(accessToken);
-  }
-
-  return null;
-}
-
-async function handleConnectorFetch(
-  accessToken: string
-): Promise<ActionResult> {
-  const executor = new CepToolExecutor(accessToken);
-  const result = await executor.getChromeConnectorConfiguration();
-
-  const policies =
-    "value" in result && Array.isArray((result as any).value)
-      ? (result as any).value
-      : [];
-  const errors = (result as any).errors as
-    | Array<{ targetResource: string; message: string }>
-    | undefined;
-  const targetResource = (result as any).targetResource as string | undefined;
-
-  const lines: string[] = [];
-  lines.push(`Connector policy fetch`);
-  lines.push(`- Target: ${targetResource ?? "root org unit variants"}`);
-  lines.push(`- Policies returned: ${policies.length}`);
-  if (errors?.length) {
-    lines.push(`Errors:`);
-    errors.slice(0, 3).forEach((err) => {
-      lines.push(`- ${err.targetResource}: ${err.message}`);
-    });
-  }
-  if (policies.length === 0 && !errors?.length) {
-    lines.push("No connector policies returned. Verify targeting and scopes.");
-  }
-
-  return { message: lines.join("\n"), status: "ok" };
-}
-
-async function handleListOrgUnits(accessToken: string): Promise<ActionResult> {
-  const authClient = buildOAuth(accessToken);
-  const directory = googleApis.admin({
-    version: "directory_v1",
-    auth: authClient,
-  });
-  try {
-    await writeDebugLog("google.request.orgunits", {
-      endpoint: "https://admin.googleapis.com/admin/directory/v1/orgunits",
-      method: "GET",
-      params: { customerId: "my_customer", type: "all" },
-    });
-    const res = await directory.orgunits.list({
-      customerId: "my_customer",
-      type: "all",
-    });
-    const units = res.data.organizationUnits ?? [];
-    const sample = units
-      .slice(0, 5)
-      .map((ou) => ou.orgUnitPath ?? ou.name ?? "(unknown)");
-    const lines = [
-      `Org units (${units.length}):`,
-      ...sample.map((p) => `- ${p}`),
-    ];
-    await writeDebugLog("google.response.orgunits", {
-      status: "ok",
-      count: units.length,
-      sample,
-    });
-    return { message: lines.join("\n"), status: "ok" };
-  } catch (error) {
-    await writeDebugLog("google.error.orgunits", {
-      error: getErrorMessage(error),
-    });
-    return {
-      message: `Org unit lookup failed: ${getErrorMessage(error)}`,
-      status: "error",
-    };
-  }
-}
-
-async function handleCheckAuthScopes(
-  accessToken: string
-): Promise<ActionResult> {
-  const executor = new CepToolExecutor(accessToken);
-  try {
-    const result = await executor.debugAuth();
-    if ("error" in result) {
-      return {
-        message: `Scope check failed: ${result.error}`,
-        status: "error",
-      };
-    }
-
-    const scopes = result.scope ? result.scope.split(" ") : [];
-    const required = [
-      "https://www.googleapis.com/auth/admin.directory.orgunit",
-      "https://www.googleapis.com/auth/chrome.management.policy",
-    ];
-    const missing = required.filter((scope) => !scopes.includes(scope));
-    const lines = [
-      "Token scopes:",
-      scopes.length
-        ? scopes.map((s) => `- ${s}`).join("\n")
-        : "- (none reported)",
-      `Expires in: ${result.expiresIn ?? "unknown"}s`,
-    ];
-    if (missing.length) {
-      lines.push(`Missing required scopes: ${missing.join(", ")}`);
-    }
-    if (result.issuedTo) {
-      lines.push(`Issued to: ${result.issuedTo}`);
-    }
-    return {
-      message: lines.join("\n"),
-      status: missing.length ? "error" : "ok",
-    };
-  } catch (error) {
-    return {
-      message: `Scope check failed: ${getErrorMessage(error)}`,
-      status: "error",
-    };
-  }
-}
-
-async function handleShowEvents(accessToken: string): Promise<ActionResult> {
-  const executor = new CepToolExecutor(accessToken);
-  try {
-    const result = await executor.getChromeEvents({ maxResults: 25 });
-    if ("error" in result) {
-      return {
-        message: `Events lookup failed: ${result.error}`,
-        status: "error",
-      };
-    }
-    const events = result.events ?? [];
-    const sample = events.slice(0, 5).map((evt) => {
-      const id = evt.id?.uniqueQualifier ?? "(no id)";
-      const time = evt.id?.time ?? "(no time)";
-      return `- ${time} :: ${id}`;
-    });
-    const lines = [
-      `Chrome events fetched: ${events.length}`,
-      ...(sample.length ? ["Sample:", ...sample] : []),
-    ];
-    return { message: lines.join("\n"), status: "ok" };
-  } catch (error) {
-    return {
-      message: `Events lookup failed: ${getErrorMessage(error)}`,
-      status: "error",
-    };
-  }
-}
-
-function buildOAuth(accessToken: string) {
-  const client = new googleApis.auth.OAuth2();
-  client.setCredentials({ access_token: accessToken });
-  return client;
-}
-
-function getErrorMessage(error: unknown): string {
-  if (error instanceof Error) return error.message;
-  if (typeof error === "string") return error;
-  return "Unknown error";
-}
-
 function safeJsonPreview(value: unknown, limit = 500): string {
   try {
     const str = JSON.stringify(value);
@@ -609,11 +275,4 @@ function extractInlinePrompt(body: unknown): string {
   if (typeof maybeContent === "string" && maybeContent.trim())
     return maybeContent;
   return "";
-}
-
-/**
- * Narrow diagnosis results to error responses.
- */
-function isDiagnosisError(result: DiagnosisResult): result is DiagnosisError {
-  return "error" in result;
 }

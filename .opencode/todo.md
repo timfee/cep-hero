@@ -1,47 +1,48 @@
-# Mission: CEP eval base+delta overrides rollout
+# Mission: Unify CEP agent pipeline, frontend chat state, and tool hardening
+
+- [x] Mission complete
 
 ## Project Context
 
 - Language: TypeScript (Bun + Next.js)
-- Core paths: `lib/`, `tests/`, `evals/`
+- Core paths: `app/`, `lib/`, `components/`
 
-## File Manifest
+## G1: Discovery & Plan | status: completed
 
-| Action | File Path                             | Description                                                          | Dependencies                                                     |
-| ------ | ------------------------------------- | -------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| MODIFY | lib/test-helpers/eval-runner.ts       | Extend buildEvalPrompt to merge base snapshot + overrides + fixtures | lib/test-helpers/eval-registry.ts (RegistryCase overrides field) |
-| MODIFY | tests/evals/common-challenges.test.ts | Pass overrides/caseId into buildEvalPrompt                           | lib/test-helpers/eval-runner.ts                                  |
-| MODIFY | tests/evals/diagnostics.test.ts       | Pass overrides/caseId into buildEvalPrompt                           | lib/test-helpers/eval-runner.ts                                  |
-| MODIFY | tests/evals/test-plan.test.ts         | Pass overrides/caseId into buildEvalPrompt                           | lib/test-helpers/eval-runner.ts                                  |
+- [x] G1 complete
 
-## G1: Discovery + Design | status: completed
+- [x] S1.1: Update .opencode/context.md with backend/frontend/tool notes from audit | priority: medium | id:S1.1
+- [x] S1.2: Finalize execution plan in .opencode/todo.md (this file) | priority: medium | id:S1.2
 
-### P1.1: Override schema decision | agent:Planner
+## G2: Backend agent unification | status: completed | depends:G1
 
-- [x] T1.1.1: Decide overrides JSON shape and merge strategy | size:S
-- [x] T1.1.2: Specify precedence order (base vs overrides vs fixtures) | size:S
+- [x] G2 complete
 
-## G2: Implementation | status: completed | depends:G1
+- [x] S2.1: Refactor app/api/chat/route.ts to streamText agent with CepToolExecutor tools; remove maybeHandleAction and manual streaming; keep eval test-mode path | priority: high | id:S2.1
+- [x] S2.2: Remove hardcoded next-steps override; update system prompt to cover connector targeting/scopes guidance | priority: medium | id:S2.2
+- [x] S2.3: Align/retire stream-diagnose.ts so agent logic lives in route.ts (no dead paths) | priority: medium | id:S2.3
 
-### P2.1: Prompt assembly | agent:Worker
+## G3: Frontend chat context | status: completed | depends:G1
 
-- [x] T2.1.1: MODIFY `lib/test-helpers/eval-runner.ts` | file:lib/test-helpers/eval-runner.ts | size:M
+- [x] G3 complete
 
-### P2.2: Test wiring | agent:Worker | depends:P2.1
+- [x] S3.1: Add ChatContext + provider exposing sendMessage/input/setInput | priority: high | id:S3.1
+- [x] S3.2: Wrap app providers with ChatContext provider | priority: medium | id:S3.2
+- [x] S3.3: Update ChatConsole to use ChatContext for state/actions (no document events) | priority: high | id:S3.3
+- [x] S3.4: Update app/page quick actions to call context sendMessage directly; remove CustomEvent dispatch | priority: high | id:S3.4
 
-- [x] T2.2.1: MODIFY `tests/evals/common-challenges.test.ts` | file:tests/evals/common-challenges.test.ts | size:S
-- [x] T2.2.2: MODIFY `tests/evals/diagnostics.test.ts` | file:tests/evals/diagnostics.test.ts | size:S
-- [x] T2.2.3: MODIFY `tests/evals/test-plan.test.ts` | file:tests/evals/test-plan.test.ts | size:S
+## G4: Tooling hardening | status: completed | depends:G1
 
-## G3: Verification | status: in_progress | depends:G2
+- [x] G4 complete
 
-### P3.1: LSP + tests | agent:Reviewer
+- [x] S4.1: Add normalizeResource utility (strip id:, collapse //) and apply across CepToolExecutor inputs | priority: medium | id:S4.1
+- [x] S4.2: Fix connector target candidates to avoid double slashes; log actual targetResource in recordActivity/debug | priority: medium | id:S4.2
+- [x] S4.3: Implement pagination for getChromeEvents (pageToken input, nextPageToken output); expose via tool schema | priority: high | id:S4.3
+- [x] S4.4: Replace reflection helpers (getEnrollmentCreate/getPoliciesList/getOrgUnitsList) with typed client access for safety | priority: medium | id:S4.4
 
-- [x] T3.1.1: Run `lsp_diagnostics({ file: "*" })` | size:S
-- [x] T3.1.2: Run eval tests as needed (full suites) | size:S (passed with EVAL_FAKE_CHAT=1; real-chat runs tracked in SYNC-6)
+## G5: Verification | status: completed
 
-## G4: Documentation | status: completed
+- [x] G5 complete
 
-### P4.1: Doc review | agent:Reviewer
-
-- [x] T4.1.1: Review evals/README.md, README.md, SETUP.md updates for consistency | size:S
+- [x] S5.1: Run lsp_diagnostics({ file: "*" }) | priority: high | id:S5.1
+- [x] S5.2: Run targeted tests or chat flow check as feasible; note any blockers | priority: medium | id:S5.2
