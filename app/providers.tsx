@@ -10,6 +10,10 @@ import {
   useState,
   useLayoutEffect,
 } from "react";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { cn } from "@/lib/utils";
+import { X } from "lucide-react";
 
 type ActivityEntry = {
   id: string;
@@ -204,7 +208,7 @@ function getRequestMethod(input: RequestInfo | URL): string {
 }
 
 function ActivityPanel({ isOpen }: { isOpen: boolean }) {
-  const { entries, setOpen, filter } = useActivityLogContext();
+  const { entries, setOpen, filter, setFilter } = useActivityLogContext();
 
   const items = useMemo(() => {
     const filtered =
@@ -214,86 +218,140 @@ function ActivityPanel({ isOpen }: { isOpen: boolean }) {
 
   if (!isOpen) return null;
 
+  const filterOptions: { value: ActivityFilter; label: string }[] = [
+    { value: "all", label: "All" },
+    { value: "mcp", label: "MCP" },
+    { value: "workspace", label: "Workspace" },
+  ];
+
   return (
-    <div className="pointer-events-auto fixed right-4 top-20 z-50 w-[420px] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-black/90 p-4 text-sm shadow-2xl backdrop-blur">
-      <div className="mb-3 flex items-center justify-between text-[11px] uppercase tracking-[0.2em] text-zinc-500">
-        <span>
-          Recent Activity ({filter === "all" ? "All" : filter.toUpperCase()})
-        </span>
-        <button
-          type="button"
-          className="rounded-full bg-white/5 px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-zinc-400 hover:bg-white/10"
-          onClick={() => setOpen(false)}
-        >
-          Close
-        </button>
-      </div>
-      <div className="space-y-2">
+    <aside
+      className="pointer-events-auto fixed right-4 top-20 z-50 w-[420px] max-h-[70vh] overflow-hidden rounded-xl border border-border bg-card shadow-lg"
+      role="dialog"
+      aria-label="Activity log"
+    >
+      {/* Header */}
+      <header className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-3">
+        <div>
+          <h2 className="text-sm font-medium text-foreground">
+            Recent Activity
+          </h2>
+          <p className="text-xs text-muted-foreground">
+            {items.length} request{items.length !== 1 ? "s" : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Filter Tabs */}
+          <div className="flex gap-1" role="tablist" aria-label="Filter activity">
+            {filterOptions.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                role="tab"
+                aria-selected={filter === option.value}
+                onClick={() => setFilter(option.value)}
+                className={cn(
+                  "rounded-md px-2 py-1 text-xs font-medium transition-colors",
+                  filter === option.value
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                )}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon-sm"
+            onClick={() => setOpen(false)}
+            aria-label="Close activity panel"
+          >
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </header>
+
+      {/* Content */}
+      <div className="max-h-[calc(70vh-60px)] overflow-y-auto p-3">
         {items.length === 0 ? (
-          <div className="rounded-lg border border-white/5 bg-white/5 px-3 py-4 text-xs text-zinc-500">
-            No activity yet. Requests will appear here.
+          <div className="rounded-lg border border-border bg-muted/50 px-4 py-8 text-center">
+            <p className="text-sm text-muted-foreground">
+              No activity yet. Requests will appear here.
+            </p>
           </div>
         ) : (
-          items.map((entry) => {
-            const statusColor =
-              entry.status === "error"
-                ? "text-red-400"
-                : entry.status >= 500
-                  ? "text-red-300"
-                  : entry.status >= 400
-                    ? "text-amber-300"
-                    : "text-emerald-300";
+          <ul className="space-y-2" aria-label="Activity entries">
+            {items.map((entry) => {
+              const statusColor =
+                entry.status === "error"
+                  ? "text-destructive"
+                  : entry.status >= 500
+                    ? "text-destructive"
+                    : entry.status >= 400
+                      ? "text-status-warning"
+                      : "text-status-positive";
 
-            const pathname = (() => {
-              try {
-                const parsed = new URL(entry.url, window.location.origin);
-                return `${parsed.pathname}${parsed.search}`;
-              } catch {
-                return entry.url;
-              }
-            })();
+              const pathname = (() => {
+                try {
+                  const parsed = new URL(entry.url, window.location.origin);
+                  return `${parsed.pathname}${parsed.search}`;
+                } catch {
+                  return entry.url;
+                }
+              })();
 
-            return (
-              <div
-                key={entry.id}
-                className="rounded-xl border border-white/5 bg-white/5 px-3 py-2 text-xs text-zinc-200"
-              >
-                <div className="flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="rounded-full bg-white/10 px-2 py-0.5 text-[10px] uppercase tracking-[0.2em] text-zinc-400">
-                      {entry.method}
-                    </span>
-                    <span className="text-zinc-300">{pathname}</span>
+              return (
+                <li
+                  key={entry.id}
+                  className="rounded-lg border border-border bg-card p-3"
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 overflow-hidden">
+                      <Badge variant="secondary" className="shrink-0 text-xs">
+                        {entry.method}
+                      </Badge>
+                      <span className="truncate text-xs text-foreground">
+                        {pathname}
+                      </span>
+                    </div>
+                    <div className="flex shrink-0 items-center gap-2 text-xs">
+                      <span className={cn("font-medium", statusColor)}>
+                        {entry.status}
+                      </span>
+                      <span className="text-muted-foreground">
+                        {entry.durationMs}ms
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-                    <span className={statusColor}>{entry.status}</span>
-                    <span className="text-zinc-600">•</span>
-                    <span>{entry.durationMs}ms</span>
+                  <div className="mt-2 flex items-center gap-2 text-xs text-muted-foreground">
+                    <Badge
+                      variant={entry.kind === "mcp" ? "default" : "outline"}
+                      className="h-5 text-[10px]"
+                    >
+                      {entry.kind === "mcp" ? "MCP" : "Workspace"}
+                    </Badge>
+                    <time dateTime={new Date(entry.timestamp).toISOString()}>
+                      {new Date(entry.timestamp).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        second: "2-digit",
+                      })}
+                    </time>
                   </div>
-                </div>
-                <div className="mt-1 flex items-center gap-2 text-[10px] uppercase tracking-[0.2em] text-zinc-500">
-                  <span className="rounded-full bg-white/5 px-2 py-0.5 text-blue-300">
-                    {entry.kind === "mcp" ? "MCP" : "Workspace"}
-                  </span>
-                  <span>
-                    {new Date(entry.timestamp).toLocaleTimeString([], {
-                      hour: "2-digit",
-                      minute: "2-digit",
-                      second: "2-digit",
-                    })}
-                  </span>
-                </div>
-                {entry.responsePreview ? (
-                  <div className="mt-2 rounded-lg border border-white/5 bg-black/40 px-2 py-2 text-[11px] text-zinc-400">
-                    {entry.responsePreview}
-                  </div>
-                ) : null}
-              </div>
-            );
-          })
+                  {entry.responsePreview && (
+                    <div className="mt-2 rounded-md border border-border bg-muted/50 px-2 py-2 font-mono text-xs text-muted-foreground">
+                      <span className="line-clamp-2">{entry.responsePreview}</span>
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
       </div>
-    </div>
+    </aside>
   );
 }
 
