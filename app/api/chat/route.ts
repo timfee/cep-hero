@@ -42,9 +42,15 @@ export async function POST(req: Request) {
   }
 
   if (authResult.status === "test_mode_response") {
-    return new Response(JSON.stringify({ error: "Test mode response not supported. Use fixture injection instead." }), {
-      status: 400,
-    });
+    return new Response(
+      JSON.stringify({
+        error:
+          "Test mode response not supported. Use fixture injection instead.",
+      }),
+      {
+        status: 400,
+      }
+    );
   }
 
   const { session, accessToken, isTestMode } = authResult;

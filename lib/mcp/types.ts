@@ -129,9 +129,7 @@ export interface IToolExecutor {
     args: z.infer<typeof DraftPolicyChangeSchema>
   ): Promise<DraftPolicyChangeResult>;
 
-  getFleetOverview(
-    args: z.infer<typeof GetFleetOverviewSchema>
-  ): Promise<
+  getFleetOverview(args: z.infer<typeof GetFleetOverviewSchema>): Promise<
     | FleetOverviewResponse
     | {
         headline: string;
@@ -154,7 +152,11 @@ export type FixtureData = {
   auditEvents?: {
     items?: Array<{
       kind?: string;
-      id?: { time?: string; uniqueQualifier?: string; applicationName?: string };
+      id?: {
+        time?: string;
+        uniqueQualifier?: string;
+        applicationName?: string;
+      };
       actor?: { email?: string; profileId?: string };
       events?: Array<{
         type?: string;
