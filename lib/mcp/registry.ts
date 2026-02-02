@@ -565,14 +565,17 @@ export class CepToolExecutor {
           });
           rootOuId = rootRes.data.orgUnitId ?? null;
         } catch (e) {
-          console.log("[connector-config] explicit root-ou fetch failed", getErrorMessage(e));
+          console.log(
+            "[connector-config] explicit root-ou fetch failed",
+            getErrorMessage(e)
+          );
         }
 
         const orgUnits = await directory.orgunits.list({
           customerId: this.customerId,
           type: "all",
         });
-        
+
         const orgUnitIds = resolveOrgUnitCandidates(
           orgUnits?.data.organizationUnits ?? []
         );

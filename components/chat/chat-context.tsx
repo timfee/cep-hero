@@ -3,6 +3,8 @@
 import { useChat } from "@ai-sdk/react";
 import { createContext, useContext, useMemo, useState } from "react";
 
+import { clientFetch } from "@/lib/http";
+
 type ChatContextValue = {
   messages: ReturnType<typeof useChat>["messages"];
   status: ReturnType<typeof useChat>["status"];
@@ -16,7 +18,9 @@ const ChatContext = createContext<ChatContextValue | null>(null);
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
 
-  const { messages, status, sendMessage } = useChat();
+  const { messages, status, sendMessage } = useChat({
+    fetch: clientFetch,
+  });
 
   const value = useMemo<ChatContextValue>(
     () => ({ messages, status, input, setInput, sendMessage }),

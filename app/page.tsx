@@ -8,6 +8,7 @@ import { ChatConsole } from "@/components/chat/chat-console";
 import { useChatContext } from "@/components/chat/chat-context";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
+import { clientFetch } from "@/lib/http";
 import {
   type OverviewData,
   normalizeOverview,
@@ -15,6 +16,7 @@ import {
   DEFAULT_SUGGESTIONS,
   QUICK_ACTIONS,
 } from "@/lib/overview";
+
 export default function Home() {
   const router = useRouter();
   const { user, isLoading, isAuthenticated, signOut } = useAuth();
@@ -36,7 +38,7 @@ export default function Home() {
     let active = true;
     async function load() {
       try {
-        const res = await fetch("/api/overview");
+        const res = await clientFetch("/api/overview");
         if (!res.ok) throw new Error(`overview ${res.status}`);
         const data = await res.json();
         if (!active) return;
@@ -87,9 +89,7 @@ export default function Home() {
             <h1 className="text-lg font-semibold text-foreground">
               CEP Command Center
             </h1>
-            <p className="text-sm text-muted-foreground">
-              Initializing...
-            </p>
+            <p className="text-sm text-muted-foreground">Initializing...</p>
           </div>
         </div>
       </main>
