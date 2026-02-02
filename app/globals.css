@@ -146,28 +146,4 @@
   }
 }
 
-/* Clean background - no gradients, no noise */
-.linear-bg {
-  background: var(--background);
-}
 
-/* Simple utility classes - no animations */
-.animate-fade-up,
-.animate-fade-in,
-.animate-scale-fade {
-  opacity: 1;
-}
-
-.delay-0,
-.delay-75,
-.delay-150,
-.delay-200,
-.delay-300,
-.delay-400,
-.delay-500,
-.delay-600,
-.delay-700,
-.delay-800,
-.delay-900 {
-  /* No animation delays needed */
-}
