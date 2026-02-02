@@ -137,16 +137,19 @@ ${data.summary || "Your security posture appears healthy."}
 Is there anything specific you'd like me to help you with?`;
   }
 
-  const actionItems = suggestions.slice(0, 3).map((s) => {
-    if (s.category === "security") {
-      return `**Security** - ${s.text}`;
-    } else if (s.category === "compliance") {
-      return `**Compliance** - ${s.text}`;
-    } else if (s.category === "monitoring") {
-      return `**Monitoring** - ${s.text}`;
-    }
-    return `**${s.category}** - ${s.text}`;
-  });
+  const actionItems = suggestions
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, 3)
+    .map((s) => {
+      if (s.category === "security") {
+        return `**Security** - ${s.text}`;
+      } else if (s.category === "compliance") {
+        return `**Compliance** - ${s.text}`;
+      } else if (s.category === "monitoring") {
+        return `**Monitoring** - ${s.text}`;
+      }
+      return `**${s.category}** - ${s.text}`;
+    });
 
   return `Hey there! I'm your Chrome Enterprise Premium assistant. I've been looking at your fleet data and found some things we should address.
 

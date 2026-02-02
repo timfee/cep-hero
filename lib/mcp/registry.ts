@@ -1208,7 +1208,7 @@ export class CepToolExecutor {
             action: "Review connector configuration",
             lastUpdated: new Date().toISOString(),
             status: hasConnectors ? "healthy" : "critical",
-            priority: hasConnectors ? 5 : 1,
+            priority: hasConnectors ? 5 : 3,
           },
         ],
         suggestions,
