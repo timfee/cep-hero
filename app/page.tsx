@@ -86,9 +86,7 @@ export default function Home() {
             <div className="absolute inset-0 h-12 w-12 rounded-xl border border-primary animate-ping opacity-20" />
           </div>
           <div className="flex flex-col items-center gap-2">
-            <h1 className="text-lg font-semibold text-foreground">
-              CEP Hero
-            </h1>
+            <h1 className="text-lg font-semibold text-foreground">CEP Hero</h1>
             <p className="text-sm text-muted-foreground">Initializing...</p>
           </div>
         </div>
@@ -107,9 +105,7 @@ export default function Home() {
         {/* Header with User Info */}
         <header className="mb-6 flex items-start justify-between lg:mb-8 xl:mb-10">
           <div>
-            <h1 className="text-lg font-semibold text-foreground">
-              CEP Hero
-            </h1>
+            <h1 className="text-lg font-semibold text-foreground">CEP Hero</h1>
             <p className="text-sm text-muted-foreground">
               Chrome Enterprise Premium diagnostics and remediation
             </p>
