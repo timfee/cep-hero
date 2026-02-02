@@ -11,10 +11,22 @@ import {
 import { TOOLTIPS } from "@/lib/terminology";
 import { cn } from "@/lib/utils";
 
+type EventParameter = {
+  name?: string;
+  value?: string;
+  intValue?: string;
+  boolValue?: boolean;
+  multiValue?: string[];
+};
+
 type ChromeEvent = {
   id?: { time?: string | null; uniqueQualifier?: string | null };
   actor?: { email?: string | null; profileId?: string | null };
-  events?: Array<{ name?: string | null; type?: string | null }>;
+  events?: Array<{
+    name?: string | null;
+    type?: string | null;
+    parameters?: EventParameter[];
+  }>;
 };
 
 type ChromeEventsOutput = {
@@ -84,7 +96,60 @@ function getEventDescription(type?: string | null): string {
 }
 
 /**
- * Check if an event type indicates an error or security concern
+ * Notable event names that indicate security-relevant activity.
+ * Using structured event names from Google Admin SDK Reports API.
+ */
+const NOTABLE_EVENT_NAMES = [
+  "MALWARE_TRANSFER",
+  "PASSWORD_BREACH",
+  "SENSITIVE_DATA_TRANSFER",
+  "CONTENT_TRANSFER",
+  "URL_FILTERING",
+  "EXTENSION_REQUEST",
+  "LOGIN_FAILURE",
+  "UNSAFE_SITE_VISIT",
+  "PASSWORD_REUSE",
+] as const;
+
+/**
+ * Event results that indicate a blocked or quarantined action.
+ */
+const NOTABLE_RESULTS = ["BLOCKED", "QUARANTINED", "DENIED"] as const;
+
+/**
+ * Check if an event is notable (security-relevant) using structured fields.
+ * Uses event names and parameter values rather than keyword matching.
+ */
+function isNotableEvent(event: ChromeEvent): boolean {
+  const primary = event.events?.[0];
+  if (!primary) return false;
+
+  // Check event name directly
+  const eventName = primary.name?.toUpperCase() ?? "";
+  if (
+    NOTABLE_EVENT_NAMES.some((name) => eventName.includes(name.toUpperCase()))
+  ) {
+    return true;
+  }
+
+  // Check EVENT_RESULT parameter for blocked/denied actions
+  const resultParam = primary.parameters?.find(
+    (p) => p.name === "EVENT_RESULT"
+  );
+  if (
+    resultParam?.value &&
+    NOTABLE_RESULTS.includes(
+      resultParam.value.toUpperCase() as (typeof NOTABLE_RESULTS)[number]
+    )
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Check if an event type indicates an error or security concern (legacy fallback).
  */
 function isErrorEvent(type?: string | null): boolean {
   if (!type) return false;
@@ -155,41 +220,59 @@ export const EventsTable = memo(function EventsTable({
       </div>
 
       {/* Event list */}
-      <div className="divide-y divide-border">
+      <div className="divide-y divide-border" role="list">
         {rows.map((event, index) => {
           const primary = event.events?.[0];
           const actor = event.actor?.email ?? event.actor?.profileId;
-
+          const notable = isNotableEvent(event);
           const isError = isErrorEvent(primary?.type);
+          const signalCount = event.events?.length ?? 0;
 
           return (
             <div
               key={event.id?.uniqueQualifier ?? `event-${index}`}
+              role="listitem"
               className={cn(
                 "flex items-start gap-4 px-4 py-4 transition-colors hover:bg-muted/30",
-                isError && "bg-destructive/5"
+                notable && "border-l-4 border-amber-400/70 bg-amber-50/40",
+                isError && !notable && "bg-destructive/5"
               )}
             >
               {/* Event icon with error indicator */}
               <div
                 className={cn(
                   "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full",
-                  isError ? "bg-destructive/10" : "bg-primary/10"
+                  notable
+                    ? "bg-amber-100"
+                    : isError
+                      ? "bg-destructive/10"
+                      : "bg-primary/10"
                 )}
               >
                 <Activity
                   className={cn(
                     "h-5 w-5",
-                    isError ? "text-destructive" : "text-primary"
+                    notable
+                      ? "text-amber-700"
+                      : isError
+                        ? "text-destructive"
+                        : "text-primary"
                   )}
                 />
               </div>
 
               {/* Event details */}
               <div className="min-w-0 flex-1">
-                <p className="font-medium text-foreground">
-                  {humanizeEventName(primary?.name ?? primary?.type)}
-                </p>
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium text-foreground">
+                    {humanizeEventName(primary?.name ?? primary?.type)}
+                  </p>
+                  {notable && (
+                    <span className="inline-flex items-center rounded-full border border-amber-200/70 bg-amber-100/60 px-2 py-0.5 text-[11px] font-medium text-amber-700">
+                      Notable
+                    </span>
+                  )}
+                </div>
                 <p className="mt-0.5 text-sm text-muted-foreground">
                   {getEventDescription(primary?.type)}
                 </p>
@@ -206,6 +289,11 @@ export const EventsTable = memo(function EventsTable({
                     <Clock className="h-3 w-3" />
                     {formatRelativeTime(event.id?.time)}
                   </span>
+                  {signalCount > 0 && (
+                    <span className="text-muted-foreground">
+                      {signalCount} signal{signalCount === 1 ? "" : "s"}
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
