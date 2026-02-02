@@ -2,7 +2,6 @@ import { google } from "@ai-sdk/google";
 import { generateObject, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 
-import { diagnose } from "@/app/api/chat/diagnose";
 import {
   CepToolExecutor,
   EnrollBrowserSchema,
@@ -20,20 +19,31 @@ export const maxDuration = 30;
 
 const debugAuthSchema = z.object({});
 
-const systemPrompt =
-  "You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium. Your goal is to identify the root cause of issues, not just answer questions. " +
-  "Analyze returned data critically. If you see generic names or IDs (e.g. 'rule-1', 'policy-A'), warn the user that this makes debugging difficult and suggest inspecting specific items. " +
-  "When a tool returns a list (like org units, rules, events), you MUST parse the list and present a summary or a markdown table of the key items, along with analysis of any potential issues or patterns. Do not rely on the user to read the raw tool output. " +
-  "If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. " +
-  "Relevant documentation and policy definitions may be provided in the context. Use this information to verify error codes and configuration requirements. " +
-  "You MUST use the 'suggestActions' tool to present follow-up options or next steps. Do NOT list next steps as text in your message body. The UI requires this tool to display clickable buttons. " +
-  "Example: Instead of writing 'You can try to fetch events or check rules', call `suggestActions({ actions: ['Get recent Chrome events', 'List DLP rules'] })`. " +
-  "Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
+const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium. Your goal is to identify root causes, not just answer questions.
+
+# Operating principles
+- Think in steps; decide what to inspect next based on results.
+- Use tools in parallel when possible; avoid redundant calls.
+- Always summarize tool outputs (tables/lists) instead of dumping raw JSON.
+- Use the 'suggestActions' tool to provide clickable follow-ups; do not embed next steps as plain text.
+- Do not rely on any single "diagnose" or "runDiagnosis" tool; use atomic tools and evidence.
+- Keep responses in plain text; tool outputs are rendered separately in the UI.
+
+# Standard Operating Procedure for investigations
+1) If the user reports fleet-wide issues or policies not applying, start by calling:
+   - getChromeEvents (recent events, maxResults if provided)
+   - getChromeConnectorConfiguration (connector policies)
+   - listDLPRules (policies list)
+2) Analyze connector policy targeting. If any policies target customers, flag mis-scoping and recommend org unit/group targeting.
+3) If events are empty or errors occur, call debugAuth to inspect scopes/expiry.
+4) If tool outputs include errors, codes, or unfamiliar terms, call searchPolicies or searchDocs to ground the error before proposing fixes.
+5) Present findings concisely and propose next actions via suggestActions.
+
+Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.`;
 
 interface CreateChatStreamParams {
   messages: ChatMessage[];
   accessToken: string;
-  req: Request; // Passed for 'diagnose' tool which needs req context
 }
 
 /**
@@ -42,18 +52,13 @@ interface CreateChatStreamParams {
  * @param params - Configuration parameters for the chat stream.
  * @param params.messages - The conversation history.
  * @param params.accessToken - Google OAuth access token for tool execution.
- * @param params.req - The original request object (needed for some tools).
  * @returns A streaming response compatible with the AI SDK.
  */
 export async function createChatStream({
   messages,
   accessToken,
-  req,
 }: CreateChatStreamParams) {
   const executor = new CepToolExecutor(accessToken);
-
-  // Track structured data from diagnosis tool for message metadata
-  let diagnosisResult: Awaited<ReturnType<typeof diagnose>> | null = null;
 
   // 1. Analyze intent and proactively retrieve knowledge (RAG)
   const lastUserMessage = messages
@@ -88,12 +93,12 @@ export async function createChatStream({
         ]);
 
         const docSnippets =
-          docs?.result
-            ?.map((d) => `[Doc: ${d.metadata?.title}]\n${d.data}`)
+          docs?.hits
+            ?.map((d) => `[Doc: ${d.metadata?.title}]\n${d.content}`)
             .join("\n\n") || "";
         const policySnippets =
-          policies?.result
-            ?.map((p) => `[Policy: ${p.metadata?.title}]\n${p.data}`)
+          policies?.hits
+            ?.map((p) => `[Policy: ${p.metadata?.title}]\n${p.content}`)
             .join("\n\n") || "";
 
         if (docSnippets || policySnippets) {
@@ -115,7 +120,7 @@ export async function createChatStream({
   const result = streamText({
     model: google("gemini-2.0-flash-001"),
     messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
-    maxSteps: 5,
+    stopWhen: stepCountIs(5),
     tools: {
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
@@ -170,53 +175,10 @@ export async function createChatStream({
           return { actions };
         },
       }),
-
-      runDiagnosis: tool({
-        description: "Run full diagnosis and return structured answer.",
-        inputSchema: z.object({ prompt: z.string() }),
-        execute: async (args) => {
-          // Note: 'diagnose' internally likely uses req.headers or similar.
-          // Since we passed 'req', we are good.
-          const result = await diagnose(req, args.prompt);
-          diagnosisResult = result;
-          return result;
-        },
-      }),
     },
   });
 
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
-    messageMetadata: () => {
-      // Build structured evidence for the UI from diagnosis
-      const evidence =
-        diagnosisResult && !("error" in diagnosisResult)
-          ? {
-              planSteps: diagnosisResult.planSteps,
-              hypotheses: diagnosisResult.hypotheses,
-              nextSteps: diagnosisResult.nextSteps,
-              missingQuestions: diagnosisResult.missingQuestions,
-              evidence: diagnosisResult.evidence,
-              connectorAnalysis: diagnosisResult.evidence?.connectorAnalysis,
-            }
-          : undefined;
-
-      // Build action buttons from next steps (diagnosis) OR generic actions (if we track them)
-      // For now, rely on diagnosisResult or client-side handling of 'suggestActions' tool result
-      const actions =
-        diagnosisResult && !("error" in diagnosisResult)
-          ? diagnosisResult.nextSteps?.map((step, i) => ({
-              id: `next-step-${i}`,
-              label: step,
-              command: step,
-            }))
-          : [];
-
-      if (!evidence && actions.length === 0) {
-        return undefined;
-      }
-
-      return { evidence, actions };
-    },
   });
 }

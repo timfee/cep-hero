@@ -181,9 +181,19 @@ export async function probePolicyTargetResources({
   const uniqueTargets = Array.from(new Set(targetResources));
 
   for (const targetResource of uniqueTargets) {
+    const trimmed = targetResource.trim();
+    if (!trimmed) {
+      errors.push({
+        targetResource,
+        message:
+          "targetResource must be a non-empty orgunits/{id} or groups/{id}",
+      });
+      continue;
+    }
+
     // The resolve endpoint only supports 'orgunits' or 'groups'.
     // It does not support 'customers' (use root org unit instead).
-    if (targetResource.startsWith("customers/")) {
+    if (trimmed.startsWith("customers/")) {
       continue;
     }
 
@@ -192,12 +202,12 @@ export async function probePolicyTargetResources({
         customer: `customers/${customerId}`,
         requestBody: {
           policySchemaFilter,
-          policyTargetKey: { targetResource },
+          policyTargetKey: { targetResource: trimmed },
           pageSize,
         },
       });
       results.push({
-        targetResource,
+        targetResource: trimmed,
         resolvedPolicies: res.data.resolvedPolicies ?? [],
       });
     } catch (error) {

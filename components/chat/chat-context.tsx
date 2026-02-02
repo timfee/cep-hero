@@ -21,7 +21,15 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const { messages, status, sendMessage, stop, regenerate } = useChat();
 
   const value = useMemo<ChatContextValue>(
-    () => ({ messages, status, input, setInput, sendMessage, stop, regenerate }),
+    () => ({
+      messages,
+      status,
+      input,
+      setInput,
+      sendMessage,
+      stop,
+      regenerate,
+    }),
     [messages, status, input, sendMessage, stop, regenerate]
   );
 
