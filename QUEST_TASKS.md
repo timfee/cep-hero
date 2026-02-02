@@ -100,14 +100,14 @@ For each eval case, assess:
 | EC-079 | Detector tuning                      | [ ]      | No       |       |
 | EC-084 | DLP audit rule setup for all traffic | [ ]      | Yes      |       |
 
-### endpoint (4 cases)
+### endpoint (4 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                       | Reviewed | Fixtures | Notes |
 | ------ | ------------------------------------------- | -------- | -------- | ----- |
-| EC-009 | Endpoint Verification sync (macOS Keychain) | [ ]      | No       |       |
-| EC-010 | Endpoint Verification sync (Windows DPAPI)  | [ ]      | No       |       |
-| EC-011 | Endpoint Verification cannot recover key    | [ ]      | No       |       |
-| EC-012 | Endpoint Verification service worker bug    | [ ]      | No       |       |
+| EC-009 | Endpoint Verification sync (macOS Keychain) | [x]      | Yes      | Keychain access denied, Safe Storage locked, heartbeat missed |
+| EC-010 | Endpoint Verification sync (Windows DPAPI)  | [x]      | Yes      | DPAPI decryption failed, S4U task error, registry key invalid |
+| EC-011 | Endpoint Verification cannot recover key    | [x]      | Yes      | Key recovery failure, Safe Storage reset needed |
+| EC-012 | Endpoint Verification service worker bug    | [x]      | Yes      | SW registration status code 2, known EV bug |
 
 ### enrollment (7 cases) ✅ FIXTURES COMPLETE
 
@@ -137,14 +137,14 @@ For each eval case, assess:
 | EC-045 | Malicious extension removal      | [x]      | Yes      | Extension installed on 2 devices, needs blocklisting |
 | EC-053 | Corrupt extension state          | [x]      | Yes      | EXTENSION_CRASH events leading to CORRUPTED state |
 
-### integration (4 cases)
+### integration (4 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                    | Reviewed | Fixtures | Notes |
 | ------ | ---------------------------------------- | -------- | -------- | ----- |
-| EC-017 | Citrix SPA integration issues (overview) | [ ]      | No       |       |
-| EC-024 | Citrix SPA group membership sync         | [ ]      | No       |       |
-| EC-025 | Citrix SPA expired token proxy pop-up    | [ ]      | No       |       |
-| EC-026 | Citrix SPA service unavailable           | [ ]      | No       |       |
+| EC-017 | Citrix SPA integration issues (overview) | [x]      | Yes      | Policy limit exceeded (8 groups max), complex policy timeout |
+| EC-024 | Citrix SPA group membership sync         | [x]      | Yes      | Group visibility restricted, Directory API permission denied |
+| EC-025 | Citrix SPA expired token proxy pop-up    | [x]      | Yes      | CEP token expired, proxy auth required, re-auth needed |
+| EC-026 | Citrix SPA service unavailable           | [x]      | Yes      | 503 Service Unavailable, backend outage, support logs needed |
 
 ### network (6 cases)
 
@@ -344,3 +344,36 @@ Created fixtures for extensions category (4 cases):
 1. Run evals against live server to establish true baseline
 2. Review endpoint category (4 cases)
 3. Continue with remaining categories
+
+### Session 3: 2026-02-02
+
+**Completed:**
+
+- Ran evals in test mode to establish baseline (all endpoint/integration cases passing in test mode)
+- Created fixtures for all 4 endpoint category cases (Endpoint Verification):
+  - EC-009: macOS Keychain sync failure with KEYCHAIN_ACCESS_DENIED, SAFE_STORAGE_LOCKED
+  - EC-010: Windows DPAPI sync failure with S4U_LOGON_FAILURE, registry errors
+  - EC-011: Key recovery failure with DATA_PROTECTION_KEY_UNRECOVERABLE
+  - EC-012: Service worker bug with SW_REGISTRATION_FAILED status code 2
+
+- Created fixtures for all 4 integration category cases (Citrix SPA):
+  - EC-017: Provisioning failures (8 group limit, complex policy timeout, server-to-client unsupported)
+  - EC-024: Group membership sync failures (visibility restricted, Directory API permission denied)
+  - EC-025: Expired token proxy pop-ups (CEP_TOKEN_EXPIRED, re-auth required)
+  - EC-026: Service unavailable errors (503, backend outage, support ticket needed)
+
+- Updated registry.json with fixture overrides and required_evidence for all 8 cases
+
+**Total Progress:** 21/85 cases now have fixtures
+- enrollment: 7 ✅
+- events: 2 ✅
+- extensions: 4 ✅
+- endpoint: 4 ✅ (NEW)
+- integration: 4 ✅ (NEW)
+
+**Next Session Should:**
+
+1. Continue with auth category (3 cases)
+2. Continue with browser category (3 cases)
+3. Start connector category (8 cases)
+4. Consider running live server evals to validate fixtures

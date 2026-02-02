@@ -1,0 +1,73 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T11:30:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_SYNC_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-device-001" },
+              { "name": "DEVICE_NAME", "value": "DESKTOP-ADMIN-01" },
+              { "name": "OS_TYPE", "value": "Windows" },
+              { "name": "OS_VERSION", "value": "10.0.19045" },
+              { "name": "ERROR_CODE", "value": "DPAPI_DECRYPTION_FAILED" },
+              { "name": "ERROR_MESSAGE", "value": "DPAPI decryption failed. The system cannot decrypt the protected data." },
+              { "name": "USER_EMAIL", "value": "admin@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T11:35:45.123Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_S4U_TASK_ERROR",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-device-001" },
+              { "name": "DEVICE_NAME", "value": "DESKTOP-ADMIN-01" },
+              { "name": "OS_TYPE", "value": "Windows" },
+              { "name": "ERROR_CODE", "value": "S4U_LOGON_FAILURE" },
+              { "name": "ERROR_MESSAGE", "value": "Service for User (S4U) logon failed. Scheduled task cannot run with stored credentials." },
+              { "name": "TASK_NAME", "value": "GoogleEndpointVerificationTask" },
+              { "name": "WIN_ERROR_CODE", "value": "0x80070005" },
+              { "name": "USER_EMAIL", "value": "admin@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T11:40:00.456Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_REGISTRY_ERROR",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-device-001" },
+              { "name": "DEVICE_NAME", "value": "DESKTOP-ADMIN-01" },
+              { "name": "OS_TYPE", "value": "Windows" },
+              { "name": "ERROR_CODE", "value": "SAFE_STORAGE_KEY_INVALID" },
+              { "name": "ERROR_MESSAGE", "value": "Safe Storage registry key is corrupted or cannot be read with current DPAPI context." },
+              { "name": "REGISTRY_PATH", "value": "HKCU\\Software\\Google\\Chrome\\PreferenceMACs" },
+              { "name": "USER_EMAIL", "value": "admin@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
