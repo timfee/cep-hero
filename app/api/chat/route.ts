@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { streamText, tool } from "ai";
+import { streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 
 import { diagnose } from "@/app/api/chat/diagnose";
@@ -120,6 +120,7 @@ export async function POST(req: Request) {
   const result = streamText({
     model: google("gemini-2.0-flash-001"),
     messages: [{ role: "system", content: systemPrompt }, ...messages],
+    stopWhen: stepCountIs(5),
     tools: {
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
@@ -167,7 +168,7 @@ export async function POST(req: Request) {
   // Return stream response
   return result.toUIMessageStreamResponse({
     sendReasoning: true,
-    getMessageMetadata: () => {
+    messageMetadata: () => {
       if (!diagnosisResult || "error" in diagnosisResult) return undefined;
 
       // Build structured evidence for the UI

@@ -178,7 +178,15 @@ export async function probePolicyTargetResources({
   }> = [];
   const errors: Array<{ targetResource: string; message: string }> = [];
 
-  for (const targetResource of targetResources) {
+  const uniqueTargets = Array.from(new Set(targetResources));
+
+  for (const targetResource of uniqueTargets) {
+    // The resolve endpoint only supports 'orgunits' or 'groups'.
+    // It does not support 'customers' (use root org unit instead).
+    if (targetResource.startsWith("customers/")) {
+      continue;
+    }
+
     try {
       const res = await policy.customers.policies.resolve({
         customer: `customers/${customerId}`,
@@ -193,10 +201,17 @@ export async function probePolicyTargetResources({
         resolvedPolicies: res.data.resolvedPolicies ?? [],
       });
     } catch (error) {
-      errors.push({
-        targetResource,
-        message: getErrorMessage(error),
-      });
+      const message = getErrorMessage(error);
+      const isIgnorable =
+        message.includes("Requested entity was not found") ||
+        message.includes("must be of type 'orgunits' or 'groups'");
+
+      if (!isIgnorable) {
+        errors.push({
+          targetResource,
+          message,
+        });
+      }
     }
   }
 
