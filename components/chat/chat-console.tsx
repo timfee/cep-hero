@@ -1,29 +1,26 @@
-import { SendHorizontal, HelpCircle, Loader2, RefreshCcwIcon, CopyIcon } from "lucide-react";
-import { useMemo, useCallback } from "react";
 import { getToolName, isToolUIPart } from "ai";
+import { HelpCircle, RefreshCcwIcon, CopyIcon } from "lucide-react";
+import { useCallback } from "react";
 
+import type { ToolPart } from "@/components/ai-elements/tool";
 import type {
-  EvidencePayload,
-  ConnectorAnalysis,
-  Hypothesis,
-  MissingQuestion,
+  ChromeEventsOutput,
+  ConnectorConfigOutput,
+  DlpRulesOutput,
+  SuggestedActionsOutput,
 } from "@/types/chat";
 
-import {
-  ActionButtons,
-  type ActionItem,
-} from "@/components/ai-elements/action-buttons";
-import { ConnectorStatus } from "@/components/ai-elements/connector-status";
+import { ActionButtons } from "@/components/ai-elements/action-buttons";
+import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-policies-card";
 import {
   Conversation,
   ConversationContent,
   ConversationEmptyState,
   ConversationScrollButton,
 } from "@/components/ai-elements/conversation";
-import { EvidencePanel } from "@/components/ai-elements/evidence-panel";
-// Domain-specific components
-import { HypothesesList } from "@/components/ai-elements/hypothesis-card";
-import { Loader, ThinkingIndicator } from "@/components/ai-elements/loader";
+import { DlpRulesCard } from "@/components/ai-elements/dlp-rules-card";
+import { EventsTable } from "@/components/ai-elements/events-table";
+import { Loader } from "@/components/ai-elements/loader";
 import {
   Message,
   MessageContent,
@@ -31,9 +28,6 @@ import {
   MessageActions,
   MessageAction,
 } from "@/components/ai-elements/message";
-import { MissingQuestionsList } from "@/components/ai-elements/missing-questions";
-import { NextStepsPanel } from "@/components/ai-elements/next-steps-panel";
-import { PlanSteps } from "@/components/ai-elements/plan-steps";
 import {
   PromptInput,
   PromptInputBody,
@@ -55,21 +49,19 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { useChatContext } from "@/components/chat/chat-context";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+
 import { OrgUnitsList } from "./org-units-list";
 
-interface MessageMetadata {
-  evidence?: {
-    planSteps?: string[];
-    hypotheses?: Hypothesis[];
-    nextSteps?: string[];
-    missingQuestions?: MissingQuestion[];
-    evidence?: EvidencePayload;
-    connectorAnalysis?: ConnectorAnalysis;
-  };
-  actions?: ActionItem[];
-}
+type OrgUnitsOutput = {
+  orgUnits?: Array<{
+    orgUnitId?: string;
+    name?: string;
+    orgUnitPath?: string;
+    parentOrgUnitId?: string;
+    description?: string;
+  }>;
+};
 
 export function ChatConsole() {
   const { messages, sendMessage, status, input, setInput, stop, regenerate } =
@@ -111,10 +103,6 @@ export function ChatConsole() {
           {messages.map((message, index) => {
             const isUser = message.role === "user";
             const isLast = index === messages.length - 1;
-            const metadata = message.metadata as MessageMetadata | undefined;
-            const evidence = metadata?.evidence;
-            const actions = metadata?.actions;
-
             return (
               <div key={message.id || index} className="space-y-4">
                 {message.parts.map((part, i) => {
@@ -169,15 +157,16 @@ export function ChatConsole() {
 
                   if (isToolUIPart(part)) {
                     const toolName = getToolName(part);
-                    const toolPart = part as any; // Cast to access state/input/output safely if needed
+                    const toolPart = part as ToolPart;
 
                     // 1. Suggest Actions -> Action Buttons
                     if (
                       toolName === "suggestActions" &&
                       toolPart.state === "output-available"
                     ) {
-                      const actions = (toolPart.input as { actions: string[] })
-                        ?.actions;
+                      const actions = (
+                        toolPart.output as SuggestedActionsOutput
+                      )?.actions;
                       if (actions && actions.length > 0) {
                         return (
                           <div key={partKey} className="pl-4 lg:pl-6">
@@ -203,19 +192,72 @@ export function ChatConsole() {
                     ) {
                       return (
                         <div key={partKey} className="pl-4 lg:pl-6">
-                          <OrgUnitsList data={toolPart.output} />
+                          <OrgUnitsList
+                            data={(toolPart.output as OrgUnitsOutput) ?? {}}
+                          />
                         </div>
                       );
                     }
 
-                    // 3. Default -> Collapsible Tool View
+                    // 3. Chrome events -> table view
+                    if (
+                      toolName === "getChromeEvents" &&
+                      toolPart.state === "output-available"
+                    ) {
+                      return (
+                        <div key={partKey} className="pl-4 lg:pl-6">
+                          <EventsTable
+                            output={
+                              (toolPart.output as ChromeEventsOutput) ?? {}
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
+                    // 4. DLP rules -> list view
+                    if (
+                      toolName === "listDLPRules" &&
+                      toolPart.state === "output-available"
+                    ) {
+                      return (
+                        <div key={partKey} className="pl-4 lg:pl-6">
+                          <DlpRulesCard
+                            output={(toolPart.output as DlpRulesOutput) ?? {}}
+                          />
+                        </div>
+                      );
+                    }
+
+                    // 5. Connector configuration -> scope status
+                    if (
+                      toolName === "getChromeConnectorConfiguration" &&
+                      toolPart.state === "output-available"
+                    ) {
+                      return (
+                        <div key={partKey} className="pl-4 lg:pl-6">
+                          <ConnectorPoliciesCard
+                            output={
+                              (toolPart.output as ConnectorConfigOutput) ?? {}
+                            }
+                          />
+                        </div>
+                      );
+                    }
+
+                    // Default -> Collapsible Tool View
+                    const headerProps =
+                      toolPart.type === "dynamic-tool"
+                        ? {
+                            type: toolPart.type,
+                            state: toolPart.state,
+                            toolName,
+                          }
+                        : { type: toolPart.type, state: toolPart.state };
+
                     return (
                       <Tool key={partKey}>
-                        <ToolHeader
-                          type={toolPart.type}
-                          state={toolPart.state}
-                          toolName={toolName}
-                        />
+                        <ToolHeader {...headerProps} />
                         <ToolContent>
                           <ToolInput input={toolPart.input} />
                           {toolPart.state === "output-available" && (
@@ -227,7 +269,10 @@ export function ChatConsole() {
                           {toolPart.state === "output-error" && (
                             <ToolOutput
                               output={undefined}
-                              errorText={toolPart.error}
+                              errorText={
+                                toolPart.errorText ??
+                                (toolPart as { error?: string }).error
+                              }
                             />
                           )}
                         </ToolContent>
@@ -237,50 +282,6 @@ export function ChatConsole() {
 
                   return null;
                 })}
-
-                {/* Domain-specific structured data rendered after parts */}
-                {!isUser && (
-                  <div className="space-y-4 pl-4 lg:pl-6">
-                    {evidence?.connectorAnalysis?.flag && (
-                      <ConnectorStatus analysis={evidence.connectorAnalysis} />
-                    )}
-
-                    {evidence?.planSteps && evidence.planSteps.length > 0 && (
-                      <PlanSteps steps={evidence.planSteps} />
-                    )}
-
-                    {evidence?.evidence && (
-                      <EvidencePanel evidence={evidence.evidence} />
-                    )}
-
-                    {evidence?.hypotheses && evidence.hypotheses.length > 0 && (
-                      <HypothesesList hypotheses={evidence.hypotheses} />
-                    )}
-
-                    {evidence?.missingQuestions &&
-                      evidence.missingQuestions.length > 0 && (
-                        <MissingQuestionsList
-                          questions={evidence.missingQuestions}
-                        />
-                      )}
-
-                    {evidence?.nextSteps && evidence.nextSteps.length > 0 && (
-                      <NextStepsPanel
-                        steps={evidence.nextSteps}
-                        onStepClick={handleAction}
-                        disabled={isStreaming}
-                      />
-                    )}
-
-                    {actions && actions.length > 0 && (
-                      <ActionButtons
-                        actions={actions}
-                        onAction={handleAction}
-                        disabled={isStreaming}
-                      />
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}

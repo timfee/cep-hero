@@ -48,13 +48,17 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
     .map((msgRaw) => {
       const parsedMsg = MessageSchema.safeParse(msgRaw);
       if (!parsedMsg.success) return null;
-      
+
       const role = parsedMsg.data.role;
       if (role !== "system" && role !== "user" && role !== "assistant") {
         return null;
       }
-      
-      return normalizeMessage(parsedMsg.data as z.infer<typeof MessageSchema> & { role: "system" | "user" | "assistant" });
+
+      return normalizeMessage(
+        parsedMsg.data as z.infer<typeof MessageSchema> & {
+          role: "system" | "user" | "assistant";
+        }
+      );
     })
     .filter((msg): msg is ChatMessage => msg !== null);
 }
@@ -111,7 +115,11 @@ function normalizeMessage(
     return null;
   }
 
-  if (value.role !== "system" && value.role !== "user" && value.role !== "assistant") {
+  if (
+    value.role !== "system" &&
+    value.role !== "user" &&
+    value.role !== "assistant"
+  ) {
     return null;
   }
 
