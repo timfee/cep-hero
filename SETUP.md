@@ -70,16 +70,26 @@ Visit `http://localhost:3000`. You will be prompted to sign in with your Google 
 ## 6. Eval commands (optional)
 
 ```bash
-bun run evals:run
-bun run evals:run:diag
-bun run evals:run:plan
-EVAL_IDS=EC-075 bun run evals:run:by-id
+# Run all evals
+EVAL_USE_BASE=1 bun run evals
+
+# Run by category
+EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+
+# Run specific case by ID
+EVAL_IDS=EC-075 EVAL_USE_BASE=1 bun run evals
+
+# Fast mode (server already running)
+EVAL_USE_BASE=1 bun run evals:fast
 ```
 
-Gates you can toggle during eval runs:
+Environment variables:
 
-- `EVAL_USE_BASE=1` attaches the base API snapshot.
-- `EVAL_USE_FIXTURES=1` attaches fixture context for the case.
+- `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
+- `EVAL_USE_FIXTURES=1` - Load case-specific overrides from `evals/fixtures/EC-###/`
+- `EVAL_CATEGORY=connector` - Run evals in a specific category
+- `EVAL_TAGS=dlp` - Run evals with specific tags
+- `EVAL_TEST_MODE=1` - Return synthetic responses (no AI calls)
 
 ## 7. Credential check (recommended for test bypass)
 
