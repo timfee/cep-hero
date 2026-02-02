@@ -1,6 +1,8 @@
 import { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 
+import { writeDebugLog } from "@/lib/debug-log";
+
 /**
  * Transport adapter for MCP over Next.js SSE streams.
  */
@@ -56,6 +58,10 @@ export class NextJsSseTransport implements Transport {
     }
 
     const event = `event: message\ndata: ${JSON.stringify(message)}\n\n`;
+    await writeDebugLog("mcp.message.out", {
+      sessionId: this._sessionId,
+      message,
+    });
     this._controller.enqueue(new TextEncoder().encode(event));
   }
 

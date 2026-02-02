@@ -1,9 +1,11 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { AlertCircle, CheckCircle } from "lucide-react";
-import type { ConnectorAnalysis } from "@/types/chat";
 import { memo } from "react";
+
+import type { ConnectorAnalysis } from "@/types/chat";
+
+import { cn } from "@/lib/utils";
 
 export interface ConnectorStatusProps {
   analysis: ConnectorAnalysis;
@@ -37,8 +39,10 @@ export const ConnectorStatus = memo(function ConnectorStatus({
               : "Connector scope issue detected"}
           </p>
           <p className="text-xs text-muted-foreground">
-            {analysis.total} {analysis.total === 1 ? "policy" : "policies"} analyzed
-            {analysis.misScoped > 0 && ` (${analysis.misScoped} may need attention)`}
+            {analysis.total} {analysis.total === 1 ? "policy" : "policies"}{" "}
+            analyzed
+            {analysis.misScoped > 0 &&
+              ` (${analysis.misScoped} may need attention)`}
           </p>
         </div>
       </div>

@@ -1,14 +1,16 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { Lightbulb, ChevronDown, Check } from "lucide-react";
+import { useState, memo } from "react";
+
+import type { Hypothesis } from "@/types/chat";
+
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import type { Hypothesis } from "@/types/chat";
-import { useState, memo } from "react";
+import { cn } from "@/lib/utils";
 
 export interface HypothesisCardProps {
   hypothesis: Hypothesis;
@@ -58,7 +60,12 @@ export const HypothesisCard = memo(function HypothesisCard({
             <ConfidenceBar confidence={hypothesis.confidence} />
           </div>
           {hasEvidence && (
-            <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform mt-0.5", isOpen && "rotate-180")} />
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 text-muted-foreground transition-transform mt-0.5",
+                isOpen && "rotate-180"
+              )}
+            />
           )}
         </CollapsibleTrigger>
 

@@ -1,9 +1,11 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { HelpCircle } from "lucide-react";
-import type { MissingQuestion } from "@/types/chat";
 import { memo } from "react";
+
+import type { MissingQuestion } from "@/types/chat";
+
+import { cn } from "@/lib/utils";
 
 export interface MissingQuestionCardProps {
   question: MissingQuestion;

@@ -1,4 +1,3 @@
-import { expect } from "bun:test";
 import { closeSync, existsSync, openSync, unlinkSync, writeFileSync } from "fs";
 
 type EvalServerState = {

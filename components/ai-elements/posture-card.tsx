@@ -1,8 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import { ArrowRight } from "lucide-react";
+import { motion } from "motion/react";
+import { memo } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,7 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { memo } from "react";
+import { cn } from "@/lib/utils";
 
 export interface PostureCardData {
   label: string;
@@ -54,7 +55,9 @@ export const PostureCard = memo(function PostureCard({
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <div>
-              <CardTitle className="text-sm font-medium">{card.label}</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                {card.label}
+              </CardTitle>
               <CardDescription className="text-xs">
                 {card.source || "Chrome fleet"}
               </CardDescription>

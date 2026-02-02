@@ -1,5 +1,6 @@
 import { createUIMessageStream, createUIMessageStreamResponse } from "ai";
 import { google as googleApis } from "googleapis";
+import { randomUUID } from "node:crypto";
 
 import type { DiagnosisError, DiagnosisResult } from "@/types/chat";
 
@@ -50,7 +51,7 @@ export async function POST(req: Request) {
         body: { providerId: "google" },
         headers: req.headers,
       });
-    } catch (error) {
+    } catch {
       if (EVAL_TEST_MODE_ENABLED) {
         return createTestModeResponse();
       }
@@ -99,23 +100,31 @@ export async function POST(req: Request) {
       status: actionResponse.status,
     });
 
+    const messageId = randomUUID();
+
     const stream = createUIMessageStream({
       execute: async ({ writer }) => {
         writer.write({
           type: "start",
-          messageId: "assistant",
+          messageId,
           messageMetadata: {},
         });
-        writer.write({ type: "text-start", id: "assistant" });
+        writer.write({ type: "text-start", id: messageId });
         writer.write({
           type: "text-delta",
-          id: "assistant",
+          id: messageId,
           delta: actionResponse.message,
         });
-        writer.write({ type: "text-end", id: "assistant" });
+        writer.write({ type: "text-end", id: messageId });
         writer.write({ type: "finish", messageMetadata: {} });
       },
       onError: () => "An error occurred while streaming.",
+    });
+
+    await writeDebugLog("chat.response.action", {
+      messageId,
+      status: actionResponse.status,
+      messageLength: actionResponse.message.length,
     });
 
     return createUIMessageStreamResponse({ stream });
@@ -214,11 +223,13 @@ export async function POST(req: Request) {
 
   const finalAssistantMessage = lines.join("\n");
 
+  const messageId = randomUUID();
+
   const stream = createUIMessageStream({
     execute: async ({ writer }) => {
       writer.write({
         type: "start",
-        messageId: "assistant",
+        messageId,
         messageMetadata: {
           evidence: {
             planSteps,
@@ -231,14 +242,14 @@ export async function POST(req: Request) {
           actions,
         },
       });
-      writer.write({ type: "text-start", id: "assistant" });
+      writer.write({ type: "text-start", id: messageId });
 
       writer.write({
         type: "text-delta",
-        id: "assistant",
+        id: messageId,
         delta: finalAssistantMessage,
       });
-      writer.write({ type: "text-end", id: "assistant" });
+      writer.write({ type: "text-end", id: messageId });
       writer.write({
         type: "finish",
         messageMetadata: {
@@ -255,6 +266,16 @@ export async function POST(req: Request) {
       });
     },
     onError: () => "An error occurred while streaming.",
+  });
+
+  await writeDebugLog("chat.response.diagnosis", {
+    messageId,
+    planSteps: planSteps.length,
+    hypotheses: hypotheses.length,
+    nextSteps: nextSteps.length,
+    missingQuestions: missingQuestions.length,
+    hasConnectorAnalysis: Boolean(connectorAnalysis?.flag),
+    textLength: finalAssistantMessage.length,
   });
 
   return createUIMessageStreamResponse({
@@ -452,6 +473,11 @@ async function handleListOrgUnits(accessToken: string): Promise<ActionResult> {
     auth: authClient,
   });
   try {
+    await writeDebugLog("google.request.orgunits", {
+      endpoint: "https://admin.googleapis.com/admin/directory/v1/orgunits",
+      method: "GET",
+      params: { customerId: "my_customer", type: "all" },
+    });
     const res = await directory.orgunits.list({
       customerId: "my_customer",
       type: "all",
@@ -464,8 +490,16 @@ async function handleListOrgUnits(accessToken: string): Promise<ActionResult> {
       `Org units (${units.length}):`,
       ...sample.map((p) => `- ${p}`),
     ];
+    await writeDebugLog("google.response.orgunits", {
+      status: "ok",
+      count: units.length,
+      sample,
+    });
     return { message: lines.join("\n"), status: "ok" };
   } catch (error) {
+    await writeDebugLog("google.error.orgunits", {
+      error: getErrorMessage(error),
+    });
     return {
       message: `Org unit lookup failed: ${getErrorMessage(error)}`,
       status: "error",

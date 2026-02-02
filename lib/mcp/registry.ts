@@ -6,6 +6,7 @@ import { z } from "zod";
 
 import type { VectorSearchResult } from "@/lib/upstash/search";
 
+import { writeDebugLog } from "@/lib/debug-log";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 import { recordActivity } from "../activity-log";
@@ -179,6 +180,10 @@ export class CepToolExecutor {
     this.auth = client;
   }
 
+  private async logApi(event: string, payload: Record<string, unknown>) {
+    await writeDebugLog(event, payload);
+  }
+
   /**
    * Fetch recent Chrome audit events from the Admin SDK Reports API.
    */
@@ -186,6 +191,11 @@ export class CepToolExecutor {
     maxResults = 10,
   }: z.infer<typeof GetChromeEventsSchema>) {
     console.log("[chrome-events] request", { maxResults });
+    await this.logApi("google.request.chrome-events", {
+      endpoint: "https://admin.googleapis.com/admin/reports_v1/activities",
+      method: "GET",
+      params: { maxResults, customerId: this.customerId },
+    });
     const service = googleApis.admin({
       version: "reports_v1",
       auth: this.auth,
@@ -215,6 +225,11 @@ export class CepToolExecutor {
         timestamp: Date.now(),
         kind: "workspace",
       });
+      await this.logApi("google.response.chrome-events", {
+        status: "ok",
+        count: res.data.items?.length ?? 0,
+        sample: res.data.items?.[0]?.id,
+      });
       return { events: res.data.items || [] };
     } catch (error: unknown) {
       const { code, message, errors } = getErrorDetails(error);
@@ -222,6 +237,11 @@ export class CepToolExecutor {
         "[chrome-events] error",
         JSON.stringify({ code, message, errors })
       );
+      await this.logApi("google.error.chrome-events", {
+        code,
+        message,
+        errors,
+      });
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://admin.googleapis.com/admin/reports_v1/activities",
@@ -252,6 +272,11 @@ export class CepToolExecutor {
     });
     const listPolicies = getPoliciesList(service);
     console.log("[dlp-rules] request");
+    await this.logApi("google.request.dlp-rules", {
+      endpoint: "https://cloudidentity.googleapis.com/v1/policies",
+      method: "GET",
+      params: { customerId: this.customerId, includeHelp },
+    });
     const start = Date.now();
     try {
       if (!listPolicies) {
@@ -281,6 +306,11 @@ export class CepToolExecutor {
         responsePreview: `policies=${res.data.policies?.length ?? 0}`,
         timestamp: Date.now(),
         kind: "workspace",
+      });
+      await this.logApi("google.response.dlp-rules", {
+        status: "ok",
+        count: res.data.policies?.length ?? 0,
+        sample: res.data.policies?.[0]?.name,
       });
 
       const rules = (res.data.policies ?? []).map(
@@ -312,6 +342,11 @@ export class CepToolExecutor {
         "[dlp-rules] error",
         JSON.stringify({ code, message, errors })
       );
+      await this.logApi("google.error.dlp-rules", {
+        code,
+        message,
+        errors,
+      });
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://cloudidentity.googleapis.com/v1/policies",
@@ -340,6 +375,15 @@ export class CepToolExecutor {
     });
     const createEnrollment = getEnrollmentCreate(service);
     console.log("[enroll-browser] request", { orgUnitId });
+    await this.logApi("google.request.enroll-browser", {
+      endpoint:
+        "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
+      method: "POST",
+      body: {
+        customer: this.customerId,
+        orgUnitId,
+      },
+    });
     const start = Date.now();
     try {
       if (!createEnrollment) {
@@ -376,6 +420,11 @@ export class CepToolExecutor {
         timestamp: Date.now(),
         kind: "workspace",
       });
+      await this.logApi("google.response.enroll-browser", {
+        status: "ok",
+        token: res.data.name ?? "",
+        expires: res.data.expirationTime,
+      });
       return {
         enrollmentToken: res.data.name ?? "",
         expiresAt: res.data.expirationTime ?? null,
@@ -386,6 +435,11 @@ export class CepToolExecutor {
         "[enroll-browser] error",
         JSON.stringify({ code, message, errors })
       );
+      await this.logApi("google.error.enroll-browser", {
+        code,
+        message,
+        errors,
+      });
       recordActivity({
         id: crypto.randomUUID(),
         url: "https://chromemanagement.googleapis.com/v1/customers/policies/networks/enrollments",
@@ -427,6 +481,13 @@ export class CepToolExecutor {
     ];
 
     const start = Date.now();
+    await this.logApi("google.request.connector-config", {
+      endpoint:
+        "https://chromepolicy.googleapis.com/v1/customers/policies:resolve",
+      method: "POST",
+      policySchemas,
+      customerId: this.customerId,
+    });
     try {
       const resolvedPolicies: ResolvedPolicy[] = [];
 
@@ -516,6 +577,15 @@ export class CepToolExecutor {
 
           resolvedPolicies.push(...(res.data.resolvedPolicies ?? []));
 
+          await this.logApi("google.response.connector-config", {
+            status: "ok",
+            targetResource,
+            count: res.data.resolvedPolicies?.length ?? 0,
+            sampleTargetResource: getPolicyTargetResource(
+              res.data.resolvedPolicies?.[0]
+            ),
+          });
+
           return {
             status: "Resolved",
             policySchemas,
@@ -538,6 +608,13 @@ export class CepToolExecutor {
           errors: resolveErrors,
         };
       }
+
+      await this.logApi("google.response.connector-config", {
+        status: "ok",
+        targetResource: null,
+        count: 0,
+        resolveErrors,
+      });
 
       return {
         status: "Resolved",
@@ -564,6 +641,11 @@ export class CepToolExecutor {
         timestamp: Date.now(),
         kind: "workspace",
       });
+      await this.logApi("google.error.connector-config", {
+        code,
+        message,
+        errors,
+      });
       return {
         error: message ?? "Unknown error",
         suggestion:
@@ -586,6 +668,10 @@ export class CepToolExecutor {
     }
 
     try {
+      await this.logApi("google.request.debug-auth", {
+        endpoint: "https://www.googleapis.com/oauth2/v1/tokeninfo",
+        method: "GET",
+      });
       const res = await fetch(
         `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
       );
@@ -608,6 +694,13 @@ export class CepToolExecutor {
         kind: "workspace",
       });
 
+      await this.logApi("google.response.debug-auth", {
+        status: res.status,
+        scope: data.scope,
+        issuedTo: data.issued_to ?? data.audience,
+        error: data.error,
+      });
+
       if (!res.ok || data.error) {
         return { error: data.error ?? `tokeninfo ${res.status}` };
       }
@@ -618,6 +711,9 @@ export class CepToolExecutor {
         issuedTo: data.issued_to ?? data.audience,
       };
     } catch (error) {
+      await this.logApi("google.error.debug-auth", {
+        error: getErrorMessage(error),
+      });
       return { error: getErrorMessage(error) };
     }
   }

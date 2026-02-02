@@ -1,6 +1,7 @@
 import { randomUUID } from "crypto";
 
 import { auth } from "@/lib/auth";
+import { writeDebugLog } from "@/lib/debug-log";
 import { createMcpServer } from "@/lib/mcp/server-factory";
 import { NextJsSseTransport, activeTransports } from "@/lib/mcp/transport";
 
@@ -54,9 +55,15 @@ export async function GET(req: Request) {
       controller.enqueue(new TextEncoder().encode(msg));
 
       console.log(`[MCP] Session started: ${sessionId}`);
+      void writeDebugLog("mcp.session.start", {
+        sessionId,
+        endpointUrl,
+        hasAccessToken: Boolean(accessToken),
+      });
     },
     cancel() {
       console.log(`[MCP] Session closed: ${sessionId}`);
+      void writeDebugLog("mcp.session.close", { sessionId });
       activeTransports.delete(sessionId);
     },
   });
@@ -91,6 +98,7 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
+    await writeDebugLog("mcp.message.in", { sessionId, body });
     await transport.handlePostMessage(body);
 
     return new Response("Accepted", { status: 202 });

@@ -1,22 +1,22 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import {
   Shield,
   ChevronDown,
   CheckCircle2,
   XCircle,
   Settings2,
-  ExternalLink,
 } from "lucide-react";
+import { motion } from "motion/react";
+import { useState, memo } from "react";
+
+import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { Badge } from "@/components/ui/badge";
-import { useState, memo } from "react";
+import { cn } from "@/lib/utils";
 
 export interface PolicyValue {
   policySchema?: string;
@@ -69,7 +69,8 @@ export const PolicyCard = memo(function PolicyCard({
   const schema = policy.value?.policySchema;
   const policyName = formatPolicyName(schema);
   const values = policy.value?.value ?? {};
-  const targetResource = policy.sourceKey?.targetResource ?? policy.targetKey?.targetResource;
+  const targetResource =
+    policy.sourceKey?.targetResource ?? policy.targetKey?.targetResource;
 
   const valueEntries = Object.entries(values);
   const hasValues = valueEntries.length > 0;

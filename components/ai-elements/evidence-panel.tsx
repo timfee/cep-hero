@@ -1,6 +1,5 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import {
   CheckCircle2,
   XCircle,
@@ -10,13 +9,16 @@ import {
   AlertTriangle,
   Link2,
 } from "lucide-react";
+import { useState, memo } from "react";
+
+import type { EvidencePayload } from "@/types/chat";
+
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import type { EvidencePayload } from "@/types/chat";
-import { useState, memo } from "react";
+import { cn } from "@/lib/utils";
 
 export interface EvidenceCheckProps {
   check: NonNullable<EvidencePayload["checks"]>[number];
@@ -40,7 +42,6 @@ const statusConfig = {
 
 export const EvidenceCheck = memo(function EvidenceCheck({
   check,
-  index = 0,
 }: EvidenceCheckProps) {
   const config = statusConfig[check.status];
   const Icon = config.icon;
@@ -127,9 +128,6 @@ export const EvidencePanel = memo(function EvidencePanel({
   const signalsCount = evidence.signals?.length ?? 0;
   const totalCount = checksCount + gapsCount + signalsCount;
 
-  const passCount = evidence.checks?.filter((c) => c.status === "pass").length ?? 0;
-  const failCount = evidence.checks?.filter((c) => c.status === "fail").length ?? 0;
-
   if (totalCount === 0) return null;
 
   return (
@@ -145,7 +143,12 @@ export const EvidencePanel = memo(function EvidencePanel({
           <span className="flex-1 text-xs text-muted-foreground">
             Evidence ({checksCount} checks)
           </span>
-          <ChevronDown className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", isOpen && "rotate-180")} />
+          <ChevronDown
+            className={cn(
+              "h-3.5 w-3.5 text-muted-foreground transition-transform",
+              isOpen && "rotate-180"
+            )}
+          />
         </CollapsibleTrigger>
 
         <CollapsibleContent>

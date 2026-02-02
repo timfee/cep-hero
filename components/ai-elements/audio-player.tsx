@@ -26,7 +26,7 @@ export type AudioPlayerProps = Omit<
 >;
 
 export const AudioPlayer = ({
-  className,
+  className: _className,
   children,
   style,
   ...props

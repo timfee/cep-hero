@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+
 import { authClient } from "@/lib/auth-client";
 
 export type AuthUser = {
@@ -67,7 +68,8 @@ export function useAuth(): UseAuthReturn {
         user: null,
         isLoading: false,
         isAuthenticated: false,
-        error: err instanceof Error ? err : new Error("Failed to fetch session"),
+        error:
+          err instanceof Error ? err : new Error("Failed to fetch session"),
       });
     }
   }, []);
