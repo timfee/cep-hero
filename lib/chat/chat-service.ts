@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import {
   CepToolExecutor,
+  DraftPolicyChangeSchema,
   EnrollBrowserSchema,
   GetChromeEventsSchema,
   GetConnectorConfigSchema,
@@ -202,6 +203,13 @@ export async function createChatStream({
         execute: async ({ actions }) => {
           return { actions };
         },
+      }),
+
+      draftPolicyChange: tool({
+        description:
+          "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
+        inputSchema: DraftPolicyChangeSchema,
+        execute: async (args) => await executor.draftPolicyChange(args),
       }),
     },
   });

@@ -53,8 +53,11 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
 
   const handleRefresh = useCallback(async () => {
     setIsRefreshing(true);
-    await mutate();
-    setIsRefreshing(false);
+    try {
+      await mutate();
+    } finally {
+      setIsRefreshing(false);
+    }
   }, [mutate]);
 
   if (isLoading && !data) {
