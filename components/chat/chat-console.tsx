@@ -14,8 +14,7 @@ import {
 } from "@/components/ui/dashboard-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ChatMessage } from "./ChatMessage";
-import { StreamingIndicator } from "./StreamingIndicator";
+import { ChatMessage } from "./chat-message";
 
 export function ChatConsole() {
   const { messages, sendMessage, status } = useChat();
@@ -60,12 +59,14 @@ export function ChatConsole() {
     <DashboardPanel className="flex h-full min-h-[500px] flex-col">
       {/* Header */}
       <DashboardPanelHeader className="flex items-center gap-3">
-        <div
+        <motion.div
           className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10"
           aria-hidden="true"
+          animate={isStreaming ? { scale: [1, 1.05, 1] } : {}}
+          transition={{ duration: 1.5, repeat: Infinity }}
         >
           <Sparkles className="h-4 w-4 text-primary" />
-        </div>
+        </motion.div>
         <div className="flex-1">
           <DashboardPanelTitle>CEP Assistant</DashboardPanelTitle>
           <DashboardPanelDescription>
@@ -87,7 +88,6 @@ export function ChatConsole() {
             {/* Empty state */}
             {messages.length === 0 && !isStreaming && (
               <motion.div
-                key="empty-state"
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
@@ -110,20 +110,37 @@ export function ChatConsole() {
               </motion.div>
             )}
 
-            {/* Message list */}
-            {messages.map((message, idx) => (
+            {/* Messages */}
+            {messages.map((message, index) => (
               <ChatMessage
                 key={message.id}
                 message={message}
                 isStreaming={isStreaming}
-                isLast={idx === messages.length - 1}
+                isLast={index === messages.length - 1}
                 onAction={handleAction}
               />
             ))}
 
-            {/* Streaming indicator - shows inline when waiting for response */}
-            {status === "submitted" && (
-              <StreamingIndicator key="streaming" />
+            {/* Streaming placeholder when submitted but no messages yet */}
+            {isStreaming && messages.length > 0 && status === "submitted" && (
+              <motion.div
+                key="streaming-placeholder"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <ChatMessage
+                  message={{
+                    id: "streaming",
+                    role: "assistant",
+                    content: "",
+                    parts: [],
+                  }}
+                  isStreaming={true}
+                  isLast={true}
+                  onAction={handleAction}
+                />
+              </motion.div>
             )}
           </AnimatePresence>
         </div>

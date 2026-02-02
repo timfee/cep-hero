@@ -2,79 +2,102 @@
 
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
-import type { ComponentProps } from "react";
+import { memo } from "react";
 
-export type StreamingTextProps = ComponentProps<"div"> & {
+export interface StreamingTextProps {
   text: string;
   isStreaming?: boolean;
-};
+  className?: string;
+}
 
 /**
- * Displays streaming text with a subtle cursor animation when actively streaming.
- * When not streaming, renders as plain text.
+ * Renders text with an optional streaming cursor indicator.
+ * Splits text on double newlines into paragraphs for proper formatting.
  */
-export function StreamingText({
+export const StreamingText = memo(function StreamingText({
   text,
   isStreaming = false,
   className,
-  ...props
 }: StreamingTextProps) {
-  if (!text) return null;
+  const paragraphs = text.split(/\n{2,}/).filter(Boolean);
 
   return (
-    <div className={cn("relative", className)} {...props}>
-      <span className="whitespace-pre-wrap text-sm leading-relaxed text-foreground">
-        {text}
-      </span>
-      {isStreaming && (
-        <motion.span
-          className="ml-0.5 inline-block h-4 w-0.5 bg-primary"
-          animate={{ opacity: [1, 0, 1] }}
-          transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
-        />
-      )}
+    <div className={cn("space-y-3", className)}>
+      {paragraphs.map((paragraph, i) => {
+        const isLast = i === paragraphs.length - 1;
+
+        return (
+          <motion.p
+            key={i}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="text-sm leading-relaxed text-foreground whitespace-pre-wrap"
+          >
+            {paragraph}
+            {isStreaming && isLast && <StreamingCursor />}
+          </motion.p>
+        );
+      })}
+
+      {/* Show cursor even when text is empty during streaming */}
+      {isStreaming && paragraphs.length === 0 && <StreamingCursor />}
     </div>
   );
-}
-
-export type StreamingBlocksProps = ComponentProps<"div"> & {
-  text: string;
-  isStreaming?: boolean;
-};
+});
 
 /**
- * Splits text into paragraphs and renders them with staggered animation.
+ * Animated cursor that pulses to indicate active streaming.
  */
-export function StreamingBlocks({
-  text,
-  isStreaming = false,
-  className,
-  ...props
-}: StreamingBlocksProps) {
-  if (!text) return null;
-
-  const blocks = text.split(/\n{2,}/);
-
+export const StreamingCursor = memo(function StreamingCursor() {
   return (
-    <div className={cn("space-y-2", className)} {...props}>
-      {blocks.map((block, idx) => (
-        <motion.p
-          key={idx}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: idx * 0.02 }}
-          className="whitespace-pre-wrap text-sm leading-relaxed text-foreground"
-        >
-          {block}
-          {isStreaming && idx === blocks.length - 1 && (
-            <motion.span
-              className="ml-0.5 inline-block h-4 w-0.5 bg-primary"
-              animate={{ opacity: [1, 0, 1] }}
-              transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
-            />
-          )}
-        </motion.p>
-      ))}
-    </div>
+    <motion.span
+      className="ml-0.5 inline-block h-4 w-0.5 align-middle bg-primary"
+      animate={{ opacity: [1, 0.3, 1] }}
+      transition={{ duration: 0.8, repeat: Infinity, ease: "easeInOut" }}
+    />
   );
+});
+
+export interface ThinkingIndicatorProps {
+  message?: string;
+  className?: string;
 }
+
+/**
+ * Animated "thinking" indicator shown inline while waiting for response.
+ */
+export const ThinkingIndicator = memo(function ThinkingIndicator({
+  message = "Thinking",
+  className,
+}: ThinkingIndicatorProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className={cn("flex items-center gap-2", className)}
+    >
+      <div className="flex gap-1">
+        {[0, 1, 2].map((i) => (
+          <motion.span
+            key={i}
+            className="h-1.5 w-1.5 rounded-full bg-primary"
+            animate={{ y: [0, -4, 0], opacity: [0.4, 1, 0.4] }}
+            transition={{
+              duration: 0.8,
+              repeat: Infinity,
+              delay: i * 0.15,
+              ease: "easeInOut",
+            }}
+          />
+        ))}
+      </div>
+      <motion.span
+        className="text-sm text-muted-foreground"
+        animate={{ opacity: [0.5, 1, 0.5] }}
+        transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+      >
+        {message}
+      </motion.span>
+    </motion.div>
+  );
+});
