@@ -9,6 +9,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { TOOLTIPS } from "@/lib/terminology";
+import { cn } from "@/lib/utils";
 
 type ChromeEvent = {
   id?: { time?: string | null; uniqueQualifier?: string | null };
@@ -82,6 +83,23 @@ function getEventDescription(type?: string | null): string {
   return descriptions[type ?? ""] ?? "Browser activity recorded";
 }
 
+/**
+ * Check if an event type indicates an error or security concern
+ */
+function isErrorEvent(type?: string | null): boolean {
+  if (!type) return false;
+  const errorPatterns = [
+    "FAILURE",
+    "ERROR",
+    "BREACH",
+    "MALWARE",
+    "BLOCKED",
+    "DENIED",
+    "VIOLATION",
+  ];
+  return errorPatterns.some((pattern) => type.toUpperCase().includes(pattern));
+}
+
 export const EventsTable = memo(function EventsTable({
   output,
 }: {
@@ -142,14 +160,29 @@ export const EventsTable = memo(function EventsTable({
           const primary = event.events?.[0];
           const actor = event.actor?.email ?? event.actor?.profileId;
 
+          const isError = isErrorEvent(primary?.type);
+
           return (
             <div
               key={event.id?.uniqueQualifier ?? `event-${index}`}
-              className="flex items-start gap-4 px-4 py-4 transition-colors hover:bg-muted/30"
+              className={cn(
+                "flex items-start gap-4 px-4 py-4 transition-colors hover:bg-muted/30",
+                isError && "bg-destructive/5"
+              )}
             >
-              {/* Event icon */}
-              <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-primary/10">
-                <Activity className="h-5 w-5 text-primary" />
+              {/* Event icon with error indicator */}
+              <div
+                className={cn(
+                  "flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full",
+                  isError ? "bg-destructive/10" : "bg-primary/10"
+                )}
+              >
+                <Activity
+                  className={cn(
+                    "h-5 w-5",
+                    isError ? "text-destructive" : "text-primary"
+                  )}
+                />
               </div>
 
               {/* Event details */}

@@ -4,7 +4,10 @@ import { ArrowRight, RefreshCw } from "lucide-react";
 import { useCallback, useState } from "react";
 import useSWR from "swr";
 
+import { PulseShimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
+
+const SKELETON_STAGGER_DELAY_MS = 100;
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
@@ -59,21 +62,27 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
       <div className="h-full overflow-y-auto">
         <div className="mx-auto max-w-3xl px-8 py-16">
           <header className="mb-16">
-            <div className="h-10 w-3/4 animate-pulse rounded-lg bg-white/[0.06]" />
+            <PulseShimmer height={40} width="75%" className="rounded-lg" />
             <div className="mt-5 space-y-2">
-              <div className="h-5 w-full animate-pulse rounded bg-white/[0.04]" />
-              <div className="h-5 w-5/6 animate-pulse rounded bg-white/[0.04]" />
+              <PulseShimmer height={20} width="100%" className="rounded" />
+              <PulseShimmer height={20} width="85%" className="rounded" />
             </div>
           </header>
           <section>
-            <div className="mb-6 h-4 w-24 animate-pulse rounded bg-white/[0.04]" />
+            <PulseShimmer height={16} width={96} className="mb-6 rounded" />
             <div className="space-y-3">
-              {[1, 2, 3].map((i) => (
+              {[0, 1, 2].map((i) => (
                 <div
                   key={i}
-                  className="h-24 animate-pulse rounded-2xl border border-white/10 bg-white/[0.04]"
-                  style={{ animationDelay: `${i * 100}ms` }}
-                />
+                  style={{
+                    animationDelay: `${i * SKELETON_STAGGER_DELAY_MS}ms`,
+                  }}
+                >
+                  <PulseShimmer
+                    height={96}
+                    className="rounded-2xl border border-white/10"
+                  />
+                </div>
               ))}
             </div>
           </section>
