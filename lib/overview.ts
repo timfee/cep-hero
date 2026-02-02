@@ -114,6 +114,8 @@ function isValidPostureCard(card: unknown): card is OverviewCard {
   return (
     typeof c.label === "string" &&
     typeof c.value === "string" &&
+    typeof c.note === "string" &&
+    typeof c.source === "string" &&
     typeof c.action === "string"
   );
 }
@@ -124,11 +126,18 @@ function isValidPostureCard(card: unknown): card is OverviewCard {
 function isValidSuggestion(suggestion: unknown): suggestion is Suggestion {
   if (!suggestion || typeof suggestion !== "object") return false;
   const s = suggestion as Record<string, unknown>;
+  const validCategories: SuggestionCategory[] = [
+    "security",
+    "compliance",
+    "monitoring",
+    "optimization",
+  ];
   return (
     typeof s.text === "string" &&
     typeof s.action === "string" &&
     typeof s.priority === "number" &&
-    typeof s.category === "string"
+    typeof s.category === "string" &&
+    validCategories.includes(s.category as SuggestionCategory)
   );
 }
 
