@@ -1,8 +1,10 @@
 import { getToolName, isToolUIPart } from "ai";
 import { RefreshCcwIcon, CopyIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
+import useSWR from "swr";
 
 import type { ToolPart } from "@/components/ai-elements/tool";
+import type { OverviewData, Suggestion } from "@/lib/overview";
 import type {
   ChromeEventsOutput,
   ConnectorConfigOutput,
@@ -91,24 +93,69 @@ const FALLBACK_ACTIONS: ActionItem[] = [
   },
 ];
 
-const EMPTY_STATE_ACTIONS: ActionItem[] = [
-  {
-    id: "empty-dlp-setup",
-    label: "Set up DLP monitoring",
-    command: "Help me set up DLP to audit all traffic for sensitive data",
-    primary: true,
-  },
-  {
-    id: "empty-browser-security",
-    label: "Secure my browsers",
-    command: "Help me turn on cookie encryption and disable incognito mode",
-  },
-  {
-    id: "empty-connector-config",
-    label: "Configure connectors",
-    command: "Help me configure connector policies for data protection",
-  },
-];
+const fetcher = async (url: string) => {
+  const res = await fetch(url);
+  if (!res.ok) return null;
+  return res.json();
+};
+
+/**
+ * Convert suggestions from overview data to action items for the chat.
+ */
+function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
+  return suggestions
+    .sort((a, b) => a.priority - b.priority)
+    .slice(0, 3)
+    .map((s, idx) => ({
+      id: `empty-${idx}`,
+      label: s.text.length > 40 ? s.text.slice(0, 40) + "..." : s.text,
+      command: s.action,
+      primary: idx === 0,
+    }));
+}
+
+/**
+ * Generate a dynamic welcome message based on fleet state.
+ */
+function generateWelcomeMessage(data: OverviewData | null): string {
+  if (!data) {
+    return `Hey there! I'm your Chrome Enterprise Premium assistant. I'm ready to help you manage and secure your browser fleet.
+
+What would you like to work on?`;
+  }
+
+  const suggestions = data.suggestions || [];
+  const hasCriticalCards = data.postureCards?.some(
+    (c) => c.status === "critical"
+  );
+
+  if (suggestions.length === 0 && !hasCriticalCards) {
+    return `Hey there! I'm your Chrome Enterprise Premium assistant. I've reviewed your fleet and things look good!
+
+${data.summary || "Your security posture appears healthy."}
+
+Is there anything specific you'd like me to help you with?`;
+  }
+
+  const actionItems = suggestions.slice(0, 3).map((s) => {
+    if (s.category === "security") {
+      return `**Security** - ${s.text}`;
+    } else if (s.category === "compliance") {
+      return `**Compliance** - ${s.text}`;
+    } else if (s.category === "monitoring") {
+      return `**Monitoring** - ${s.text}`;
+    }
+    return `**${s.category}** - ${s.text}`;
+  });
+
+  return `Hey there! I'm your Chrome Enterprise Premium assistant. I've been looking at your fleet data and found some things we should address.
+
+${data.headline || ""}
+
+${actionItems.length > 0 ? actionItems.join("\n\n") : ""}
+
+What would you like to tackle first?`;
+}
 
 /**
  * Map string actions to ActionItem objects with confirm/cancel detection.
@@ -134,9 +181,30 @@ export function ChatConsole() {
   const { messages, sendMessage, status, input, setInput, stop, regenerate } =
     useChatContext();
 
+  const { data: overviewData } = useSWR<OverviewData | null>(
+    "/api/overview",
+    fetcher,
+    { revalidateOnFocus: false }
+  );
+
   const isStreaming = status === "submitted" || status === "streaming";
 
   const fallbackActions = useMemo(() => FALLBACK_ACTIONS, []);
+
+  const welcomeMessage = useMemo(
+    () => generateWelcomeMessage(overviewData ?? null),
+    [overviewData]
+  );
+
+  const emptyStateActions = useMemo(() => {
+    if (overviewData?.suggestions && overviewData.suggestions.length > 0) {
+      return suggestionsToActions(overviewData.suggestions);
+    }
+    return FALLBACK_ACTIONS.slice(0, 3).map((a, idx) => ({
+      ...a,
+      primary: idx === 0,
+    }));
+  }, [overviewData]);
 
   /**
    * Extract suggested actions from a message's tool parts.
@@ -215,24 +283,12 @@ export function ChatConsole() {
             <div className="space-y-4">
               <Message from="assistant" className="bg-muted p-4 lg:p-6">
                 <MessageContent>
-                  <MessageResponse>
-                    {`Hey there! I'm your Chrome Enterprise Premium assistant. I've been looking at your fleet data and I'm ready to help you strengthen your security posture.
-
-A few things I can help you with right now:
-
-**Get protected fast** - I can walk you through setting up DLP rules to catch sensitive data like SSNs and credit cards before they leave your network.
-
-**Lock down browsers** - Cookie encryption and disabling incognito mode are quick wins that make a real difference.
-
-**See what's happening** - I can pull up your recent security events and help you spot anything unusual.
-
-What would you like to tackle first?`}
-                  </MessageResponse>
+                  <MessageResponse>{welcomeMessage}</MessageResponse>
                 </MessageContent>
               </Message>
               <div className="pl-4 lg:pl-6">
                 <ActionButtons
-                  actions={EMPTY_STATE_ACTIONS}
+                  actions={emptyStateActions}
                   onAction={handleAction}
                   disabled={isStreaming}
                   resetKey={status}
