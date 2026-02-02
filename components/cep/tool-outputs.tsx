@@ -46,24 +46,18 @@ export function ToolOutput({
   switch (toolName) {
     case "getFleetOverview":
       return <FleetOverviewOutput data={output} />;
-    case "getConnectorStatus":
+    case "getChromeConnectorConfiguration":
       return <ConnectorStatusOutput data={output} onAction={onAction} />;
-    case "getDLPRules":
+    case "listDLPRules":
       return <DLPRulesOutput data={output} onAction={onAction} />;
-    case "getRecentEvents":
+    case "getChromeEvents":
       return <EventsOutput data={output} />;
-    case "diagnoseConnector":
+    case "runDiagnosis":
       return <DiagnoseOutput data={output} onAction={onAction} />;
-    case "fixConnector":
-    case "toggleDLPRule":
-    case "forcePolicySync":
-      return <ActionOutput data={output} />;
     case "enrollBrowser":
       return <EnrollOutput data={output} />;
-    case "suggestNextSteps":
-      return <NextStepsOutput data={output} onAction={onAction} />;
-    case "requestConfirmation":
-      return <ConfirmationOutput data={output} onAction={onAction} />;
+    case "suggestActions":
+      return <SuggestActionsOutput data={output} onAction={onAction} />;
     default:
       return null;
   }
@@ -414,39 +408,6 @@ function DiagnoseOutput({
   );
 }
 
-type ActionData = {
-  state?: string;
-  message?: string;
-  success?: boolean;
-};
-
-function ActionOutput({ data }: { data: unknown }) {
-  const actionData = data as ActionData;
-
-  if (actionData.state && actionData.state !== "complete") {
-    return (
-      <div className="flex items-center gap-3 py-2">
-        <span className="h-2 w-2 animate-pulse rounded-full bg-(--color-status-info)" />
-        <span className="text-muted-foreground">{actionData.message}</span>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-3 py-2">
-      <span
-        className={cn(
-          "h-2.5 w-2.5 rounded-full",
-          actionData.success
-            ? "bg-(--color-status-healthy)"
-            : "bg-(--color-status-error)"
-        )}
-      />
-      <span className="text-foreground">{actionData.message}</span>
-    </div>
-  );
-}
-
 type EnrollData = {
   enrollmentToken?: string;
   token?: string;
@@ -470,106 +431,27 @@ function EnrollOutput({ data }: { data: unknown }) {
   );
 }
 
-type NextStep = {
-  label: string;
-  description: string;
-  command: string;
+type SuggestActionsData = {
+  actions?: string[];
 };
 
-type NextStepsData = {
-  steps?: NextStep[];
-};
-
-function NextStepsOutput({
+function SuggestActionsOutput({
   data,
   onAction,
 }: {
   data: unknown;
   onAction?: (cmd: string) => void;
 }) {
-  const stepsData = data as NextStepsData;
-  if (!stepsData?.steps) return null;
+  const actionsData = data as SuggestActionsData;
+  if (!actionsData?.actions || actionsData.actions.length === 0) return null;
 
   return (
-    <div className="my-3 space-y-2">
-      {stepsData.steps.map((step, i) => (
-        <button
-          key={i}
-          type="button"
-          onClick={() => onAction?.(step.command)}
-          disabled={!onAction}
-          className={cn(
-            "flex w-full items-center justify-between rounded-xl p-5 text-left",
-            "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
-            "transition-all duration-200",
-            onAction &&
-              "cursor-pointer hover:border-white/15 hover:bg-white/[0.08]",
-            !onAction && "opacity-60"
-          )}
-        >
-          <div>
-            <div className="font-medium text-foreground">{step.label}</div>
-            <div className="mt-0.5 text-sm text-muted-foreground">
-              {step.description}
-            </div>
-          </div>
-          {onAction && (
-            <span className="ml-4 text-sm text-muted-foreground">
-              Click to run
-            </span>
-          )}
-        </button>
+    <div className="my-3 flex flex-wrap gap-2">
+      {actionsData.actions.map((action, i) => (
+        <ActionButton key={i} onClick={() => onAction?.(action)}>
+          {action}
+        </ActionButton>
       ))}
-    </div>
-  );
-}
-
-type ConfirmationData = {
-  action?: string;
-  impact?: string;
-  affectedResources?: string[];
-};
-
-function ConfirmationOutput({
-  data,
-  onAction,
-}: {
-  data: unknown;
-  onAction?: (cmd: string) => void;
-}) {
-  const confirmData = data as ConfirmationData;
-  return (
-    <div className="my-4 rounded-2xl border border-white/10 bg-white/[0.04] p-6 backdrop-blur-xl">
-      <div className="mb-3 text-lg font-medium text-foreground">
-        {confirmData.action}
-      </div>
-      <p className="mb-4 text-sm text-muted-foreground">{confirmData.impact}</p>
-
-      {confirmData.affectedResources &&
-        confirmData.affectedResources.length > 0 && (
-          <div className="mb-4">
-            <div className="mb-2 text-sm text-muted-foreground">
-              Affected resources:
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {confirmData.affectedResources.map((r, i) => (
-                <EntityName key={i}>{r}</EntityName>
-              ))}
-            </div>
-          </div>
-        )}
-
-      {onAction && (
-        <div className="flex gap-3 pt-2">
-          <ActionButton
-            variant="primary"
-            onClick={() => onAction(`confirm ${confirmData.action}`)}
-          >
-            Confirm
-          </ActionButton>
-          <ActionButton onClick={() => onAction("cancel")}>Cancel</ActionButton>
-        </div>
-      )}
     </div>
   );
 }

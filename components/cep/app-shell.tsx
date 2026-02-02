@@ -32,17 +32,11 @@ const commandPrompts: Record<
 export function AppShell() {
   const [chatPrompt, setChatPrompt] = useState<string | undefined>();
 
-  const handleAction = useCallback(
-    (command: string, parameters?: Record<string, string>) => {
-      const promptGenerator = commandPrompts[command];
-      if (promptGenerator) {
-        const prompt = promptGenerator(parameters);
-        setChatPrompt(prompt);
-        setTimeout(() => setChatPrompt(undefined), 100);
-      }
-    },
-    []
-  );
+  const handleAction = useCallback((command: string) => {
+    const promptGenerator = commandPrompts[command];
+    const prompt = promptGenerator ? promptGenerator() : command;
+    setChatPrompt(prompt);
+  }, []);
 
   return (
     <div className="flex h-screen overflow-hidden">
