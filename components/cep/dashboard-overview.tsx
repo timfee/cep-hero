@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@vercel/analytics";
 import {
   ArrowRight,
   RefreshCw,
@@ -81,6 +82,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
   );
 
   const handleRefresh = useCallback(async () => {
+    track("Dashboard Refreshed");
     setIsRefreshing(true);
     try {
       await mutate();
@@ -178,7 +180,13 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                         <button
                           key={idx}
                           type="button"
-                          onClick={() => onAction(card.action)}
+                          onClick={() => {
+                            track("Posture Card Clicked", {
+                              label: card.label,
+                              status: status,
+                            });
+                            onAction(card.action);
+                          }}
                           className={cn(
                             "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
                             "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
@@ -254,7 +262,12 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => onAction(suggestion.action)}
+                        onClick={() => {
+                          track("Suggestion Clicked", {
+                            category: suggestion.category,
+                          });
+                          onAction(suggestion.action);
+                        }}
                         className={cn(
                           "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
                           "border bg-white/[0.04] backdrop-blur-xl",

@@ -1,5 +1,6 @@
 "use client";
 
+import { track } from "@vercel/analytics";
 import { Loader2 } from "lucide-react";
 import { memo, useState, useEffect, useRef } from "react";
 
@@ -54,6 +55,7 @@ export const ActionButtons = memo(function ActionButtons({
     if (globalDisabled || action.disabled || loadingId) return;
     const cmd = action.command ?? action.label ?? action.id;
     if (!cmd) return;
+    track("Action Button Clicked", { label: action.label ?? action.id });
     setLoadingId(action.id);
     onAction?.(cmd);
     // Clear any existing timeout before setting a new one
