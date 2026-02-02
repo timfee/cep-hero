@@ -1,3 +1,2 @@
-export * from "./ChatConsole";
-export * from "./ChatMessage";
-export * from "./StreamingIndicator";
+export { ChatConsole } from "./chat-console";
+export { ChatMessage } from "./chat-message";

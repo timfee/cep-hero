@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { ChatConsole } from "@/components/chat/ChatConsole";
+import { ChatConsole } from "@/components/chat/chat-console";
 import {
   DashboardPanel,
   DashboardPanelActions,

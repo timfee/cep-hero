@@ -3,34 +3,33 @@
 import { cn } from "@/lib/utils";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
-import type { ComponentProps } from "react";
+import { memo } from "react";
 
 export interface ActionItem {
   id: string;
   label?: string;
   command?: string;
   primary?: boolean;
-};
+}
 
-export type ActionButtonsProps = ComponentProps<"div"> & {
+export interface ActionButtonsProps {
   actions: ActionItem[];
-  onAction: (command: string) => void;
-};
+  className?: string;
+  onAction?: (command: string) => void;
+}
 
-export function ActionButtons({
+export const ActionButtons = memo(function ActionButtons({
   actions,
-  onAction,
   className,
-  ...props
+  onAction,
 }: ActionButtonsProps) {
-  if (!actions?.length) return null;
+  if (actions.length === 0) return null;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 5 }}
+      initial={{ opacity: 0, y: 4 }}
       animate={{ opacity: 1, y: 0 }}
       className={cn("flex flex-wrap gap-2", className)}
-      {...props}
     >
       {actions.map((action, i) => (
         <motion.div
@@ -42,10 +41,10 @@ export function ActionButtons({
           <Button
             size="sm"
             variant={action.primary ? "default" : "secondary"}
-            className="h-7 text-xs"
+            className="h-8 text-xs"
             onClick={() => {
               const cmd = action.command ?? action.label ?? action.id;
-              if (cmd) onAction(cmd);
+              onAction?.(cmd);
             }}
           >
             {action.label ?? action.id}
@@ -54,4 +53,4 @@ export function ActionButtons({
       ))}
     </motion.div>
   );
-}
+});
