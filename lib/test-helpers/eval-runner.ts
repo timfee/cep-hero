@@ -3,6 +3,8 @@ import { existsSync, readFileSync } from "fs";
 import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 
+import type { FixtureData } from "@/lib/mcp/types";
+
 /** Pass/fail status for eval reports. */
 export type EvalReportStatus = "pass" | "fail";
 
@@ -320,4 +322,70 @@ function expectStructuredText(text: string, expected: string[]): void {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
+}
+
+/**
+ * Load fixture data for an eval case.
+ * Merges base fixtures with case-specific overrides.
+ */
+export function loadEvalFixtures(
+  caseId: string,
+  rootDir: string = process.cwd()
+): FixtureData | undefined {
+  const useBase = process.env.EVAL_USE_BASE === "1";
+  const useFixtures = process.env.EVAL_USE_FIXTURES === "1";
+
+  if (!useBase && !useFixtures) {
+    return undefined;
+  }
+
+  let baseData: Record<string, unknown> = {};
+
+  if (useBase) {
+    const basePath = path.join(
+      rootDir,
+      "evals",
+      "fixtures",
+      "base",
+      "api-base.json"
+    );
+    if (existsSync(basePath)) {
+      baseData = loadJsonFixture(basePath) as Record<string, unknown>;
+    }
+  }
+
+  const caseOverridePath = path.join(
+    rootDir,
+    "evals",
+    "fixtures",
+    caseId,
+    "overrides.json"
+  );
+  let overrideData: Record<string, unknown> = {};
+
+  if (existsSync(caseOverridePath)) {
+    overrideData = loadJsonFixture(caseOverridePath) as Record<string, unknown>;
+  }
+
+  const merged = mergeJson(baseData, overrideData) as Record<string, unknown>;
+
+  return {
+    orgUnits: Array.isArray(merged.orgUnits) ? merged.orgUnits : undefined,
+    auditEvents: isPlainObject(merged.auditEvents)
+      ? (merged.auditEvents as FixtureData["auditEvents"])
+      : undefined,
+    dlpRules: Array.isArray(merged.dlpRules) ? merged.dlpRules : undefined,
+    connectorPolicies: Array.isArray(merged.connectorPolicies)
+      ? merged.connectorPolicies
+      : undefined,
+    policySchemas: Array.isArray(merged.policySchemas)
+      ? merged.policySchemas
+      : undefined,
+    chromeReports: isPlainObject(merged.chromeReports)
+      ? (merged.chromeReports as Record<string, unknown>)
+      : undefined,
+    errors: isPlainObject(merged.errors)
+      ? (merged.errors as FixtureData["errors"])
+      : undefined,
+  };
 }
