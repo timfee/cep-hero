@@ -12,13 +12,13 @@ const MessagePartSchema = z.object({
 });
 
 const MessageSchema = z.object({
-  role: z.enum(["system", "user", "assistant"]),
-  content: z.union([z.string(), z.array(MessagePartSchema)]),
+  role: z.string(),
+  content: z.union([z.string(), z.array(MessagePartSchema)]).optional(),
   parts: z.array(MessagePartSchema).optional(),
 });
 
 const BodySchema = z.object({
-  messages: z.array(MessageSchema).optional(),
+  messages: z.array(z.unknown()).optional(),
   input: z.string().optional(),
   content: z.string().optional(),
 });
@@ -37,12 +37,6 @@ export function getLastUserMessage(messages: ChatMessage[]): string {
   return lastUser?.content ?? "";
 }
 
-/**
- * Parse and normalize chat messages from a request body.
- *
- * @param body - The raw request body.
- * @returns An array of normalized ChatMessage objects.
- */
 export function getMessagesFromBody(body: unknown): ChatMessage[] {
   const parsed = BodySchema.safeParse(body);
 
@@ -51,7 +45,17 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
   }
 
   return parsed.data.messages
-    .map(normalizeMessage)
+    .map((msgRaw) => {
+      const parsedMsg = MessageSchema.safeParse(msgRaw);
+      if (!parsedMsg.success) return null;
+      
+      const role = parsedMsg.data.role;
+      if (role !== "system" && role !== "user" && role !== "assistant") {
+        return null;
+      }
+      
+      return normalizeMessage(parsedMsg.data as z.infer<typeof MessageSchema> & { role: "system" | "user" | "assistant" });
+    })
     .filter((msg): msg is ChatMessage => msg !== null);
 }
 
@@ -104,6 +108,10 @@ function normalizeMessage(
   const content = stringifyContent(value.content || value.parts);
 
   if (!content) {
+    return null;
+  }
+
+  if (value.role !== "system" && value.role !== "user" && value.role !== "assistant") {
     return null;
   }
 
