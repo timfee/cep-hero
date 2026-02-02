@@ -59,9 +59,12 @@ EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
 - `EVAL_IDS=EC-001,EC-002` - Run specific eval IDs
 - `EVAL_CATEGORY=connector` - Run evals in a category
 - `EVAL_TAGS=dlp` - Run evals with specific tags
+- `EVAL_LIMIT=10` - Maximum number of cases to run
+- `EVAL_SERIAL=1` - Run cases sequentially (useful for rate limiting)
 - `EVAL_MANAGE_SERVER=0` - Skip server lifecycle management
 - `EVAL_VERBOSE=1` - Enable verbose output
 - `EVAL_TEST_MODE=1` - Return synthetic responses (avoids quota/latency)
+- `CHAT_URL` - Override chat API URL (default: `http://localhost:3100/api/chat`)
 
 ## Base snapshot + overrides
 
@@ -170,8 +173,8 @@ Failing report (trimmed):
 Fix options:
 
 1. **Tighten the eval**
-   - Add `required_evidence` terms in `registry.json` and run with
-     `EVAL_STRICT_EVIDENCE=1`. If it fails, the response is out of spec.
+   - Add `required_evidence` terms in `registry.json`. The runner automatically
+     checks for these terms in the response. If it fails, the response is out of spec.
 
 2. **Adjust the fixture**
    - Add the exact log strings you expect the assistant to mention.

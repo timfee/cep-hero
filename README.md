@@ -156,8 +156,8 @@ EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
 EVAL_CATEGORY=policy EVAL_USE_BASE=1 bun run evals
 EVAL_CATEGORY=dlp EVAL_USE_BASE=1 bun run evals
 
-# Run with strict checking
-EVAL_STRICT_EVIDENCE=1 EVAL_USE_BASE=1 bun run evals
+# Run in serial mode (for rate limiting)
+EVAL_SERIAL=1 EVAL_USE_BASE=1 bun run evals
 
 # Capture live fixtures
 bun run fixtures:capture
