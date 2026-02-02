@@ -107,8 +107,8 @@ export default function Home() {
         <div className="relative z-10 flex flex-col items-center gap-6">
           {/* Animated logo/brand mark */}
           <div className="relative">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 animate-pulse" />
-            <div className="absolute inset-0 h-12 w-12 rounded-xl border border-primary/20 animate-ping opacity-20" />
+            <div className="h-12 w-12 rounded-xl bg-muted animate-pulse" />
+            <div className="absolute inset-0 h-12 w-12 rounded-xl border border-primary animate-ping opacity-20" />
           </div>
           <div className="flex flex-col items-center gap-2">
             <h1 className="text-lg font-semibold text-foreground animate-fade-in">
@@ -150,7 +150,7 @@ export default function Home() {
           </div>
           {user && (
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 rounded-lg border border-border bg-card/80 backdrop-blur-sm px-3 py-2">
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2">
                 {user.image ? (
                   <img
                     src={user.image}
@@ -169,7 +169,7 @@ export default function Home() {
                 size="sm"
                 onClick={handleSignOut}
                 aria-label="Sign out"
-                className="hover:bg-card/80"
+                className="hover:bg-muted"
               >
                 <LogOut className="h-4 w-4" />
               </Button>
@@ -202,7 +202,7 @@ export default function Home() {
                     key={action.label}
                     onClick={() => dispatchCommand(action.label)}
                     className={cn(
-                      "group flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card/80 backdrop-blur-sm px-4 py-3 text-left transition-all hover:border-foreground/20 hover:bg-accent/80 active:scale-[0.99] lg:px-5 lg:py-4",
+                      "group flex w-full cursor-pointer items-center justify-between rounded-lg border border-border bg-card px-4 py-3 text-left transition-colors hover:border-foreground/20 hover:bg-accent lg:px-5 lg:py-4",
                       isVisible && "animate-fade-up",
                       idx === 0 && "delay-300",
                       idx === 1 && "delay-400",
@@ -235,7 +235,7 @@ export default function Home() {
                     key={suggestion}
                     onClick={() => dispatchCommand(suggestion)}
                     className={cn(
-                      "flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent/80 hover:text-foreground active:scale-[0.99] lg:px-4 lg:py-2.5",
+                      "flex w-full cursor-pointer items-center gap-2 rounded-md px-3 py-2 text-left text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground lg:px-4 lg:py-2.5",
                       isVisible && "animate-fade-in",
                       idx === 0 && "delay-500",
                       idx === 1 && "delay-600",
@@ -256,7 +256,7 @@ export default function Home() {
                 <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Fleet Status
                 </h2>
-                <div className="rounded-lg border border-border bg-card/80 backdrop-blur-sm p-4 lg:p-5">
+                <div className="rounded-lg border border-border bg-card p-4 lg:p-5">
                   <div className="grid grid-cols-2 gap-4 lg:gap-5">
                     {overview.postureCards.slice(0, 4).map((card, idx) => (
                       <button

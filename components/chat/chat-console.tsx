@@ -138,7 +138,7 @@ export function ChatConsole() {
                 from={message.role}
                 className={cn(
                   "px-4 py-4 lg:px-6 lg:py-5",
-                  isUser ? "bg-transparent" : "bg-muted/30",
+                  isUser ? "bg-transparent" : "bg-muted",
                   // Prevent layout shift during streaming
                   "will-change-transform"
                 )}
