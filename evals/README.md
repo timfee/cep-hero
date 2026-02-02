@@ -1,9 +1,7 @@
 # CEP evals
 
 This directory holds eval definitions and run artifacts for the CEP assistant.
-If you are new to AI evals, think of each eval as a short, well-defined
-scenario that checks whether the assistant responds in the right shape and with
-the right evidence.
+Each eval is a short, well-defined scenario that checks whether the assistant responds in the right shape and with the right evidence.
 
 ## What is an eval
 
@@ -14,9 +12,7 @@ behavior.
 
 ## What is a test
 
-Tests run the evals. They read the registry, call `/api/chat`, and enforce the
-response contract. Tests are grouped by category so you can run a small slice
-fast.
+Tests read the registry, call `/api/chat`, and enforce the response contract. By default they run in parallel with a small per-case pause.
 
 ## Structure
 
@@ -65,6 +61,9 @@ Strict gates fail the run. Warning gates only log.
 - `EVAL_WARN_RUBRIC=1` logs rubric gaps.
 - `EVAL_USE_FIXTURES=1` attaches fixture text to prompts.
 - `EVAL_USE_BASE=1` attaches the base API snapshot.
+- `EVAL_TEST_MODE=1` asks `/api/chat` for a lightweight synthetic response when you run evals with base/fixtures. Use it to avoid quota and latency; real chat stays the default.
+
+Current fixtures are thin (EC-001/002/003 only). Add short, focused fixtures under `evals/fixtures/EC-###/` and reference them in `registry.json` when a case needs concrete evidence. Tests log per-case progress with `[eval][diagnostics]` / `[eval][test-plan]` prefixes.
 
 ## Base snapshot + overrides
 

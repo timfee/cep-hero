@@ -1,7 +1,11 @@
+import { expect } from "bun:test";
+import { closeSync, existsSync, openSync, unlinkSync, writeFileSync } from "fs";
+
 type EvalServerState = {
   server?: ReturnType<typeof Bun.spawn>;
   startPromise?: Promise<void>;
   ownsServer: boolean;
+  ownsLock: boolean;
   refCount: number;
 };
 
@@ -11,6 +15,7 @@ type EnsureEvalServerOptions = {
 };
 
 const GLOBAL_KEY = "__cepEvalServer";
+const LOCK_PATH = `${Bun.env.TMPDIR ?? "/tmp"}/cep-eval-server.lock`;
 
 function getState(): EvalServerState {
   const global = globalThis as typeof globalThis & {
@@ -19,10 +24,11 @@ function getState(): EvalServerState {
   if (!global[GLOBAL_KEY]) {
     global[GLOBAL_KEY] = {
       ownsServer: false,
+      ownsLock: false,
       refCount: 0,
-    };
+    } satisfies EvalServerState;
   }
-  return global[GLOBAL_KEY];
+  return global[GLOBAL_KEY] as EvalServerState;
 }
 
 /** Ensure a single eval dev server is running. */
@@ -30,12 +36,19 @@ export async function ensureEvalServer({
   chatUrl,
   manageServer,
 }: EnsureEvalServerOptions): Promise<void> {
+  if (process.env.EVAL_TEST_MODE === "1") {
+    return;
+  }
   if (!manageServer || !chatUrl.includes("localhost")) {
     return;
   }
 
   const state = getState();
   state.refCount += 1;
+
+  if (!state.ownsLock) {
+    state.ownsLock = acquireLock();
+  }
 
   if (await isServerUp(chatUrl)) {
     return;
@@ -44,6 +57,10 @@ export async function ensureEvalServer({
   if (!state.startPromise) {
     state.startPromise = (async () => {
       if (await isServerUp(chatUrl)) {
+        return;
+      }
+      if (!state.ownsLock) {
+        await waitForServer(chatUrl, 60, 500);
         return;
       }
       state.server = Bun.spawn({
@@ -78,6 +95,14 @@ export function releaseEvalServer(): void {
   }
   state.server = undefined;
   state.ownsServer = false;
+  if (state.ownsLock && existsSync(LOCK_PATH)) {
+    try {
+      unlinkSync(LOCK_PATH);
+    } catch {
+      // noop
+    }
+  }
+  state.ownsLock = false;
 }
 
 async function isServerUp(url: string): Promise<boolean> {
@@ -99,5 +124,19 @@ async function waitForServer(
       return;
     }
     await new Promise((resolve) => setTimeout(resolve, delayMs));
+  }
+}
+
+function acquireLock(): boolean {
+  if (existsSync(LOCK_PATH)) {
+    return false;
+  }
+  try {
+    const fd = openSync(LOCK_PATH, "wx");
+    writeFileSync(fd, String(process.pid));
+    closeSync(fd);
+    return true;
+  } catch {
+    return false;
   }
 }

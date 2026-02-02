@@ -62,6 +62,7 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 - Throw `Error` objects with descriptive messages, not strings or other values
 - Use `try-catch` blocks meaningfully - don't catch errors just to rethrow them
 - Prefer early returns over nested conditionals for error cases
+- Eval suites log per-case progress with `[eval][diagnostics]` / `[eval][test-plan]`; keep logs concise and structured.
 
 ### Code Organization
 
