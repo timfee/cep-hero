@@ -123,7 +123,7 @@ function mapActionsForSuggestion(actions: string[], key: string): ActionItem[] {
     const isCancel = CANCEL_PATTERN.test(action);
 
     return {
-      id: `${key}-${idx}-${action}`,
+      id: `${key}-${idx}`,
       label: action,
       command: action,
       primary: hasConfirm ? isConfirm : idx === 0 && !isCancel,
