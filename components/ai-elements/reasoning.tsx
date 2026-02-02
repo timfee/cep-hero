@@ -1,21 +1,24 @@
 "use client";
 
+import type { ComponentProps, ReactNode } from "react";
+
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import { cjk } from "@streamdown/cjk";
+import { code } from "@streamdown/code";
+import { math } from "@streamdown/math";
+import { mermaid } from "@streamdown/mermaid";
+import { BrainIcon, ChevronDownIcon } from "lucide-react";
+import { createContext, memo, useContext, useEffect, useState } from "react";
+import { Streamdown } from "streamdown";
+
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
-import { math } from "@streamdown/math";
-import { mermaid } from "@streamdown/mermaid";
-import { motion } from "motion/react";
-import { BrainIcon, ChevronDownIcon } from "lucide-react";
-import type { ComponentProps, ReactNode } from "react";
-import { createContext, memo, useContext, useEffect, useState } from "react";
-import { Streamdown } from "streamdown";
+
+import { Shimmer } from "./shimmer";
 
 interface ReasoningContextValue {
   isStreaming: boolean;
@@ -155,8 +158,15 @@ export const ReasoningTrigger = memo(
         {children ?? (
           <>
             <BrainIcon className="size-3.5" />
-            <span className="text-xs">{getThinkingMessage(isStreaming, duration)}</span>
-            <ChevronDownIcon className={cn("size-3.5 transition-transform", isOpen && "rotate-180")} />
+            <span className="text-xs">
+              {getThinkingMessage(isStreaming, duration)}
+            </span>
+            <ChevronDownIcon
+              className={cn(
+                "size-3.5 transition-transform",
+                isOpen && "rotate-180"
+              )}
+            />
           </>
         )}
       </CollapsibleTrigger>
@@ -177,7 +187,10 @@ export const ReasoningContent = memo(
     return (
       <CollapsibleContent>
         <div
-          className={cn("mt-2 text-xs text-muted-foreground leading-relaxed", className)}
+          className={cn(
+            "mt-2 text-xs text-muted-foreground leading-relaxed",
+            className
+          )}
           {...props}
         >
           <Streamdown plugins={{ code, mermaid, math, cjk }}>

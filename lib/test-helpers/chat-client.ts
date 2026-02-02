@@ -3,7 +3,10 @@ import { expect } from "bun:test";
 const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 const USE_FAKE_CHAT = process.env.EVAL_FAKE_CHAT === "1";
 const ALLOW_FAKE_ON_ERROR = process.env.EVAL_FAKE_CHAT_FALLBACK === "1";
-const CHAT_TIMEOUT_MS = Number.parseInt(process.env.EVAL_CHAT_TIMEOUT_MS ?? "8000", 10);
+const CHAT_TIMEOUT_MS = Number.parseInt(
+  process.env.EVAL_CHAT_TIMEOUT_MS ?? "8000",
+  10
+);
 const USE_EVAL_TEST_MODE =
   (process.env.EVAL_USE_BASE === "1" ||
     process.env.EVAL_USE_FIXTURES === "1") &&
@@ -36,9 +39,10 @@ export async function callChatMessages(
   }
   await ensureChatReady(CHAT_URL);
   const controller = new AbortController();
-  const timeoutId = Number.isFinite(CHAT_TIMEOUT_MS) && CHAT_TIMEOUT_MS > 0
-    ? setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS)
-    : undefined;
+  const timeoutId =
+    Number.isFinite(CHAT_TIMEOUT_MS) && CHAT_TIMEOUT_MS > 0
+      ? setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS)
+      : undefined;
 
   let res: Response;
   try {
@@ -146,10 +150,7 @@ function evalTestModeResponse(): ChatResponse {
       confidence: 0.2,
     },
   ];
-  const planSteps = [
-    "Check fixture context",
-    "Generate structured response",
-  ];
+  const planSteps = ["Check fixture context", "Generate structured response"];
   const missingQuestions = [
     {
       question: "What changed most recently?",

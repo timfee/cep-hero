@@ -1,5 +1,6 @@
-import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
+import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 const statusBadgeVariants = cva(
@@ -12,8 +13,7 @@ const statusBadgeVariants = cva(
         warning:
           "bg-status-warning/15 text-status-warning ring-1 ring-status-warning/30",
         info: "bg-status-info/15 text-status-info ring-1 ring-status-info/30",
-        neutral:
-          "bg-muted text-muted-foreground ring-1 ring-border",
+        neutral: "bg-muted text-muted-foreground ring-1 ring-border",
       },
     },
     defaultVariants: {
@@ -23,7 +23,8 @@ const statusBadgeVariants = cva(
 );
 
 interface StatusBadgeProps
-  extends React.HTMLAttributes<HTMLDivElement>,
+  extends
+    React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof statusBadgeVariants> {
   /**
    * Icon component to display before the label

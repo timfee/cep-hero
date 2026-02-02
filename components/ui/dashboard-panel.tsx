@@ -1,4 +1,5 @@
 import * as React from "react";
+
 import { cn } from "@/lib/utils";
 
 interface DashboardPanelProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -50,8 +51,7 @@ function DashboardPanel({
   );
 }
 
-interface DashboardPanelHeaderProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+interface DashboardPanelHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 function DashboardPanelHeader({
   className,
@@ -66,8 +66,7 @@ function DashboardPanelHeader({
   );
 }
 
-interface DashboardPanelTitleProps
-  extends React.HTMLAttributes<HTMLHeadingElement> {}
+interface DashboardPanelTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 
 function DashboardPanelTitle({
   className,
@@ -82,8 +81,7 @@ function DashboardPanelTitle({
   );
 }
 
-interface DashboardPanelDescriptionProps
-  extends React.HTMLAttributes<HTMLParagraphElement> {}
+interface DashboardPanelDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
 
 function DashboardPanelDescription({
   className,
@@ -98,8 +96,7 @@ function DashboardPanelDescription({
   );
 }
 
-interface DashboardPanelContentProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+interface DashboardPanelContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 function DashboardPanelContent({
   className,
@@ -114,8 +111,7 @@ function DashboardPanelContent({
   );
 }
 
-interface DashboardPanelActionsProps
-  extends React.HTMLAttributes<HTMLDivElement> {}
+interface DashboardPanelActionsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 function DashboardPanelActions({
   className,

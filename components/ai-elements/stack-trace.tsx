@@ -1,6 +1,16 @@
 "use client";
 
+import type { ComponentProps } from "react";
+
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import {
+  AlertTriangleIcon,
+  CheckIcon,
+  ChevronDownIcon,
+  CopyIcon,
+} from "lucide-react";
+import { createContext, memo, useContext, useMemo, useState } from "react";
+
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -8,14 +18,6 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
-import {
-  AlertTriangleIcon,
-  CheckIcon,
-  ChevronDownIcon,
-  CopyIcon,
-} from "lucide-react";
-import type { ComponentProps } from "react";
-import { createContext, memo, useContext, useMemo, useState } from "react";
 
 // Regex patterns for parsing stack traces
 const STACK_FRAME_WITH_PARENS_REGEX = /^at\s+(.+?)\s+\((.+):(\d+):(\d+)\)$/;

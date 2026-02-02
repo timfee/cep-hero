@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
 import { ArrowRight, MessageSquare, LogOut, User } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { ChatConsole } from "@/components/chat/chat-console";
 import { Button } from "@/components/ui/button";
