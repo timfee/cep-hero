@@ -1,10 +1,12 @@
 "use client";
 
-import { cn } from "@/lib/utils";
-import { motion } from "motion/react";
 import { Stethoscope, BookOpen } from "lucide-react";
-import type { Reference } from "@/types/chat";
+import { motion } from "motion/react";
 import { memo } from "react";
+
+import type { Reference } from "@/types/chat";
+
+import { cn } from "@/lib/utils";
 
 export interface DiagnosisCardProps {
   diagnosis: string;

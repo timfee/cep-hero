@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Shield, Chrome, Lock } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
@@ -32,7 +32,9 @@ export default function SignInPage() {
       <main className="flex min-h-screen items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted border-t-primary" />
-          <p className="text-sm text-muted-foreground">Checking authentication...</p>
+          <p className="text-sm text-muted-foreground">
+            Checking authentication...
+          </p>
         </div>
       </main>
     );
@@ -59,7 +61,8 @@ export default function SignInPage() {
           <div className="mb-6">
             <h2 className="text-base font-medium text-foreground">Sign in</h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              Sign in with your Google Workspace account to access enterprise diagnostics.
+              Sign in with your Google Workspace account to access enterprise
+              diagnostics.
             </p>
           </div>
 
@@ -122,7 +125,8 @@ export default function SignInPage() {
 
         {/* Footer */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
-          Only Google Workspace admin accounts with appropriate permissions can sign in.
+          Only Google Workspace admin accounts with appropriate permissions can
+          sign in.
         </p>
       </div>
     </main>

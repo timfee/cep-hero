@@ -132,7 +132,7 @@ export async function diagnose(
         ],
         process.env.GOOGLE_TOKEN_EMAIL
       );
-    } catch (error) {
+    } catch {
       return syntheticDiagnosis(
         "Missing Google access token for live diagnostics."
       );

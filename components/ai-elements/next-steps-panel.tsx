@@ -1,8 +1,9 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { ArrowRight } from "lucide-react";
 import { memo } from "react";
+
+import { cn } from "@/lib/utils";
 
 export interface NextStepsPanelProps {
   steps: string[];
@@ -19,9 +20,7 @@ export const NextStepsPanel = memo(function NextStepsPanel({
 
   return (
     <div className={cn("space-y-2", className)}>
-      <p className="text-xs font-medium text-muted-foreground">
-        Next steps
-      </p>
+      <p className="text-xs font-medium text-muted-foreground">Next steps</p>
       <div className="space-y-1">
         {steps.map((step, i) => (
           <button

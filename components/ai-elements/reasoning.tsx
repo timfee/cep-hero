@@ -18,8 +18,6 @@ import {
 } from "@/components/ui/collapsible";
 import { cn } from "@/lib/utils";
 
-import { Shimmer } from "./shimmer";
-
 interface ReasoningContextValue {
   isStreaming: boolean;
   isOpen: boolean;
@@ -182,7 +180,7 @@ export type ReasoningContentProps = ComponentProps<
 
 export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => {
-    const { isOpen } = useReasoning();
+    useReasoning();
 
     return (
       <CollapsibleContent>

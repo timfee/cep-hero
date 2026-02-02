@@ -1,48 +1,51 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { useEffect, useState } from "react";
 import { SendHorizontal, HelpCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 
-import { Button } from "@/components/ui/button";
-import {
-  Conversation,
-  ConversationContent,
-  ConversationEmptyState,
-  ConversationScrollButton,
-} from "@/components/ai-elements/conversation";
-import {
-  Message,
-  MessageContent,
-  MessageResponse,
-} from "@/components/ai-elements/message";
-import {
-  Reasoning,
-  ReasoningTrigger,
-  ReasoningContent,
-} from "@/components/ai-elements/reasoning";
-import { Loader, ThinkingIndicator } from "@/components/ai-elements/loader";
-import {
-  PromptInput,
-  PromptInputTextarea,
-  PromptInputSubmit,
-  type PromptInputMessage,
-} from "@/components/ai-elements/prompt-input";
-
-// Domain-specific components
-import { HypothesesList } from "@/components/ai-elements/hypothesis-card";
-import { EvidencePanel } from "@/components/ai-elements/evidence-panel";
-import { ConnectorStatus } from "@/components/ai-elements/connector-status";
-import { PlanSteps } from "@/components/ai-elements/plan-steps";
-import { NextStepsPanel } from "@/components/ai-elements/next-steps-panel";
-import { MissingQuestionsList } from "@/components/ai-elements/missing-questions";
-import { ActionButtons, type ActionItem } from "@/components/ai-elements/action-buttons";
 import type {
   EvidencePayload,
   ConnectorAnalysis,
   Hypothesis,
   MissingQuestion,
 } from "@/types/chat";
+
+import {
+  ActionButtons,
+  type ActionItem,
+} from "@/components/ai-elements/action-buttons";
+import { ConnectorStatus } from "@/components/ai-elements/connector-status";
+import {
+  Conversation,
+  ConversationContent,
+  ConversationEmptyState,
+  ConversationScrollButton,
+} from "@/components/ai-elements/conversation";
+import { EvidencePanel } from "@/components/ai-elements/evidence-panel";
+// Domain-specific components
+import { HypothesesList } from "@/components/ai-elements/hypothesis-card";
+import { Loader, ThinkingIndicator } from "@/components/ai-elements/loader";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "@/components/ai-elements/message";
+import { MissingQuestionsList } from "@/components/ai-elements/missing-questions";
+import { NextStepsPanel } from "@/components/ai-elements/next-steps-panel";
+import { PlanSteps } from "@/components/ai-elements/plan-steps";
+import {
+  PromptInput,
+  PromptInputTextarea,
+  PromptInputSubmit,
+  type PromptInputMessage,
+} from "@/components/ai-elements/prompt-input";
+import {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+} from "@/components/ai-elements/reasoning";
+import { Button } from "@/components/ui/button";
 
 interface MessageMetadata {
   evidence?: {
@@ -104,26 +107,40 @@ export function ChatConsole() {
             const isLast = index === messages.length - 1;
             const showStreamingCursor = isStreaming && isLast && !isUser;
             const metadata = message.metadata as MessageMetadata | undefined;
+            const messageKey = message.id
+              ? `${message.id}-${index}`
+              : `message-${index}`;
 
             // Extract parts
-            const textParts = message.parts.filter(
-              (p): p is { type: "text"; text: string } => p.type === "text"
-            );
+            const textParts = message.parts.filter((p) => p.type === "text");
             const reasoningParts = message.parts.filter(
-              (p): p is { type: "reasoning"; reasoning: string } =>
-                p.type === "reasoning"
+              (p) => p.type === "reasoning"
             );
 
-            const mainText = textParts.map((p) => p.text).join("\n");
-            const reasoningText = reasoningParts.map((p) => p.reasoning).join("\n");
+            const mainText = textParts
+              .map((p) =>
+                "text" in p && typeof p.text === "string" ? p.text : ""
+              )
+              .filter(Boolean)
+              .join("\n");
+            const reasoningText = reasoningParts
+              .map((p) =>
+                "reasoning" in p && typeof p.reasoning === "string"
+                  ? p.reasoning
+                  : ""
+              )
+              .filter(Boolean)
+              .join("\n");
             const evidence = metadata?.evidence;
             const actions = metadata?.actions;
 
             return (
               <Message
-                key={message.id}
+                key={messageKey}
                 from={message.role}
-                className={isUser ? "bg-transparent px-4 py-4" : "bg-muted/30 px-4 py-4"}
+                className={
+                  isUser ? "bg-transparent px-4 py-4" : "bg-muted/30 px-4 py-4"
+                }
               >
                 {/* Role label */}
                 <div className="text-xs font-medium text-muted-foreground">
@@ -152,25 +169,38 @@ export function ChatConsole() {
                     <ConnectorStatus analysis={evidence.connectorAnalysis} />
                   )}
 
-                  {!isUser && evidence?.planSteps && evidence.planSteps.length > 0 && (
-                    <PlanSteps steps={evidence.planSteps} />
-                  )}
+                  {!isUser &&
+                    evidence?.planSteps &&
+                    evidence.planSteps.length > 0 && (
+                      <PlanSteps steps={evidence.planSteps} />
+                    )}
 
                   {!isUser && evidence?.evidence && (
                     <EvidencePanel evidence={evidence.evidence} />
                   )}
 
-                  {!isUser && evidence?.hypotheses && evidence.hypotheses.length > 0 && (
-                    <HypothesesList hypotheses={evidence.hypotheses} />
-                  )}
+                  {!isUser &&
+                    evidence?.hypotheses &&
+                    evidence.hypotheses.length > 0 && (
+                      <HypothesesList hypotheses={evidence.hypotheses} />
+                    )}
 
-                  {!isUser && evidence?.missingQuestions && evidence.missingQuestions.length > 0 && (
-                    <MissingQuestionsList questions={evidence.missingQuestions} />
-                  )}
+                  {!isUser &&
+                    evidence?.missingQuestions &&
+                    evidence.missingQuestions.length > 0 && (
+                      <MissingQuestionsList
+                        questions={evidence.missingQuestions}
+                      />
+                    )}
 
-                  {!isUser && evidence?.nextSteps && evidence.nextSteps.length > 0 && (
-                    <NextStepsPanel steps={evidence.nextSteps} onStepClick={handleAction} />
-                  )}
+                  {!isUser &&
+                    evidence?.nextSteps &&
+                    evidence.nextSteps.length > 0 && (
+                      <NextStepsPanel
+                        steps={evidence.nextSteps}
+                        onStepClick={handleAction}
+                      />
+                    )}
 
                   {!isUser && actions && actions.length > 0 && (
                     <ActionButtons actions={actions} onAction={handleAction} />
@@ -181,7 +211,12 @@ export function ChatConsole() {
           })}
 
           {/* Streaming loader */}
-          {status === "submitted" && <Loader className="mx-4 my-4 text-muted-foreground" variant="dots" />}
+          {status === "submitted" && (
+            <Loader
+              className="mx-4 my-4 text-muted-foreground"
+              variant="dots"
+            />
+          )}
         </ConversationContent>
 
         <ConversationScrollButton />
