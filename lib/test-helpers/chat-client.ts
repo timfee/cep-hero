@@ -1,16 +1,16 @@
 import { expect } from "bun:test";
 
+import type { FixtureData } from "@/lib/mcp/types";
+
 const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 const USE_FAKE_CHAT = process.env.EVAL_FAKE_CHAT === "1";
 const ALLOW_FAKE_ON_ERROR = process.env.EVAL_FAKE_CHAT_FALLBACK === "1";
 const CHAT_TIMEOUT_MS = Number.parseInt(
-  process.env.EVAL_CHAT_TIMEOUT_MS ?? "8000",
+  process.env.EVAL_CHAT_TIMEOUT_MS ?? "60000",
   10
 );
-const USE_EVAL_TEST_MODE =
-  (process.env.EVAL_USE_BASE === "1" ||
-    process.env.EVAL_USE_FIXTURES === "1") &&
-  !USE_FAKE_CHAT;
+const USE_EVAL_FIXTURE_MODE =
+  process.env.EVAL_USE_BASE === "1" || process.env.EVAL_USE_FIXTURES === "1";
 
 let chatReady = false;
 let chatReadyPromise: Promise<void> | undefined;
@@ -25,17 +25,19 @@ type ChatMessage = {
   content: string;
 };
 
+export type CallChatMessagesOptions = {
+  fixtures?: FixtureData;
+};
+
 /**
  * Call the chat endpoint with explicit messages.
  */
 export async function callChatMessages(
-  messages: ChatMessage[]
+  messages: ChatMessage[],
+  options?: CallChatMessagesOptions
 ): Promise<ChatResponse> {
   if (USE_FAKE_CHAT) {
     return syntheticResponse();
-  }
-  if (USE_EVAL_TEST_MODE) {
-    return evalTestModeResponse();
   }
   await ensureChatReady(CHAT_URL);
   const controller = new AbortController();
@@ -53,15 +55,20 @@ export async function callChatMessages(
       "Content-Type": "application/json",
       "X-Test-Bypass": "1",
     };
-    if (USE_EVAL_TEST_MODE) {
+    const useFixtureMode = USE_EVAL_FIXTURE_MODE && options?.fixtures;
+    if (useFixtureMode) {
       headers["X-Eval-Test-Mode"] = "1";
+    }
+    const body: Record<string, unknown> = { messages };
+    if (useFixtureMode && options?.fixtures) {
+      body.fixtures = options.fixtures;
     }
     res = await fetchWithRetry(
       () =>
         fetch(CHAT_URL, {
           method: "POST",
           headers,
-          body: JSON.stringify({ messages }),
+          body: JSON.stringify(body),
           signal: controller.signal,
         }),
       retryOptions
@@ -138,55 +145,20 @@ function syntheticResponse(): ChatResponse {
   };
 }
 
-function evalTestModeResponse(): ChatResponse {
-  const diagnosis = "Synthetic diagnosis for eval test mode.";
-  const nextSteps = [
-    "Review fixture context",
-    "Compare output to expected schema",
-  ];
-  const hypotheses = [
-    {
-      cause: "Synthetic placeholder hypothesis",
-      confidence: 0.2,
-    },
-  ];
-  const planSteps = ["Check fixture context", "Generate structured response"];
-  const missingQuestions = [
-    {
-      question: "What changed most recently?",
-      why: "Identify the most likely regression window",
-    },
-  ];
-
-  return {
-    text: [
-      diagnosis,
-      `Next steps: ${nextSteps.join("; ")}`,
-      `Plan: ${planSteps.join("; ")}`,
-    ].join("\n"),
-    metadata: {
-      diagnosis,
-      nextSteps,
-      hypotheses,
-      planSteps,
-      missingQuestions,
-      evidence: {
-        source: "synthetic",
-        planSteps,
-        missingQuestions,
-      },
-    },
-  } satisfies ChatResponse;
-}
-
 /**
  * Call the chat endpoint with a single prompt.
  */
-export async function callChat(prompt: string): Promise<ChatResponse> {
-  return callChatMessages([
-    { role: "system", content: "You are CEP Hero." },
-    { role: "user", content: prompt },
-  ]);
+export async function callChat(
+  prompt: string,
+  options?: CallChatMessagesOptions
+): Promise<ChatResponse> {
+  return callChatMessages(
+    [
+      { role: "system", content: "You are CEP Hero." },
+      { role: "user", content: prompt },
+    ],
+    options
+  );
 }
 
 /**

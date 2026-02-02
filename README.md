@@ -114,22 +114,55 @@ curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
 
 ---
 
-## 🧪 Testing notes
+## 🧪 Testing & Evaluation
 
-- The live eval suite uses `X-Test-Bypass: 1` to skip interactive auth.
-- With bypass on, the server mints tokens from `GOOGLE_SERVICE_ACCOUNT_JSON` and `GOOGLE_TOKEN_EMAIL`.
-- `EVAL_TEST_MODE=1` keeps real chat as the default but asks `/api/chat` for a lightweight synthetic response when base/fixtures are enabled. Use it for fast, quota-safe runs.
-- Fixtures are sparse (EC-001/002/003 only). Add more under `evals/fixtures/EC-###/` when you tighten coverage.
-- Eval tests log each case (`[eval][diagnostics]` / `[eval][test-plan]`) and add a small per-case pause; set `EVAL_CASE_PAUSE_MS` if you need more room.
+### Eval Architecture
 
-Eval runs (defaults: parallel, small pacing, real chat unless `EVAL_TEST_MODE=1`):
+The eval framework uses **fixture injection** to provide deterministic test data to the AI without calling live Google APIs. This enables reproducible testing of AI diagnostic capabilities.
 
-- `bun run evals:run` runs all evals.
-- `EVAL_IDS="EC-071,EC-072" bun run evals:run` runs selected cases (comma or space separated).
-- `EVAL_CATEGORY=test_plan bun run evals:run` runs one category.
-- `EVAL_TEST_MODE=1 bun run evals:run` uses synthetic chat responses (quota-safe).
-- `EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1` attach the base snapshot and fixtures.
-- `bun run credentials:check` validates service-account setup for test bypass.
+**How it works:**
+
+1. Test files load fixtures via `loadEvalFixtures(caseId)` which merges base data with case-specific overrides
+2. Fixtures are sent to the chat API in the request body with `X-Eval-Test-Mode: 1` header
+3. The API creates a `FixtureToolExecutor` that returns fixture data instead of calling Google APIs
+4. The AI reasons over the fixture data and produces diagnostic output
+
+**Key files:**
+
+- `lib/mcp/types.ts` - Defines `IToolExecutor` interface and `FixtureData` type
+- `lib/mcp/fixture-executor.ts` - Implements `IToolExecutor` using fixture data
+- `lib/test-helpers/eval-runner.ts` - Contains `loadEvalFixtures()` for loading fixture data
+- `evals/fixtures/base/api-base.json` - Base fixture data (org units, events, policies)
+- `evals/fixtures/EC-###/overrides.json` - Case-specific fixture overrides
+
+### Running Evals
+
+```bash
+# Run all evals with fixture injection
+EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 bun run evals:run
+
+# Run specific cases
+EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals:run
+
+# Run one category
+EVAL_CATEGORY=test_plan EVAL_USE_BASE=1 bun run evals:run
+
+# Fast mode with synthetic responses (no AI calls)
+EVAL_FAKE_CHAT=1 bun run evals:run
+
+# Validate service account setup
+bun run credentials:check
+```
+
+### Environment Variables
+
+- `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
+- `EVAL_USE_FIXTURES=1` - Load case-specific overrides from `evals/fixtures/EC-###/`
+- `EVAL_FAKE_CHAT=1` - Return synthetic responses without calling the AI
+- `EVAL_IDS` - Comma-separated list of case IDs to run
+- `EVAL_CATEGORY` - Filter by category (diagnostics, test_plan, common_challenges)
+- `EVAL_CASE_PAUSE_MS` - Delay between cases (default: 250ms)
+- `X-Test-Bypass: 1` header - Skip interactive auth using service account
 
 ---
 

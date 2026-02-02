@@ -1,7 +1,6 @@
-import {
-  authenticateRequest,
-  createTestModeResponse,
-} from "@/lib/chat/auth-service";
+import type { FixtureData } from "@/lib/mcp/types";
+
+import { authenticateRequest } from "@/lib/chat/auth-service";
 import { createChatStream } from "@/lib/chat/chat-service";
 import {
   extractInlinePrompt,
@@ -11,23 +10,40 @@ import {
   ChatMessage,
 } from "@/lib/chat/request-utils";
 import { writeDebugLog } from "@/lib/debug-log";
+import {
+  FixtureToolExecutor,
+  loadFixtureData,
+} from "@/lib/mcp/fixture-executor";
 
 export const maxDuration = 30;
+
+function extractFixtureData(body: unknown): FixtureData | null {
+  if (!body || typeof body !== "object") {
+    return null;
+  }
+  const fixtures = Reflect.get(body, "fixtures");
+  if (!fixtures || typeof fixtures !== "object") {
+    return null;
+  }
+  return fixtures as FixtureData;
+}
 
 /**
  * Handle streaming CEP chat responses.
  */
 export async function POST(req: Request) {
-  // 1. Authenticate and handle Test Mode logic
+  // 1. Authenticate
   const authResult = await authenticateRequest(req);
-
-  if (authResult.status === "test_mode_response") {
-    return createTestModeResponse();
-  }
 
   if (authResult.status === "unauthorized") {
     return new Response(JSON.stringify({ error: authResult.error }), {
       status: 401,
+    });
+  }
+
+  if (authResult.status === "test_mode_response") {
+    return new Response(JSON.stringify({ error: "Test mode response not supported. Use fixture injection instead." }), {
+      status: 400,
     });
   }
 
@@ -62,20 +78,30 @@ export async function POST(req: Request) {
     });
   }
 
-  // 3. Log Request
+  // 3. Check for fixture data in eval mode
+  const isEvalTestMode = req.headers.get("x-eval-test-mode") === "1";
+  const fixtureData = extractFixtureData(body);
+  const executor =
+    isEvalTestMode && fixtureData
+      ? new FixtureToolExecutor(loadFixtureData(fixtureData))
+      : undefined;
+
+  // 4. Log Request
   await writeDebugLog("chat.request", {
     prompt,
     user: session.user?.id,
     evalTestMode: isTestMode,
+    fixtureMode: !!executor,
     messageCount: messages.length,
     lastMessageRole: messages.at(-1)?.role,
     lastMessageLen: messages.at(-1)?.content?.length ?? 0,
     bodyPreview: safeJsonPreview(body),
   });
 
-  // 4. Create and Return Chat Stream
+  // 5. Create and Return Chat Stream
   return createChatStream({
     messages,
     accessToken,
+    executor,
   });
 }

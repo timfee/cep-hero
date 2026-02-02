@@ -2,6 +2,8 @@ import { google } from "@ai-sdk/google";
 import { generateObject, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 
+import type { IToolExecutor } from "@/lib/mcp/types";
+
 import {
   CepToolExecutor,
   DraftPolicyChangeSchema,
@@ -73,6 +75,7 @@ Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.`;
 interface CreateChatStreamParams {
   messages: ChatMessage[];
   accessToken: string;
+  executor?: IToolExecutor;
 }
 
 /**
@@ -86,8 +89,10 @@ interface CreateChatStreamParams {
 export async function createChatStream({
   messages,
   accessToken,
+  executor: providedExecutor,
 }: CreateChatStreamParams) {
-  const executor = new CepToolExecutor(accessToken);
+  const executor: IToolExecutor =
+    providedExecutor ?? (new CepToolExecutor(accessToken) as IToolExecutor);
 
   // 1. Analyze intent and proactively retrieve knowledge (RAG)
   const lastUserMessage = messages
