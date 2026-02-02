@@ -1,5 +1,5 @@
 import { google } from "@ai-sdk/google";
-import { streamText, tool, stepCountIs } from "ai";
+import { generateObject, streamText, tool, stepCountIs } from "ai";
 import { z } from "zod";
 
 import { diagnose } from "@/app/api/chat/diagnose";
@@ -25,7 +25,7 @@ const systemPrompt =
   "Analyze returned data critically. If you see generic names or IDs (e.g. 'rule-1', 'policy-A'), warn the user that this makes debugging difficult and suggest inspecting specific items. " +
   "When a tool returns a list (like org units, rules, events), you MUST parse the list and present a summary or a markdown table of the key items, along with analysis of any potential issues or patterns. Do not rely on the user to read the raw tool output. " +
   "If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. " +
-  "Use the 'lookupKnowledge' tool to search for documentation and policies when you need to verify error codes, configuration requirements, or concept definitions. " +
+  "Relevant documentation and policy definitions may be provided in the context. Use this information to verify error codes and configuration requirements. " +
   "You MUST use the 'suggestActions' tool to present follow-up options or next steps. Do NOT list next steps as text in your message body. The UI requires this tool to display clickable buttons. " +
   "Example: Instead of writing 'You can try to fetch events or check rules', call `suggestActions({ actions: ['Get recent Chrome events', 'List DLP rules'] })`. " +
   "Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
@@ -55,26 +55,68 @@ export async function createChatStream({
   // Track structured data from diagnosis tool for message metadata
   let diagnosisResult: Awaited<ReturnType<typeof diagnose>> | null = null;
 
+  // 1. Analyze intent and proactively retrieve knowledge (RAG)
+  const lastUserMessage = messages
+    .filter((m) => m.role === "user")
+    .at(-1)?.content;
+
+  let knowledgeContext = "";
+
+  if (lastUserMessage) {
+    try {
+      // Fast pass to check if we need to search docs
+      const intentAnalysis = await generateObject({
+        model: google("gemini-2.0-flash-001"), // Use a fast model for routing
+        schema: z.object({
+          needsKnowledge: z
+            .boolean()
+            .describe(
+              "True if the user is asking about concepts, errors, policies, or configuration steps."
+            ),
+          query: z
+            .string()
+            .describe("The search query for documentation and policies"),
+        }),
+        prompt: `Analyze the user's latest message: "${lastUserMessage}". Do they need documentation or policy definitions?`,
+      });
+
+      if (intentAnalysis.object.needsKnowledge) {
+        const query = intentAnalysis.object.query;
+        const [docs, policies] = await Promise.all([
+          searchDocs(query),
+          searchPolicies(query),
+        ]);
+
+        const docSnippets =
+          docs?.result
+            ?.map((d) => `[Doc: ${d.metadata?.title}]\n${d.data}`)
+            .join("\n\n") || "";
+        const policySnippets =
+          policies?.result
+            ?.map((p) => `[Policy: ${p.metadata?.title}]\n${p.data}`)
+            .join("\n\n") || "";
+
+        if (docSnippets || policySnippets) {
+          knowledgeContext = `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
+        }
+      }
+    } catch (err) {
+      console.error("Knowledge retrieval failed:", err);
+      // Proceed without context on error
+    }
+  }
+
+  // Inject knowledge into the system prompt or as a context message
+  // We'll append it to the system prompt for visibility
+  const enhancedSystemPrompt = knowledgeContext
+    ? `${systemPrompt}${knowledgeContext}`
+    : systemPrompt;
+
   const result = streamText({
     model: google("gemini-2.0-flash-001"),
-    messages: [{ role: "system", content: systemPrompt }, ...messages],
-    stopWhen: stepCountIs(5),
+    messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
+    maxSteps: 5,
     tools: {
-      lookupKnowledge: tool({
-        description:
-          "Search the knowledge base for documentation and policy definitions.",
-        inputSchema: z.object({
-          query: z.string().describe("The search query string"),
-        }),
-        execute: async ({ query }) => {
-          const [docs, policies] = await Promise.all([
-            searchDocs(query),
-            searchPolicies(query),
-          ]);
-          return { docs, policies };
-        },
-      }),
-
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
         inputSchema: GetChromeEventsSchema,
