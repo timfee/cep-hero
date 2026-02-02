@@ -344,8 +344,8 @@ export function ChatConsole() {
                         {!isUser && (
                           <MessageActions>
                             <MessageAction
-                              onClick={() => {
-                                track("Response Regenerated");
+                              onClick={async () => {
+                                await track("Response Regenerated");
                                 regenerate();
                               }}
                               tooltip="Regenerate"
@@ -353,9 +353,9 @@ export function ChatConsole() {
                               <RefreshCcwIcon className="size-4" />
                             </MessageAction>
                             <MessageAction
-                              onClick={() => {
-                                track("Response Copied");
-                                navigator.clipboard.writeText(part.text);
+                              onClick={async () => {
+                                await track("Response Copied");
+                                await navigator.clipboard.writeText(part.text);
                               }}
                               tooltip="Copy"
                             >
