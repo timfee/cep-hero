@@ -87,7 +87,7 @@ export default function Home() {
           </div>
           <div className="flex flex-col items-center gap-2">
             <h1 className="text-lg font-semibold text-foreground">
-              CEP Command Center
+              CEP Hero
             </h1>
             <p className="text-sm text-muted-foreground">Initializing...</p>
           </div>
@@ -108,7 +108,7 @@ export default function Home() {
         <header className="mb-6 flex items-start justify-between lg:mb-8 xl:mb-10">
           <div>
             <h1 className="text-lg font-semibold text-foreground">
-              CEP Command Center
+              CEP Hero
             </h1>
             <p className="text-sm text-muted-foreground">
               Chrome Enterprise Premium diagnostics and remediation

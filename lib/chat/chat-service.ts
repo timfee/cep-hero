@@ -19,7 +19,7 @@ export const maxDuration = 30;
 const debugAuthSchema = z.object({});
 
 const systemPrompt =
-  "You are the CEP troubleshooting assistant. Answer concisely, then offer actions. Use tools only when needed and summarize results instead of dumping raw output. If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
+  "You are CEP Hero. Answer concisely, then offer actions. Use tools only when needed and summarize results instead of dumping raw output. If connector policies are missing or empty, suggest checking org unit targeting and admin scopes. Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.";
 
 interface CreateChatStreamParams {
   messages: ChatMessage[];

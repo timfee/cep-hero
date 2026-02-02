@@ -184,8 +184,7 @@ function evalTestModeResponse(): ChatResponse {
  */
 export async function callChat(prompt: string): Promise<ChatResponse> {
   return callChatMessages([
-    { role: "system", content: "You are the CEP troubleshooting assistant." },
-    { role: "user", content: prompt },
+          { role: "system", content: "You are CEP Hero." },    { role: "user", content: prompt },
   ]);
 }
 

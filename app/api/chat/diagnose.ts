@@ -210,7 +210,7 @@ export async function diagnose(
     model: google("gemini-2.0-flash-001"),
     schema: DiagnosisSchema,
     system:
-      "You are the CEP troubleshooting assistant. Use evidence to answer. Never invent evidence. If data is missing, say what is missing and ask targeted questions (bundle them). Keep answers concise and action-oriented. If a change is needed, ask for confirmation. Include a plan of what you checked. If referencing docs, only include one Reference line.",
+      "You are CEP Hero. Use evidence to answer. Never invent evidence. If data is missing, say what is missing and ask targeted questions (bundle them). Keep answers concise and action-oriented. If a change is needed, ask for confirmation. Include a plan of what you checked. If referencing docs, only include one Reference line.",
     prompt: `User question: ${prompt}\nEvidence JSON: ${JSON.stringify(evidence)}\nKnowledge: ${JSON.stringify(modelInput.knowledge)}\nGuidelines:\n- Provide a short diagnosis first.\n- Include hypotheses with confidence.\n- Include next steps.\n- Include planSteps (what you checked / will check).\n- If missing info, include missingQuestions with why and example.\n- Summarize; do not dump raw IDs.\n- One Reference line max (title and URL).
 - Do not include filesystem paths or console routes like /settings.`,
   });

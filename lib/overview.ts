@@ -1,5 +1,5 @@
 /**
- * Overview data types and utilities for the CEP Command Center dashboard.
+ * Overview data types and utilities for the CEP Hero dashboard.
  */
 
 export type OverviewCard = {
