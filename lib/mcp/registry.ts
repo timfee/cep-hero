@@ -551,7 +551,6 @@ export class CepToolExecutor {
         auth: this.auth,
       });
 
-      let rootOrgUnitId = "";
       let ouFetchError: string | null = null;
       try {
         if (!directory.orgunits?.list) {
@@ -561,10 +560,12 @@ export class CepToolExecutor {
           customerId: this.customerId,
           type: "all",
         });
-        const resolved = resolveRootOrgUnit(
+        const orgUnitIds = resolveOrgUnitCandidates(
           orgUnits?.data.organizationUnits ?? []
         );
-        rootOrgUnitId = resolved.id;
+        targetCandidates = orgUnitIds
+          .map((id) => buildOrgUnitTargetResource(id))
+          .filter((t) => t !== "");
       } catch (error) {
         ouFetchError = getErrorMessage(error);
         console.log(
@@ -572,10 +573,6 @@ export class CepToolExecutor {
           JSON.stringify({ message: ouFetchError })
         );
       }
-
-      targetCandidates = rootOrgUnitId
-        ? [buildOrgUnitTargetResource(rootOrgUnitId)]
-        : [];
 
       if (targetCandidates.length === 0) {
         return {
@@ -935,28 +932,42 @@ function getErrorMessage(error: unknown): string {
 }
 
 /**
- * Resolve the most likely root org unit ID.
+ * Resolve org unit IDs to try for Chrome Policy API.
+ * Returns an array of org unit IDs to try, in order of preference:
+ * 1. parentOrgUnitId (root) - if available
+ * 2. First few child org unit IDs - as fallback if root isn't enrolled in CBCM
+ *
  * The root org unit (path="/") typically doesn't appear in orgunits.list() results.
  * Instead, all child org units share the same parentOrgUnitId which IS the root.
- * We prioritize using parentOrgUnitId from any org unit as the root ID.
+ * However, the root might not be enrolled in Chrome Browser Cloud Management,
+ * so we also try child org units as fallback.
  */
-function resolveRootOrgUnit(units: OrgUnit[]): {
-  id: string;
-  path: string;
-  rawId: string;
-  rawPath: string;
-} {
+function resolveOrgUnitCandidates(units: OrgUnit[]): string[] {
   if (units.length === 0) {
-    return { id: "", path: "", rawId: "", rawPath: "" };
+    return [];
   }
 
-  const firstUnit = units[0];
-  const rawId = firstUnit?.parentOrgUnitId ?? firstUnit?.orgUnitId ?? "";
-  const rawPath = "/";
-  const id = normalizeResource(rawId);
-  const path = normalizeResource(rawPath);
+  const candidates: string[] = [];
+  const seen = new Set<string>();
 
-  return { id, path, rawId, rawPath };
+  const firstUnit = units[0];
+  const rootId = normalizeResource(
+    firstUnit?.parentOrgUnitId ?? firstUnit?.orgUnitId ?? ""
+  );
+  if (rootId && !seen.has(rootId)) {
+    candidates.push(rootId);
+    seen.add(rootId);
+  }
+
+  for (const unit of units.slice(0, 3)) {
+    const childId = normalizeResource(unit.orgUnitId ?? "");
+    if (childId && !seen.has(childId)) {
+      candidates.push(childId);
+      seen.add(childId);
+    }
+  }
+
+  return candidates;
 }
 
 /**
