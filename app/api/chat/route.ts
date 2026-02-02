@@ -137,7 +137,8 @@ export async function POST(req: Request) {
         execute: async (args) => await executor.listDLPRules(args),
       }),
       enrollBrowser: tool({
-        description: "Generate a Chrome Browser Cloud Management enrollment token.",
+        description:
+          "Generate a Chrome Browser Cloud Management enrollment token.",
         inputSchema: EnrollBrowserSchema,
         execute: async (args) => await executor.enrollBrowser(args),
       }),
@@ -168,7 +169,7 @@ export async function POST(req: Request) {
     sendReasoning: true,
     getMessageMetadata: () => {
       if (!diagnosisResult || "error" in diagnosisResult) return undefined;
-      
+
       // Build structured evidence for the UI
       const evidence = {
         planSteps: diagnosisResult.planSteps,
@@ -178,14 +179,15 @@ export async function POST(req: Request) {
         evidence: diagnosisResult.evidence,
         connectorAnalysis: diagnosisResult.evidence?.connectorAnalysis,
       };
-      
+
       // Build action buttons from next steps
-      const actions = diagnosisResult.nextSteps?.map((step, i) => ({
-        id: `next-step-${i}`,
-        label: step,
-        command: step,
-      })) ?? [];
-      
+      const actions =
+        diagnosisResult.nextSteps?.map((step, i) => ({
+          id: `next-step-${i}`,
+          label: step,
+          command: step,
+        })) ?? [];
+
       return { evidence, actions };
     },
   });

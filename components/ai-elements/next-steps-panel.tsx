@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowRight, Loader2 } from "lucide-react";
-import { memo, useState } from "react";
+import { memo, useState, useEffect, useRef } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,6 +19,16 @@ export const NextStepsPanel = memo(function NextStepsPanel({
   disabled,
 }: NextStepsPanelProps) {
   const [loadingIdx, setLoadingIdx] = useState<number | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current !== null) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
 
   if (steps.length === 0) return null;
 
@@ -26,7 +36,11 @@ export const NextStepsPanel = memo(function NextStepsPanel({
     if (disabled || loadingIdx !== null) return;
     setLoadingIdx(idx);
     onStepClick?.(step);
-    setTimeout(() => setLoadingIdx(null), 1500);
+    // Clear any existing timeout before setting a new one
+    if (timeoutRef.current !== null) {
+      clearTimeout(timeoutRef.current);
+    }
+    timeoutRef.current = setTimeout(() => setLoadingIdx(null), 1500);
   };
 
   return (
@@ -36,7 +50,7 @@ export const NextStepsPanel = memo(function NextStepsPanel({
         {steps.map((step, i) => {
           const isLoading = loadingIdx === i;
           const isDisabled = disabled || (loadingIdx !== null && !isLoading);
-          
+
           return (
             <button
               key={i}

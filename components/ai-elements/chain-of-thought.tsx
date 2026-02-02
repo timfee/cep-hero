@@ -1,9 +1,9 @@
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
-import { AnimatePresence, motion } from "framer-motion";
 
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   BrainIcon,
   ChevronDownIcon,
