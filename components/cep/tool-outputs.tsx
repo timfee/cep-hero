@@ -132,7 +132,9 @@ function FleetOverviewOutput({ data }: { data: unknown }) {
         <div className="text-sm text-muted-foreground">Compliance</div>
         <div className="mt-1 flex items-center gap-2">
           <span className="text-2xl font-semibold text-foreground">
-            {fleetData.complianceRate}%
+            {fleetData.complianceRate !== undefined
+              ? `${fleetData.complianceRate}%`
+              : "—"}
           </span>
           <span
             className={cn(
@@ -217,7 +219,8 @@ function ConnectorStatusOutput({
           "h-2.5 w-2.5 rounded-full",
           connData.status === "healthy" && "bg-(--color-status-healthy)",
           connData.status === "degraded" && "bg-(--color-status-warning)",
-          connData.status === "error" && "bg-(--color-status-error)"
+          connData.status === "error" && "bg-(--color-status-error)",
+          connData.status === "offline" && "bg-muted-foreground"
         )}
       />
       <EntityName>{connData.name}</EntityName>

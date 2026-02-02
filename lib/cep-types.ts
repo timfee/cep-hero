@@ -38,13 +38,12 @@ export type ChromeEvent = {
 };
 
 export type PostureCard = {
-  id: string;
-  title: string;
-  status: "healthy" | "warning" | "critical";
-  value: string | number;
-  description: string;
-  trend?: "up" | "down" | "stable";
-  action?: SuggestedAction;
+  label: string;
+  status: "healthy" | "warning" | "critical" | "error";
+  detail: string;
+  source: string;
+  action?: string;
+  lastUpdated?: string;
 };
 
 export type SuggestedAction = {
@@ -81,11 +80,7 @@ export type DiagnosisResult = {
 export type OverviewData = {
   headline: string;
   summary: string;
-  fleetOverview: FleetOverview;
-  connectors: ConnectorStatus[];
-  dlpRules: DLPRule[];
-  recentEvents: ChromeEvent[];
   postureCards: PostureCard[];
-  suggestedActions: SuggestedAction[];
+  suggestions: string[];
   sources: string[];
 };

@@ -25,7 +25,7 @@ export function ChatConsole({ initialPrompt, className }: ChatConsoleProps) {
   const [input, setInput] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const hasInitialized = useRef(false);
+  const lastPromptRef = useRef<string | undefined>(undefined);
 
   const { messages, sendMessage, status } = useChat({
     transport: new DefaultChatTransport({ api: "/api/chat" }),
@@ -34,24 +34,32 @@ export function ChatConsole({ initialPrompt, className }: ChatConsoleProps) {
   const isLoading = status === "streaming" || status === "submitted";
 
   useEffect(() => {
-    if (initialPrompt && !hasInitialized.current && messages.length === 0) {
-      hasInitialized.current = true;
+    if (
+      initialPrompt &&
+      initialPrompt !== lastPromptRef.current &&
+      !isLoading
+    ) {
+      lastPromptRef.current = initialPrompt;
       sendMessage({ text: initialPrompt });
     }
-  }, [initialPrompt, messages.length, sendMessage]);
+  }, [initialPrompt, isLoading, sendMessage]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const submitInput = useCallback(() => {
+    if (!input.trim() || isLoading) return;
+    sendMessage({ text: input });
+    setInput("");
+  }, [input, isLoading, sendMessage]);
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
-      if (!input.trim() || isLoading) return;
-      sendMessage({ text: input });
-      setInput("");
+      submitInput();
     },
-    [input, isLoading, sendMessage]
+    [submitInput]
   );
 
   const handlePromptClick = useCallback(
@@ -66,10 +74,10 @@ export function ChatConsole({ initialPrompt, className }: ChatConsoleProps) {
     (e: React.KeyboardEvent) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
-        handleSubmit(e);
+        submitInput();
       }
     },
-    [handleSubmit]
+    [submitInput]
   );
 
   const handleAction = useCallback(
