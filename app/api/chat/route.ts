@@ -95,6 +95,13 @@ export async function POST(req: Request) {
       ? [{ role: "user", content: inlinePrompt }]
       : [];
 
+  if (messages.length === 0) {
+    return new Response(
+      JSON.stringify({ error: "Message content is required." }),
+      { status: 400 }
+    );
+  }
+
   await writeDebugLog("chat.request", {
     prompt,
     user: session.user?.id,
@@ -228,12 +235,13 @@ function normalizeMessage(value: unknown): ChatMessage | null {
 
   const role = Reflect.get(value, "role");
   const rawContent = Reflect.get(value, "content") as unknown;
+  const rawParts = Reflect.get(value, "parts") as unknown;
 
   if (role !== "system" && role !== "user" && role !== "assistant") {
     return null;
   }
 
-  const content = stringifyContent(rawContent);
+  const content = stringifyContent(rawContent ?? rawParts);
   if (!content) {
     return null;
   }
@@ -250,6 +258,10 @@ function stringifyContent(raw: unknown): string {
         const type = Reflect.get(part, "type");
         const text = Reflect.get(part, "text");
         if (type === "text" && typeof text === "string") return text;
+        const reasoning = Reflect.get(part, "reasoning");
+        if (type === "reasoning" && typeof reasoning === "string") {
+          return reasoning;
+        }
         return "";
       })
       .filter(Boolean);

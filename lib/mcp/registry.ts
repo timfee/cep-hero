@@ -544,6 +544,8 @@ export class CepToolExecutor {
       policySchemas,
       customerId: this.customerId,
     });
+    let targetCandidates: string[] = [];
+    const attemptedTargets: string[] = [];
     try {
       const resolvedPolicies: ResolvedPolicy[] = [];
 
@@ -576,17 +578,13 @@ export class CepToolExecutor {
         );
       }
 
-      const targetCandidates = Array.from(
+      targetCandidates = Array.from(
         new Set(
           [
             rootOrgUnitId ? buildOrgUnitTargetResource(rootOrgUnitId) : "",
             rootOrgUnitPath ? buildOrgUnitTargetResource(rootOrgUnitPath) : "",
-            rootOrgUnitPath
-              ? buildOrgUnitTargetResource(encodeURIComponent(rootOrgUnitPath))
-              : "",
-            rootOrgUnitPath
-              ? buildOrgUnitTargetResource(rootOrgUnitPath.replace(/^\//, ""))
-              : "",
+            // Fall back to the root org unit target resource.
+            "orgunits/my_customer",
           ].filter(Boolean)
         )
       );
@@ -606,6 +604,7 @@ export class CepToolExecutor {
       const resolveErrors: Array<{ targetResource: string; message: string }> =
         [];
       for (const targetResource of targetCandidates) {
+        attemptedTargets.push(targetResource);
         try {
           await this.logApi("google.request.connector-config", {
             endpoint:
@@ -664,6 +663,7 @@ export class CepToolExecutor {
             policySchemas,
             value: resolvedPolicies,
             targetResource,
+            attemptedTargets,
           };
         } catch (error) {
           const message = getErrorMessage(error);
@@ -694,6 +694,8 @@ export class CepToolExecutor {
           policySchemas,
           value: [],
           errors: resolveErrors,
+          targetResource: resolveErrors[0]?.targetResource,
+          attemptedTargets,
         };
       }
 
@@ -702,12 +704,15 @@ export class CepToolExecutor {
         targetResource: null,
         count: 0,
         resolveErrors,
+        attemptedTargets,
       });
 
       return {
         status: "Resolved",
         policySchemas,
         value: [],
+        targetResource: attemptedTargets[0],
+        attemptedTargets,
       };
     } catch (error: unknown) {
       const { code, message, errors } = getErrorDetails(error);
@@ -739,6 +744,8 @@ export class CepToolExecutor {
         suggestion:
           "Check Chrome Policy API permissions and policy schema access.",
         policySchemas,
+        targetResource: attemptedTargets[0],
+        attemptedTargets,
       };
     }
   }
@@ -942,19 +949,24 @@ function getErrorMessage(error: unknown): string {
 /**
  * Resolve the most likely root org unit ID and path.
  */
-function resolveRootOrgUnit(units: OrgUnit[]): { id: string; path: string } {
+function resolveRootOrgUnit(units: OrgUnit[]): {
+  id: string;
+  path: string;
+  rawId: string;
+  rawPath: string;
+} {
   if (units.length === 0) {
-    return { id: "", path: "" };
+    return { id: "", path: "", rawId: "", rawPath: "" };
   }
 
   const root = units.find((unit) => unit.orgUnitPath === "/");
   const fallback = root ?? units[0];
-  const id = normalizeResource(
-    fallback?.orgUnitId ?? fallback?.parentOrgUnitId ?? ""
-  );
-  const path = normalizeResource(fallback?.orgUnitPath ?? (id ? "/" : ""));
+  const rawId = fallback?.orgUnitId ?? fallback?.parentOrgUnitId ?? "";
+  const rawPath = fallback?.orgUnitPath ?? (rawId ? "/" : "");
+  const id = normalizeResource(rawId);
+  const path = normalizeResource(rawPath);
 
-  return { id, path };
+  return { id, path, rawId, rawPath };
 }
 
 /**
