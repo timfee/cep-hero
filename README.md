@@ -114,55 +114,54 @@ curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
 
 ---
 
-## 🧪 Testing & Evaluation
+## Testing & Evaluation
 
-### Eval Architecture
+CEP-Hero uses two types of quality assurance: **unit tests** for code correctness and **evals** for AI behavior quality.
 
-The eval framework uses **fixture injection** to provide deterministic test data to the AI without calling live Google APIs. This enables reproducible testing of AI diagnostic capabilities.
-
-**How it works:**
-
-1. Test files load fixtures via `loadEvalFixtures(caseId)` which merges base data with case-specific overrides
-2. Fixtures are sent to the chat API in the request body with `X-Eval-Test-Mode: 1` header
-3. The API creates a `FixtureToolExecutor` that returns fixture data instead of calling Google APIs
-4. The AI reasons over the fixture data and produces diagnostic output
-
-**Key files:**
-
-- `lib/mcp/types.ts` - Defines `IToolExecutor` interface and `FixtureData` type
-- `lib/mcp/fixture-executor.ts` - Implements `IToolExecutor` using fixture data
-- `lib/test-helpers/eval-runner.ts` - Contains `loadEvalFixtures()` for loading fixture data
-- `evals/fixtures/base/api-base.json` - Base fixture data (org units, events, policies)
-- `evals/fixtures/EC-###/overrides.json` - Case-specific fixture overrides
-
-### Running Evals
+### Quick Start
 
 ```bash
-# Run all evals with fixture injection
-EVAL_USE_BASE=1 EVAL_USE_FIXTURES=1 bun run evals:run
+# Run unit tests
+bun test
 
-# Run specific cases
-EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals:run
+# Run evals (start server first in another terminal with `bun run dev`)
+EVAL_USE_BASE=1 bun run evals
 
-# Run one category
-EVAL_CATEGORY=test_plan EVAL_USE_BASE=1 bun run evals:run
-
-# Fast mode with synthetic responses (no AI calls)
-EVAL_FAKE_CHAT=1 bun run evals:run
-
-# Validate service account setup
-bun run credentials:check
+# Run a specific eval
+EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals
 ```
 
-### Environment Variables
+### Understanding Evals
 
-- `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
-- `EVAL_USE_FIXTURES=1` - Load case-specific overrides from `evals/fixtures/EC-###/`
-- `EVAL_FAKE_CHAT=1` - Return synthetic responses without calling the AI
-- `EVAL_IDS` - Comma-separated list of case IDs to run
-- `EVAL_CATEGORY` - Filter by category (diagnostics, test_plan, common_challenges)
-- `EVAL_CASE_PAUSE_MS` - Delay between cases (default: 250ms)
-- `X-Test-Bypass: 1` header - Skip interactive auth using service account
+Evals are behavioral tests for the AI assistant. They verify that given a troubleshooting scenario, the AI provides helpful, accurate, and actionable guidance. Unlike unit tests with binary pass/fail outcomes, evals assess quality along multiple dimensions.
+
+The eval framework uses **fixture injection** to provide deterministic test data without calling live Google APIs. This enables fast, reproducible, quota-free testing while exercising the full AI reasoning pipeline.
+
+### Documentation
+
+For comprehensive eval documentation, see:
+
+- **[QUEST_INSTRUCTIONS.md](./QUEST_INSTRUCTIONS.md)** - Complete guide to understanding, running, and improving evals
+- **[QUEST_TASKS.md](./QUEST_TASKS.md)** - Progress tracking for eval system improvements
+- **[evals/README.md](./evals/README.md)** - Eval-specific details and fixture format
+
+### Common Commands
+
+```bash
+# Run all evals (server already running)
+EVAL_USE_BASE=1 bun run evals:fast
+
+# Run by category
+EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=policy EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=dlp EVAL_USE_BASE=1 bun run evals
+
+# Run in serial mode (for rate limiting)
+EVAL_SERIAL=1 EVAL_USE_BASE=1 bun run evals
+
+# Capture live fixtures
+bun run fixtures:capture
+```
 
 ---
 
