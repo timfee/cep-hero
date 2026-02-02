@@ -1,7 +1,7 @@
 "use client";
 
 import { SendHorizontal, HelpCircle, Loader2 } from "lucide-react";
-import { useMemo, memo, useCallback } from "react";
+import { useMemo, useCallback } from "react";
 
 import type {
   EvidencePayload,
@@ -44,8 +44,8 @@ import {
   ReasoningTrigger,
   ReasoningContent,
 } from "@/components/ai-elements/reasoning";
-import { Button } from "@/components/ui/button";
 import { useChatContext } from "@/components/chat/chat-context";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 interface MessageMetadata {
@@ -66,16 +66,22 @@ export function ChatConsole() {
   const isStreaming = status === "submitted" || status === "streaming";
   const isSubmitting = status === "submitted";
 
-  const handleSubmit = useCallback((message: PromptInputMessage) => {
-    const trimmed = message.text?.trim();
-    if (!trimmed) return;
-    setInput("");
-    void sendMessage({ text: trimmed });
-  }, [setInput, sendMessage]);
+  const handleSubmit = useCallback(
+    (message: PromptInputMessage) => {
+      const trimmed = message.text?.trim();
+      if (!trimmed) return;
+      setInput("");
+      void sendMessage({ text: trimmed });
+    },
+    [setInput, sendMessage]
+  );
 
-  const handleAction = useCallback((command: string) => {
-    void sendMessage({ text: command });
-  }, [sendMessage]);
+  const handleAction = useCallback(
+    (command: string) => {
+      void sendMessage({ text: command });
+    },
+    [sendMessage]
+  );
 
   // Stable message keys - use ID if available, otherwise index-based
   const memoizedMessages = useMemo(() => messages, [messages]);
@@ -134,7 +140,7 @@ export function ChatConsole() {
                   "px-4 py-4 lg:px-6 lg:py-5",
                   isUser ? "bg-transparent" : "bg-muted/30",
                   // Prevent layout shift during streaming
-                  "will-change-contents"
+                  "will-change-transform"
                 )}
               >
                 {/* Role label */}
@@ -199,8 +205,8 @@ export function ChatConsole() {
                     )}
 
                   {!isUser && actions && actions.length > 0 && (
-                    <ActionButtons 
-                      actions={actions} 
+                    <ActionButtons
+                      actions={actions}
                       onAction={handleAction}
                       disabled={isStreaming}
                     />
@@ -231,7 +237,13 @@ export function ChatConsole() {
           <PromptInputTextarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            placeholder={isSubmitting ? "Sending..." : isStreaming ? "Waiting for response..." : "Type a message..."}
+            placeholder={
+              isSubmitting
+                ? "Sending..."
+                : isStreaming
+                  ? "Waiting for response..."
+                  : "Type a message..."
+            }
             disabled={isStreaming}
             aria-disabled={isStreaming}
             className={cn(

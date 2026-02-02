@@ -1,8 +1,7 @@
 "use client";
 
-import { createContext, useContext, useMemo, useState } from "react";
-
 import { useChat } from "@ai-sdk/react";
+import { createContext, useContext, useMemo, useState } from "react";
 
 type ChatContextValue = {
   messages: ReturnType<typeof useChat>["messages"];

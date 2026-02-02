@@ -2,9 +2,10 @@
 
 import { ArrowRight, MessageSquare, LogOut, User } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { ChatConsole } from "@/components/chat/chat-console";
+import { useChatContext } from "@/components/chat/chat-context";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/use-auth";
 import {
@@ -14,7 +15,6 @@ import {
   DEFAULT_SUGGESTIONS,
   QUICK_ACTIONS,
 } from "@/lib/overview";
-import { useChatContext } from "@/components/chat/chat-context";
 import { cn } from "@/lib/utils";
 
 // Animation orchestration states
@@ -64,14 +64,20 @@ export default function Home() {
   useEffect(() => {
     if (!isLoading && isAuthenticated && dataReady) {
       // Small delay to ensure DOM is ready
+      let frameId: number | null = null;
       const timer = setTimeout(() => {
         setIntroState("ready");
         // Trigger visible state after a brief moment
-        requestAnimationFrame(() => {
+        frameId = requestAnimationFrame(() => {
           setIntroState("visible");
         });
       }, 100);
-      return () => clearTimeout(timer);
+      return () => {
+        clearTimeout(timer);
+        if (frameId !== null) {
+          cancelAnimationFrame(frameId);
+        }
+      };
     }
   }, [isLoading, isAuthenticated, dataReady]);
 
@@ -186,9 +192,7 @@ export default function Home() {
           {/* Sidebar - Stagger 3+ */}
           <aside className="space-y-5 lg:space-y-6 xl:space-y-8">
             {/* Quick Actions */}
-            <section
-              className={cn(isVisible && "animate-fade-up delay-300")}
-            >
+            <section className={cn(isVisible && "animate-fade-up delay-300")}>
               <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Quick Actions
               </h2>
@@ -221,9 +225,7 @@ export default function Home() {
             </section>
 
             {/* Suggestions */}
-            <section
-              className={cn(isVisible && "animate-fade-up delay-500")}
-            >
+            <section className={cn(isVisible && "animate-fade-up delay-500")}>
               <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                 Suggested Prompts
               </h2>
@@ -237,7 +239,8 @@ export default function Home() {
                       isVisible && "animate-fade-in",
                       idx === 0 && "delay-500",
                       idx === 1 && "delay-600",
-                      idx === 2 && "delay-700"
+                      idx === 2 && "delay-700",
+                      idx === 3 && "delay-800"
                     )}
                   >
                     <MessageSquare className="h-3.5 w-3.5 flex-shrink-0" />
@@ -249,9 +252,7 @@ export default function Home() {
 
             {/* Status Summary */}
             {overview && overview.postureCards.length > 0 && (
-              <section
-                className={cn(isVisible && "animate-fade-up delay-600")}
-              >
+              <section className={cn(isVisible && "animate-fade-up delay-600")}>
                 <h2 className="mb-3 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                   Fleet Status
                 </h2>
@@ -265,7 +266,9 @@ export default function Home() {
                           "cursor-pointer text-left transition-all hover:opacity-70 active:scale-[0.98]",
                           isVisible && "animate-fade-in",
                           idx === 0 && "delay-600",
-                          idx === 1 && "delay-700"
+                          idx === 1 && "delay-700",
+                          idx === 2 && "delay-800",
+                          idx === 3 && "delay-900"
                         )}
                       >
                         <div className="text-2xl font-semibold text-foreground">
