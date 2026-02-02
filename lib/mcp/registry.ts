@@ -573,17 +573,9 @@ export class CepToolExecutor {
         );
       }
 
-      targetCandidates = Array.from(
-        new Set(
-          [
-            rootOrgUnitId ? buildOrgUnitTargetResource(rootOrgUnitId) : "",
-            // Fall back to empty string for customer-level policies.
-            // Note: rootOrgUnitPath is not used here because paths (like "/Engineering")
-            // are not valid for the orgunits/ prefix - only numeric IDs work.
-            "",
-          ].filter((v) => v !== undefined)
-        )
-      );
+      targetCandidates = rootOrgUnitId
+        ? [buildOrgUnitTargetResource(rootOrgUnitId)]
+        : [];
 
       if (targetCandidates.length === 0) {
         return {
@@ -943,7 +935,10 @@ function getErrorMessage(error: unknown): string {
 }
 
 /**
- * Resolve the most likely root org unit ID and path.
+ * Resolve the most likely root org unit ID.
+ * The root org unit (path="/") typically doesn't appear in orgunits.list() results.
+ * Instead, all child org units share the same parentOrgUnitId which IS the root.
+ * We prioritize using parentOrgUnitId from any org unit as the root ID.
  */
 function resolveRootOrgUnit(units: OrgUnit[]): {
   id: string;
@@ -955,10 +950,9 @@ function resolveRootOrgUnit(units: OrgUnit[]): {
     return { id: "", path: "", rawId: "", rawPath: "" };
   }
 
-  const root = units.find((unit) => unit.orgUnitPath === "/");
-  const fallback = root ?? units[0];
-  const rawId = fallback?.orgUnitId ?? fallback?.parentOrgUnitId ?? "";
-  const rawPath = fallback?.orgUnitPath ?? (rawId ? "/" : "");
+  const firstUnit = units[0];
+  const rawId = firstUnit?.parentOrgUnitId ?? firstUnit?.orgUnitId ?? "";
+  const rawPath = "/";
   const id = normalizeResource(rawId);
   const path = normalizeResource(rawPath);
 
