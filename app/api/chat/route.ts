@@ -38,10 +38,9 @@ export async function POST(req: Request) {
   try {
     body = await req.json();
   } catch {
-    return new Response(
-      JSON.stringify({ error: "Invalid JSON body." }),
-      { status: 400 }
-    );
+    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
+      status: 400,
+    });
   }
 
   const messagesFromBody = getMessagesFromBody(body);
@@ -58,10 +57,9 @@ export async function POST(req: Request) {
     console.warn("POST /api/chat: Empty messages received.", {
       body: typeof body === "object" ? body : safeJsonPreview(body),
     });
-    return new Response(
-      "I didn't receive a message. Please try again.",
-      { status: 200 }
-    );
+    return new Response("I didn't receive a message. Please try again.", {
+      status: 200,
+    });
   }
 
   // 3. Log Request

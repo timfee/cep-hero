@@ -170,7 +170,7 @@ export async function createChatStream({
             }))
           : [];
 
-      if (!evidence && actions.length === 0) {
+      if (!evidence && (!actions || actions.length === 0)) {
         return undefined;
       }
 
