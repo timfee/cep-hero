@@ -162,6 +162,21 @@ type OrgUnit = {
   orgUnitPath?: string | null;
 };
 
+/**
+ * HTTP status code indicating authentication failure.
+ */
+const HTTP_UNAUTHORIZED = 401;
+
+/**
+ * Error message patterns from Google APIs that indicate token expiration or invalid credentials.
+ * These patterns are based on actual error messages observed in production logs.
+ */
+const TOKEN_EXPIRATION_PATTERNS = [
+  "Request had invalid authentication credentials",
+  "Invalid Credentials",
+  "Token has been expired or revoked",
+] as const;
+
 function normalizeResource(value: string): string {
   const trimmed = value.trim();
   const stripped = trimmed.replace(/^id:/, "");
@@ -1109,17 +1124,21 @@ function isTokenExpiredError(
   code: number | string | undefined,
   message: string | undefined
 ): boolean {
-  if (code === 401 || code === "401") {
+  const numericCode =
+    typeof code === "string" ? Number.parseInt(code, 10) : code;
+
+  if (numericCode === HTTP_UNAUTHORIZED) {
     return true;
   }
-  if (
-    message &&
-    (message.includes("Request had invalid authentication credentials") ||
-      message.includes("Invalid Credentials") ||
-      message.includes("Token has been expired or revoked"))
-  ) {
-    return true;
+
+  if (message) {
+    for (const pattern of TOKEN_EXPIRATION_PATTERNS) {
+      if (message.includes(pattern)) {
+        return true;
+      }
+    }
   }
+
   return false;
 }
 
