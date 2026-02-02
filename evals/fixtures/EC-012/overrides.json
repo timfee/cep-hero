@@ -1,0 +1,75 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T16:00:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_SERVICE_WORKER_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "device-sw-001" },
+              { "name": "DEVICE_NAME", "value": "Workstation-Dev-3" },
+              { "name": "OS_TYPE", "value": "Windows" },
+              { "name": "OS_VERSION", "value": "10.0.19045" },
+              { "name": "ERROR_CODE", "value": "SW_REGISTRATION_FAILED" },
+              { "name": "ERROR_MESSAGE", "value": "Service worker registration failed with status code 2." },
+              { "name": "CHROME_VERSION", "value": "121.0.6167.85" },
+              { "name": "USER_EMAIL", "value": "dev@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T16:05:35.123Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_EXTENSION_LOAD_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "device-sw-001" },
+              { "name": "DEVICE_NAME", "value": "Workstation-Dev-3" },
+              { "name": "OS_TYPE", "value": "Windows" },
+              { "name": "ERROR_CODE", "value": "EV_EXTENSION_INIT_FAILED" },
+              { "name": "ERROR_MESSAGE", "value": "Endpoint Verification extension failed to initialize. Service worker could not be started." },
+              { "name": "EXTENSION_ID", "value": "callobklhcbilhphinckomhgkigmfocg" },
+              { "name": "SW_STATUS_CODE", "value": "2" },
+              { "name": "USER_EMAIL", "value": "dev@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T16:10:00.456Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_CONSOLE_ERROR",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "device-sw-001" },
+              { "name": "DEVICE_NAME", "value": "Workstation-Dev-3" },
+              { "name": "OS_TYPE", "value": "Windows" },
+              { "name": "ERROR_CODE", "value": "SW_SCRIPT_ERROR" },
+              { "name": "ERROR_MESSAGE", "value": "Uncaught (in promise) Error: Service worker registration failed. Status code 2 indicates a known bug in EV extension." },
+              { "name": "CONSOLE_SOURCE", "value": "chrome-extension://callobklhcbilhphinckomhgkigmfocg/background.js" },
+              { "name": "KNOWN_ISSUE_ID", "value": "chromium-issues-1234567" },
+              { "name": "USER_EMAIL", "value": "dev@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

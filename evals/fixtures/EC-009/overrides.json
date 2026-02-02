@@ -1,0 +1,71 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:15:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_SYNC_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "mac-device-001" },
+              { "name": "DEVICE_NAME", "value": "MacBook-Admin-1" },
+              { "name": "OS_TYPE", "value": "macOS" },
+              { "name": "OS_VERSION", "value": "14.2.1" },
+              { "name": "ERROR_CODE", "value": "KEYCHAIN_ACCESS_DENIED" },
+              { "name": "ERROR_MESSAGE", "value": "Keychain access denied for Safe Storage. User authorization required." },
+              { "name": "USER_EMAIL", "value": "admin@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:20:35.123Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_CREDENTIAL_ERROR",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "mac-device-001" },
+              { "name": "DEVICE_NAME", "value": "MacBook-Admin-1" },
+              { "name": "OS_TYPE", "value": "macOS" },
+              { "name": "ERROR_CODE", "value": "SAFE_STORAGE_LOCKED" },
+              { "name": "ERROR_MESSAGE", "value": "Cannot read Safe Storage key from Keychain. Keychain is locked or access is blocked for Endpoint Verification." },
+              { "name": "USER_EMAIL", "value": "admin@example.com" },
+              { "name": "KEYCHAIN_ERROR_CODE", "value": "-25293" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:25:00.456Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ENDPOINT_VERIFICATION",
+            "name": "EV_HEARTBEAT_MISSED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "mac-device-001" },
+              { "name": "DEVICE_NAME", "value": "MacBook-Admin-1" },
+              { "name": "OS_TYPE", "value": "macOS" },
+              { "name": "LAST_SYNC", "value": "2026-01-19T08:00:00.000Z" },
+              { "name": "EXPECTED_INTERVAL_HOURS", "value": "24" },
+              { "name": "USER_EMAIL", "value": "admin@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
