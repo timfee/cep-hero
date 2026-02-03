@@ -35,13 +35,15 @@ export const auth = betterAuth({
   session: {
     cookieCache: {
       enabled: true,
-      maxAge: 12 * 60 * 60, // 12 hour cache duration
-      strategy: "jwe", // can be "jwt" or "compact"
-      refreshCache: true, // Enable stateless refresh
+      // 12 hour cache duration
+      maxAge: 12 * 60 * 60,
+      strategy: "jwe",
+      refreshCache: true,
     },
   },
   account: {
     storeStateStrategy: "cookie",
-    storeAccountCookie: true, // Store account data after OAuth flow in a cookie (useful for database-less flows)
+    // Stores account data after OAuth flow for database-less flows
+    storeAccountCookie: true,
   },
 });

@@ -1,5 +1,6 @@
 import { type z } from "zod";
 
+import { resolveEnrollmentToken } from "@/lib/mcp/fixture-enrollment";
 import {
   buildOrgUnitNameMap,
   resolveOrgUnitDisplay,
@@ -28,8 +29,10 @@ import {
   type OrgUnitsResult,
 } from "./types";
 
+export { loadFixtureData } from "./fixture-loader";
+
 /**
- * A tool executor that returns fixture data instead of calling real Google APIs.
+ * Returns fixture data instead of calling real Google APIs.
  * Used for deterministic evaluation testing.
  */
 export class FixtureToolExecutor implements IToolExecutor {
@@ -42,413 +45,337 @@ export class FixtureToolExecutor implements IToolExecutor {
   async getChromeEvents(
     args: z.infer<typeof GetChromeEventsSchema>
   ): Promise<ChromeEventsResult> {
-    await Promise.resolve();
     if (typeof this.fixtures.errors?.chromeEvents === "string") {
-      return {
+      const result: ChromeEventsResult = {
         error: this.fixtures.errors.chromeEvents,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
       };
+      return result;
     }
 
     const items = this.fixtures.auditEvents?.items ?? [];
     const maxResults = args.maxResults ?? 50;
-    const events = items.slice(0, maxResults);
-
-    return {
-      events,
+    const result: ChromeEventsResult = {
+      events: items.slice(0, maxResults),
       nextPageToken: this.fixtures.auditEvents?.nextPageToken ?? null,
     };
+    return result;
   }
 
   async listDLPRules(
     _args?: z.infer<typeof ListDLPRulesSchema>
   ): Promise<DLPRulesResult> {
-    await Promise.resolve();
     if (typeof this.fixtures.errors?.dlpRules === "string") {
-      return {
+      const result: DLPRulesResult = {
         error: this.fixtures.errors.dlpRules,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
       };
+      return result;
     }
 
-    const fixtureRules = this.fixtures.dlpRules ?? [];
-    const orgUnitNameMap = buildOrgUnitNameMap(this.fixtures.orgUnits ?? []);
-    const rootOrgUnitId = this.fixtures.orgUnits?.find(
-      (unit) => unit.orgUnitPath === "/"
-    )?.orgUnitId;
-    const rules = fixtureRules.map((rule, idx) => {
-      const orgUnitValue = rule.targetResource ?? rule.orgUnit ?? "";
-      return {
-        id: rule.name?.split("/").pop() ?? `rule-${idx + 1}`,
-        displayName: rule.displayName ?? `DLP Rule ${idx + 1}`,
-        description: rule.description ?? "",
-        settingType: rule.triggers?.join(", ") ?? "",
-        orgUnit:
-          resolveOrgUnitDisplay(
-            orgUnitValue,
-            orgUnitNameMap,
-            rootOrgUnitId,
-            "/"
-          ) ?? "",
-        policyType: rule.action ?? "AUDIT",
-        resourceName: rule.name ?? "",
-        consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-      };
-    });
-
-    return { rules };
+    const rules = mapDlpRules(this.fixtures);
+    const result: DLPRulesResult = { rules };
+    return result;
   }
 
   async listOrgUnits(): Promise<OrgUnitsResult> {
-    await Promise.resolve();
     if (typeof this.fixtures.errors?.orgUnits === "string") {
-      return {
+      const result: OrgUnitsResult = {
         error: this.fixtures.errors.orgUnits,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
       };
+      return result;
     }
-
-    return {
-      orgUnits: this.fixtures.orgUnits ?? [],
-    };
+    const result: OrgUnitsResult = { orgUnits: this.fixtures.orgUnits ?? [] };
+    return result;
   }
 
   async enrollBrowser(
     _args: z.infer<typeof EnrollBrowserSchema>
   ): Promise<EnrollBrowserResult> {
-    await Promise.resolve();
-
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
-      return {
+      const result: EnrollBrowserResult = {
         error: this.fixtures.errors.enrollBrowser,
         suggestion:
           "Ensure the caller has Chrome policy admin rights and the API is enabled.",
         requiresReauth: false,
       };
+      return result;
     }
-
-    return resolveEnrollmentToken(this.fixtures.enrollmentToken);
+    const result = resolveEnrollmentToken(this.fixtures.enrollmentToken);
+    return result;
   }
 
   async getChromeConnectorConfiguration(): Promise<ConnectorConfigResult> {
-    await Promise.resolve();
     if (typeof this.fixtures.errors?.connectorConfig === "string") {
-      return {
+      const result: ConnectorConfigResult = {
         error: this.fixtures.errors.connectorConfig,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
         policySchemas: [],
       };
+      return result;
     }
-
-    const policySchemas = [
-      "chrome.users.SafeBrowsingProtectionLevel",
-      "chrome.users.SafeBrowsingExtendedReporting",
-      "chrome.users.SafeBrowsingAllowlistDomain",
-      "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
-      "chrome.users.SafeBrowsingDeepScanningEnabled",
-      "chrome.users.CloudReporting",
-      "chrome.users.CloudProfileReportingEnabled",
-      "chrome.users.CloudReportingUploadFrequencyV2",
-      "chrome.users.MetricsReportingEnabled",
-      "chrome.users.DataLeakPreventionReportingEnabled",
-    ];
-
-    const firstOrgUnit = this.fixtures.orgUnits?.[0];
-    const targetResource = firstOrgUnit?.orgUnitId ?? "orgunits/root";
-    const targetResourceName =
-      firstOrgUnit?.orgUnitPath ?? firstOrgUnit?.name ?? null;
-
-    return {
-      status: "Resolved",
-      policySchemas,
-      value: this.fixtures.connectorPolicies ?? [],
-      targetResource,
-      targetResourceName,
-      attemptedTargets:
-        this.fixtures.orgUnits
-          ?.map((ou: { orgUnitId?: string | null }) => ou.orgUnitId ?? "")
-          .filter(Boolean) ?? [],
-    };
+    const result = buildConnectorConfig(this.fixtures);
+    return result;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async debugAuth(): Promise<DebugAuthResult> {
-    await Promise.resolve();
-    return {
-      scopes: [
-        "https://www.googleapis.com/auth/admin.reports.audit.readonly",
-        "https://www.googleapis.com/auth/admin.directory.orgunit.readonly",
-        "https://www.googleapis.com/auth/chrome.management.policy.readonly",
-        "https://www.googleapis.com/auth/cloud-identity.policies.readonly",
-      ],
-      expiresIn: 3600,
-      email: "fixture-admin@example.com",
-      accessType: "offline",
-    };
+    const result = buildDebugAuthResponse();
+    return result;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async draftPolicyChange(
     args: z.infer<typeof DraftPolicyChangeSchema>
   ): Promise<DraftPolicyChangeResult> {
-    await Promise.resolve();
-    const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    const orgUnitNameMap = buildOrgUnitNameMap(this.fixtures.orgUnits ?? []);
-    const rootOrgUnitId = this.fixtures.orgUnits?.find(
-      (unit) => unit.orgUnitPath === "/"
-    )?.orgUnitId;
-    const targetDisplay =
-      resolveOrgUnitDisplay(
-        args.targetUnit,
-        orgUnitNameMap,
-        rootOrgUnitId,
-        "/"
-      ) ?? args.targetUnit;
-    return {
-      _type: "ui.confirmation",
-      proposalId,
-      title: `Proposed Change: ${args.policyName}`,
-      description: args.reasoning,
-      diff: args.proposedValue,
-      target: targetDisplay,
-      adminConsoleUrl:
-        args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
-      intent: "update_policy",
-      status: "pending_approval",
-      applyParams: {
-        policySchemaId: args.policyName,
-        targetResource: args.targetUnit,
-        value: args.proposedValue,
-      },
-    };
+    const result = buildDraftPolicyResponse(args, this.fixtures);
+    return result;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async applyPolicyChange(
     args: z.infer<typeof ApplyPolicyChangeSchema>
   ): Promise<ApplyPolicyChangeResult> {
-    await Promise.resolve();
-    return {
-      _type: "ui.success",
-      message: `Policy ${args.policySchemaId} applied successfully`,
-      policySchemaId: args.policySchemaId,
-      targetResource: args.targetResource,
-      appliedValue: args.value,
-    };
+    const result = buildApplyPolicyResponse(args);
+    return result;
   }
 
-  // eslint-disable-next-line class-methods-use-this
   async createDLPRule(
     args: z.infer<typeof CreateDLPRuleSchema>
   ): Promise<CreateDLPRuleResult> {
-    await Promise.resolve();
-    const orgUnitNameMap = buildOrgUnitNameMap(this.fixtures.orgUnits ?? []);
-    const rootOrgUnitId = this.fixtures.orgUnits?.find(
-      (unit) => unit.orgUnitPath === "/"
-    )?.orgUnitId;
-    const targetOrgUnitDisplay =
-      resolveOrgUnitDisplay(
-        args.targetOrgUnit,
-        orgUnitNameMap,
-        rootOrgUnitId,
-        "/"
-      ) ?? args.targetOrgUnit;
-    return {
-      _type: "ui.success",
-      message: `DLP rule "${args.displayName}" created successfully`,
-      ruleName: `policies/dlp-${Date.now()}`,
-      displayName: args.displayName,
-      targetOrgUnit: targetOrgUnitDisplay,
-      triggers: args.triggers,
-      action: args.action,
-      consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-    };
+    const result = buildCreateDlpResponse(args, this.fixtures);
+    return result;
   }
 
   async getFleetOverview(
     _args: z.infer<typeof GetFleetOverviewSchema>
-  ): Promise<{
-    headline: string;
-    summary: string;
-    postureCards: {
-      label: string;
-      value: string;
-      note: string;
-      source: string;
-      action: string;
-      lastUpdated?: string;
-    }[];
-    suggestions: string[];
-    sources: string[];
-  }> {
-    await Promise.resolve();
-    const eventCount = this.fixtures.auditEvents?.items?.length ?? 0;
-    const dlpRuleCount = this.fixtures.dlpRules?.length ?? 0;
-    const connectorPolicyCount = this.fixtures.connectorPolicies?.length ?? 0;
-
-    return {
-      headline: "I just reviewed your Chrome fleet.",
-      summary: `Found ${eventCount} recent events, ${dlpRuleCount} DLP rules, and ${connectorPolicyCount} connector policies.`,
-      postureCards: [
-        {
-          label: "Recent events",
-          value: `${eventCount}`,
-          note: "Chrome activity logs",
-          source: "Admin SDK Reports",
-          action: "Show recent Chrome events",
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          label: "DLP rules",
-          value: `${dlpRuleCount}`,
-          note: "Customer DLP policies",
-          source: "Cloud Identity",
-          action: "List active DLP rules",
-          lastUpdated: new Date().toISOString(),
-        },
-        {
-          label: "Connector policies",
-          value: `${connectorPolicyCount}`,
-          note: "Connector policy resolve",
-          source: "Chrome Policy",
-          action: "Check connector configuration",
-          lastUpdated: new Date().toISOString(),
-        },
-      ],
-      suggestions: [
-        "List active DLP rules",
-        "Show recent Chrome events",
-        "Check connector configuration",
-      ],
-      sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
-    };
-  }
-}
-
-const DEFAULT_TOKEN = "fixture-enrollment-token-12345";
-
-interface EnrollmentTokenFixture {
-  token?: string;
-  expiresAt?: string | null;
-  targetResource?: string;
-  status?: "valid" | "expired" | "revoked";
-  error?: string;
-}
-
-function resolveEnrollmentToken(
-  fixture: EnrollmentTokenFixture | undefined
-): EnrollBrowserResult {
-  if (fixture === undefined) {
-    return {
-      enrollmentToken: DEFAULT_TOKEN,
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
-    };
-  }
-
-  const statusError = getStatusError(fixture.status);
-  if (statusError !== null) {
-    return statusError;
-  }
-
-  if (typeof fixture.error === "string") {
-    return {
-      error: fixture.error,
-      suggestion: "Check enrollment token configuration.",
-      requiresReauth: false,
-    };
-  }
-
-  return {
-    enrollmentToken: fixture.token ?? DEFAULT_TOKEN,
-    expiresAt: fixture.expiresAt ?? null,
-  };
-}
-
-function getStatusError(
-  status: EnrollmentTokenFixture["status"]
-): EnrollBrowserResult | null {
-  if (status === "expired") {
-    return {
-      error: "Enrollment token has expired",
-      suggestion: "Generate a new enrollment token.",
-      requiresReauth: false,
-    };
-  }
-  if (status === "revoked") {
-    return {
-      error: "Enrollment token has been revoked",
-      suggestion: "Generate a new enrollment token.",
-      requiresReauth: false,
-    };
-  }
-  return null;
-}
-
-/**
- * Load and merge fixture data from base and override files.
- */
-export function loadFixtureData(
-  baseData: unknown,
-  overrideData?: unknown
-): FixtureData {
-  const base = isPlainObject(baseData) ? baseData : {};
-  const override = isPlainObject(overrideData) ? overrideData : {};
-
-  const merged = mergeJson(base, override);
-  const mergedObject = isPlainObject(merged) ? merged : {};
-
-  return {
-    orgUnits: Array.isArray(mergedObject.orgUnits)
-      ? mergedObject.orgUnits
-      : undefined,
-    auditEvents: isPlainObject(mergedObject.auditEvents)
-      ? (mergedObject.auditEvents as FixtureData["auditEvents"])
-      : undefined,
-    dlpRules: Array.isArray(mergedObject.dlpRules)
-      ? mergedObject.dlpRules
-      : undefined,
-    connectorPolicies: Array.isArray(mergedObject.connectorPolicies)
-      ? mergedObject.connectorPolicies
-      : undefined,
-    policySchemas: Array.isArray(mergedObject.policySchemas)
-      ? mergedObject.policySchemas
-      : undefined,
-    chromeReports: isPlainObject(mergedObject.chromeReports)
-      ? mergedObject.chromeReports
-      : undefined,
-    enrollmentToken: isPlainObject(mergedObject.enrollmentToken)
-      ? (mergedObject.enrollmentToken as FixtureData["enrollmentToken"])
-      : undefined,
-    browsers: Array.isArray(mergedObject.browsers)
-      ? mergedObject.browsers
-      : undefined,
-    errors: isPlainObject(mergedObject.errors)
-      ? (mergedObject.errors as FixtureData["errors"])
-      : undefined,
-  };
-}
-
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-function mergeJson(base: unknown, override: unknown): unknown {
-  if (override === undefined) {
-    return base;
-  }
-  if (base === undefined) {
-    return override;
-  }
-  if (isPlainObject(base) && isPlainObject(override)) {
-    const result: Record<string, unknown> = { ...base };
-    for (const [key, value] of Object.entries(override)) {
-      result[key] = mergeJson(result[key], value);
-    }
+  ): Promise<FleetOverviewFixtureResponse> {
+    const result = buildFleetOverviewResponse(this.fixtures);
     return result;
   }
-  return override;
+}
+
+interface FleetOverviewFixtureResponse {
+  headline: string;
+  summary: string;
+  postureCards: {
+    label: string;
+    value: string;
+    note: string;
+    source: string;
+    action: string;
+    lastUpdated?: string;
+  }[];
+  suggestions: string[];
+  sources: string[];
+}
+
+function buildDebugAuthResponse(): DebugAuthResult {
+  return {
+    scopes: [
+      "https://www.googleapis.com/auth/admin.reports.audit.readonly",
+      "https://www.googleapis.com/auth/admin.directory.orgunit.readonly",
+      "https://www.googleapis.com/auth/chrome.management.policy.readonly",
+      "https://www.googleapis.com/auth/cloud-identity.policies.readonly",
+    ],
+    expiresIn: 3600,
+    email: "fixture-admin@example.com",
+    accessType: "offline",
+  };
+}
+
+function buildApplyPolicyResponse(
+  args: z.infer<typeof ApplyPolicyChangeSchema>
+): ApplyPolicyChangeResult {
+  return {
+    _type: "ui.success",
+    message: `Policy ${args.policySchemaId} applied successfully`,
+    policySchemaId: args.policySchemaId,
+    targetResource: args.targetResource,
+    appliedValue: args.value,
+  };
+}
+
+function mapDlpRules(fixtures: FixtureData) {
+  const fixtureRules = fixtures.dlpRules ?? [];
+  const orgUnitNameMap = buildOrgUnitNameMap(fixtures.orgUnits ?? []);
+  const rootOrgUnitId = findRootOrgUnitId(fixtures.orgUnits);
+
+  return fixtureRules.map((rule, idx) => {
+    const orgUnitValue = rule.targetResource ?? rule.orgUnit ?? "";
+    return {
+      id: rule.name?.split("/").pop() ?? `rule-${idx + 1}`,
+      displayName: rule.displayName ?? `DLP Rule ${idx + 1}`,
+      description: rule.description ?? "",
+      settingType: rule.triggers?.join(", ") ?? "",
+      orgUnit:
+        resolveOrgUnitDisplay(
+          orgUnitValue,
+          orgUnitNameMap,
+          rootOrgUnitId,
+          "/"
+        ) ?? "",
+      policyType: rule.action ?? "AUDIT",
+      resourceName: rule.name ?? "",
+      consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+    };
+  });
+}
+
+function findRootOrgUnitId(
+  orgUnits: FixtureData["orgUnits"]
+): string | undefined {
+  const id = orgUnits?.find((unit) => unit.orgUnitPath === "/")?.orgUnitId;
+  return id ?? undefined;
+}
+
+const CONNECTOR_POLICY_SCHEMAS = [
+  "chrome.users.SafeBrowsingProtectionLevel",
+  "chrome.users.SafeBrowsingExtendedReporting",
+  "chrome.users.SafeBrowsingAllowlistDomain",
+  "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
+  "chrome.users.SafeBrowsingDeepScanningEnabled",
+  "chrome.users.CloudReporting",
+  "chrome.users.CloudProfileReportingEnabled",
+  "chrome.users.CloudReportingUploadFrequencyV2",
+  "chrome.users.MetricsReportingEnabled",
+  "chrome.users.DataLeakPreventionReportingEnabled",
+];
+
+function buildConnectorConfig(fixtures: FixtureData): ConnectorConfigResult {
+  const firstOrgUnit = fixtures.orgUnits?.[0];
+  const targetResource = firstOrgUnit?.orgUnitId ?? "orgunits/root";
+  const targetResourceName =
+    firstOrgUnit?.orgUnitPath ?? firstOrgUnit?.name ?? null;
+
+  return {
+    status: "Resolved",
+    policySchemas: CONNECTOR_POLICY_SCHEMAS,
+    value: fixtures.connectorPolicies ?? [],
+    targetResource,
+    targetResourceName,
+    attemptedTargets:
+      fixtures.orgUnits
+        ?.map((ou: { orgUnitId?: string | null }) => ou.orgUnitId ?? "")
+        .filter(Boolean) ?? [],
+  };
+}
+
+function buildDraftPolicyResponse(
+  args: z.infer<typeof DraftPolicyChangeSchema>,
+  fixtures: FixtureData
+): DraftPolicyChangeResult {
+  const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  const orgUnitNameMap = buildOrgUnitNameMap(fixtures.orgUnits ?? []);
+  const rootOrgUnitId = findRootOrgUnitId(fixtures.orgUnits);
+  const targetDisplay =
+    resolveOrgUnitDisplay(
+      args.targetUnit,
+      orgUnitNameMap,
+      rootOrgUnitId,
+      "/"
+    ) ?? args.targetUnit;
+
+  return {
+    _type: "ui.confirmation",
+    proposalId,
+    title: `Proposed Change: ${args.policyName}`,
+    description: args.reasoning,
+    diff: args.proposedValue,
+    target: targetDisplay,
+    adminConsoleUrl:
+      args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
+    intent: "update_policy",
+    status: "pending_approval",
+    applyParams: {
+      policySchemaId: args.policyName,
+      targetResource: args.targetUnit,
+      value: args.proposedValue,
+    },
+  };
+}
+
+function buildCreateDlpResponse(
+  args: z.infer<typeof CreateDLPRuleSchema>,
+  fixtures: FixtureData
+): CreateDLPRuleResult {
+  const orgUnitNameMap = buildOrgUnitNameMap(fixtures.orgUnits ?? []);
+  const rootOrgUnitId = findRootOrgUnitId(fixtures.orgUnits);
+  const targetOrgUnitDisplay =
+    resolveOrgUnitDisplay(
+      args.targetOrgUnit,
+      orgUnitNameMap,
+      rootOrgUnitId,
+      "/"
+    ) ?? args.targetOrgUnit;
+
+  return {
+    _type: "ui.success",
+    message: `DLP rule "${args.displayName}" created successfully`,
+    ruleName: `policies/dlp-${Date.now()}`,
+    displayName: args.displayName,
+    targetOrgUnit: targetOrgUnitDisplay,
+    triggers: args.triggers,
+    action: args.action,
+    consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+  };
+}
+
+function buildFleetOverviewResponse(
+  fixtures: FixtureData
+): FleetOverviewFixtureResponse {
+  const eventCount = fixtures.auditEvents?.items?.length ?? 0;
+  const dlpRuleCount = fixtures.dlpRules?.length ?? 0;
+  const connectorPolicyCount = fixtures.connectorPolicies?.length ?? 0;
+  const timestamp = new Date().toISOString();
+
+  return {
+    headline: "I just reviewed your Chrome fleet.",
+    summary: `Found ${eventCount} recent events, ${dlpRuleCount} DLP rules, and ${connectorPolicyCount} connector policies.`,
+    postureCards: [
+      buildPostureCard(
+        "Recent events",
+        eventCount,
+        "Chrome activity logs",
+        "Admin SDK Reports",
+        "Show recent Chrome events",
+        timestamp
+      ),
+      buildPostureCard(
+        "DLP rules",
+        dlpRuleCount,
+        "Customer DLP policies",
+        "Cloud Identity",
+        "List active DLP rules",
+        timestamp
+      ),
+      buildPostureCard(
+        "Connector policies",
+        connectorPolicyCount,
+        "Connector policy resolve",
+        "Chrome Policy",
+        "Check connector configuration",
+        timestamp
+      ),
+    ],
+    suggestions: [
+      "List active DLP rules",
+      "Show recent Chrome events",
+      "Check connector configuration",
+    ],
+    sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
+  };
+}
+
+function buildPostureCard(
+  label: string,
+  value: number,
+  note: string,
+  source: string,
+  action: string,
+  lastUpdated: string
+) {
+  return { label, value: `${value}`, note, source, action, lastUpdated };
 }

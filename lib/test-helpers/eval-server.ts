@@ -40,47 +40,65 @@ export async function ensureEvalServer({
   chatUrl,
   manageServer,
 }: EnsureEvalServerOptions): Promise<void> {
-  if (process.env.EVAL_TEST_MODE === "1") {
-    return;
-  }
-  if (!manageServer || !chatUrl.includes("localhost")) {
+  if (shouldSkipServerManagement(chatUrl, manageServer)) {
     return;
   }
 
   const state = getState();
-  state.refCount += 1;
-
-  if (!state.ownsLock) {
-    state.ownsLock = acquireLock();
-  }
+  incrementRefCount(state);
 
   if (await isServerUp(chatUrl)) {
     return;
   }
 
-  state.startPromise ??= (async () => {
-    try {
-      if (await isServerUp(chatUrl)) {
-        return;
-      }
-      if (!state.ownsLock) {
-        await waitForServer(chatUrl, 60, 500);
-        return;
-      }
-      state.server = Bun.spawn({
-        cmd: ["bun", "run", "dev"],
-        stdout: "inherit",
-        stderr: "inherit",
-        env: { ...process.env, PORT: "3100", NODE_ENV: "test" },
-      });
-      state.ownsServer = true;
-      await waitForServer(chatUrl, 60, 500);
-    } finally {
-      state.startPromise = undefined;
-    }
-  })();
-
+  state.startPromise ??= startServerIfNeeded(state, chatUrl);
   await state.startPromise;
+}
+
+function shouldSkipServerManagement(
+  chatUrl: string,
+  manageServer: boolean
+): boolean {
+  if (process.env.EVAL_TEST_MODE === "1") {
+    return true;
+  }
+  return !manageServer || !chatUrl.includes("localhost");
+}
+
+function incrementRefCount(state: EvalServerState): void {
+  state.refCount += 1;
+  if (!state.ownsLock) {
+    state.ownsLock = acquireLock();
+  }
+}
+
+async function startServerIfNeeded(
+  state: EvalServerState,
+  chatUrl: string
+): Promise<void> {
+  try {
+    if (await isServerUp(chatUrl)) {
+      return;
+    }
+    if (!state.ownsLock) {
+      await waitForServer(chatUrl, 60, 500);
+      return;
+    }
+    spawnDevServer(state);
+    await waitForServer(chatUrl, 60, 500);
+  } finally {
+    state.startPromise = undefined;
+  }
+}
+
+function spawnDevServer(state: EvalServerState): void {
+  state.server = Bun.spawn({
+    cmd: ["bun", "run", "dev"],
+    stdout: "inherit",
+    stderr: "inherit",
+    env: { ...process.env, PORT: "3100", NODE_ENV: "test" },
+  });
+  state.ownsServer = true;
 }
 
 /** Release the eval dev server when all suites are done. */
@@ -90,20 +108,28 @@ export function releaseEvalServer(): void {
   if (state.refCount > 0) {
     return;
   }
+  cleanupServer(state);
+  cleanupLock(state);
+}
+
+function cleanupServer(state: EvalServerState): void {
   if (state.server && state.ownsServer) {
     try {
       state.server.kill();
     } catch {
-      // noop
+      // Server may already be terminated
     }
   }
   state.server = undefined;
   state.ownsServer = false;
+}
+
+function cleanupLock(state: EvalServerState): void {
   if (state.ownsLock && existsSync(LOCK_PATH)) {
     try {
       unlinkSync(LOCK_PATH);
     } catch {
-      // noop
+      // Lock file may already be removed
     }
   }
   state.ownsLock = false;
