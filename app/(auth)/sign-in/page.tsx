@@ -2,11 +2,25 @@
 
 import { track } from "@vercel/analytics";
 import Image from "next/image";
+import { useCallback } from "react";
 
 import { Button } from "@/components/ui/button";
 import { signIn } from "@/lib/auth-client";
 
+/**
+ * Handle sign-in button click.
+ */
+function handleSignIn() {
+  track("Sign In Clicked");
+  signIn.social({ provider: "google", callbackURL: "/" });
+}
+
+/**
+ * Sign-in page component.
+ */
 export default function SignInPage() {
+  const onSignIn = useCallback(handleSignIn, []);
+
   return (
     <main className="flex min-h-screen items-center justify-center px-4">
       <div className="w-full max-w-sm text-center">
@@ -18,15 +32,7 @@ export default function SignInPage() {
           Chrome Enterprise Premium diagnostics
         </p>
 
-        {/* oxlint-disable-next-line eslint-plugin-react-perf/jsx-no-new-function-as-prop -- simple page, no perf concern */}
-        <Button
-          className="mt-8 w-full"
-          size="lg"
-          onClick={() => {
-            track("Sign In Clicked");
-            signIn.social({ provider: "google", callbackURL: "/" });
-          }}
-        >
+        <Button className="mt-8 w-full" size="lg" onClick={onSignIn}>
           <GoogleIcon />
           Continue with Google
         </Button>
