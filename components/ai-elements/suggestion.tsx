@@ -12,6 +12,9 @@ import { cn } from "@/lib/utils";
 
 export type SuggestionsProps = ComponentProps<typeof ScrollArea>;
 
+/**
+ * Horizontal scroll container for suggestion buttons.
+ */
 export const Suggestions = ({
   className,
   children,
@@ -30,6 +33,9 @@ export type SuggestionProps = Omit<ComponentProps<typeof Button>, "onClick"> & {
   onClick?: (suggestion: string) => void;
 };
 
+/**
+ * Clickable pill button that passes its suggestion text to the click handler.
+ */
 export const Suggestion = ({
   suggestion,
   onClick,
