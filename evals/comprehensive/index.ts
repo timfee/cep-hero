@@ -17,6 +17,9 @@ import {
 const REPORTS_DIR = "evals/reports";
 const OUTPUT_DIR = "evals/comprehensive/reports";
 
+/** Width of the display boxes in characters (excluding box characters). */
+const DISPLAY_BOX_WIDTH = 58;
+
 interface Summary {
   runId: string;
   passed: number;
@@ -181,9 +184,9 @@ function printSummary(
   failures: FailureData[]
 ): void {
   console.log("\n");
-  console.log(`╔${"═".repeat(58)}╗`);
+  console.log(`╔${"═".repeat(DISPLAY_BOX_WIDTH)}╗`);
   console.log(`║${" ".repeat(20)}RESULTS SUMMARY${" ".repeat(23)}║`);
-  console.log(`╠${"═".repeat(58)}╣`);
+  console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
   console.log(
     `║  Total Cases:    ${String(totals.total).padStart(6)}                                 ║`
   );
@@ -203,9 +206,9 @@ function printSummary(
   console.log(
     `║  Duration:       ${(totals.durationMs / 1000).toFixed(1).padStart(5)}s                                 ║`
   );
-  console.log(`╠${"═".repeat(58)}╣`);
+  console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
   console.log("║  BY CATEGORY                                             ║");
-  console.log(`╟${"─".repeat(58)}╢`);
+  console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
 
   for (const [cat, data] of Object.entries(categories).toSorted()) {
     const catRate = data.total > 0 ? (data.passed / data.total) * 100 : 0;
@@ -216,9 +219,9 @@ function printSummary(
   }
 
   if (failures.length > 0) {
-    console.log(`╠${"═".repeat(58)}╣`);
+    console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
     console.log("║  FAILURES                                                ║");
-    console.log(`╟${"─".repeat(58)}╢`);
+    console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
 
     for (const f of failures.slice(0, 10)) {
       const title =
@@ -233,7 +236,7 @@ function printSummary(
     }
   }
 
-  console.log(`╚${"═".repeat(58)}╝`);
+  console.log(`╚${"═".repeat(DISPLAY_BOX_WIDTH)}╝`);
 }
 
 async function runGeminiAnalysis(
@@ -264,9 +267,9 @@ Results:
 - Failures: ${JSON.stringify(failures.slice(0, 20))}`,
     });
 
-    console.log(`╔${"═".repeat(58)}╗`);
+    console.log(`╔${"═".repeat(DISPLAY_BOX_WIDTH)}╗`);
     console.log(`║${" ".repeat(18)}GEMINI 2.5 PRO ANALYSIS${" ".repeat(17)}║`);
-    console.log(`╠${"═".repeat(58)}╣`);
+    console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
 
     const words = analysis.summary.split(" ");
     let line = "║  ";
@@ -282,7 +285,7 @@ Results:
       console.log(`${line.padEnd(59)}║`);
     }
 
-    console.log(`╟${"─".repeat(58)}╢`);
+    console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
     console.log("║  KEY INSIGHTS                                            ║");
     for (const insight of analysis.insights) {
       const short =
@@ -290,14 +293,14 @@ Results:
       console.log(`║  • ${short.padEnd(53)} ║`);
     }
 
-    console.log(`╟${"─".repeat(58)}╢`);
+    console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
     console.log("║  RECOMMENDATIONS                                         ║");
     for (const rec of analysis.recommendations) {
       const short = rec.length > 52 ? `${rec.slice(0, 49)}...` : rec;
       console.log(`║  → ${short.padEnd(53)} ║`);
     }
 
-    console.log(`╚${"═".repeat(58)}╝`);
+    console.log(`╚${"═".repeat(DISPLAY_BOX_WIDTH)}╝`);
   } catch (error) {
     console.log(
       "⚠️  Gemini analysis failed:",

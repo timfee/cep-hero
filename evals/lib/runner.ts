@@ -36,8 +36,12 @@ import {
   writeEvalReport,
   writeSummaryReport,
 } from "./reporter";
+import { isPlainObject } from "./utils";
 
+/** Pause between serial test cases to avoid overwhelming the server. */
 const DEFAULT_CASE_PAUSE_MS = 250;
+
+/** Default URL for the chat API endpoint. */
 const DEFAULT_CHAT_URL = "http://localhost:3100/api/chat";
 
 export interface RunnerOptions {
@@ -558,20 +562,13 @@ async function runCase(
  */
 function getRequiredEvidenceFromDetails(result: EvalReport["evidenceResult"]) {
   const details = result?.details;
-  if (!isRecord(details)) {
+  if (!isPlainObject(details)) {
     return [];
   }
   const required = details.requiredEvidence;
   return Array.isArray(required)
     ? required.filter((item): item is string => typeof item === "string")
     : [];
-}
-
-/**
- * Type guard for plain objects.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 /**
