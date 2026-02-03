@@ -275,6 +275,29 @@ EVAL_USE_BASE=1 bun run evals:fast
 EVAL_TEST_MODE=1 bun run evals
 ```
 
+### Comprehensive Eval Runner
+
+For thorough evaluation with aggregated results and optional Gemini analysis:
+
+```bash
+# Basic run (all cases with fixture data)
+bun run evals:comprehensive --skip-analysis
+
+# With LLM judge scoring
+bun run evals:comprehensive --with-judge
+
+# Multiple iterations (identifies flaky tests)
+bun run evals:comprehensive --iterations 3
+
+# Full run (judge + 3 iterations)
+bun run evals:comprehensive:full
+
+# Specific cases only
+bun run evals:comprehensive --cases EC-001,EC-002
+```
+
+Reports saved to `evals/comprehensive/reports/` (JSON + HTML).
+
 ## When Oxlint + Oxfmt Can't Help
 
 Oxlint + Oxfmt's linter will catch most issues automatically. Focus your attention on:

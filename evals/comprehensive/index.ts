@@ -9,6 +9,11 @@ import { generateObject } from "ai";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
+import {
+  ensureEvalServer,
+  releaseEvalServer,
+} from "@/lib/test-helpers/eval-server";
+
 const REPORTS_DIR = "evals/reports";
 const OUTPUT_DIR = "evals/comprehensive/reports";
 
@@ -98,6 +103,7 @@ async function runEvals(options: CliOptions): Promise<Summary | null> {
     EVAL_USE_BASE: "1",
     EVAL_SERIAL: "1",
     EVAL_LLM_JUDGE: options.withJudge ? "1" : "0",
+    EVAL_MANAGE_SERVER: "0",
   };
 
   if (options.casesArg) {
@@ -376,16 +382,26 @@ async function main(): Promise<void> {
 
   printHeader(options);
 
+  // Start server once for all iterations
+  await ensureEvalServer({
+    chatUrl: "http://localhost:3100/api/chat",
+    manageServer: true,
+  });
+
   const allSummaries: Summary[] = [];
 
-  for (let i = 0; i < options.iterations; i += 1) {
-    if (options.iterations > 1) {
-      console.log(`\n── Run ${i + 1}/${options.iterations} ──\n`);
+  try {
+    for (let i = 0; i < options.iterations; i += 1) {
+      if (options.iterations > 1) {
+        console.log(`\n── Run ${i + 1}/${options.iterations} ──\n`);
+      }
+      const summary = await runEvals(options);
+      if (summary) {
+        allSummaries.push(summary);
+      }
     }
-    const summary = await runEvals(options);
-    if (summary) {
-      allSummaries.push(summary);
-    }
+  } finally {
+    releaseEvalServer();
   }
 
   if (allSummaries.length === 0) {
