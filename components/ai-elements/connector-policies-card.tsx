@@ -18,6 +18,7 @@ interface ResolvedPolicy {
 interface ConnectorConfigOutput {
   value?: ResolvedPolicy[];
   targetResource?: string | null;
+  targetResourceName?: string | null;
   attemptedTargets?: string[];
   errors?: { targetResource?: string | null; message?: string }[];
   error?: string;
@@ -121,6 +122,11 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
               </TooltipContent>
             </Tooltip>
           </div>
+          {output.targetResourceName && (
+            <p className="text-sm text-foreground">
+              {output.targetResourceName}
+            </p>
+          )}
           {(output.attemptedTargets?.length ?? 0) > 0 && (
             <p className="text-xs text-muted-foreground">
               Checked {output.attemptedTargets?.length} location

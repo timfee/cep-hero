@@ -35,6 +35,7 @@ describe("buildEvidence connector handling", () => {
         policySchemas: [],
         value: connectorPolicies,
         targetResource: "orgunits/root",
+        targetResourceName: null,
         attemptedTargets: ["orgunits/root"],
       },
       connectorAnalysis,
@@ -69,6 +70,7 @@ describe("buildEvidence connector handling", () => {
         policySchemas: [],
         value: connectorPolicies,
         targetResource: "orgunits/root",
+        targetResourceName: null,
         attemptedTargets: ["orgunits/root"],
       },
       connectorAnalysis,
@@ -90,6 +92,7 @@ describe("buildEvidence connector handling", () => {
         policySchemas: [],
         value: makeConnectorPolicies(["orgunits/root"]),
         targetResource: "orgunits/root",
+        targetResourceName: null,
         attemptedTargets: ["orgunits/root"],
       },
       authDebugResult: {
@@ -118,6 +121,7 @@ describe("buildEvidence connector handling", () => {
         requiresReauth: false,
         policySchemas: [],
         targetResource: "orgunits/root",
+        targetResourceName: null,
         attemptedTargets: ["orgunits/root"],
       },
     });

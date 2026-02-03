@@ -176,11 +176,17 @@ export class FixtureToolExecutor implements IToolExecutor {
       "chrome.users.DataLeakPreventionReportingEnabled",
     ];
 
+    const firstOrgUnit = this.fixtures.orgUnits?.[0];
+    const targetResource = firstOrgUnit?.orgUnitId ?? "orgunits/root";
+    const targetResourceName =
+      firstOrgUnit?.orgUnitPath ?? firstOrgUnit?.name ?? null;
+
     return {
       status: "Resolved",
       policySchemas,
       value: this.fixtures.connectorPolicies ?? [],
-      targetResource: this.fixtures.orgUnits?.[0]?.orgUnitId ?? "orgunits/root",
+      targetResource,
+      targetResourceName,
       attemptedTargets:
         this.fixtures.orgUnits
           ?.map((ou: { orgUnitId?: string | null }) => ou.orgUnitId ?? "")

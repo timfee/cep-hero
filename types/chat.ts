@@ -50,6 +50,7 @@ export interface DlpRulesOutput {
 export interface ConnectorConfigOutput {
   value?: { policyTargetKey?: { targetResource?: string | null } }[];
   targetResource?: string | null;
+  targetResourceName?: string | null;
   attemptedTargets?: string[];
   errors?: { targetResource?: string | null; message?: string }[];
   error?: string;

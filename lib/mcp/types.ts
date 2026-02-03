@@ -79,6 +79,7 @@ export type ConnectorConfigResult =
         sourceKey?: { targetResource?: string };
       }[];
       targetResource?: string;
+      targetResourceName?: string | null;
       attemptedTargets?: string[];
       errors?: { targetResource: string; message: string }[];
     }
@@ -88,6 +89,7 @@ export type ConnectorConfigResult =
       requiresReauth: boolean;
       policySchemas?: string[];
       targetResource?: string;
+      targetResourceName?: string | null;
       attemptedTargets?: string[];
     };
 

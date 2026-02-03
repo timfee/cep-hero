@@ -213,6 +213,35 @@ interface OrgUnit {
   orgUnitId?: string | null;
   parentOrgUnitId?: string | null;
   orgUnitPath?: string | null;
+  name?: string | null;
+}
+
+/**
+ * Build a mapping from org unit ID variants to friendly paths.
+ * Handles multiple ID formats: "03ph8a2z...", "id:03ph8a2z...", "orgunits/03ph8a2z..."
+ */
+function buildOrgUnitNameMap(units: OrgUnit[]): Map<string, string> {
+  const map = new Map<string, string>();
+
+  for (const unit of units) {
+    const path = unit.orgUnitPath ?? unit.name ?? "";
+    if (!path) {
+      continue;
+    }
+
+    const rawId = unit.orgUnitId ?? "";
+    if (!rawId) {
+      continue;
+    }
+
+    // Store under multiple key formats for easy lookup
+    const normalizedId = normalizeResource(rawId);
+    map.set(normalizedId, path);
+    map.set(`orgunits/${normalizedId}`, path);
+    map.set(`id:${normalizedId}`, path);
+  }
+
+  return map;
 }
 
 /**
@@ -983,6 +1012,7 @@ export class CepToolExecutor {
 
     let targetCandidates: string[] = [];
     const attemptedTargets: string[] = [];
+    let orgUnitNameMap = new Map<string, string>();
     try {
       const resolvedPolicies: ResolvedPolicy[] = [];
 
@@ -997,6 +1027,7 @@ export class CepToolExecutor {
           throw new Error("Directory orgunit client unavailable");
         }
         let rootOuId: string | null = null;
+        let rootOuPath: string | null = null;
         try {
           // Explicitly fetch the root OU ID to ensure we have the correct target
           const rootRes = await directory.orgunits.get({
@@ -1004,11 +1035,9 @@ export class CepToolExecutor {
             orgUnitPath: "/",
           });
           rootOuId = rootRes.data.orgUnitId ?? null;
-        } catch (error) {
-          console.log(
-            "[connector-config] explicit root-ou fetch failed",
-            getErrorMessage(error)
-          );
+          rootOuPath = rootRes.data.orgUnitPath ?? rootRes.data.name ?? "/";
+        } catch {
+          // Silently handle - root OU fetch is optional
         }
 
         const orgUnits = await directory.orgunits.list({
@@ -1016,9 +1045,19 @@ export class CepToolExecutor {
           type: "all",
         });
 
-        const orgUnitIds = resolveOrgUnitCandidates(
-          orgUnits?.data.organizationUnits ?? []
-        );
+        const orgUnitList = orgUnits?.data.organizationUnits ?? [];
+
+        // Build name map for resolving IDs to friendly paths
+        orgUnitNameMap = buildOrgUnitNameMap(orgUnitList);
+
+        // Add root OU to the map if we fetched it
+        if (rootOuId && rootOuPath) {
+          const normalizedRoot = normalizeResource(rootOuId);
+          orgUnitNameMap.set(normalizedRoot, rootOuPath);
+          orgUnitNameMap.set(`orgunits/${normalizedRoot}`, rootOuPath);
+        }
+
+        const orgUnitIds = resolveOrgUnitCandidates(orgUnitList);
 
         if (rootOuId) {
           const normalizedRoot = normalizeResource(rootOuId);
@@ -1089,6 +1128,7 @@ export class CepToolExecutor {
             policySchemas,
             value: resolvedPolicies,
             targetResource,
+            targetResourceName: orgUnitNameMap.get(targetResource) ?? null,
             attemptedTargets,
           };
         } catch (error) {
@@ -1107,21 +1147,29 @@ export class CepToolExecutor {
       }
 
       if (resolveErrors.length > 0) {
+        const errorTarget = resolveErrors[0]?.targetResource;
         return {
           status: "Resolved",
           policySchemas,
           value: [],
           errors: resolveErrors,
-          targetResource: resolveErrors[0]?.targetResource,
+          targetResource: errorTarget,
+          targetResourceName: errorTarget
+            ? (orgUnitNameMap.get(errorTarget) ?? null)
+            : null,
           attemptedTargets,
         };
       }
 
+      const [fallbackTarget] = attemptedTargets;
       return {
         status: "Resolved",
         policySchemas,
         value: [],
-        targetResource: attemptedTargets[0],
+        targetResource: fallbackTarget,
+        targetResourceName: fallbackTarget
+          ? (orgUnitNameMap.get(fallbackTarget) ?? null)
+          : null,
         attemptedTargets,
       };
     } catch (error: unknown) {
@@ -1135,10 +1183,14 @@ export class CepToolExecutor {
         })
       );
 
+      const [errorTarget] = attemptedTargets;
       return {
         ...createApiError(error, "connector-config"),
         policySchemas,
-        targetResource: attemptedTargets[0],
+        targetResource: errorTarget,
+        targetResourceName: errorTarget
+          ? (orgUnitNameMap.get(errorTarget) ?? null)
+          : null,
         attemptedTargets,
       };
     }
