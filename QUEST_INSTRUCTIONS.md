@@ -146,6 +146,23 @@ Each eval run writes JSON reports to `evals/reports/`. Reports include:
 - `durationMs`: Response time
 - `error`: Error message if the case failed
 
+### LLM-as-Judge (Semantic Evidence Evaluation)
+
+By default, the eval runner uses an LLM to evaluate evidence requirements semantically. This was implemented to avoid "whack-a-mole" adjustments to evidence requirements.
+
+**How it works:**
+1. String matching with text normalization runs first (handles wifi/Wi-Fi, deauth/de-auth variations)
+2. Cases that fail string matching are batched and sent to Gemini
+3. LLM evaluates if the response semantically addresses each evidence concept
+4. Failures are upgraded to passes if the LLM determines evidence is present
+
+**Benefits:**
+- Handles synonyms and paraphrasing automatically
+- No need to constantly adjust evidence requirements
+- More robust to natural AI response variation
+
+**Disable with:** `EVAL_LLM_JUDGE=0`
+
 ### Interpreting Failures
 
 When an eval fails, examine the report to understand why:
@@ -170,7 +187,7 @@ When an eval produces unexpected results, you have several options:
 
 5. **Add or improve tools**: If the AI lacks access to necessary information, add new tools or improve existing ones.
 
-6. **Use RAG or web search**: If the AI needs domain knowledge it doesn't have, ensure it can access the knowledge base or perform web searches.
+6. **Use RAG via searchKnowledge tool**: The AI has access to a `searchKnowledge` tool that searches the docs and policies knowledge base. The system prompt instructs the AI to use this when encountering unfamiliar terms, error codes, or troubleshooting scenarios. Ensure the knowledge base contains the relevant documentation.
 
 ## Adding New Evals
 

@@ -47,6 +47,7 @@ EVAL_VERBOSE=1 EVAL_IDS="EC-001" EVAL_USE_FIXTURES=1 bun run evals
 | `EVAL_VERBOSE=1` | Show detailed output |
 | `EVAL_SERIAL=1` | Run sequentially instead of parallel |
 | `EVAL_MANAGE_SERVER=0` | Skip auto server management (use with manual server) |
+| `EVAL_LLM_JUDGE=0` | Disable LLM-as-judge for evidence evaluation (enabled by default) |
 
 ## Reporting Results
 
@@ -93,6 +94,24 @@ Current fixtures are available for:
 | enrollment | EC-001, EC-002, EC-004, EC-018, EC-046, EC-069, EC-070 | Ready |
 | events | EC-052, EC-062 | Ready |
 | extensions | EC-043, EC-044, EC-045, EC-053 | Ready |
+
+## LLM-as-Judge (Semantic Evidence Evaluation)
+
+By default, the eval runner uses an LLM to evaluate evidence requirements semantically. This handles:
+- Synonyms: "wifi" matches "Wi-Fi", "wireless network"
+- Paraphrasing: "deauth" matches "disconnection", "handshake timeout"
+- Semantic equivalence: Error codes can be explained rather than quoted
+
+How it works:
+1. String matching runs first (with normalization for hyphens, case, etc.)
+2. Cases that fail string matching are batched and sent to Gemini
+3. LLM evaluates if the response semantically addresses each evidence concept
+4. Failures are upgraded to passes if the LLM determines evidence is present
+
+To disable LLM judging (use strict string matching only):
+```bash
+EVAL_LLM_JUDGE=0 EVAL_CATEGORY="enrollment" bun run evals
+```
 
 ## Troubleshooting
 
