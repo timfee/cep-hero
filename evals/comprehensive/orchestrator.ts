@@ -2,10 +2,17 @@
  * Orchestrates multiple eval runs with different configurations.
  */
 
+import {
+  ensureEvalServer,
+  releaseEvalServer,
+} from "@/lib/test-helpers/eval-server";
+
 import { createRunId } from "../lib/reporter";
 import { runEvals } from "../lib/runner";
 import { getConfigurationByMode } from "./config";
 import { type RunMode, type SingleRunResult } from "./types";
+
+const DEFAULT_CHAT_URL = "http://localhost:3100/api/chat";
 
 interface OrchestratorOptions {
   modes: RunMode[];
@@ -75,7 +82,7 @@ async function executeSingleRun(
   }
 
   const result = await runEvals({
-    manageServer: true,
+    manageServer: false, // Server managed at orchestration level
     verbose: options.verbose,
   });
 
@@ -104,6 +111,8 @@ export async function orchestrateRuns(
   options: OrchestratorOptions
 ): Promise<SingleRunResult[]> {
   const orchestrationId = createRunId();
+  const chatUrl = process.env.CHAT_URL ?? DEFAULT_CHAT_URL;
+
   console.log(`\n${"=".repeat(70)}`);
   console.log("COMPREHENSIVE EVAL ORCHESTRATION");
   console.log(`${"=".repeat(70)}`);
@@ -113,27 +122,37 @@ export async function orchestrateRuns(
   console.log(`Total runs: ${options.modes.length * options.iterations}`);
   console.log(`${"=".repeat(70)}\n`);
 
+  // Start server once for all runs
+  console.log("[comprehensive] Starting eval server...");
+  await ensureEvalServer({ chatUrl, manageServer: true });
+  console.log("[comprehensive] Server ready");
+
   const allResults: SingleRunResult[] = [];
   const failedRuns: { mode: RunMode; iteration: number; error: string }[] = [];
 
-  for (const mode of options.modes) {
-    for (let i = 0; i < options.iterations; i++) {
-      try {
-        const result = await executeSingleRun(mode, i, options);
-        allResults.push(result);
-      } catch (error) {
-        const errorMessage =
-          error instanceof Error ? error.message : String(error);
-        console.error(
-          `[comprehensive] Error in ${mode} iteration ${i + 1}:`,
-          error
-        );
-        failedRuns.push({ mode, iteration: i + 1, error: errorMessage });
+  try {
+    for (const mode of options.modes) {
+      for (let i = 0; i < options.iterations; i++) {
+        try {
+          const result = await executeSingleRun(mode, i, options);
+          allResults.push(result);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : String(error);
+          console.error(
+            `[comprehensive] Error in ${mode} iteration ${i + 1}:`,
+            error
+          );
+          failedRuns.push({ mode, iteration: i + 1, error: errorMessage });
+        }
       }
     }
+  } finally {
+    // Always release server, even on error
+    clearEvalEnvironment();
+    console.log("[comprehensive] Releasing eval server...");
+    releaseEvalServer();
   }
-
-  clearEvalEnvironment();
 
   console.log(`\n${"=".repeat(70)}`);
   console.log("ORCHESTRATION COMPLETE");
