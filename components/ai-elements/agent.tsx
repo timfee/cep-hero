@@ -110,6 +110,9 @@ export type AgentToolProps = ComponentProps<typeof AccordionItem> & {
   tool: Tool;
 };
 
+/**
+ * Expandable item displaying tool description and JSON schema.
+ */
 export const AgentTool = memo(
   ({ className, tool, value, ...props }: AgentToolProps) => {
     const schema =
@@ -140,6 +143,9 @@ export type AgentOutputProps = ComponentProps<"div"> & {
   schema: string;
 };
 
+/**
+ * Display section for agent output schema in TypeScript format.
+ */
 export const AgentOutput = memo(
   ({ className, schema, ...props }: AgentOutputProps) => (
     <div className={cn("space-y-2", className)} {...props}>
