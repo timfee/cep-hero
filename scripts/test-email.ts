@@ -74,7 +74,8 @@ async function sendTestEmail() {
   console.log("[test] Sending email to feel@google.com...");
 
   const result = await gmail.users.messages.send({
-    userId: senderEmail,
+    auth: jwtClient,
+    userId: "me",
     requestBody: { raw: rawMessage },
   });
 
