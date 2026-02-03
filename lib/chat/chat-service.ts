@@ -159,13 +159,80 @@ interface CreateChatStreamParams {
   executor?: IToolExecutor;
 }
 
+interface SearchHit {
+  metadata?: { title?: string };
+  content?: string;
+}
+
+function formatHits(hits: SearchHit[] | undefined, prefix: string): string {
+  if (!Array.isArray(hits)) {
+    return "";
+  }
+  return hits
+    .map((item) => {
+      const title =
+        typeof item?.metadata?.title === "string"
+          ? item.metadata.title
+          : "Untitled";
+      const content =
+        typeof item?.content === "string"
+          ? item.content
+          : String(item.content ?? "");
+      return `[${prefix}: ${title}]\n${content}`;
+    })
+    .join("\n\n");
+}
+
+async function analyzeIntent(userMessage: string) {
+  const result = await generateText({
+    model: google("gemini-2.0-flash-001"),
+    output: Output.object({
+      schema: z.object({
+        needsKnowledge: z
+          .boolean()
+          .describe(
+            "True if the user is asking about concepts, errors, policies, or configuration steps."
+          ),
+        query: z
+          .string()
+          .describe("The search query for documentation and policies"),
+      }),
+    }),
+    prompt: `Analyze the user's latest message: "${userMessage}". Do they need documentation or policy definitions?`,
+  });
+  return result;
+}
+
+async function fetchKnowledgeSnippets(query: string): Promise<string> {
+  const [docs, policies] = await Promise.all([
+    searchDocs(query),
+    searchPolicies(query),
+  ]);
+  const docSnippets = formatHits(docs?.hits, "Doc");
+  const policySnippets = formatHits(policies?.hits, "Policy");
+  if (docSnippets.length === 0 && policySnippets.length === 0) {
+    return "";
+  }
+  return `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
+}
+
+async function retrieveKnowledge(userMessage: string): Promise<string> {
+  if (typeof userMessage !== "string" || userMessage.length === 0) {
+    return "";
+  }
+  try {
+    const intentAnalysis = await analyzeIntent(userMessage);
+    return intentAnalysis.output.needsKnowledge
+      ? await fetchKnowledgeSnippets(intentAnalysis.output.query)
+      : "";
+  } catch (error) {
+    console.error("Knowledge retrieval failed:", error);
+    return "";
+  }
+}
+
 /**
  * Creates and configures the AI chat stream with all CEP tools registered.
- *
- * @param {CreateChatStreamParams} params - Configuration parameters for the chat stream.
- * @param {ChatMessage[]} params.messages - The conversation history.
- * @param {string} params.accessToken - Google OAuth access token for tool execution.
- * @returns {Promise<Response>} A streaming response compatible with the AI SDK.
  */
 export async function createChatStream({
   messages,
@@ -173,84 +240,9 @@ export async function createChatStream({
   executor: providedExecutor,
 }: CreateChatStreamParams) {
   const executor = providedExecutor ?? new CepToolExecutor(accessToken);
-
-  const lastUserMessage = messages.findLast(
-    (message) => message.role === "user"
-  )?.content;
-
-  let knowledgeContext = "";
-
-  if (typeof lastUserMessage === "string" && lastUserMessage.length > 0) {
-    try {
-      // Fast pass to check if we need to search docs
-      // Use a fast model for routing
-      const intentAnalysis = await generateText({
-        model: google("gemini-2.0-flash-001"),
-        output: Output.object({
-          schema: z.object({
-            needsKnowledge: z
-              .boolean()
-              .describe(
-                "True if the user is asking about concepts, errors, policies, or configuration steps."
-              ),
-            query: z
-              .string()
-              .describe("The search query for documentation and policies"),
-          }),
-        }),
-        prompt: `Analyze the user's latest message: "${lastUserMessage}". Do they need documentation or policy definitions?`,
-      });
-
-      if (intentAnalysis.output.needsKnowledge) {
-        const { query } = intentAnalysis.output;
-        const [docs, policies] = await Promise.all([
-          searchDocs(query),
-          searchPolicies(query),
-        ]);
-
-        const docSnippets = Array.isArray(docs?.hits)
-          ? docs.hits
-              .map((d) => {
-                const title =
-                  typeof d?.metadata?.title === "string"
-                    ? d.metadata.title
-                    : "Untitled";
-                const content =
-                  typeof d?.content === "string"
-                    ? d.content
-                    : String(d.content ?? "");
-                return `[Doc: ${title}]\n${content}`;
-              })
-              .join("\n\n")
-          : "";
-        const policySnippets = Array.isArray(policies?.hits)
-          ? policies.hits
-              .map((p) => {
-                const title =
-                  typeof p?.metadata?.title === "string"
-                    ? p.metadata.title
-                    : "Untitled";
-                const content =
-                  typeof p?.content === "string"
-                    ? p.content
-                    : String(p.content ?? "");
-                return `[Policy: ${title}]\n${content}`;
-              })
-              .join("\n\n")
-          : "";
-
-        if (docSnippets.length > 0 || policySnippets.length > 0) {
-          knowledgeContext = `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
-        }
-      }
-    } catch (error) {
-      console.error("Knowledge retrieval failed:", error);
-      // Proceed without context on error
-    }
-  }
-
-  // Inject knowledge into the system prompt or as a context message
-  // We'll append it to the system prompt for visibility
+  const lastUserMessage =
+    messages.findLast((message) => message.role === "user")?.content ?? "";
+  const knowledgeContext = await retrieveKnowledge(lastUserMessage);
   const enhancedSystemPrompt = knowledgeContext
     ? `${systemPrompt}${knowledgeContext}`
     : systemPrompt;

@@ -44,34 +44,43 @@ async function resolveCustomerIdFromPolicySchemas(
   }
 }
 
-export async function makeGoogleClients(): Promise<GoogleClients> {
-  const envCustomerId = process.env.GOOGLE_CUSTOMER_ID;
-  let customerId = envCustomerId ?? "my_customer";
-  const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
+const GOOGLE_API_SCOPES = [
+  "https://www.googleapis.com/auth/admin.directory.user",
+  "https://www.googleapis.com/auth/admin.directory.orgunit",
+  "https://www.googleapis.com/auth/admin.directory.group",
+  "https://www.googleapis.com/auth/admin.reports.audit.readonly",
+  "https://www.googleapis.com/auth/chrome.management.policy",
+  "https://www.googleapis.com/auth/chrome.management.policy.readonly",
+];
+
+async function createAuthClient(tokenEmail?: string): Promise<OAuth2Client> {
   const accessToken = await getServiceAccountAccessToken(
-    [
-      "https://www.googleapis.com/auth/admin.directory.user",
-      "https://www.googleapis.com/auth/admin.directory.orgunit",
-      "https://www.googleapis.com/auth/admin.directory.group",
-      "https://www.googleapis.com/auth/admin.reports.audit.readonly",
-      "https://www.googleapis.com/auth/chrome.management.policy",
-      "https://www.googleapis.com/auth/chrome.management.policy.readonly",
-    ],
+    GOOGLE_API_SCOPES,
     tokenEmail
   );
-
   const auth = new OAuth2Client();
   auth.setCredentials({ access_token: accessToken });
+  return auth;
+}
 
-  const directory = google.admin({ version: "directory_v1", auth });
-  const policy = google.chromepolicy({ version: "v1", auth });
-  const management = google.chromemanagement({ version: "v1", auth });
+function createGoogleApiClients(auth: OAuth2Client) {
+  return {
+    directory: google.admin({ version: "directory_v1", auth }),
+    policy: google.chromepolicy({ version: "v1", auth }),
+    management: google.chromemanagement({ version: "v1", auth }),
+  };
+}
 
+export async function makeGoogleClients(): Promise<GoogleClients> {
+  const envCustomerId = process.env.GOOGLE_CUSTOMER_ID;
+  const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
+  const auth = await createAuthClient(tokenEmail);
+  const { directory, policy, management } = createGoogleApiClients(auth);
+
+  let customerId = envCustomerId ?? "my_customer";
   if (!envCustomerId) {
-    const resolvedCustomerId = await resolveCustomerIdFromPolicySchemas(policy);
-    if (resolvedCustomerId) {
-      customerId = resolvedCustomerId;
-    }
+    customerId =
+      (await resolveCustomerIdFromPolicySchemas(policy)) ?? customerId;
   }
 
   return { directory, policy, management, tokenEmail, customerId };
@@ -166,6 +175,71 @@ export async function listPolicySchemas({
   return res.data.policySchemas ?? [];
 }
 
+interface PolicyProbeResult {
+  targetResource: string;
+  resolvedPolicies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[];
+}
+
+interface PolicyProbeError {
+  targetResource: string;
+  message: string;
+}
+
+function isIgnorableError(message: string): boolean {
+  return (
+    message.includes("Requested entity was not found") ||
+    message.includes("must be of type 'orgunits' or 'groups'")
+  );
+}
+
+async function resolveTargetPolicy(
+  policy: ChromePolicy,
+  customerId: string,
+  policySchemaFilter: string,
+  targetResource: string,
+  pageSize: number
+): Promise<PolicyProbeResult | PolicyProbeError | null> {
+  const trimmed = targetResource.trim();
+  if (!trimmed) {
+    return {
+      targetResource,
+      message:
+        "targetResource must be a non-empty orgunits/{id} or groups/{id}",
+    };
+  }
+
+  if (trimmed.startsWith("customers/")) {
+    return null;
+  }
+
+  try {
+    const res = await policy.customers.policies.resolve({
+      customer: `customers/${customerId}`,
+      requestBody: {
+        policySchemaFilter,
+        policyTargetKey: { targetResource: trimmed },
+        pageSize,
+      },
+    });
+    return {
+      targetResource: trimmed,
+      resolvedPolicies: res.data.resolvedPolicies ?? [],
+    };
+  } catch (error) {
+    const message = getErrorMessage(error);
+    if (isIgnorableError(message)) {
+      return null;
+    }
+    return { targetResource, message };
+  }
+}
+
+function isProbeError(
+  result: PolicyProbeResult | PolicyProbeError | null
+): result is PolicyProbeError {
+  return result !== null && "message" in result;
+}
+
 export async function probePolicyTargetResources({
   policySchemaFilter,
   targetResources,
@@ -176,56 +250,25 @@ export async function probePolicyTargetResources({
   pageSize?: number;
 }) {
   const { policy, customerId } = await makeGoogleClients();
-  const results: {
-    targetResource: string;
-    resolvedPolicies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[];
-  }[] = [];
-  const errors: { targetResource: string; message: string }[] = [];
-
+  const results: PolicyProbeResult[] = [];
+  const errors: PolicyProbeError[] = [];
   const uniqueTargets = [...new Set(targetResources)];
 
-  for (const targetResource of uniqueTargets) {
-    const trimmed = targetResource.trim();
-    if (!trimmed) {
-      errors.push({
-        targetResource,
-        message:
-          "targetResource must be a non-empty orgunits/{id} or groups/{id}",
-      });
+  for (const target of uniqueTargets) {
+    const result = await resolveTargetPolicy(
+      policy,
+      customerId,
+      policySchemaFilter,
+      target,
+      pageSize
+    );
+    if (result === null) {
       continue;
     }
-
-    // The resolve endpoint only supports 'orgunits' or 'groups'.
-    // It does not support 'customers' (use root org unit instead).
-    if (trimmed.startsWith("customers/")) {
-      continue;
-    }
-
-    try {
-      const res = await policy.customers.policies.resolve({
-        customer: `customers/${customerId}`,
-        requestBody: {
-          policySchemaFilter,
-          policyTargetKey: { targetResource: trimmed },
-          pageSize,
-        },
-      });
-      results.push({
-        targetResource: trimmed,
-        resolvedPolicies: res.data.resolvedPolicies ?? [],
-      });
-    } catch (error) {
-      const message = getErrorMessage(error);
-      const isIgnorable =
-        message.includes("Requested entity was not found") ||
-        message.includes("must be of type 'orgunits' or 'groups'");
-
-      if (!isIgnorable) {
-        errors.push({
-          targetResource,
-          message,
-        });
-      }
+    if (isProbeError(result)) {
+      errors.push(result);
+    } else {
+      results.push(result);
     }
   }
 
@@ -492,44 +535,47 @@ export async function createEnrollmentToken(targetResource: string) {
   };
 }
 
+type EnrollmentCreateFn = (args: {
+  parent: string;
+  requestBody: {
+    policySchemaId: string;
+    policyTargetKey: { targetResource: string };
+  };
+}) => Promise<{
+  data: { name?: string | null; expirationTime?: string | null };
+}>;
+
+function getNestedProperty(obj: unknown, key: string): unknown {
+  if (!obj || typeof obj !== "object") {
+    return null;
+  }
+  return Reflect.get(obj, key);
+}
+
+function traversePath(root: unknown, path: string[]): unknown {
+  let current = root;
+  for (const key of path) {
+    current = getNestedProperty(current, key);
+    if (!current) {
+      return null;
+    }
+  }
+  return current;
+}
+
 /**
  * Resolve the Chrome Management enrollment creation handler.
  */
-function getEnrollmentCreate(service: unknown):
-  | ((args: {
-      parent: string;
-      requestBody: {
-        policySchemaId: string;
-        policyTargetKey: { targetResource: string };
-      };
-    }) => Promise<{
-      data: { name?: string | null; expirationTime?: string | null };
-    }>)
-  | null {
-  if (!service || typeof service !== "object") {
-    return null;
-  }
-
-  const customers = Reflect.get(service, "customers");
-  if (!customers || typeof customers !== "object") {
-    return null;
-  }
-
-  const policies = Reflect.get(customers, "policies");
-  if (!policies || typeof policies !== "object") {
-    return null;
-  }
-
-  const networks = Reflect.get(policies, "networks");
-  if (!networks || typeof networks !== "object") {
-    return null;
-  }
-
-  const enrollments = Reflect.get(networks, "enrollments");
+function getEnrollmentCreate(service: unknown): EnrollmentCreateFn | null {
+  const enrollments = traversePath(service, [
+    "customers",
+    "policies",
+    "networks",
+    "enrollments",
+  ]);
   if (!enrollments || typeof enrollments !== "object") {
     return null;
   }
-
   const create = Reflect.get(enrollments, "create");
   return typeof create === "function" ? create.bind(enrollments) : null;
 }

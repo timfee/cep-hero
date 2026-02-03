@@ -15,25 +15,37 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isPrimitive(value: unknown): boolean {
+  return (
+    value === null ||
+    value === undefined ||
+    typeof value === "string" ||
+    typeof value === "number" ||
+    typeof value === "boolean"
+  );
+}
+
+function sanitizeObjectEntry(key: string, val: unknown): [string, unknown] {
+  const shouldRedact = REDACT_KEYS.some((pattern) => pattern.test(key));
+  return [key, shouldRedact ? "[redacted]" : sanitizeForLog(val)];
+}
+
+function sanitizeObject(value: Record<string, unknown>): unknown {
+  const entries = Object.entries(value).map(([key, val]) =>
+    sanitizeObjectEntry(key, val)
+  );
+  return Object.fromEntries(entries);
+}
+
 function sanitizeForLog(value: unknown): unknown {
-  if (value === null || value === undefined) {
-    return value;
-  }
-  if (typeof value === "string") {
-    return value;
-  }
-  if (typeof value === "number" || typeof value === "boolean") {
+  if (isPrimitive(value)) {
     return value;
   }
   if (Array.isArray(value)) {
     return value.map((item) => sanitizeForLog(item));
   }
   if (isPlainObject(value)) {
-    const entries = Object.entries(value).map(([key, val]) => {
-      const shouldRedact = REDACT_KEYS.some((pattern) => pattern.test(key));
-      return [key, shouldRedact ? "[redacted]" : sanitizeForLog(val)];
-    });
-    return Object.fromEntries(entries);
+    return sanitizeObject(value);
   }
   return Object.prototype.toString.call(value);
 }

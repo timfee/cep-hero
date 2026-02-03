@@ -69,56 +69,47 @@ export async function GET(req: Request) {
   return entry.transport.handleRequest(req);
 }
 
-/**
- * Handle MCP Streamable HTTP POST/initialize requests.
- */
-export async function POST(req: Request) {
-  await sweepExpiredSessions();
-  const existingSessionId = getSessionId(req);
-  if (existingSessionId !== null && existingSessionId !== "") {
-    const entry = activeTransports.get(existingSessionId);
-    if (!entry) {
-      return new Response("Session not found (or expired).", { status: 404 });
-    }
-
-    touchSession(existingSessionId);
-    return entry.transport.handleRequest(req);
+function handleExistingSession(
+  sessionId: string,
+  req: Request
+): Response | null {
+  const entry = activeTransports.get(sessionId);
+  if (!entry) {
+    return new Response("Session not found (or expired).", { status: 404 });
   }
+  touchSession(sessionId);
+  return entry.transport.handleRequest(req) as Response;
+}
 
-  const authHeader = req.headers.get("Authorization");
-  let accessToken =
-    typeof authHeader === "string"
-      ? authHeader.replace("Bearer ", "")
-      : undefined;
-  if (accessToken === "") {
-    accessToken = undefined;
+function extractBearerToken(authHeader: string | null): string | undefined {
+  if (typeof authHeader !== "string") {
+    return undefined;
   }
+  const token = authHeader.replace("Bearer ", "");
+  return token.length > 0 ? token : undefined;
+}
 
-  if (accessToken === undefined) {
-    const session = await auth.api.getSession({
-      headers: req.headers,
-    });
-
-    if (session !== null && session !== undefined) {
-      const accessTokenResponse = await auth.api.getAccessToken({
-        body: {
-          providerId: "google",
-        },
-        headers: req.headers,
-      });
-
-      const tokenCandidate = accessTokenResponse?.accessToken;
-      if (typeof tokenCandidate === "string" && tokenCandidate.length > 0) {
-        accessToken = tokenCandidate;
-      }
-    }
+async function resolveAccessTokenFromSession(
+  req: Request
+): Promise<string | undefined> {
+  const session = await auth.api.getSession({ headers: req.headers });
+  if (session === null || session === undefined) {
+    return undefined;
   }
+  const response = await auth.api.getAccessToken({
+    body: { providerId: "google" },
+    headers: req.headers,
+  });
+  const token = response?.accessToken;
+  return typeof token === "string" && token.length > 0 ? token : undefined;
+}
 
-  if (accessToken === undefined || accessToken.length === 0) {
-    return new Response("Missing access token", { status: 401 });
-  }
+async function resolveAccessToken(req: Request): Promise<string | undefined> {
+  const bearerToken = extractBearerToken(req.headers.get("Authorization"));
+  return bearerToken ?? (await resolveAccessTokenFromSession(req));
+}
 
-  const sessionCreatedAt = Date.now();
+function createMcpTransport(sessionCreatedAt: number) {
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: () => crypto.randomUUID(),
     onsessioninitialized: (sessionId) => {
@@ -134,10 +125,27 @@ export async function POST(req: Request) {
       console.log(`[MCP] Session closed: ${sessionId}`);
     },
   });
+  return transport;
+}
 
+/**
+ * Handle MCP Streamable HTTP POST/initialize requests.
+ */
+export async function POST(req: Request) {
+  await sweepExpiredSessions();
+  const existingSessionId = getSessionId(req);
+  if (existingSessionId !== null && existingSessionId !== "") {
+    return handleExistingSession(existingSessionId, req);
+  }
+
+  const accessToken = await resolveAccessToken(req);
+  if (accessToken === undefined || accessToken.length === 0) {
+    return new Response("Missing access token", { status: 401 });
+  }
+
+  const transport = createMcpTransport(Date.now());
   const mcpServer = createMcpServer(accessToken);
   await mcpServer.connect(transport);
-
   return transport.handleRequest(req);
 }
 

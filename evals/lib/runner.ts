@@ -140,6 +140,65 @@ function buildMultiTurnErrorMessage(
     .join(" | ");
 }
 
+interface MultiTurnChatMessage {
+  role: "system" | "user" | "assistant";
+  content: string;
+}
+
+interface MultiTurnState {
+  messages: MultiTurnChatMessage[];
+  allToolCalls: string[];
+  allResponses: string[];
+  turnResults: TurnResult[];
+}
+
+function createMultiTurnState(): MultiTurnState {
+  return {
+    messages: [{ role: "system", content: "You are CEP Hero." }],
+    allToolCalls: [],
+    allResponses: [],
+    turnResults: [],
+  };
+}
+
+function buildMultiTurnResult(
+  state: MultiTurnState,
+  conversationScript: ConversationTurn[],
+  error?: string
+): MultiTurnResult {
+  const failedTurns = state.turnResults.filter((t) => !t.passed);
+  return {
+    responseText: state.allResponses.join("\n\n---\n\n"),
+    toolCalls: [...new Set(state.allToolCalls)],
+    prompt: conversationScript.map((t) => t.content).join(" -> "),
+    error: error ?? buildMultiTurnErrorMessage(failedTurns),
+    turnResults: state.turnResults,
+  };
+}
+
+async function processTurn(
+  state: MultiTurnState,
+  turn: ConversationTurn,
+  turnIndex: number,
+  turnAssertions: TurnAssertion[],
+  fixtures: FixtureData | undefined
+): Promise<string | null> {
+  state.messages.push({ role: "user", content: turn.content });
+  const resp = await callChatMessages(state.messages, { fixtures });
+  const assistantText = resp.text;
+  const turnToolCalls = resp.toolCalls ?? [];
+
+  state.messages.push({ role: "assistant", content: assistantText });
+  state.allToolCalls.push(...turnToolCalls);
+  state.allResponses.push(assistantText);
+
+  const turnAssertion = turnAssertions.find((a) => a.turn === turnIndex);
+  state.turnResults.push(
+    processTurnAssertion(turnIndex, turnToolCalls, assistantText, turnAssertion)
+  );
+  return null;
+}
+
 /**
  * Run a multi-turn conversation and check per-turn assertions.
  */
@@ -148,97 +207,98 @@ async function runMultiTurnConversation(
   turnAssertions: TurnAssertion[],
   fixtures: FixtureData | undefined
 ): Promise<MultiTurnResult> {
-  interface ChatMessage {
-    role: "system" | "user" | "assistant";
-    content: string;
-  }
-  const messages: ChatMessage[] = [
-    { role: "system", content: "You are CEP Hero." },
-  ];
-
-  const allToolCalls: string[] = [];
-  const allResponses: string[] = [];
-  const turnResults: TurnResult[] = [];
+  const state = createMultiTurnState();
 
   for (
     let turnIndex = 0;
     turnIndex < conversationScript.length;
     turnIndex += 1
   ) {
-    const turn = conversationScript[turnIndex];
-    messages.push({ role: "user", content: turn.content });
-
     try {
-      const resp = await callChatMessages(messages, { fixtures });
-      const assistantText = resp.text;
-      const turnToolCalls = resp.toolCalls ?? [];
-
-      messages.push({ role: "assistant", content: assistantText });
-      allToolCalls.push(...turnToolCalls);
-      allResponses.push(assistantText);
-
-      const turnAssertion = turnAssertions.find((a) => a.turn === turnIndex);
-      const result = processTurnAssertion(
+      await processTurn(
+        state,
+        conversationScript[turnIndex],
         turnIndex,
-        turnToolCalls,
-        assistantText,
-        turnAssertion
+        turnAssertions,
+        fixtures
       );
-      turnResults.push(result);
     } catch (caughtError) {
       const errorMessage =
         caughtError instanceof Error
           ? caughtError.message
           : String(caughtError);
-
-      return {
-        responseText: allResponses.join("\n\n---\n\n"),
-        toolCalls: [...new Set(allToolCalls)],
-        prompt: conversationScript.map((t) => t.content).join(" -> "),
-        error: `Turn ${turnIndex}: ${errorMessage}`,
-        turnResults,
-      };
+      return buildMultiTurnResult(
+        state,
+        conversationScript,
+        `Turn ${turnIndex}: ${errorMessage}`
+      );
     }
   }
 
-  const failedTurns = turnResults.filter((t) => !t.passed);
+  return buildMultiTurnResult(state, conversationScript);
+}
 
-  return {
-    responseText: allResponses.join("\n\n---\n\n"),
-    toolCalls: [...new Set(allToolCalls)],
-    prompt: conversationScript.map((t) => t.content).join(" -> "),
-    error: buildMultiTurnErrorMessage(failedTurns),
-    turnResults,
-  };
+interface AssertionResultSimple {
+  passed: boolean;
+  message: string;
+}
+
+function collectFailureMessages(
+  schemaResult: AssertionResultSimple,
+  evidenceResult: AssertionResultSimple,
+  toolCallsResult: AssertionResultSimple
+): string[] {
+  const messages: string[] = [];
+  if (!schemaResult.passed) {
+    messages.push(schemaResult.message);
+  }
+  if (!toolCallsResult.passed) {
+    messages.push(toolCallsResult.message);
+  }
+  if (!evidenceResult.passed) {
+    messages.push(evidenceResult.message);
+  }
+  return messages;
+}
+
+function checkAssertionFailures(
+  schemaResult: AssertionResultSimple,
+  evidenceResult: AssertionResultSimple,
+  toolCallsResult: AssertionResultSimple,
+  error: string | undefined
+): { status: "fail"; error: string | undefined } | null {
+  if (schemaResult.passed && evidenceResult.passed && toolCallsResult.passed) {
+    return null;
+  }
+  const messages = collectFailureMessages(
+    schemaResult,
+    evidenceResult,
+    toolCallsResult
+  );
+  return { status: "fail", error: error ?? messages[0] };
 }
 
 function determineReportStatus(
   error: string | undefined,
-  schemaResult: { passed: boolean; message: string },
-  evidenceResult: { passed: boolean; message: string },
-  toolCallsResult: { passed: boolean; message: string },
+  schemaResult: AssertionResultSimple,
+  evidenceResult: AssertionResultSimple,
+  toolCallsResult: AssertionResultSimple,
   rubricResult: EvalReport["rubricResult"]
 ): { status: EvalReport["status"]; error: string | undefined } {
   if (typeof error === "string" && error.length > 0) {
     return { status: "error", error };
   }
-  if (
-    !schemaResult.passed ||
-    !evidenceResult.passed ||
-    !toolCallsResult.passed
-  ) {
-    const failureMessages: string[] = [];
-    if (!schemaResult.passed) {
-      failureMessages.push(schemaResult.message);
-    }
-    if (!toolCallsResult.passed) {
-      failureMessages.push(toolCallsResult.message);
-    }
-    if (!evidenceResult.passed) {
-      failureMessages.push(evidenceResult.message);
-    }
-    return { status: "fail", error: error ?? failureMessages[0] };
+
+  const assertionFail = checkAssertionFailures(
+    schemaResult,
+    evidenceResult,
+    toolCallsResult,
+    error
+  );
+  if (assertionFail) {
+    return assertionFail;
   }
+
   if (rubricResult && !rubricResult.passed) {
     return {
       status: "fail",
@@ -247,6 +307,7 @@ function determineReportStatus(
         `Rubric score ${rubricResult.score} below minimum ${rubricResult.minScore}`,
     };
   }
+
   return { status: "pass", error: undefined };
 }
 
@@ -291,19 +352,19 @@ async function runSingleTurnCase(
   }
 }
 
-async function runCase(
+interface CaseResponse {
+  responseText: string;
+  responseMetadata: unknown;
+  toolCalls: string[] | undefined;
+  prompt: string;
+  error: string | undefined;
+}
+
+async function executeCaseConversation(
   evalCase: EvalCase,
-  context: CaseRunContext
-): Promise<EvalReport> {
-  const fixtures = loadEvalFixtures(evalCase.id);
-  const caseStart = performance.now();
-
-  let responseText: string;
-  let responseMetadata: unknown;
-  let toolCalls: string[] | undefined;
-  let error: string | undefined;
-  let prompt: string;
-
+  context: CaseRunContext,
+  fixtures: FixtureData | undefined
+): Promise<CaseResponse> {
   const isMultiTurn =
     evalCase.conversation_script.length > 0 && evalCase.mode === "multi-turn";
 
@@ -313,71 +374,94 @@ async function runCase(
       evalCase.turn_assertions ?? [],
       fixtures
     );
-    ({ responseText } = result);
-    ({ toolCalls } = result);
-    ({ error } = result);
-    ({ prompt } = result);
-    responseMetadata = undefined;
-  } else {
-    const result = await runSingleTurnCase(
-      evalCase,
-      context.promptMap,
-      fixtures
-    );
-    ({ responseText } = result);
-    ({ responseMetadata } = result);
-    ({ toolCalls } = result);
-    ({ prompt } = result);
-    ({ error } = result);
+    return {
+      responseText: result.responseText,
+      responseMetadata: undefined,
+      toolCalls: result.toolCalls,
+      prompt: result.prompt,
+      error: result.error,
+    };
   }
 
+  const result = await runSingleTurnCase(evalCase, context.promptMap, fixtures);
+  return result;
+}
+
+interface AssertionResults {
+  schemaResult: ReturnType<typeof checkStructuredResponse>;
+  evidenceResult: ReturnType<typeof checkRequiredEvidence>;
+  toolCallsResult: ReturnType<typeof checkRequiredToolCalls>;
+  rubricResult: EvalReport["rubricResult"];
+}
+
+function runAssertions(
+  evalCase: EvalCase,
+  response: CaseResponse
+): AssertionResults {
   const schemaResult = checkStructuredResponse({
-    text: responseText,
-    metadata: responseMetadata,
+    text: response.responseText,
+    metadata: response.responseMetadata,
     expectedSchema: evalCase.expected_schema,
   });
 
   const evidenceResult = checkRequiredEvidence({
-    text: responseText,
-    metadata: responseMetadata,
+    text: response.responseText,
+    metadata: response.responseMetadata,
     requiredEvidence: evalCase.required_evidence,
   });
 
   const toolCallsResult = checkRequiredToolCalls({
-    toolCalls,
+    toolCalls: response.toolCalls,
     requiredToolCalls: evalCase.required_tool_calls,
   });
 
-  let rubricResult: EvalReport["rubricResult"] = undefined;
-  if (evalCase.rubric !== undefined) {
-    const { score, matched, missed } = scoreRubric({
-      text: responseText,
-      metadata: responseMetadata,
-      criteria: evalCase.rubric.criteria,
-    });
-    const rubricCheck = checkRubricScore({
-      score,
-      minScore: evalCase.rubric.min_score,
-      criteria: evalCase.rubric.criteria,
-    });
-    rubricResult = {
-      score,
-      minScore: evalCase.rubric.min_score,
-      matched,
-      missed,
-      passed: rubricCheck.passed,
-    };
-  }
+  const rubricResult = computeRubricResult(evalCase, response);
 
+  return { schemaResult, evidenceResult, toolCallsResult, rubricResult };
+}
+
+function computeRubricResult(
+  evalCase: EvalCase,
+  response: CaseResponse
+): EvalReport["rubricResult"] {
+  if (evalCase.rubric === undefined) {
+    return undefined;
+  }
+  const { score, matched, missed } = scoreRubric({
+    text: response.responseText,
+    metadata: response.responseMetadata,
+    criteria: evalCase.rubric.criteria,
+  });
+  const rubricCheck = checkRubricScore({
+    score,
+    minScore: evalCase.rubric.min_score,
+    criteria: evalCase.rubric.criteria,
+  });
+  return {
+    score,
+    minScore: evalCase.rubric.min_score,
+    matched,
+    missed,
+    passed: rubricCheck.passed,
+  };
+}
+
+function buildEvalReport(
+  evalCase: EvalCase,
+  context: CaseRunContext,
+  response: CaseResponse,
+  assertions: AssertionResults,
+  caseStart: number
+): EvalReport {
   const statusResult = determineReportStatus(
-    error,
-    schemaResult,
-    evidenceResult,
-    toolCallsResult,
-    rubricResult
+    response.error,
+    assertions.schemaResult,
+    assertions.evidenceResult,
+    assertions.toolCallsResult,
+    assertions.rubricResult
   );
 
-  const report: EvalReport = {
+  return {
     runId: context.runId,
     caseId: evalCase.id,
     title: evalCase.title,
@@ -385,30 +469,51 @@ async function runCase(
     tags: evalCase.tags,
     sourceRefs: evalCase.source_refs,
     caseFile: evalCase.case_file,
-    prompt,
-    responseText,
-    responseMetadata,
+    prompt: response.prompt,
+    responseText: response.responseText,
+    responseMetadata: response.responseMetadata,
     expectedSchema: evalCase.expected_schema,
-    schemaResult,
-    evidenceResult,
-    toolCallsResult,
-    toolCalls,
-    rubricResult,
+    schemaResult: assertions.schemaResult,
+    evidenceResult: assertions.evidenceResult,
+    toolCallsResult: assertions.toolCallsResult,
+    toolCalls: response.toolCalls,
+    rubricResult: assertions.rubricResult,
     status: statusResult.status,
     durationMs: Math.round(performance.now() - caseStart),
     timestamp: new Date().toISOString(),
     error: statusResult.error,
   };
+}
 
-  await writeEvalReport(report);
-
-  if (context.verbose) {
+function logCaseResult(report: EvalReport, verbose: boolean): void {
+  if (verbose) {
     console.log(formatCaseResult(report));
   } else {
     console.log(
       `[eval] ${report.caseId} ${report.status} ${report.durationMs}ms`
     );
   }
+}
+
+async function runCase(
+  evalCase: EvalCase,
+  context: CaseRunContext
+): Promise<EvalReport> {
+  const fixtures = loadEvalFixtures(evalCase.id);
+  const caseStart = performance.now();
+
+  const response = await executeCaseConversation(evalCase, context, fixtures);
+  const assertions = runAssertions(evalCase, response);
+  const report = buildEvalReport(
+    evalCase,
+    context,
+    response,
+    assertions,
+    caseStart
+  );
+
+  await writeEvalReport(report);
+  logCaseResult(report, context.verbose);
 
   return report;
 }
@@ -439,6 +544,50 @@ function isEligibleForLlmJudge(report: EvalReport): boolean {
   return hasEvidenceFailure && schemaPassed;
 }
 
+interface LlmJudgeResult {
+  passed: boolean;
+  reasoning: string;
+  presentEvidence: string[];
+  missingEvidence: string[];
+}
+
+function buildLlmEvidenceResult(
+  llmResult: LlmJudgeResult
+): EvalReport["evidenceResult"] {
+  return {
+    passed: llmResult.passed,
+    message: llmResult.passed
+      ? "LLM judge: All evidence present"
+      : `LLM judge: Missing ${llmResult.missingEvidence.join(", ")}`,
+    details: {
+      llmJudge: true,
+      reasoning: llmResult.reasoning,
+      presentEvidence: llmResult.presentEvidence,
+      missingEvidence: llmResult.missingEvidence,
+    },
+  };
+}
+
+function updateReportWithLlmResult(
+  report: EvalReport,
+  llmResult: LlmJudgeResult
+): void {
+  report.evidenceResult = buildLlmEvidenceResult(llmResult);
+  if (llmResult.passed && report.status === "fail") {
+    report.status = "pass";
+    report.error = undefined;
+    console.log(`[eval] ${report.caseId} upgraded to pass by LLM judge`);
+  }
+}
+
+function buildEvidenceInputs(failures: EvalReport[]): EvidenceCheckInput[] {
+  return failures.map((r) => ({
+    caseId: r.caseId,
+    responseText: r.responseText,
+    requiredEvidence: getRequiredEvidenceFromDetails(r.evidenceResult),
+  }));
+}
+
 async function applyLlmJudgePhase(reports: EvalReport[]): Promise<void> {
   const useLlmJudge = process.env.EVAL_LLM_JUDGE !== "0";
   if (!useLlmJudge) {
@@ -454,35 +603,13 @@ async function applyLlmJudgePhase(reports: EvalReport[]): Promise<void> {
     `[eval] Running LLM judge on ${evidenceFailures.length} evidence failures...`
   );
 
-  const inputs: EvidenceCheckInput[] = evidenceFailures.map((r) => ({
-    caseId: r.caseId,
-    responseText: r.responseText,
-    requiredEvidence: getRequiredEvidenceFromDetails(r.evidenceResult),
-  }));
-
+  const inputs = buildEvidenceInputs(evidenceFailures);
   const llmResults = await batchEvaluateEvidence(inputs);
 
   for (const report of reports) {
     const llmResult = llmResults.get(report.caseId);
     if (llmResult) {
-      report.evidenceResult = {
-        passed: llmResult.passed,
-        message: llmResult.passed
-          ? "LLM judge: All evidence present"
-          : `LLM judge: Missing ${llmResult.missingEvidence.join(", ")}`,
-        details: {
-          llmJudge: true,
-          reasoning: llmResult.reasoning,
-          presentEvidence: llmResult.presentEvidence,
-          missingEvidence: llmResult.missingEvidence,
-        },
-      };
-
-      if (llmResult.passed && report.status === "fail") {
-        report.status = "pass";
-        report.error = undefined;
-        console.log(`[eval] ${report.caseId} upgraded to pass by LLM judge`);
-      }
+      updateReportWithLlmResult(report, llmResult);
     }
   }
 }
@@ -509,36 +636,51 @@ function buildEmptySummary(runId: string): EvalSummary {
   };
 }
 
+async function runCasesParallel(
+  cases: EvalCase[],
+  context: CaseRunContext
+): Promise<EvalReport[]> {
+  const results = await Promise.allSettled(
+    cases.map(async (evalCase) => {
+      const report = await runCase(evalCase, context);
+      return report;
+    })
+  );
+  return results
+    .filter(
+      (result): result is PromiseFulfilledResult<EvalReport> =>
+        result.status === "fulfilled"
+    )
+    .map((result) => result.value);
+}
+
+async function runCasesSerial(
+  cases: EvalCase[],
+  context: CaseRunContext,
+  pauseMs: number
+): Promise<EvalReport[]> {
+  const reports: EvalReport[] = [];
+  for (const evalCase of cases) {
+    if (pauseMs > 0) {
+      await Bun.sleep(pauseMs);
+    }
+    const report = await runCase(evalCase, context);
+    reports.push(report);
+  }
+  return reports;
+}
+
 async function executeCases(
   cases: EvalCase[],
   context: CaseRunContext,
   parallel: boolean,
   pauseMs: number
 ): Promise<EvalReport[]> {
-  const reports: EvalReport[] = [];
-
   if (parallel) {
-    const results = await Promise.allSettled(
-      cases.map(async (evalCase) => {
-        const report = await runCase(evalCase, context);
-        return report;
-      })
-    );
-    for (const result of results) {
-      if (result.status === "fulfilled") {
-        reports.push(result.value);
-      }
-    }
-  } else {
-    for (const evalCase of cases) {
-      if (pauseMs > 0) {
-        await Bun.sleep(pauseMs);
-      }
-      const report = await runCase(evalCase, context);
-      reports.push(report);
-    }
+    const reports = await runCasesParallel(cases, context);
+    return reports;
   }
-
+  const reports = await runCasesSerial(cases, context, pauseMs);
   return reports;
 }
 
@@ -591,29 +733,37 @@ async function finalizeRun(
   return summary;
 }
 
-/**
- * Run evals with the given options.
- */
-export async function runEvals(
-  options: RunnerOptions = {}
-): Promise<RunnerResult> {
+interface EvalRunSetup {
+  resolved: ResolvedOptions;
+  runId: string;
+  promptMap: Map<string, string>;
+  startTime: number;
+}
+
+function initializeEvalRun(options: RunnerOptions): EvalRunSetup {
   const resolved = resolveOptions(options);
   const registry = loadEvalRegistry();
   const promptMap = buildPromptMap(registry);
   const runId = createRunId();
   const startTime = performance.now();
+  return { resolved, runId, promptMap, startTime };
+}
 
-  const cases = filterEvalCases(registry.cases, {
+function selectCases(resolved: ResolvedOptions): EvalCase[] {
+  const registry = loadEvalRegistry();
+  return filterEvalCases(registry.cases, {
     ids: resolved.ids,
     categories: resolved.categories,
     tags: resolved.tags,
     limit: resolved.limit,
   });
+}
 
-  if (cases.length === 0) {
-    console.log("[eval] No cases selected");
-    return { summary: buildEmptySummary(runId), reports: [] };
-  }
+async function executeEvalRun(
+  setup: EvalRunSetup,
+  cases: EvalCase[]
+): Promise<RunnerResult> {
+  const { resolved, runId, promptMap, startTime } = setup;
 
   logRunStart(runId, cases.length, resolved.parallel);
 
@@ -642,6 +792,24 @@ export async function runEvals(
 
   const summary = await finalizeRun(runId, reports, startTime);
   return { summary, reports };
+}
+
+/**
+ * Run evals with the given options.
+ */
+export async function runEvals(
+  options: RunnerOptions = {}
+): Promise<RunnerResult> {
+  const setup = initializeEvalRun(options);
+  const cases = selectCases(setup.resolved);
+
+  if (cases.length === 0) {
+    console.log("[eval] No cases selected");
+    return { summary: buildEmptySummary(setup.runId), reports: [] };
+  }
+
+  const result = await executeEvalRun(setup, cases);
+  return result;
 }
 
 /**
