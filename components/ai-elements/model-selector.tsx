@@ -1,3 +1,7 @@
+/**
+ * Model selector components for choosing AI models from various providers.
+ * Built on command dialog pattern with provider logos and keyboard shortcuts.
+ */
 import type { ComponentProps, ReactNode } from "react";
 
 import {
@@ -21,12 +25,18 @@ import { cn } from "@/lib/utils";
 
 export type ModelSelectorProps = ComponentProps<typeof Dialog>;
 
+/**
+ * Root dialog wrapper for the model selector.
+ */
 export const ModelSelector = (props: ModelSelectorProps) => (
   <Dialog {...props} />
 );
 
 export type ModelSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
 
+/**
+ * Trigger element that opens the model selector dialog.
+ */
 export const ModelSelectorTrigger = (props: ModelSelectorTriggerProps) => (
   <DialogTrigger {...props} />
 );
@@ -35,6 +45,9 @@ export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
   title?: ReactNode;
 };
 
+/**
+ * Dialog content with embedded command interface for model selection.
+ */
 export const ModelSelectorContent = ({
   className,
   children,
@@ -57,6 +70,9 @@ export const ModelSelectorContent = ({
 
 export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>;
 
+/**
+ * Alternative dialog using the command dialog pattern.
+ */
 export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => (
   <CommandDialog {...props} />
 );
