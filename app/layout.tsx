@@ -5,18 +5,112 @@
 
 import { Analytics } from "@vercel/analytics/next";
 import { type Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const googleSansText = localFont({
+  src: [
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Italic.ttf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-MediumItalic.ttf",
+      weight: "500",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-BoldItalic.ttf",
+      weight: "700",
+      style: "italic",
+    },
+  ],
+  variable: "--font-google-sans-text",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const googleSansCode = localFont({
+  src: [
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-Light.ttf",
+      weight: "300",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-LightItalic.ttf",
+      weight: "300",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-Regular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-Italic.ttf",
+      weight: "400",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-Medium.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-MediumItalic.ttf",
+      weight: "500",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-SemiBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-SemiBoldItalic.ttf",
+      weight: "600",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-Bold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-BoldItalic.ttf",
+      weight: "700",
+      style: "italic",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-ExtraBold.ttf",
+      weight: "800",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Code/GoogleSansCode-ExtraBoldItalic.ttf",
+      weight: "800",
+      style: "italic",
+    },
+  ],
+  variable: "--font-google-sans-code",
+  display: "swap",
 });
 
 /**
@@ -80,7 +174,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${googleSansText.variable} ${googleSansCode.variable} font-sans antialiased`}
       >
         {children}
         <Analytics />
