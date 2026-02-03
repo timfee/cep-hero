@@ -1,3 +1,7 @@
+/**
+ * Attachment components for displaying file uploads and source documents.
+ * Supports grid, inline, and list layouts with previews and hover cards.
+ */
 "use client";
 
 import type { FileUIPart, SourceDocumentUIPart } from "ai";
@@ -22,10 +26,6 @@ import {
 } from "@/components/ui/hover-card";
 import { cn } from "@/lib/utils";
 
-// ============================================================================
-// Types
-// ============================================================================
-
 export type AttachmentData =
   | (FileUIPart & { id: string })
   | (SourceDocumentUIPart & { id: string });
@@ -40,10 +40,9 @@ export type AttachmentMediaCategory =
 
 export type AttachmentVariant = "grid" | "inline" | "list";
 
-// ============================================================================
-// Utility Functions
-// ============================================================================
-
+/**
+ * Determines the media category based on attachment type and MIME type.
+ */
 export const getMediaCategory = (
   data: AttachmentData
 ): AttachmentMediaCategory => {
@@ -69,6 +68,9 @@ export const getMediaCategory = (
   return "unknown";
 };
 
+/**
+ * Returns a display label for the attachment based on filename or type.
+ */
 export const getAttachmentLabel = (data: AttachmentData): string => {
   if (data.type === "source-document") {
     return data.title || data.filename || "Source";
@@ -77,10 +79,6 @@ export const getAttachmentLabel = (data: AttachmentData): string => {
   const category = getMediaCategory(data);
   return data.filename || (category === "image" ? "Image" : "Attachment");
 };
-
-// ============================================================================
-// Contexts
-// ============================================================================
 
 interface AttachmentsContextValue {
   variant: AttachmentVariant;
@@ -97,13 +95,15 @@ interface AttachmentContextValue {
 
 const AttachmentContext = createContext<AttachmentContextValue | null>(null);
 
-// ============================================================================
-// Hooks
-// ============================================================================
-
+/**
+ * Hook to access attachments container context for variant information.
+ */
 export const useAttachmentsContext = () =>
   useContext(AttachmentsContext) ?? { variant: "grid" as const };
 
+/**
+ * Hook to access individual attachment context for data and remove handler.
+ */
 export const useAttachmentContext = () => {
   const ctx = useContext(AttachmentContext);
   if (!ctx) {
@@ -112,14 +112,13 @@ export const useAttachmentContext = () => {
   return ctx;
 };
 
-// ============================================================================
-// Attachments - Container
-// ============================================================================
-
 export type AttachmentsProps = HTMLAttributes<HTMLDivElement> & {
   variant?: AttachmentVariant;
 };
 
+/**
+ * Container component that provides variant context for child attachments.
+ */
 export const Attachments = ({
   variant = "grid",
   className,

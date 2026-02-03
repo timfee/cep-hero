@@ -1,3 +1,7 @@
+/**
+ * Unit tests for the buildEvidence function covering connector analysis and auth scope validation.
+ */
+
 import type { chromepolicy_v1 } from "googleapis";
 
 import { describe, expect, it } from "bun:test";

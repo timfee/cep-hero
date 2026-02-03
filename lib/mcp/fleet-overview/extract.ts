@@ -1,34 +1,59 @@
+/**
+ * Extracts deterministic fleet signals from raw API tool outputs.
+ */
+
 import { type FleetOverviewFacts } from "./types";
 
+/**
+ * Chrome event parameter shape.
+ */
 interface EventParameter {
   name?: string;
   value?: string;
 }
 
+/**
+ * Chrome event detail shape.
+ */
 interface EventDetail {
   type?: string;
   parameters?: EventParameter[];
 }
 
+/**
+ * Chrome event shape from audit logs.
+ */
 interface ChromeEvent {
   id?: { time?: string };
   events?: EventDetail[];
 }
 
-function parseEvents(raw: unknown[]): ChromeEvent[] {
+/**
+ * Parses raw event data into typed ChromeEvent objects.
+ */
+function parseEvents(raw: unknown[]) {
   return raw.filter(isChromeEvent);
 }
 
+/**
+ * Type guard for ChromeEvent objects.
+ */
 function isChromeEvent(value: unknown): value is ChromeEvent {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * Result shape from the Chrome events API.
+ */
 interface EventsResult {
   events?: unknown[];
   nextPageToken?: string | null;
   error?: string;
 }
 
+/**
+ * Summary of a window of Chrome events.
+ */
 interface EventsWindowSummary {
   events: EventsResult;
   totalCount: number;
@@ -37,11 +62,17 @@ interface EventsWindowSummary {
   windowEnd: Date;
 }
 
+/**
+ * Result shape from the DLP rules API.
+ */
 interface DlpResult {
   rules?: unknown[];
   error?: string;
 }
 
+/**
+ * Result shape from the connector config API.
+ */
 interface ConnectorResult {
   value?: unknown[];
   error?: string;
@@ -58,11 +89,14 @@ const ERROR_PATTERNS = [
   "VIOLATION",
 ];
 
+/**
+ * Extracts API errors from result objects.
+ */
 function extractErrors(
   eventsResult: EventsResult,
   dlpResult: DlpResult,
   connectorResult: ConnectorResult
-): string[] {
+) {
   const errors: string[] = [];
 
   if (typeof eventsResult.error === "string" && eventsResult.error.length > 0) {
@@ -81,10 +115,10 @@ function extractErrors(
   return errors;
 }
 
-function countBlockedAndErrorEvents(events: ChromeEvent[]): {
-  blockedCount: number;
-  errorCount: number;
-} {
+/**
+ * Counts blocked and error events in a list of Chrome events.
+ */
+function countBlockedAndErrorEvents(events: ChromeEvent[]) {
   let blockedCount = 0;
   let errorCount = 0;
 
@@ -101,10 +135,10 @@ function countBlockedAndErrorEvents(events: ChromeEvent[]): {
   return { blockedCount, errorCount };
 }
 
-function analyzeEvent(event: ChromeEvent): {
-  blocked: boolean;
-  hasError: boolean;
-} {
+/**
+ * Analyzes a single event for blocked status and error indicators.
+ */
+function analyzeEvent(event: ChromeEvent) {
   const primary = event.events?.[0];
   const resultValue = extractEventResult(primary);
   const blocked =
@@ -114,14 +148,20 @@ function analyzeEvent(event: ChromeEvent): {
   return { blocked, hasError };
 }
 
-function extractEventResult(primary: EventDetail | undefined): string | null {
+/**
+ * Extracts the EVENT_RESULT parameter value from an event.
+ */
+function extractEventResult(primary: EventDetail | undefined) {
   const resultParam = primary?.parameters?.find(
     (param: EventParameter) => param.name === "EVENT_RESULT"
   );
   return typeof resultParam?.value === "string" ? resultParam.value : null;
 }
 
-function isErrorEventType(type: string | undefined): boolean {
+/**
+ * Checks if an event type matches known error patterns.
+ */
+function isErrorEventType(type: string | undefined) {
   if (type === undefined) {
     return false;
   }
@@ -129,7 +169,10 @@ function isErrorEventType(type: string | undefined): boolean {
   return ERROR_PATTERNS.some((pattern) => upperType.includes(pattern));
 }
 
-function calculateWindowLabel(windowStart: Date, windowEnd: Date): string {
+/**
+ * Calculates a human-readable label for the event time window.
+ */
+function calculateWindowLabel(windowStart: Date, windowEnd: Date) {
   const windowDays = Math.max(
     1,
     Math.round((windowEnd.getTime() - windowStart.getTime()) / 86_400_000)
@@ -138,7 +181,7 @@ function calculateWindowLabel(windowStart: Date, windowEnd: Date): string {
 }
 
 /**
- * Extract deterministic fleet signals from tool outputs.
+ * Extracts deterministic fleet signals from tool outputs.
  */
 export function extractFleetOverviewFacts(
   eventsResult: EventsWindowSummary,

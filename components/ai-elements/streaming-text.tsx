@@ -1,3 +1,7 @@
+/**
+ * Components for displaying streaming text with animated cursors and thinking indicators.
+ * Handles text paragraph splitting and provides visual feedback during AI response generation.
+ */
 "use client";
 
 import { motion } from "motion/react";

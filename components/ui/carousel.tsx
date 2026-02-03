@@ -1,3 +1,8 @@
+/**
+ * Carousel components for displaying content in a horizontally or vertically
+ * scrollable slideshow format.
+ */
+
 "use client";
 
 import type { UseEmblaCarouselType } from "embla-carousel-react";
@@ -32,6 +37,9 @@ type CarouselContextProps = {
 
 const CarouselContext = React.createContext<CarouselContextProps | null>(null);
 
+/**
+ * Hook to access carousel context for custom carousel controls.
+ */
 function useCarousel() {
   const context = React.useContext(CarouselContext);
 
@@ -42,6 +50,9 @@ function useCarousel() {
   return context;
 }
 
+/**
+ * Root container for the carousel with navigation and state management.
+ */
 function Carousel({
   orientation = "horizontal",
   opts,
@@ -138,6 +149,9 @@ function Carousel({
   );
 }
 
+/**
+ * Container for carousel slides with overflow handling.
+ */
 function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
   const { carouselRef, orientation } = useCarousel();
 
@@ -159,6 +173,9 @@ function CarouselContent({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Individual slide within the carousel.
+ */
 function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
   const { orientation } = useCarousel();
 
@@ -177,6 +194,9 @@ function CarouselItem({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Button to navigate to the previous slide.
+ */
 function CarouselPrevious({
   className,
   variant = "outline",
@@ -207,6 +227,9 @@ function CarouselPrevious({
   );
 }
 
+/**
+ * Button to navigate to the next slide.
+ */
 function CarouselNext({
   className,
   variant = "outline",

@@ -1,8 +1,11 @@
 /**
- * Format a Cloud Identity setting type into a human-readable name.
- * Example: "settings/security.password" -> "Security: Password"
+ * Human-readable formatting utilities for Cloud Identity settings.
  */
-export function formatSettingType(settingType: string): string {
+
+/**
+ * Formats a Cloud Identity setting type into a human-readable name.
+ */
+export function formatSettingType(settingType: string) {
   if (!settingType) {
     return "";
   }
@@ -17,7 +20,10 @@ export function formatSettingType(settingType: string): string {
   return formatSettingParts(parts);
 }
 
-function formatSettingParts(parts: string[]): string {
+/**
+ * Joins category and setting parts into a formatted string.
+ */
+function formatSettingParts(parts: string[]) {
   const [category, ...settingParts] = parts;
   const capitalizedCategory = capitalizeFirst(category ?? "");
 
@@ -29,14 +35,17 @@ function formatSettingParts(parts: string[]): string {
   return `${capitalizedCategory}: ${settingName}`;
 }
 
-function capitalizeFirst(str: string): string {
+/**
+ * Capitalizes the first character of a string.
+ */
+function capitalizeFirst(str: string) {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
 /**
- * Format a Cloud Identity setting value into a readable summary.
+ * Formats a Cloud Identity setting value into a readable summary.
  */
-export function formatSettingValue(value: Record<string, unknown>): string {
+export function formatSettingValue(value: Record<string, unknown>) {
   const entries = Object.entries(value);
   if (entries.length === 0) {
     return "";
@@ -49,16 +58,25 @@ export function formatSettingValue(value: Record<string, unknown>): string {
   return `${entries.length} settings configured`;
 }
 
-function formatSmallSettingValue(entries: [string, unknown][]): string {
+/**
+ * Formats a small number of setting entries as a comma-separated list.
+ */
+function formatSmallSettingValue(entries: [string, unknown][]) {
   return entries.map(formatSettingEntry).join(", ");
 }
 
-function formatSettingEntry([key, value]: [string, unknown]): string {
+/**
+ * Formats a single key-value pair for display.
+ */
+function formatSettingEntry([key, value]: [string, unknown]) {
   const formattedValue = formatSingleValue(value);
   return `${key}: ${formattedValue}`;
 }
 
-function formatSingleValue(value: unknown): string {
+/**
+ * Converts a value to a display string, with boolean-specific formatting.
+ */
+function formatSingleValue(value: unknown) {
   if (typeof value === "boolean") {
     return value ? "enabled" : "disabled";
   }

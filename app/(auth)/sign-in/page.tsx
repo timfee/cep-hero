@@ -1,3 +1,8 @@
+/**
+ * Sign-in page for authenticating with Google Workspace.
+ * Displays the app branding, sign-in button, and required permissions.
+ */
+
 "use client";
 
 import { track } from "@vercel/analytics";
@@ -8,9 +13,15 @@ import { useCallback, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
 
+/**
+ * Sign-in page component with Google OAuth integration.
+ */
 export default function SignInPage() {
   const [isLoading, setLoading] = useState(false);
 
+  /**
+   * Initiate Google OAuth sign-in flow.
+   */
   const handleGoogleSignInClick = useCallback(async () => {
     setLoading(true);
     try {
@@ -29,7 +40,6 @@ export default function SignInPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
       <div className="w-full max-w-sm">
-        {/* Logo and Title */}
         <div className="mb-8 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
             <Image src="/icon.png" alt="CEP Hero" height="50" width="50" />
@@ -40,7 +50,6 @@ export default function SignInPage() {
           </p>
         </div>
 
-        {/* Sign In Card */}
         <div className="rounded-lg border border-border bg-card p-6">
           <div className="mb-6">
             <h2 className="text-base font-medium text-foreground">Sign in</h2>
@@ -50,7 +59,6 @@ export default function SignInPage() {
             </p>
           </div>
 
-          {/* Google Sign In Button */}
           <Button
             // oxlint-disable-next-line typescript/no-misused-promises
             onClick={handleGoogleSignInClick}
@@ -83,7 +91,6 @@ export default function SignInPage() {
             Continue with Google
           </Button>
 
-          {/* Required Scopes Info */}
           <div className="mt-6 space-y-3">
             <p className="text-xs font-medium text-muted-foreground">
               Required permissions:
@@ -101,7 +108,6 @@ export default function SignInPage() {
           </div>
         </div>
 
-        {/* Footer */}
         <p className="mt-6 text-center text-xs text-muted-foreground">
           Only Google Workspace admin accounts with appropriate permissions can
           sign in.

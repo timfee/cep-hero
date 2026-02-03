@@ -1,3 +1,7 @@
+/**
+ * Sandbox components for displaying code execution environments with tabs.
+ * Shows code input, output, and execution status in a collapsible container.
+ */
 "use client";
 
 import type { ToolUIPart } from "ai";
@@ -17,6 +21,9 @@ import { getStatusBadge } from "./tool";
 
 export type SandboxRootProps = ComponentProps<typeof Collapsible>;
 
+/**
+ * Root collapsible container for sandbox content.
+ */
 export const Sandbox = ({ className, ...props }: SandboxRootProps) => (
   <Collapsible
     className={cn(
@@ -34,6 +41,9 @@ export interface SandboxHeaderProps {
   className?: string;
 }
 
+/**
+ * Sandbox header with title, status badge, and collapse toggle.
+ */
 export const SandboxHeader = ({
   className,
   title,
@@ -58,6 +68,9 @@ export const SandboxHeader = ({
 
 export type SandboxContentProps = ComponentProps<typeof CollapsibleContent>;
 
+/**
+ * Animated collapsible content area for sandbox body.
+ */
 export const SandboxContent = ({
   className,
   ...props
@@ -73,6 +86,9 @@ export const SandboxContent = ({
 
 export type SandboxTabsProps = ComponentProps<typeof Tabs>;
 
+/**
+ * Tab container for switching between sandbox views.
+ */
 export const SandboxTabs = ({ className, ...props }: SandboxTabsProps) => (
   <Tabs className={cn("w-full gap-0", className)} {...props} />
 );

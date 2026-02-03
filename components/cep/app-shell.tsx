@@ -1,3 +1,8 @@
+/**
+ * Application shell providing the main two-panel layout with dashboard and chat.
+ * Wraps content in a ChatProvider for shared state management across panels.
+ */
+
 "use client";
 
 import { Suspense } from "react";

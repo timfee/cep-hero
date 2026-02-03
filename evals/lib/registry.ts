@@ -1,6 +1,5 @@
 /**
- * Eval registry loading and filtering.
- * Standalone module without test framework dependencies.
+ * Eval registry loading and filtering without test framework dependencies.
  */
 
 /* eslint-disable import/no-nodejs-modules */
@@ -12,17 +11,11 @@ export interface EvalRubric {
   criteria: string[];
 }
 
-/**
- * A single turn in a multi-turn conversation eval.
- */
 export interface ConversationTurn {
   role: "user";
   content: string;
 }
 
-/**
- * Assertions for a specific turn in a multi-turn conversation.
- */
 export interface TurnAssertion {
   turn: number;
   required_tool_calls?: string[];
@@ -37,15 +30,12 @@ export interface EvalCase {
   case_file: string;
   mode: string;
   tags: string[];
-  /** Multi-turn conversation script for hero workflows */
   conversation_script: ConversationTurn[];
-  /** Per-turn assertions for multi-turn evals */
   turn_assertions?: TurnAssertion[];
   expected_schema: string[];
   fixtures?: string[];
   overrides?: string[];
   required_evidence?: string[];
-  /** Tools that MUST be called for this eval to pass (e.g., ["getChromeEvents"]) */
   required_tool_calls?: string[];
   rubric?: EvalRubric;
   assertions: unknown[];
@@ -64,14 +54,23 @@ export interface FilterOptions {
   limit?: string;
 }
 
+/**
+ * Type guard for non-empty strings.
+ */
 function isNonEmptyString(value: string | undefined): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
+/**
+ * Type guard for plain objects.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * Type guard for valid eval registry structure.
+ */
 function isEvalRegistry(value: unknown): value is EvalRegistry {
   if (!isRecord(value)) {
     return false;
@@ -84,7 +83,7 @@ function isEvalRegistry(value: unknown): value is EvalRegistry {
  */
 export function loadEvalRegistry(
   registryPath: string = path.join(process.cwd(), "evals", "registry.json")
-): EvalRegistry {
+) {
   if (!existsSync(registryPath)) {
     throw new Error(`Registry not found: ${registryPath}`);
   }
@@ -96,7 +95,10 @@ export function loadEvalRegistry(
   return parsed;
 }
 
-function filterById(cases: EvalCase[], ids: string | undefined): EvalCase[] {
+/**
+ * Filter cases by comma-separated ID list.
+ */
+function filterById(cases: EvalCase[], ids: string | undefined) {
   if (!isNonEmptyString(ids)) {
     return cases;
   }
@@ -104,10 +106,10 @@ function filterById(cases: EvalCase[], ids: string | undefined): EvalCase[] {
   return cases.filter((c) => idSet.has(c.id));
 }
 
-function filterByCategory(
-  cases: EvalCase[],
-  categories: string | undefined
-): EvalCase[] {
+/**
+ * Filter cases by comma-separated category list.
+ */
+function filterByCategory(cases: EvalCase[], categories: string | undefined) {
   if (!isNonEmptyString(categories)) {
     return cases;
   }
@@ -117,7 +119,10 @@ function filterByCategory(
   return cases.filter((c) => categorySet.has(c.category.toLowerCase()));
 }
 
-function filterByTags(cases: EvalCase[], tags: string | undefined): EvalCase[] {
+/**
+ * Filter cases by comma-separated tag list.
+ */
+function filterByTags(cases: EvalCase[], tags: string | undefined) {
   if (!isNonEmptyString(tags)) {
     return cases;
   }
@@ -129,7 +134,10 @@ function filterByTags(cases: EvalCase[], tags: string | undefined): EvalCase[] {
   );
 }
 
-function applyLimit(cases: EvalCase[], limit: string | undefined): EvalCase[] {
+/**
+ * Limit the number of cases returned.
+ */
+function applyLimit(cases: EvalCase[], limit: string | undefined) {
   if (!isNonEmptyString(limit)) {
     return cases;
   }
@@ -140,10 +148,7 @@ function applyLimit(cases: EvalCase[], limit: string | undefined): EvalCase[] {
 /**
  * Filter eval cases based on provided options.
  */
-export function filterEvalCases(
-  cases: EvalCase[],
-  options: FilterOptions
-): EvalCase[] {
+export function filterEvalCases(cases: EvalCase[], options: FilterOptions) {
   let filtered = filterById(cases, options.ids);
   filtered = filterByCategory(filtered, options.categories);
   filtered = filterByTags(filtered, options.tags);
@@ -156,7 +161,7 @@ export function filterEvalCases(
 export function buildPromptMap(
   registry: EvalRegistry,
   rootDir: string = process.cwd()
-): Map<string, string> {
+) {
   const map = new Map<string, string>();
 
   for (const evalCase of registry.cases) {
@@ -177,14 +182,13 @@ export function buildPromptMap(
 
 /**
  * Extract the user prompt from a case markdown file.
- * Looks for content between "## Conversation" and the next heading or end.
  */
-function extractPromptFromMarkdown(content: string): string | undefined {
+function extractPromptFromMarkdown(content: string) {
   const conversationMatch = content.match(
     /##\s*Conversation\s*\n([\s\S]*?)(?=\n##|\n$|$)/i
   );
   if (!conversationMatch) {
-    return undefined;
+    return;
   }
 
   const section = conversationMatch[1].trim();
@@ -201,7 +205,7 @@ function extractPromptFromMarkdown(content: string): string | undefined {
 /**
  * Get unique categories from the registry.
  */
-export function getCategories(registry: EvalRegistry): string[] {
+export function getCategories(registry: EvalRegistry) {
   const categories = new Set<string>();
   for (const evalCase of registry.cases) {
     categories.add(evalCase.category);
@@ -212,7 +216,7 @@ export function getCategories(registry: EvalRegistry): string[] {
 /**
  * Get unique tags from the registry.
  */
-export function getTags(registry: EvalRegistry): string[] {
+export function getTags(registry: EvalRegistry) {
   const tags = new Set<string>();
   for (const evalCase of registry.cases) {
     for (const tag of evalCase.tags) {
@@ -225,9 +229,7 @@ export function getTags(registry: EvalRegistry): string[] {
 /**
  * Get cases grouped by category.
  */
-export function getCasesByCategory(
-  registry: EvalRegistry
-): Map<string, EvalCase[]> {
+export function getCasesByCategory(registry: EvalRegistry) {
   const byCategory = new Map<string, EvalCase[]>();
   for (const evalCase of registry.cases) {
     const existing = byCategory.get(evalCase.category) ?? [];

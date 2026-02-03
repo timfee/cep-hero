@@ -1,8 +1,15 @@
+/**
+ * Better Auth configuration for Google OAuth with Chrome Enterprise scopes.
+ */
+
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 
 import { getRequiredEnv } from "./utils";
 
+/**
+ * Configured Better Auth instance with Google OAuth provider and Chrome Enterprise scopes.
+ */
 export const auth = betterAuth({
   logger: {
     level: "debug",
@@ -35,7 +42,6 @@ export const auth = betterAuth({
   session: {
     cookieCache: {
       enabled: true,
-      // 12 hour cache duration
       maxAge: 12 * 60 * 60,
       strategy: "jwe",
       refreshCache: true,
@@ -43,7 +49,6 @@ export const auth = betterAuth({
   },
   account: {
     storeStateStrategy: "cookie",
-    // Stores account data after OAuth flow for database-less flows
     storeAccountCookie: true,
   },
 });

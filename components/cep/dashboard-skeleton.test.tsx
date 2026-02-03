@@ -1,3 +1,8 @@
+/**
+ * Tests for the DashboardSkeleton component.
+ * Verifies skeleton structure matches DashboardOverview layout expectations.
+ */
+
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "bun:test";
 
@@ -7,7 +12,6 @@ describe("DashboardSkeleton component", () => {
   it("renders without crashing", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    // The component should render a scrollable container
     const scrollable = container.querySelector(".h-full.overflow-y-auto");
     expect(scrollable).toBeInTheDocument();
   });
@@ -15,7 +19,6 @@ describe("DashboardSkeleton component", () => {
   it("renders header skeleton elements", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    // Check for header section
     const header = container.querySelector("header");
     expect(header).toBeInTheDocument();
   });
@@ -23,7 +26,6 @@ describe("DashboardSkeleton component", () => {
   it("renders section skeleton elements", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    // Check for section element
     const section = container.querySelector("section");
     expect(section).toBeInTheDocument();
   });
@@ -31,7 +33,6 @@ describe("DashboardSkeleton component", () => {
   it("renders three card skeleton placeholders", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    // Should have 3 card skeletons
     const cardSkeletons = container.querySelectorAll(".h-24.animate-pulse");
     expect(cardSkeletons.length).toBe(3);
   });
@@ -51,7 +52,6 @@ describe("DashboardSkeleton component", () => {
   it("uses animate-pulse class for loading animation", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    // Multiple elements should have the animate-pulse class
     const animatedElements = container.querySelectorAll(".animate-pulse");
     expect(animatedElements.length).toBeGreaterThan(0);
   });

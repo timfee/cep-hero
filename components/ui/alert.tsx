@@ -1,3 +1,7 @@
+/**
+ * Alert components for displaying important messages and notifications.
+ */
+
 import type { VariantProps } from "class-variance-authority";
 
 import { cva } from "class-variance-authority";
@@ -21,6 +25,9 @@ const alertVariants = cva(
   }
 );
 
+/**
+ * Container for alert messages with support for default and destructive variants.
+ */
 function Alert({
   className,
   variant,
@@ -36,6 +43,9 @@ function Alert({
   );
 }
 
+/**
+ * Title text for the alert message.
+ */
 function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -49,6 +59,9 @@ function AlertTitle({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Descriptive content for the alert message.
+ */
 function AlertDescription({
   className,
   ...props

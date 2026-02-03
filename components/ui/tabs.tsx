@@ -1,3 +1,7 @@
+/**
+ * Tab components for organizing content into switchable panels.
+ */
+
 "use client";
 
 import type { VariantProps } from "class-variance-authority";
@@ -8,6 +12,9 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Root container that manages which tab panel is active.
+ */
 function Tabs({
   className,
   orientation = "horizontal",
@@ -42,6 +49,9 @@ const tabsListVariants = cva(
   }
 );
 
+/**
+ * Container for tab trigger buttons with variant styling.
+ */
 function TabsList({
   className,
   variant = "default",
@@ -58,6 +68,9 @@ function TabsList({
   );
 }
 
+/**
+ * Button that activates a specific tab panel when clicked.
+ */
 function TabsTrigger({
   className,
   ...props
@@ -77,6 +90,9 @@ function TabsTrigger({
   );
 }
 
+/**
+ * Content panel that is displayed when its associated tab is active.
+ */
 function TabsContent({
   className,
   ...props

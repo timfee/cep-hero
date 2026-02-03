@@ -1,7 +1,14 @@
+/**
+ * Enrollment token resolution for fixture-based testing.
+ */
+
 import { type EnrollBrowserResult } from "./types";
 
 const DEFAULT_TOKEN = "fixture-enrollment-token-12345";
 
+/**
+ * Shape of enrollment token fixture data.
+ */
 interface EnrollmentTokenFixture {
   token?: string;
   expiresAt?: string | null;
@@ -43,6 +50,9 @@ export function resolveEnrollmentToken(
   };
 }
 
+/**
+ * Returns an error result for expired or revoked token status.
+ */
 function getStatusError(
   status: EnrollmentTokenFixture["status"]
 ): EnrollBrowserResult | null {

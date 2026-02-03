@@ -1,7 +1,6 @@
 /**
- * Eval assertions - standalone assertion helpers without test framework dependency.
- * These return results rather than throwing, allowing the eval runner to collect
- * and report on all assertions.
+ * Standalone assertion helpers for eval cases that return results rather than throwing.
+ * This allows the eval runner to collect and report on all assertions without test framework dependency.
  */
 
 export interface AssertionResult {
@@ -18,29 +17,24 @@ const schemaKeyMap: Record<string, string> = {
   reference: "reference",
 };
 
+/**
+ * Type guard for checking if a value is a plain object.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 /**
- * Normalize text for fuzzy matching.
- * - Lowercases
- * - Removes hyphens, underscores, and common punctuation
- * - Collapses whitespace
- * This allows "Wi-Fi" to match "wifi", "de-auth" to match "deauth", etc.
+ * Normalize text for fuzzy matching by lowercasing, removing punctuation, and collapsing whitespace.
+ * Allows "Wi-Fi" to match "wifi", "de-auth" to match "deauth", etc.
  */
-function normalizeForMatching(text: string): string {
-  return (
-    text
-      .toLowerCase()
-      // Remove hyphens and underscores
-      .replaceAll(/[-_]/g, "")
-      // Replace other punctuation with space
-      .replaceAll(/[^\w\s]/g, " ")
-      // Collapse whitespace
-      .replaceAll(/\s+/g, " ")
-      .trim()
-  );
+function normalizeForMatching(text: string) {
+  return text
+    .toLowerCase()
+    .replaceAll(/[-_]/g, "")
+    .replaceAll(/[^\w\s]/g, " ")
+    .replaceAll(/\s+/g, " ")
+    .trim();
 }
 
 /**
@@ -80,7 +74,10 @@ export function checkStructuredResponse({
   };
 }
 
-function hasExpectedSchema(metadata: unknown, expected: string[]): boolean {
+/**
+ * Check if metadata object has all expected schema keys.
+ */
+function hasExpectedSchema(metadata: unknown, expected: string[]) {
   if (!isRecord(metadata)) {
     return false;
   }
@@ -90,6 +87,9 @@ function hasExpectedSchema(metadata: unknown, expected: string[]): boolean {
   });
 }
 
+/**
+ * Check if text contains structural signals indicating a valid diagnostic response.
+ */
 function checkStructuredText(
   text: string,
   expected: string[]
@@ -117,7 +117,7 @@ function checkStructuredText(
 }
 
 /**
- * Check for required evidence markers in response.
+ * Check for required evidence markers in response using fuzzy matching.
  */
 export function checkRequiredEvidence({
   text,
@@ -132,7 +132,6 @@ export function checkRequiredEvidence({
     return { passed: true, message: "No required evidence specified" };
   }
 
-  // Normalize text for fuzzy matching (handles wifi/wi-fi, deauth/de-auth, etc.)
   const metadataText =
     metadata !== undefined && metadata !== null ? JSON.stringify(metadata) : "";
   const combined = normalizeForMatching(`${text}\n${metadataText}`);
@@ -167,8 +166,7 @@ export function scoreRubric({
   text: string;
   metadata: unknown;
   criteria: string[];
-}): { score: number; matched: string[]; missed: string[] } {
-  // Use normalized matching for consistency with evidence checks
+}) {
   const combined = normalizeForMatching(
     `${text}\n${
       metadata !== undefined && metadata !== null
@@ -192,7 +190,7 @@ export function scoreRubric({
 }
 
 /**
- * Check if required tools were called.
+ * Check if required tools were called during the eval.
  */
 export function checkRequiredToolCalls({
   toolCalls,

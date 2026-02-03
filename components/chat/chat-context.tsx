@@ -1,3 +1,8 @@
+/**
+ * Chat context provider for sharing chat state across components.
+ * Wraps the AI SDK's useChat hook with React context for app-wide access.
+ */
+
 "use client";
 
 import { useChat } from "@ai-sdk/react";
@@ -23,6 +28,9 @@ interface ChatContextValue {
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 
+/**
+ * Provider component that initializes chat state and makes it available to children.
+ */
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
   const { activeFixture, isFixtureMode } = useFixtureContext();
@@ -72,7 +80,10 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   return <ChatContext.Provider value={value}>{children}</ChatContext.Provider>;
 }
 
-export function useChatContext(): ChatContextValue {
+/**
+ * Hook to access chat context. Throws if used outside ChatProvider.
+ */
+export function useChatContext() {
   const ctx = useContext(ChatContext);
   if (!ctx) {
     throw new Error("ChatContext is missing");

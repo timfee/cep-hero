@@ -1,7 +1,11 @@
+/**
+ * Loader for merging base and override fixture data for eval testing.
+ */
+
 import { type FixtureData } from "./types";
 
 /**
- * Load and merge fixture data from base and override files.
+ * Loads and merges fixture data from base and override sources.
  */
 export function loadFixtureData(
   baseData: unknown,
@@ -44,10 +48,16 @@ export function loadFixtureData(
   };
 }
 
+/**
+ * Type guard for plain objects (not arrays or null).
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+/**
+ * Recursively merges two JSON values, with override taking precedence.
+ */
 function mergeJson(base: unknown, override: unknown): unknown {
   if (override === undefined) {
     return base;

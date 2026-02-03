@@ -1,3 +1,8 @@
+/**
+ * Tests for the global loading component.
+ * Verifies loading indicator structure and animations.
+ */
+
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "bun:test";
 

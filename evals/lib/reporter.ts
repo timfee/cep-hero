@@ -1,6 +1,5 @@
 /**
- * Eval report generation and output.
- * Handles writing reports to disk and formatting console output.
+ * Eval report generation and output for writing results to disk and formatting console output.
  */
 
 /* eslint-disable import/no-nodejs-modules */
@@ -26,7 +25,6 @@ export interface EvalReport {
   schemaResult: AssertionResult;
   evidenceResult: AssertionResult;
   toolCallsResult?: AssertionResult;
-  /** Actual tools that were called during the eval */
   toolCalls?: string[];
   rubricResult?: {
     score: number;
@@ -58,7 +56,7 @@ const DEFAULT_REPORTS_DIR = path.join(process.cwd(), "evals", "reports");
 /**
  * Generate a unique run ID based on timestamp.
  */
-export function createRunId(date: Date = new Date()): string {
+export function createRunId(date: Date = new Date()) {
   return date.toISOString().replaceAll(/[:.]/g, "-");
 }
 
@@ -68,7 +66,7 @@ export function createRunId(date: Date = new Date()): string {
 export async function writeEvalReport(
   report: EvalReport,
   reportsDir: string = DEFAULT_REPORTS_DIR
-): Promise<string> {
+) {
   await mkdir(reportsDir, { recursive: true });
   const fileName = `${report.caseId}-${report.runId}.json`;
   const outputPath = path.join(reportsDir, fileName);
@@ -82,7 +80,7 @@ export async function writeEvalReport(
 export async function writeSummaryReport(
   summary: EvalSummary,
   reportsDir: string = DEFAULT_REPORTS_DIR
-): Promise<string> {
+) {
   await mkdir(reportsDir, { recursive: true });
   const fileName = `summary-${summary.runId}.json`;
   const outputPath = path.join(reportsDir, fileName);
@@ -93,7 +91,7 @@ export async function writeSummaryReport(
 /**
  * Format a single case result for console output.
  */
-export function formatCaseResult(report: EvalReport): string {
+export function formatCaseResult(report: EvalReport) {
   let statusIcon = "ERR ";
   if (report.status === "pass") {
     statusIcon = "PASS";
@@ -104,12 +102,15 @@ export function formatCaseResult(report: EvalReport): string {
   return `[${statusIcon}] ${report.caseId} ${duration} - ${report.title}`;
 }
 
-function formatSummaryHeader(summary: EvalSummary): string[] {
+/**
+ * Format summary header lines.
+ */
+function formatSummaryHeader(summary: EvalSummary) {
   return [
     "",
-    "═".repeat(60),
+    "=".repeat(60),
     "EVAL RUN SUMMARY",
-    "═".repeat(60),
+    "=".repeat(60),
     "",
     `Run ID:    ${summary.runId}`,
     `Duration:  ${summary.durationMs}ms`,
@@ -121,7 +122,10 @@ function formatSummaryHeader(summary: EvalSummary): string[] {
   ];
 }
 
-function formatCategoryStats(summary: EvalSummary): string[] {
+/**
+ * Format category statistics.
+ */
+function formatCategoryStats(summary: EvalSummary) {
   if (Object.keys(summary.byCategory).length === 0) {
     return [];
   }
@@ -135,7 +139,10 @@ function formatCategoryStats(summary: EvalSummary): string[] {
   return lines;
 }
 
-function formatFailureList(summary: EvalSummary): string[] {
+/**
+ * Format failure list.
+ */
+function formatFailureList(summary: EvalSummary) {
   if (summary.failures.length === 0) {
     return [];
   }
@@ -150,12 +157,12 @@ function formatFailureList(summary: EvalSummary): string[] {
 /**
  * Format the summary for console output.
  */
-export function formatSummary(summary: EvalSummary): string {
+export function formatSummary(summary: EvalSummary) {
   const lines = [
     ...formatSummaryHeader(summary),
     ...formatCategoryStats(summary),
     ...formatFailureList(summary),
-    "═".repeat(60),
+    "=".repeat(60),
   ];
   return lines.join("\n");
 }
@@ -168,22 +175,31 @@ interface SummaryAccumulator {
   errors: number;
 }
 
+/**
+ * Create an empty summary accumulator.
+ */
 function createSummaryAccumulator(): SummaryAccumulator {
   return { byCategory: {}, failures: [], passed: 0, failed: 0, errors: 0 };
 }
 
+/**
+ * Process a passed report into the accumulator.
+ */
 function processPassedReport(
   accumulator: SummaryAccumulator,
   report: EvalReport
-): void {
+) {
   accumulator.passed += 1;
   accumulator.byCategory[report.category].passed += 1;
 }
 
+/**
+ * Process a failed report into the accumulator.
+ */
 function processFailedReport(
   accumulator: SummaryAccumulator,
   report: EvalReport
-): void {
+) {
   accumulator.failed += 1;
   accumulator.byCategory[report.category].failed += 1;
   accumulator.failures.push({
@@ -193,10 +209,13 @@ function processFailedReport(
   });
 }
 
+/**
+ * Process an error report into the accumulator.
+ */
 function processErrorReport(
   accumulator: SummaryAccumulator,
   report: EvalReport
-): void {
+) {
   accumulator.errors += 1;
   accumulator.failures.push({
     id: report.caseId,
@@ -205,10 +224,10 @@ function processErrorReport(
   });
 }
 
-function processReport(
-  accumulator: SummaryAccumulator,
-  report: EvalReport
-): void {
+/**
+ * Process a single report into the accumulator.
+ */
+function processReport(accumulator: SummaryAccumulator, report: EvalReport) {
   accumulator.byCategory[report.category] ??= {
     total: 0,
     passed: 0,

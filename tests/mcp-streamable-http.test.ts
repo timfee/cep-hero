@@ -1,3 +1,7 @@
+/**
+ * Tests for the MCP Streamable HTTP transport initialization and session handling.
+ */
+
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 import { describe, expect, it } from "bun:test";
 
@@ -12,6 +16,9 @@ type JsonRpcMessage = {
   error?: unknown;
 };
 
+/**
+ * Parse SSE event stream payload into JSON-RPC messages.
+ */
 function parseSseMessages(payload: string): JsonRpcMessage[] {
   const messages: JsonRpcMessage[] = [];
   const chunks = payload
@@ -41,6 +48,9 @@ function parseSseMessages(payload: string): JsonRpcMessage[] {
   return messages;
 }
 
+/**
+ * Type guard for JSON-RPC response messages.
+ */
 function isJsonRpcResponse(
   message: JsonRpcMessage
 ): message is JsonRpcMessage & { id: number | string | null } {

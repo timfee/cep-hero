@@ -1,7 +1,15 @@
+/**
+ * Multi-line text input component for longer form content.
+ */
+
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A styled multi-line text area input with support for focus,
+ * disabled, and validation error states.
+ */
 function Textarea({ className, ...props }: React.ComponentProps<"textarea">) {
   return (
     <textarea

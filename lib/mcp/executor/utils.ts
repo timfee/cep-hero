@@ -1,3 +1,7 @@
+/**
+ * Utility functions for org unit target resource resolution in Chrome Policy API calls.
+ */
+
 import {
   buildOrgUnitTargetResource as coreBuildOrgUnitTargetResource,
   normalizeResource,
@@ -5,17 +9,16 @@ import {
 } from "@/lib/mcp/org-units";
 
 /**
- * Build a target resource path for Chrome Policy API.
- * Delegates to the canonical implementation in org-units.ts.
+ * Builds a target resource path for Chrome Policy API.
  */
-export function buildOrgUnitTargetResource(orgUnitId: string): string {
+export function buildOrgUnitTargetResource(orgUnitId: string) {
   return coreBuildOrgUnitTargetResource(orgUnitId);
 }
 
 /**
- * Resolve org unit IDs to try for Chrome Policy API.
+ * Resolves candidate org unit IDs for Chrome Policy API calls.
  */
-export function resolveOrgUnitCandidates(units: OrgUnit[]): string[] {
+export function resolveOrgUnitCandidates(units: OrgUnit[]) {
   if (units.length === 0) {
     return [];
   }
@@ -29,11 +32,14 @@ export function resolveOrgUnitCandidates(units: OrgUnit[]): string[] {
   return candidates;
 }
 
+/**
+ * Adds the inferred root org unit as the first candidate.
+ */
 function addRootCandidate(
   units: OrgUnit[],
   candidates: string[],
   seen: Set<string>
-): void {
+) {
   const [firstUnit] = units;
   const rootId = normalizeResource(
     firstUnit?.parentOrgUnitId ?? firstUnit?.orgUnitId ?? ""
@@ -44,11 +50,14 @@ function addRootCandidate(
   }
 }
 
+/**
+ * Adds first few child org units as fallback candidates.
+ */
 function addChildCandidates(
   units: OrgUnit[],
   candidates: string[],
   seen: Set<string>
-): void {
+) {
   for (const unit of units.slice(0, 3)) {
     const childId = normalizeResource(unit.orgUnitId ?? "");
     if (childId !== "" && !seen.has(childId)) {

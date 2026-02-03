@@ -1,5 +1,9 @@
+/**
+ * Integration tests for Chrome Policy API targetResource behavior with different org unit formats.
+ */
+
 import { loadEnvConfig } from "@next/env";
-import { describe, expect, it, beforeAll } from "bun:test";
+import { beforeAll, describe, expect, it } from "bun:test";
 
 import {
   listOrgUnits,
@@ -19,14 +23,20 @@ type OrgUnit = {
   parentOrgUnitId?: string | null;
 };
 
-function normalizeOrgUnitId(orgUnitId?: string | null): string | null {
+/**
+ * Remove the "id:" prefix from org unit IDs if present.
+ */
+function normalizeOrgUnitId(orgUnitId?: string | null) {
   if (!orgUnitId) {
     return null;
   }
   return orgUnitId.replace(/^id:/, "");
 }
 
-function buildTargetResources(orgUnits: OrgUnit[]): string[] {
+/**
+ * Build target resource strings from org units for API testing.
+ */
+function buildTargetResources(orgUnits: OrgUnit[]) {
   const [firstOu] = orgUnits;
   const rootOu = orgUnits.find((ou) => ou.orgUnitPath === "/");
   const firstId = normalizeOrgUnitId(firstOu?.orgUnitId);
@@ -38,6 +48,9 @@ function buildTargetResources(orgUnits: OrgUnit[]): string[] {
   return Array.from(new Set(resources));
 }
 
+/**
+ * Summarize resolved policy results for logging.
+ */
 function summarizeResolvedPolicies(
   results: Array<{
     targetResource?: string | null;
@@ -56,7 +69,10 @@ function summarizeResolvedPolicies(
   });
 }
 
-async function requireParentOrgUnitId(): Promise<string> {
+/**
+ * Get the parent org unit ID from the first org unit, throwing if not found.
+ */
+async function requireParentOrgUnitId() {
   const orgUnits = await listOrgUnits();
   const [firstOu] = orgUnits;
   const parentId = normalizeOrgUnitId(firstOu?.parentOrgUnitId);

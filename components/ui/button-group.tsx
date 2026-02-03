@@ -1,3 +1,7 @@
+/**
+ * Button group components for organizing related buttons together.
+ */
+
 import type { VariantProps } from "class-variance-authority";
 
 import { Slot } from "@radix-ui/react-slot";
@@ -23,6 +27,9 @@ const buttonGroupVariants = cva(
   }
 );
 
+/**
+ * Container for grouping related buttons with connected styling.
+ */
 function ButtonGroup({
   className,
   orientation,
@@ -39,6 +46,9 @@ function ButtonGroup({
   );
 }
 
+/**
+ * Text element styled to match buttons within the group.
+ */
 function ButtonGroupText({
   className,
   asChild = false,
@@ -59,6 +69,9 @@ function ButtonGroupText({
   );
 }
 
+/**
+ * Visual divider between buttons in the group.
+ */
 function ButtonGroupSeparator({
   className,
   orientation = "vertical",

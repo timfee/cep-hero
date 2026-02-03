@@ -1,3 +1,7 @@
+/**
+ * Terminal output component for displaying command-line style content.
+ * Supports ANSI color codes, streaming output, auto-scroll, and copy functionality.
+ */
 "use client";
 
 import type { ComponentProps, HTMLAttributes } from "react";
@@ -31,6 +35,9 @@ export type TerminalProps = HTMLAttributes<HTMLDivElement> & {
   onClear?: () => void;
 };
 
+/**
+ * Root terminal container that provides context and renders a dark-themed terminal UI.
+ */
 export const Terminal = ({
   output,
   isStreaming = false,
@@ -71,6 +78,9 @@ export const Terminal = ({
 
 export type TerminalHeaderProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Terminal header with title, status indicator, and action buttons.
+ */
 export const TerminalHeader = ({
   className,
   children,
@@ -89,6 +99,9 @@ export const TerminalHeader = ({
 
 export type TerminalTitleProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Terminal title display with icon.
+ */
 export const TerminalTitle = ({
   className,
   children,
@@ -105,6 +118,9 @@ export const TerminalTitle = ({
 
 export type TerminalStatusProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Streaming status indicator that shows a shimmer animation when active.
+ */
 export const TerminalStatus = ({
   className,
   children,
@@ -128,6 +144,9 @@ export const TerminalStatus = ({
 
 export type TerminalActionsProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Container for terminal action buttons like copy and clear.
+ */
 export const TerminalActions = ({
   className,
   children,
@@ -144,6 +163,9 @@ export type TerminalCopyButtonProps = ComponentProps<typeof Button> & {
   timeout?: number;
 };
 
+/**
+ * Button that copies terminal output to clipboard with success feedback.
+ */
 export const TerminalCopyButton = ({
   onCopy,
   onError,
@@ -191,6 +213,9 @@ export const TerminalCopyButton = ({
 
 export type TerminalClearButtonProps = ComponentProps<typeof Button>;
 
+/**
+ * Button that clears terminal output when onClear is provided.
+ */
 export const TerminalClearButton = ({
   children,
   className,
@@ -220,6 +245,9 @@ export const TerminalClearButton = ({
 
 export type TerminalContentProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Scrollable content area that renders ANSI-colored output with auto-scroll.
+ */
 export const TerminalContent = ({
   className,
   children,

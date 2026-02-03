@@ -1,3 +1,7 @@
+/**
+ * Core type definitions for MCP tool executor results and interfaces.
+ */
+
 import { type z } from "zod";
 
 import {
@@ -11,6 +15,9 @@ import {
   type ListDLPRulesSchema,
 } from "./registry";
 
+/**
+ * Result from fetching Chrome audit events.
+ */
 export type ChromeEventsResult =
   | {
       events: {
@@ -37,6 +44,9 @@ export type ChromeEventsResult =
     }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
+/**
+ * Result from listing DLP rules.
+ */
 export type DLPRulesResult =
   | {
       rules: {
@@ -53,6 +63,9 @@ export type DLPRulesResult =
     }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
+/**
+ * Result from listing organizational units.
+ */
 export type OrgUnitsResult =
   | {
       orgUnits: {
@@ -65,10 +78,16 @@ export type OrgUnitsResult =
     }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
+/**
+ * Result from browser enrollment token generation.
+ */
 export type EnrollBrowserResult =
   | { enrollmentToken: string; expiresAt: string | null }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
+/**
+ * Result from fetching Chrome connector configuration.
+ */
 export type ConnectorConfigResult =
   | {
       status: string;
@@ -93,6 +112,9 @@ export type ConnectorConfigResult =
       attemptedTargets?: string[];
     };
 
+/**
+ * Result from debug authentication check.
+ */
 export type DebugAuthResult =
   | {
       scopes: string[];
@@ -102,6 +124,9 @@ export type DebugAuthResult =
     }
   | { error: string };
 
+/**
+ * Result from drafting a policy change proposal.
+ */
 export interface DraftPolicyChangeResult {
   _type: "ui.confirmation";
   proposalId?: string;
@@ -119,6 +144,9 @@ export interface DraftPolicyChangeResult {
   };
 }
 
+/**
+ * Result from applying a policy change.
+ */
 export interface ApplyPolicyChangeResult {
   _type: "ui.success" | "ui.error";
   message: string;
@@ -129,6 +157,9 @@ export interface ApplyPolicyChangeResult {
   suggestion?: string;
 }
 
+/**
+ * Result from creating a DLP rule.
+ */
 export interface CreateDLPRuleResult {
   _type: "ui.success" | "ui.manual_steps";
   message: string;
@@ -142,6 +173,10 @@ export interface CreateDLPRuleResult {
   steps?: string[];
 }
 
+/**
+ * Contract for CEP tool execution. Implementations include CepToolExecutor
+ * for production API calls and FixtureToolExecutor for deterministic testing.
+ */
 export interface IToolExecutor {
   getChromeEvents(
     args: z.infer<typeof GetChromeEventsSchema>
@@ -185,6 +220,9 @@ export interface IToolExecutor {
   >;
 }
 
+/**
+ * Shape of fixture data used by FixtureToolExecutor for eval testing.
+ */
 export interface FixtureData {
   orgUnits?: {
     orgUnitId?: string | null;

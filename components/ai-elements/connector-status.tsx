@@ -1,3 +1,7 @@
+/**
+ * Connector status component for displaying connector policy analysis results.
+ * Shows health status and highlights mis-scoped policies.
+ */
 "use client";
 
 import { AlertCircle, CheckCircle } from "lucide-react";
@@ -12,6 +16,9 @@ export interface ConnectorStatusProps {
   className?: string;
 }
 
+/**
+ * Displays connector policy health with icon, message, and optional sample target.
+ */
 export const ConnectorStatus = memo(function ConnectorStatus({
   analysis,
   className,

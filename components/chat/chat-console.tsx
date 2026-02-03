@@ -1,3 +1,8 @@
+/**
+ * Main chat console component providing the conversational interface.
+ * Handles message rendering, tool output visualization, and user input.
+ */
+
 "use client";
 
 import { track } from "@vercel/analytics";
@@ -96,6 +101,9 @@ const FALLBACK_ACTIONS: ActionItem[] = [
   },
 ];
 
+/**
+ * Fetch JSON data from a URL, returning null on error.
+ */
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -122,7 +130,7 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
 /**
  * Generate a dynamic welcome message based on fleet state.
  */
-function generateWelcomeMessage(data: OverviewData | null): string {
+function generateWelcomeMessage(data: OverviewData | null) {
   if (!data) {
     return `Hey there! I'm your Chrome Enterprise Premium assistant.
 
@@ -162,6 +170,9 @@ function mapActionsForSuggestion(actions: string[], key: string): ActionItem[] {
   });
 }
 
+/**
+ * Interactive chat console with message history, tool outputs, and action buttons.
+ */
 export function ChatConsole() {
   const { messages, sendMessage, status, input, setInput, stop, regenerate } =
     useChatContext();
@@ -179,11 +190,9 @@ export function ChatConsole() {
 
   const isStreaming = status === "submitted" || status === "streaming";
 
-  // Check if we're waiting for the first response (no assistant message yet)
   const isWaitingForResponse = useMemo(() => {
     if (!isStreaming) return false;
     const lastMessage = messages.at(-1);
-    // Only show loading if user just sent a message and there's no assistant response yet
     return !lastMessage || lastMessage.role === "user";
   }, [isStreaming, messages]);
 
@@ -194,6 +203,9 @@ export function ChatConsole() {
     [overviewData]
   );
 
+  /**
+   * Build a map of org unit IDs to display paths from tool outputs.
+   */
   const orgUnitDisplayMap = useMemo(() => {
     const map = new Map<string, string>();
 
@@ -236,6 +248,9 @@ export function ChatConsole() {
     return null;
   }, [orgUnitDisplayMap]);
 
+  /**
+   * Replace org unit IDs in text with human-readable paths.
+   */
   const sanitizeOrgUnitsInText = useCallback(
     (text: string) =>
       text.replace(/orgunits\/[a-z0-9-]+/gi, (match) => {
@@ -318,6 +333,9 @@ export function ChatConsole() {
     [fallbackActions]
   );
 
+  /**
+   * Handle user message submission.
+   */
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
       const trimmed = message.text?.trim();
@@ -330,6 +348,9 @@ export function ChatConsole() {
     [sendMessage]
   );
 
+  /**
+   * Handle action button clicks by sending the command as a message.
+   */
   const handleAction = useCallback(
     (command: string) => {
       void sendMessage({ text: command });
@@ -339,10 +360,8 @@ export function ChatConsole() {
 
   return (
     <div className="flex h-full flex-col rounded-lg border border-border bg-card">
-      {/* Conversation with auto-scroll */}
       <Conversation className="flex-1">
         <ConversationContent className="p-4 lg:p-6">
-          {/* Empty state styled as a contextual system message */}
           {messages.length === 0 && !isStreaming && (
             <div className="space-y-4">
               <Message from="assistant" className="bg-muted p-4 lg:p-6">
@@ -363,7 +382,6 @@ export function ChatConsole() {
             </div>
           )}
 
-          {/* Messages */}
           {messages.map((message, index) => {
             const isUser = message.role === "user";
             const isLast = index === messages.length - 1;
@@ -494,7 +512,6 @@ export function ChatConsole() {
                       );
                     }
 
-                    // Policy change confirmation UI
                     if (
                       toolName === "draftPolicyChange" &&
                       toolPart.state === "output-available"
@@ -519,7 +536,6 @@ export function ChatConsole() {
                       }
                     }
 
-                    // Default -> Collapsible Tool View
                     const headerProps =
                       toolPart.type === "dynamic-tool"
                         ? {
@@ -557,7 +573,6 @@ export function ChatConsole() {
                   return null;
                 })}
 
-                {/* Action buttons at end of assistant messages */}
                 {!isUser && isLast && actionsToRender.length > 0 && (
                   <div className="pl-4 lg:pl-6">
                     <ActionButtons
@@ -572,7 +587,6 @@ export function ChatConsole() {
             );
           })}
 
-          {/* Small loading indicator while waiting for first response */}
           {isWaitingForResponse && (
             <div className="pl-4 lg:pl-6">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -594,7 +608,6 @@ export function ChatConsole() {
         <ConversationScrollButton />
       </Conversation>
 
-      {/* Input using PromptInput subcomponents */}
       <div className="border-t p-4 lg:p-6">
         <PromptInput onSubmit={handleSubmit} className="relative">
           <PromptInputBody>
@@ -606,7 +619,7 @@ export function ChatConsole() {
             />
           </PromptInputBody>
           <PromptInputFooter>
-            <div /> {/* Spacer */}
+            <div />
             <PromptInputSubmit status={status} onStop={stop} />
           </PromptInputFooter>
         </PromptInput>

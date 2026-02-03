@@ -1,3 +1,7 @@
+/**
+ * Test client for making chat API requests with retry and timeout handling.
+ */
+
 /* eslint-disable jest/require-hook */
 import { expect } from "bun:test";
 import { z } from "zod";
@@ -45,6 +49,9 @@ const StreamChunkSchema = z.object({
   toolName: z.string().optional(),
 });
 
+/**
+ * Generate a synthetic response for test mode.
+ */
 function syntheticResponse(): ChatResponse {
   return {
     text: "diagnosis: synthetic\nevidence: fixture\nhypotheses: none\nnext steps: review logs",
@@ -57,6 +64,9 @@ function syntheticResponse(): ChatResponse {
   };
 }
 
+/**
+ * Build headers for the chat API request.
+ */
 function buildFetchHeaders(useFixtureMode: boolean): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
@@ -68,6 +78,9 @@ function buildFetchHeaders(useFixtureMode: boolean): Record<string, string> {
   return headers;
 }
 
+/**
+ * Build the request body for the chat API.
+ */
 function buildFetchBody(
   messages: ChatMessage[],
   useFixtureMode: boolean,
@@ -80,6 +93,9 @@ function buildFetchBody(
   return body;
 }
 
+/**
+ * Handle error responses, returning synthetic response if allowed.
+ */
 function handleErrorResponse(errorMessage: string): ChatResponse {
   if (ALLOW_FAKE_ON_ERROR) {
     return syntheticResponse();
@@ -87,10 +103,13 @@ function handleErrorResponse(errorMessage: string): ChatResponse {
   return { text: `error: ${errorMessage}` };
 }
 
+/**
+ * Build response text from parsed diagnosis and next steps.
+ */
 function buildTextFromParsedData(
   diagnosis: string | undefined,
   nextSteps: string[]
-): string {
+) {
   const textLines: string[] = [];
   if (typeof diagnosis === "string" && diagnosis.length > 0) {
     textLines.push(diagnosis);
@@ -101,6 +120,9 @@ function buildTextFromParsedData(
   return textLines.join("\n");
 }
 
+/**
+ * Attempt to parse response body as JSON.
+ */
 function parseJsonResponse(bodyText: string): ChatResponse | null {
   const data: unknown = JSON.parse(bodyText);
   const parsed = ChatResponseSchema.safeParse(data);
@@ -118,6 +140,9 @@ function parseJsonResponse(bodyText: string): ChatResponse | null {
   return { text, metadata: data };
 }
 
+/**
+ * Parse a single SSE stream chunk.
+ */
 function parseStreamChunk(
   chunk: string
 ): z.infer<typeof StreamChunkSchema> | null {
@@ -130,6 +155,9 @@ function parseStreamChunk(
   }
 }
 
+/**
+ * Extract and parse all SSE chunks from response body.
+ */
 function extractStreamChunks(
   bodyText: string
 ): z.infer<typeof StreamChunkSchema>[] {
@@ -144,6 +172,9 @@ function extractStreamChunks(
     );
 }
 
+/**
+ * Parse SSE streaming response into chat response.
+ */
 function parseStreamingResponse(bodyText: string): ChatResponse {
   const chunks = extractStreamChunks(bodyText);
 
@@ -165,6 +196,9 @@ function parseStreamingResponse(bodyText: string): ChatResponse {
   };
 }
 
+/**
+ * Process response body, trying JSON first then falling back to streaming.
+ */
 function processResponseBody(bodyText: string): ChatResponse {
   if (ALLOW_FAKE_ON_ERROR && bodyText.trim().length < 10) {
     return syntheticResponse();
@@ -183,11 +217,14 @@ function processResponseBody(bodyText: string): ChatResponse {
   }
 }
 
+/**
+ * Execute the chat API request with retry support.
+ */
 async function executeRequest(
   messages: ChatMessage[],
   options: CallChatMessagesOptions | undefined,
   controller: AbortController
-): Promise<Response> {
+) {
   const useFixtureMode =
     USE_EVAL_FIXTURE_MODE && options?.fixtures !== undefined;
   const headers = buildFetchHeaders(useFixtureMode);
@@ -208,6 +245,9 @@ async function executeRequest(
   return result;
 }
 
+/**
+ * Create a timeout that aborts the request after CHAT_TIMEOUT_MS.
+ */
 function createTimeoutId(
   controller: AbortController
 ): NodeJS.Timeout | undefined {
@@ -219,6 +259,9 @@ function createTimeoutId(
   }, CHAT_TIMEOUT_MS);
 }
 
+/**
+ * Execute request and process the response body.
+ */
 async function executeAndProcessRequest(
   messages: ChatMessage[],
   options: CallChatMessagesOptions | undefined,
@@ -230,6 +273,9 @@ async function executeAndProcessRequest(
   return processResponseBody(bodyText);
 }
 
+/**
+ * Handle chat errors, returning synthetic response if allowed.
+ */
 function handleChatError(error: unknown): ChatResponse {
   if (ALLOW_FAKE_ON_ERROR) {
     return syntheticResponse();
@@ -237,7 +283,10 @@ function handleChatError(error: unknown): ChatResponse {
   throw error;
 }
 
-function clearTimeoutIfSet(timeoutId: NodeJS.Timeout | undefined): void {
+/**
+ * Clear timeout if it was set.
+ */
+function clearTimeoutIfSet(timeoutId: NodeJS.Timeout | undefined) {
   if (timeoutId !== undefined) {
     clearTimeout(timeoutId);
   }
@@ -282,7 +331,10 @@ export function callChat(
   );
 }
 
-async function ensureChatReady(url: string): Promise<void> {
+/**
+ * Ensure the chat server is ready before making requests.
+ */
+async function ensureChatReady(url: string) {
   if (chatReady || !url.includes("localhost")) {
     return;
   }
@@ -300,11 +352,14 @@ async function ensureChatReady(url: string): Promise<void> {
   }
 }
 
+/**
+ * Poll the server until it responds or max attempts reached.
+ */
 async function waitForChatReady(
   url: string,
   attempts: number,
   delayMs: number
-): Promise<boolean> {
+) {
   for (let attempt = 0; attempt < attempts; attempt += 1) {
     if (await isServerUp(url)) {
       return true;
@@ -314,7 +369,10 @@ async function waitForChatReady(
   return false;
 }
 
-async function isServerUp(url: string): Promise<boolean> {
+/**
+ * Check if the server is responding.
+ */
+async function isServerUp(url: string) {
   try {
     const res = await fetch(url, { method: "HEAD" });
     return res.ok || res.status >= 400;
@@ -335,18 +393,21 @@ const DEFAULT_RETRY_OPTIONS: RetryOptions = {
   maxDelayMs: 5000,
 };
 
+/**
+ * Determine if we should return the response or retry.
+ */
 function shouldReturnResponse(
   status: number,
   attempt: number,
   maxRetries: number
-): boolean {
+) {
   return !isRetryableStatus(status) || attempt >= maxRetries;
 }
 
-async function waitBeforeRetry(
-  delay: number,
-  maxDelayMs: number
-): Promise<number> {
+/**
+ * Wait with exponential backoff and jitter before retrying.
+ */
+async function waitBeforeRetry(delay: number, maxDelayMs: number) {
   const jitterMs = Math.floor(Math.random() * 200);
   await Bun.sleep(delay + jitterMs);
   return Math.min(maxDelayMs, Math.ceil(delay * 1.8));
@@ -357,6 +418,9 @@ interface RetryState {
   delay: number;
 }
 
+/**
+ * Attempt a single fetch, returning response or null to retry.
+ */
 async function attemptFetch(
   action: () => Promise<Response>,
   state: RetryState,
@@ -376,6 +440,9 @@ async function attemptFetch(
   }
 }
 
+/**
+ * Fetch with automatic retries on transient failures.
+ */
 async function fetchWithRetry(
   action: () => Promise<Response>,
   options: RetryOptions = DEFAULT_RETRY_OPTIONS
@@ -392,6 +459,9 @@ async function fetchWithRetry(
   }
 }
 
-function isRetryableStatus(status: number): boolean {
+/**
+ * Check if HTTP status code indicates a transient error worth retrying.
+ */
+function isRetryableStatus(status: number) {
   return status === 429 || status === 502 || status === 503 || status === 504;
 }

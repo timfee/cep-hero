@@ -1,22 +1,20 @@
+/**
+ * Dashboard panel components for creating consistent admin panel layouts.
+ */
+
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
 interface DashboardPanelProps extends React.HTMLAttributes<HTMLDivElement> {
-  /**
-   * Optional title for the panel header
-   */
   title?: string;
-  /**
-   * Optional description for the panel header
-   */
   description?: string;
-  /**
-   * Whether to show the header section
-   */
   showHeader?: boolean;
 }
 
+/**
+ * Container panel for dashboard content with optional header section.
+ */
 function DashboardPanel({
   className,
   title,
@@ -53,6 +51,9 @@ function DashboardPanel({
 
 interface DashboardPanelHeaderProps extends React.HTMLAttributes<HTMLDivElement> {}
 
+/**
+ * Header section for the dashboard panel.
+ */
 function DashboardPanelHeader({
   className,
   ...props
@@ -68,6 +69,9 @@ function DashboardPanelHeader({
 
 interface DashboardPanelTitleProps extends React.HTMLAttributes<HTMLHeadingElement> {}
 
+/**
+ * Title text within the dashboard panel header.
+ */
 function DashboardPanelTitle({
   className,
   ...props
@@ -83,6 +87,9 @@ function DashboardPanelTitle({
 
 interface DashboardPanelDescriptionProps extends React.HTMLAttributes<HTMLParagraphElement> {}
 
+/**
+ * Description text within the dashboard panel header.
+ */
 function DashboardPanelDescription({
   className,
   ...props
@@ -98,6 +105,9 @@ function DashboardPanelDescription({
 
 interface DashboardPanelContentProps extends React.HTMLAttributes<HTMLDivElement> {}
 
+/**
+ * Main content area of the dashboard panel.
+ */
 function DashboardPanelContent({
   className,
   ...props
@@ -113,6 +123,9 @@ function DashboardPanelContent({
 
 interface DashboardPanelActionsProps extends React.HTMLAttributes<HTMLDivElement> {}
 
+/**
+ * Container for action buttons within the dashboard panel.
+ */
 function DashboardPanelActions({
   className,
   ...props

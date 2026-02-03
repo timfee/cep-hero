@@ -1,3 +1,7 @@
+/**
+ * Chrome Browser Cloud Management enrollment token generation.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { z } from "zod";
@@ -9,7 +13,9 @@ import { buildOrgUnitTargetResource } from "./utils";
 
 export type EnrollBrowserArgs = z.infer<typeof EnrollBrowserSchema>;
 
-/** Validates the nested structure of the Chrome Management API client. */
+/**
+ * Validates the nested structure of the Chrome Management API client.
+ */
 const EnrollmentClientSchema = z.object({
   policies: z.object({
     networks: z.object({
@@ -63,7 +69,7 @@ export async function enrollBrowser(
   auth: OAuth2Client,
   customerId: string,
   args: EnrollBrowserArgs
-): Promise<EnrollBrowserResult> {
+) {
   const service = googleApis.chromemanagement({ version: "v1", auth });
   const createFn = getEnrollmentCreateFn(service.customers);
 
@@ -81,7 +87,10 @@ export async function enrollBrowser(
   return result;
 }
 
-function getEnrollmentCreateFn(customers: unknown): EnrollmentCreateFn | null {
+/**
+ * Extracts the enrollment create function from the API client.
+ */
+function getEnrollmentCreateFn(customers: unknown) {
   if (!hasEnrollmentCreate(customers)) {
     return null;
   }
@@ -98,6 +107,9 @@ interface EnrollmentCapable {
   };
 }
 
+/**
+ * Type guard for checking enrollment API availability.
+ */
 function hasEnrollmentCreate(value: unknown): value is EnrollmentCapable {
   const result = EnrollmentClientSchema.safeParse(value);
   if (!result.success) {
@@ -106,11 +118,14 @@ function hasEnrollmentCreate(value: unknown): value is EnrollmentCapable {
   return typeof result.data.policies.networks.enrollments.create === "function";
 }
 
+/**
+ * Executes the enrollment API call and handles the response.
+ */
 async function executeEnrollment(
   createFn: EnrollmentCreateFn,
   customerId: string,
   targetResource: string
-): Promise<EnrollBrowserResult> {
+) {
   try {
     const res = await createFn({
       parent: `customers/${customerId}`,
@@ -138,7 +153,10 @@ async function executeEnrollment(
   }
 }
 
-function logEnrollmentError(error: unknown): void {
+/**
+ * Logs structured error details for debugging.
+ */
+function logEnrollmentError(error: unknown) {
   const { code, message, errors } = getErrorDetails(error);
   console.log(
     "[enroll-browser] error",
@@ -146,7 +164,10 @@ function logEnrollmentError(error: unknown): void {
   );
 }
 
-function resolveTargetResource(orgUnitId: string | undefined): string {
+/**
+ * Determines the target resource for enrollment, defaulting to customer.
+ */
+function resolveTargetResource(orgUnitId: string | undefined) {
   if (orgUnitId === undefined) {
     return DEFAULT_TARGET;
   }
