@@ -16,10 +16,56 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "CEP Hero",
-  description: "CEP Hero - Troubleshooting Assistant",
-};
+/**
+ * Generate metadata dynamically for the application.
+ * This enables better SEO and can be extended to include
+ * dynamic values based on environment or configuration.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const baseUrl =
+    process.env.NEXT_PUBLIC_BASE_URL ?? "https://cep-hero.vercel.app";
+
+  return {
+    title: {
+      default: "CEP Hero",
+      template: "%s | CEP Hero",
+    },
+    description:
+      "Chrome Enterprise Premium troubleshooting assistant. Diagnose, manage, and secure your browser fleet with AI-powered insights.",
+    applicationName: "CEP Hero",
+    keywords: [
+      "Chrome Enterprise",
+      "Chrome Enterprise Premium",
+      "Browser Management",
+      "Security",
+      "Troubleshooting",
+      "Google Workspace",
+    ],
+    authors: [{ name: "CEP Hero Team" }],
+    metadataBase: new URL(baseUrl),
+    openGraph: {
+      title: "CEP Hero",
+      description:
+        "Chrome Enterprise Premium troubleshooting assistant. Diagnose, manage, and secure your browser fleet.",
+      type: "website",
+      locale: "en_US",
+      siteName: "CEP Hero",
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: "CEP Hero",
+      description:
+        "Chrome Enterprise Premium troubleshooting assistant. Diagnose, manage, and secure your browser fleet.",
+    },
+    robots: {
+      index: true,
+      follow: true,
+    },
+    icons: {
+      icon: "/icon.png",
+    },
+  };
+}
 
 export default function RootLayout({
   children,
