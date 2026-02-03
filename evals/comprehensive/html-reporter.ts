@@ -481,7 +481,7 @@ function generateModeComparison(report: ComprehensiveReport): string {
           <td>${escapeHtml(mode)}</td>
           <td>
             <div class="progress-bar" style="width: 100px;">
-              <div class="progress-fill" style="width: ${passRate}%; background: ${stats.passRate >= 0.8 ? "#22c55e" : stats.passRate >= 0.6 ? "#eab308" : "#ef4444"};"></div>
+              <div class="progress-fill" style="width: ${passRate}%; background: ${stats.passRate >= 0.8 ? "#22c55e" : (stats.passRate >= 0.6 ? "#eab308" : "#ef4444")};"></div>
             </div>
           </td>
           <td>${passRate}%</td>

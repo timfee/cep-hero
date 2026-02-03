@@ -75,9 +75,12 @@ GOOGLE_GENERATIVE_AI_API_KEY=your_gemini_api_key
 UPSTASH_VECTOR_REST_URL=your_vector_url
 UPSTASH_VECTOR_REST_TOKEN=your_vector_token
 
-# Optional: Service account for test bypass
+# Optional: Service account for test bypass and self-enrollment
 GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 GOOGLE_TOKEN_EMAIL=admin@your-domain.com
+
+# Self-enrollment password for /api/gimme endpoint
+SELF_ENROLLMENT_PASSWORD=your_secret_enrollment_password
 ```
 
 ---
