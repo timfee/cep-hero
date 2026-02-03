@@ -5,18 +5,36 @@
 
 import { Analytics } from "@vercel/analytics/next";
 import { type Metadata } from "next";
-import { Inter, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
-  subsets: ["latin"],
+const googleSansText = localFont({
+  src: [
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Regular.woff2",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Medium.woff2",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../public/Google_Sans_Text/GoogleSansText-Bold.woff2",
+      weight: "700",
+      style: "normal",
+    },
+  ],
+  variable: "--font-google-sans-text",
+  display: "swap",
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+const googleSansCode = localFont({
+  src: "../public/Google_Sans_Code/GoogleSansCode-Regular.woff2",
+  variable: "--font-google-sans-code",
+  display: "swap",
 });
 
 /**
@@ -80,7 +98,7 @@ export default function RootLayout({
   return (
     <html lang="en" className="dark">
       <body
-        className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
+        className={`${googleSansText.variable} ${googleSansCode.variable} font-sans antialiased`}
       >
         {children}
         <Analytics />
