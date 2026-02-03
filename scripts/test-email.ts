@@ -3,12 +3,10 @@
  * Run with: bun run scripts/test-email.ts
  */
 
-import { OAuth2Client } from "google-auth-library";
+import { JWT } from "google-auth-library";
 import { google } from "googleapis";
 
-import { getServiceAccountAccessToken } from "../lib/google-service-account";
-
-const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
+const GMAIL_SCOPES = ["https://mail.google.com/"];
 
 function stripQuotes(value: string | undefined): string | undefined {
   if (value === undefined || value === "") {
@@ -42,17 +40,29 @@ async function sendTestEmail() {
     throw new Error("GOOGLE_TOKEN_EMAIL not configured");
   }
 
-  console.log("[test] Getting access token for:", senderEmail);
+  const json = stripQuotes(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  if (!json) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+  }
 
-  const accessToken = await getServiceAccountAccessToken(
-    GMAIL_SCOPES,
-    senderEmail
-  );
+  const creds = JSON.parse(json);
+  const privateKey = creds.private_key.includes("\\n")
+    ? creds.private_key.replaceAll("\\n", "\n")
+    : creds.private_key;
 
-  const auth = new OAuth2Client();
-  auth.setCredentials({ access_token: accessToken });
+  console.log("[test] Creating JWT client for:", senderEmail);
 
-  const gmail = google.gmail({ version: "v1", auth });
+  const jwtClient = new JWT({
+    email: creds.client_email,
+    key: privateKey,
+    scopes: GMAIL_SCOPES,
+    subject: senderEmail,
+  });
+
+  await jwtClient.authorize();
+  console.log("[test] JWT authorized");
+
+  const gmail = google.gmail({ version: "v1", auth: jwtClient });
 
   const rawMessage = buildEmailMessage(
     "feel@google.com",
@@ -64,7 +74,7 @@ async function sendTestEmail() {
   console.log("[test] Sending email to feel@google.com...");
 
   const result = await gmail.users.messages.send({
-    userId: "me",
+    userId: senderEmail,
     requestBody: { raw: rawMessage },
   });
 

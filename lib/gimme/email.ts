@@ -2,10 +2,8 @@
  * Email utilities for gimme self-enrollment notifications.
  */
 
-import { OAuth2Client } from "google-auth-library";
+import { JWT } from "google-auth-library";
 import { google } from "googleapis";
-
-import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
 import { GMAIL_SCOPES } from "./constants";
 import { stripQuotes } from "./validation";
@@ -162,7 +160,22 @@ function buildEmailMessage(
 }
 
 /**
- * Get authenticated Gmail client.
+ * Load service account credentials from environment.
+ */
+function loadServiceAccountCredentials() {
+  const json = stripQuotes(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+  if (!json) {
+    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
+  }
+  const creds = JSON.parse(json);
+  const privateKey = creds.private_key.includes(String.raw`\n`)
+    ? creds.private_key.replaceAll(String.raw`\n`, "\n")
+    : creds.private_key;
+  return { clientEmail: creds.client_email, privateKey };
+}
+
+/**
+ * Get authenticated Gmail client using JWT with domain-wide delegation.
  */
 async function getGmailClient() {
   const senderEmail = stripQuotes(process.env.GOOGLE_TOKEN_EMAIL);
@@ -170,14 +183,19 @@ async function getGmailClient() {
     throw new Error("GOOGLE_TOKEN_EMAIL not configured for sending emails");
   }
 
-  const accessToken = await getServiceAccountAccessToken(
-    GMAIL_SCOPES,
-    senderEmail
-  );
-  const auth = new OAuth2Client();
-  auth.setCredentials({ access_token: accessToken });
+  const { clientEmail, privateKey } = loadServiceAccountCredentials();
 
-  return { gmail: google.gmail({ version: "v1", auth }), senderEmail };
+  const jwtClient = new JWT({
+    email: clientEmail,
+    key: privateKey,
+    scopes: GMAIL_SCOPES,
+    subject: senderEmail,
+  });
+
+  await jwtClient.authorize();
+
+  const gmail = google.gmail({ version: "v1", auth: jwtClient });
+  return { gmail, senderEmail };
 }
 
 /**
@@ -207,7 +225,7 @@ export async function sendSuccessEmail(
   );
 
   await gmail.users.messages.send({
-    userId: "me",
+    userId: senderEmail,
     requestBody: { raw: rawMessage },
   });
 
@@ -239,7 +257,7 @@ export async function sendErrorEmail(
   );
 
   await gmail.users.messages.send({
-    userId: "me",
+    userId: senderEmail,
     requestBody: { raw: rawMessage },
   });
 
