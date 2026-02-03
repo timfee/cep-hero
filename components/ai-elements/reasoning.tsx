@@ -31,6 +31,9 @@ interface ReasoningContextValue {
 
 const ReasoningContext = createContext<ReasoningContextValue | null>(null);
 
+/**
+ * Hook to access reasoning state including streaming status and duration.
+ */
 export const useReasoning = () => {
   const context = useContext(ReasoningContext);
   if (!context) {
@@ -50,6 +53,9 @@ export type ReasoningProps = ComponentProps<typeof Collapsible> & {
 const AUTO_CLOSE_DELAY = 5000;
 const MS_IN_S = 1000;
 
+/**
+ * Root reasoning container that tracks duration and auto-collapses after streaming.
+ */
 export const Reasoning = memo(
   ({
     className,
@@ -126,6 +132,9 @@ export type ReasoningTriggerProps = ComponentProps<
   getThinkingMessage?: (isStreaming: boolean, duration?: number) => ReactNode;
 };
 
+/**
+ * Animated indicator shown while AI is actively reasoning.
+ */
 const ThinkingAnimation = () => (
   <span className="flex items-center gap-2 text-primary">
     <span className="relative flex h-2 w-2">
@@ -136,6 +145,9 @@ const ThinkingAnimation = () => (
   </span>
 );
 
+/**
+ * Returns the appropriate thinking message based on streaming state and duration.
+ */
 const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
   if (isStreaming || duration === 0) {
     return <ThinkingAnimation />;
@@ -146,6 +158,9 @@ const defaultGetThinkingMessage = (isStreaming: boolean, duration?: number) => {
   return <span>Reasoned for {duration}s</span>;
 };
 
+/**
+ * Clickable trigger that displays thinking status and toggles content visibility.
+ */
 export const ReasoningTrigger = memo(
   ({
     className,
