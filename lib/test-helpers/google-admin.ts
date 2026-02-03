@@ -86,11 +86,21 @@ function createGoogleApiClients(auth: OAuth2Client) {
 }
 
 /**
+ * Strip surrounding quotes from environment variable values.
+ */
+function stripQuotes(value: string | undefined) {
+  if (value === undefined || value === "") {
+    return;
+  }
+  return value.replaceAll(/^['"]|['"]$/g, "");
+}
+
+/**
  * Create and configure all Google Admin SDK clients.
  */
 export async function makeGoogleClients(): Promise<GoogleClients> {
-  const envCustomerId = process.env.GOOGLE_CUSTOMER_ID;
-  const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
+  const envCustomerId = stripQuotes(process.env.GOOGLE_CUSTOMER_ID);
+  const tokenEmail = stripQuotes(process.env.GOOGLE_TOKEN_EMAIL);
   const auth = await createAuthClient(tokenEmail);
   const { directory, policy, management } = createGoogleApiClients(auth);
 
