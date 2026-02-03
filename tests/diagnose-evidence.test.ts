@@ -114,6 +114,7 @@ describe("buildEvidence connector handling", () => {
       connectorResult: {
         error: "Could not determine policy target (root org unit).",
         suggestion: "Re-authenticate",
+        requiresReauth: false,
         policySchemas: [],
         targetResource: "orgunits/root",
         attemptedTargets: ["orgunits/root"],
