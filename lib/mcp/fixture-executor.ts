@@ -1,6 +1,11 @@
 import { type z } from "zod";
 
 import {
+  buildOrgUnitNameMap,
+  resolveOrgUnitDisplay,
+} from "@/lib/mcp/org-units";
+
+import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
   type DraftPolicyChangeSchema,
@@ -22,10 +27,6 @@ import {
   type IToolExecutor,
   type OrgUnitsResult,
 } from "./types";
-import {
-  buildOrgUnitNameMap,
-  resolveOrgUnitDisplay,
-} from "@/lib/mcp/org-units";
 
 /**
  * A tool executor that returns fixture data instead of calling real Google APIs.
@@ -79,7 +80,7 @@ export class FixtureToolExecutor implements IToolExecutor {
     )?.orgUnitId;
     const rules = fixtureRules.map((rule, idx) => {
       const orgUnitValue = rule.targetResource ?? rule.orgUnit ?? "";
-      return ({
+      return {
         id: rule.name?.split("/").pop() ?? `rule-${idx + 1}`,
         displayName: rule.displayName ?? `DLP Rule ${idx + 1}`,
         description: rule.description ?? "",
@@ -94,7 +95,7 @@ export class FixtureToolExecutor implements IToolExecutor {
         policyType: rule.action ?? "AUDIT",
         resourceName: rule.name ?? "",
         consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-      });
+      };
     });
 
     return { rules };
@@ -292,8 +293,7 @@ export class FixtureToolExecutor implements IToolExecutor {
         orgUnitNameMap,
         rootOrgUnitId,
         "/"
-      ) ??
-      args.targetOrgUnit;
+      ) ?? args.targetOrgUnit;
     return {
       _type: "ui.success",
       message: `DLP rule "${args.displayName}" created successfully`,
