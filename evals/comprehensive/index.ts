@@ -3,6 +3,7 @@
  * Comprehensive eval runner with beautiful human-readable output.
  */
 
+/* eslint-disable import/no-nodejs-modules, max-statements, jest/require-hook */
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
@@ -15,23 +16,43 @@ interface Summary {
   runId: string;
   passed: number;
   failed: number;
-  total: number;
+  totalCases: number;
   durationMs: number;
   byCategory: Record<string, { passed: number; failed: number; total: number }>;
   failures: { id: string; title: string; reason: string }[];
 }
 
-// Parse CLI args
-const args = process.argv.slice(2);
-const showHelp = args.includes("--help") || args.includes("-h");
-const withJudge = args.includes("--with-judge");
-const skipAnalysis = args.includes("--skip-analysis");
-const iterationsArg = args.find((_, i) => args[i - 1] === "--iterations");
-const iterations = iterationsArg ? Number.parseInt(iterationsArg, 10) : 1;
-const casesArg = args.find((_, i) => args[i - 1] === "--cases");
+interface CliOptions {
+  withJudge: boolean;
+  skipAnalysis: boolean;
+  iterations: number;
+  casesArg: string | undefined;
+}
 
-if (showHelp) {
-  console.log(`
+interface Totals {
+  passed: number;
+  failed: number;
+  total: number;
+  durationMs: number;
+}
+
+interface CategoryData {
+  passed: number;
+  failed: number;
+  total: number;
+}
+interface FailureData {
+  id: string;
+  title: string;
+  reason: string;
+}
+
+function parseCliArgs(): CliOptions | null {
+  const args = process.argv.slice(2);
+  const showHelp = args.includes("--help") || args.includes("-h");
+
+  if (showHelp) {
+    console.log(`
 Usage: bun evals/comprehensive/index.ts [options]
 
 Options:
@@ -41,18 +62,39 @@ Options:
   --cases IDS       Filter cases
   --help            Show help
 `);
-  process.exit(0);
+    return null;
+  }
+
+  const iterationsArg = args.find((_, i) => args[i - 1] === "--iterations");
+  const casesArg = args.find((_, i) => args[i - 1] === "--cases");
+
+  return {
+    withJudge: args.includes("--with-judge"),
+    skipAnalysis: args.includes("--skip-analysis"),
+    iterations: iterationsArg ? Number.parseInt(iterationsArg, 10) : 1,
+    casesArg,
+  };
 }
 
-// Run evals
-async function runEvals(): Promise<Summary | null> {
+async function findLatestSummary(): Promise<string | undefined> {
+  const files = await readdir(REPORTS_DIR);
+  return files
+    .filter((f) => f.startsWith("summary-"))
+    .toSorted()
+    .pop();
+}
+
+async function runEvals(options: CliOptions): Promise<Summary | null> {
   const env: Record<string, string> = {
     ...(process.env as Record<string, string>),
     EVAL_USE_BASE: "1",
     EVAL_SERIAL: "1",
-    EVAL_LLM_JUDGE: withJudge ? "1" : "0",
+    EVAL_LLM_JUDGE: options.withJudge ? "1" : "0",
   };
-  if (casesArg) {env.EVAL_IDS = casesArg;}
+
+  if (options.casesArg) {
+    env.EVAL_IDS = options.casesArg;
+  }
 
   const proc = Bun.spawn(["bun", "run", "evals"], {
     env,
@@ -62,127 +104,129 @@ async function runEvals(): Promise<Summary | null> {
 
   await proc.exited;
 
-  // Find latest summary
-  const files = await readdir(REPORTS_DIR);
-  const latest = files
-    .filter((f) => f.startsWith("summary-"))
-    .toSorted()
-    .pop();
-
-  if (!latest) {return null;}
+  const latest = await findLatestSummary();
+  if (!latest) {
+    return null;
+  }
 
   const content = await readFile(`${REPORTS_DIR}/${latest}`, "utf8");
   return JSON.parse(content) as Summary;
 }
 
-// Collect multiple runs
-const allSummaries: Summary[] = [];
-console.log("\n" + "═".repeat(60));
-console.log("  COMPREHENSIVE EVAL");
-console.log("═".repeat(60));
-console.log(`  Iterations: ${iterations}`);
-console.log(`  LLM Judge: ${withJudge ? "enabled" : "disabled"}`);
-console.log("═".repeat(60) + "\n");
-
-for (let i = 0; i < iterations; i++) {
-  if (iterations > 1) {console.log(`\n── Run ${i + 1}/${iterations} ──\n`);}
-  const summary = await runEvals();
-  if (summary) {allSummaries.push(summary);}
+function aggregateTotals(summaries: Summary[]): Totals {
+  return {
+    passed: summaries.reduce((s, r) => s + r.passed, 0),
+    failed: summaries.reduce((s, r) => s + r.failed, 0),
+    total: summaries.reduce((s, r) => s + r.totalCases, 0),
+    durationMs: summaries.reduce((s, r) => s + r.durationMs, 0),
+  };
 }
 
-if (allSummaries.length === 0) {
-  console.error("\n❌ No results collected\n");
-  process.exit(1);
-}
+function aggregateCategories(
+  summaries: Summary[]
+): Record<string, CategoryData> {
+  const categories: Record<string, CategoryData> = {};
 
-// Aggregate
-const totals = {
-  passed: allSummaries.reduce((s, r) => s + r.passed, 0),
-  failed: allSummaries.reduce((s, r) => s + r.failed, 0),
-  total: allSummaries.reduce((s, r) => s + r.total, 0),
-  durationMs: allSummaries.reduce((s, r) => s + r.durationMs, 0),
-};
-const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
-
-// Aggregate categories
-const categories: Record<
-  string,
-  { passed: number; failed: number; total: number }
-> = {};
-for (const s of allSummaries) {
-  for (const [cat, data] of Object.entries(s.byCategory)) {
-    categories[cat] ??= { passed: 0, failed: 0, total: 0 };
-    categories[cat].passed += data.passed;
-    categories[cat].failed += data.failed;
-    categories[cat].total += data.total;
+  for (const s of summaries) {
+    for (const [cat, data] of Object.entries(s.byCategory)) {
+      categories[cat] ??= { passed: 0, failed: 0, total: 0 };
+      categories[cat].passed += data.passed;
+      categories[cat].failed += data.failed;
+      categories[cat].total += data.total;
+    }
   }
+
+  return categories;
 }
 
-// Collect unique failures
-const failureMap = new Map<
-  string,
-  { id: string; title: string; reason: string }
->();
-for (const s of allSummaries) {
-  for (const f of s.failures) {
-    failureMap.set(f.id, f);
+function collectFailures(summaries: Summary[]): FailureData[] {
+  const failureMap = new Map<string, FailureData>();
+
+  for (const s of summaries) {
+    for (const f of s.failures) {
+      failureMap.set(f.id, f);
+    }
   }
+
+  return [...failureMap.values()];
 }
-const failures = [...failureMap.values()];
 
-// Print beautiful summary
-console.log("\n");
-console.log("╔" + "═".repeat(58) + "╗");
-console.log("║" + " ".repeat(20) + "RESULTS SUMMARY" + " ".repeat(23) + "║");
-console.log("╠" + "═".repeat(58) + "╣");
-console.log(
-  `║  Total Cases:    ${String(totals.total).padStart(6)}                                 ║`
-);
-console.log(
-  `║  Passed:         ${String(totals.passed).padStart(6)}  ${"█".repeat(Math.round(passRate / 5))}${"░".repeat(20 - Math.round(passRate / 5))}  ║`
-);
-console.log(
-  `║  Failed:         ${String(totals.failed).padStart(6)}                                 ║`
-);
-console.log(
-  `║  Pass Rate:      ${passRate.toFixed(1).padStart(5)}%                                 ║`
-);
-console.log(
-  `║  Duration:       ${(totals.durationMs / 1000).toFixed(1).padStart(5)}s                                 ║`
-);
-console.log("╠" + "═".repeat(58) + "╣");
-console.log("║  BY CATEGORY                                             ║");
-console.log("╟" + "─".repeat(58) + "╢");
+function printHeader(options: CliOptions): void {
+  console.log(`\n${"═".repeat(60)}`);
+  console.log("  COMPREHENSIVE EVAL");
+  console.log("═".repeat(60));
+  console.log(`  Iterations: ${options.iterations}`);
+  console.log(`  LLM Judge: ${options.withJudge ? "enabled" : "disabled"}`);
+  console.log(`${"═".repeat(60)}\n`);
+}
 
-for (const [cat, data] of Object.entries(categories).toSorted()) {
-  const catRate = data.total > 0 ? (data.passed / data.total) * 100 : 0;
-  const bar =
-    "█".repeat(Math.round(catRate / 10)) +
-    "░".repeat(10 - Math.round(catRate / 10));
+function printSummary(
+  totals: Totals,
+  passRate: number,
+  categories: Record<string, CategoryData>,
+  failures: FailureData[]
+): void {
+  console.log("\n");
+  console.log(`╔${"═".repeat(58)}╗`);
+  console.log(`║${" ".repeat(20)}RESULTS SUMMARY${" ".repeat(23)}║`);
+  console.log(`╠${"═".repeat(58)}╣`);
   console.log(
-    `║  ${cat.padEnd(15)} ${String(data.passed).padStart(3)}/${String(data.total).padStart(3)}  ${bar}  ${catRate.toFixed(0).padStart(3)}%  ║`
+    `║  Total Cases:    ${String(totals.total).padStart(6)}                                 ║`
   );
-}
 
-if (failures.length > 0) {
-  console.log("╠" + "═".repeat(58) + "╣");
-  console.log("║  FAILURES                                                ║");
-  console.log("╟" + "─".repeat(58) + "╢");
-  for (const f of failures.slice(0, 10)) {
-    const title = f.title.length > 40 ? f.title.slice(0, 37) + "..." : f.title;
-    console.log(`║  ${f.id.padEnd(8)} ${title.padEnd(42)}  ║`);
-  }
-  if (failures.length > 10) {
+  const passBar = "█".repeat(Math.round(passRate / 5));
+  const emptyBar = "░".repeat(20 - Math.round(passRate / 5));
+  console.log(
+    `║  Passed:         ${String(totals.passed).padStart(6)}  ${passBar}${emptyBar}  ║`
+  );
+
+  console.log(
+    `║  Failed:         ${String(totals.failed).padStart(6)}                                 ║`
+  );
+  console.log(
+    `║  Pass Rate:      ${passRate.toFixed(1).padStart(5)}%                                 ║`
+  );
+  console.log(
+    `║  Duration:       ${(totals.durationMs / 1000).toFixed(1).padStart(5)}s                                 ║`
+  );
+  console.log(`╠${"═".repeat(58)}╣`);
+  console.log("║  BY CATEGORY                                             ║");
+  console.log(`╟${"─".repeat(58)}╢`);
+
+  for (const [cat, data] of Object.entries(categories).toSorted()) {
+    const catRate = data.total > 0 ? (data.passed / data.total) * 100 : 0;
+    const bar = `${"█".repeat(Math.round(catRate / 10))}${"░".repeat(10 - Math.round(catRate / 10))}`;
     console.log(
-      `║  ... and ${failures.length - 10} more                                       ║`
+      `║  ${cat.padEnd(15)} ${String(data.passed).padStart(3)}/${String(data.total).padStart(3)}  ${bar}  ${catRate.toFixed(0).padStart(3)}%  ║`
     );
   }
+
+  if (failures.length > 0) {
+    console.log(`╠${"═".repeat(58)}╣`);
+    console.log("║  FAILURES                                                ║");
+    console.log(`╟${"─".repeat(58)}╢`);
+
+    for (const f of failures.slice(0, 10)) {
+      const title =
+        f.title.length > 40 ? `${f.title.slice(0, 37)}...` : f.title;
+      console.log(`║  ${f.id.padEnd(8)} ${title.padEnd(42)}  ║`);
+    }
+
+    if (failures.length > 10) {
+      console.log(
+        `║  ... and ${failures.length - 10} more                                       ║`
+      );
+    }
+  }
+
+  console.log(`╚${"═".repeat(58)}╝`);
 }
 
-console.log("╚" + "═".repeat(58) + "╝");
-
-// Gemini analysis
-if (!skipAnalysis) {
+async function runGeminiAnalysis(
+  passRate: number,
+  categories: Record<string, CategoryData>,
+  failures: FailureData[]
+): Promise<void> {
   console.log("\n⏳ Running Gemini analysis...\n");
 
   const AnalysisSchema = z.object({
@@ -206,41 +250,40 @@ Results:
 - Failures: ${JSON.stringify(failures.slice(0, 20))}`,
     });
 
-    console.log("╔" + "═".repeat(58) + "╗");
-    console.log(
-      "║" + " ".repeat(18) + "GEMINI 2.5 PRO ANALYSIS" + " ".repeat(17) + "║"
-    );
-    console.log("╠" + "═".repeat(58) + "╣");
+    console.log(`╔${"═".repeat(58)}╗`);
+    console.log(`║${" ".repeat(18)}GEMINI 2.5 PRO ANALYSIS${" ".repeat(17)}║`);
+    console.log(`╠${"═".repeat(58)}╣`);
 
-    // Word wrap summary
     const words = analysis.summary.split(" ");
     let line = "║  ";
     for (const word of words) {
       if (line.length + word.length > 56) {
-        console.log(line.padEnd(59) + "║");
-        line = "║  " + word + " ";
+        console.log(`${line.padEnd(59)}║`);
+        line = `║  ${word} `;
       } else {
-        line += word + " ";
+        line += `${word} `;
       }
     }
-    if (line.length > 4) {console.log(line.padEnd(59) + "║");}
+    if (line.length > 4) {
+      console.log(`${line.padEnd(59)}║`);
+    }
 
-    console.log("╟" + "─".repeat(58) + "╢");
+    console.log(`╟${"─".repeat(58)}╢`);
     console.log("║  KEY INSIGHTS                                            ║");
     for (const insight of analysis.insights) {
       const short =
-        insight.length > 52 ? insight.slice(0, 49) + "..." : insight;
+        insight.length > 52 ? `${insight.slice(0, 49)}...` : insight;
       console.log(`║  • ${short.padEnd(53)} ║`);
     }
 
-    console.log("╟" + "─".repeat(58) + "╢");
+    console.log(`╟${"─".repeat(58)}╢`);
     console.log("║  RECOMMENDATIONS                                         ║");
     for (const rec of analysis.recommendations) {
-      const short = rec.length > 52 ? rec.slice(0, 49) + "..." : rec;
+      const short = rec.length > 52 ? `${rec.slice(0, 49)}...` : rec;
       console.log(`║  → ${short.padEnd(53)} ║`);
     }
 
-    console.log("╚" + "═".repeat(58) + "╝");
+    console.log(`╚${"═".repeat(58)}╝`);
   } catch (error) {
     console.log(
       "⚠️  Gemini analysis failed:",
@@ -249,17 +292,32 @@ Results:
   }
 }
 
-// Save JSON report
-await mkdir(OUTPUT_DIR, { recursive: true });
-const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
-const report = { timestamp, totals, categories, failures, passRate };
-await writeFile(
-  `${OUTPUT_DIR}/report-${timestamp}.json`,
-  JSON.stringify(report, null, 2)
-);
+function generateHtmlReport(
+  totals: Totals,
+  passRate: number,
+  categories: Record<string, CategoryData>,
+  failures: FailureData[]
+): string {
+  const categoryRows = Object.entries(categories)
+    .toSorted()
+    .map(([cat, d]) => {
+      const rate = d.total > 0 ? (d.passed / d.total) * 100 : 0;
+      return `<tr><td>${cat}</td><td class="pass">${d.passed}</td><td class="fail">${d.failed}</td><td>${rate.toFixed(0)}%</td><td><div class="bar"><div class="bar-fill" style="width:${rate}%"></div></div></td></tr>`;
+    })
+    .join("");
 
-// Generate HTML report
-const html = `<!DOCTYPE html>
+  const failureRows =
+    failures.length > 0
+      ? `
+  <h2>Failures</h2>
+  <table>
+    <tr><th>Case</th><th>Title</th><th>Reason</th></tr>
+    ${failures.map((f) => `<tr><td>${f.id}</td><td>${f.title}</td><td style="color:#94a3b8;font-size:0.9rem">${f.reason.slice(0, 60)}...</td></tr>`).join("")}
+  </table>
+  `
+      : "";
+
+  return `<!DOCTYPE html>
 <html>
 <head>
   <title>Eval Report - ${new Date().toLocaleDateString()}</title>
@@ -294,30 +352,65 @@ const html = `<!DOCTYPE html>
   <h2>By Category</h2>
   <table>
     <tr><th>Category</th><th>Passed</th><th>Failed</th><th>Rate</th><th></th></tr>
-    ${Object.entries(categories)
-      .toSorted()
-      .map(([cat, d]) => {
-        const rate = d.total > 0 ? (d.passed / d.total) * 100 : 0;
-        return `<tr><td>${cat}</td><td class="pass">${d.passed}</td><td class="fail">${d.failed}</td><td>${rate.toFixed(0)}%</td><td><div class="bar"><div class="bar-fill" style="width:${rate}%"></div></div></td></tr>`;
-      })
-      .join("")}
+    ${categoryRows}
   </table>
 
-  ${
-    failures.length > 0
-      ? `
-  <h2>Failures</h2>
-  <table>
-    <tr><th>Case</th><th>Title</th><th>Reason</th></tr>
-    ${failures.map((f) => `<tr><td>${f.id}</td><td>${f.title}</td><td style="color:#94a3b8;font-size:0.9rem">${f.reason.slice(0, 60)}...</td></tr>`).join("")}
-  </table>
-  `
-      : ""
-  }
+  ${failureRows}
 </body>
 </html>`;
+}
 
-await writeFile(`${OUTPUT_DIR}/report-${timestamp}.html`, html);
-console.log(`\n📄 Reports saved to ${OUTPUT_DIR}/`);
-console.log(`   • report-${timestamp}.json`);
-console.log(`   • report-${timestamp}.html\n`);
+async function main(): Promise<void> {
+  const options = parseCliArgs();
+  if (!options) {
+    process.exit(0);
+  }
+
+  printHeader(options);
+
+  const allSummaries: Summary[] = [];
+
+  for (let i = 0; i < options.iterations; i += 1) {
+    if (options.iterations > 1) {
+      console.log(`\n── Run ${i + 1}/${options.iterations} ──\n`);
+    }
+    const summary = await runEvals(options);
+    if (summary) {
+      allSummaries.push(summary);
+    }
+  }
+
+  if (allSummaries.length === 0) {
+    console.error("\n❌ No results collected\n");
+    process.exit(1);
+  }
+
+  const totals = aggregateTotals(allSummaries);
+  const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
+  const categories = aggregateCategories(allSummaries);
+  const failures = collectFailures(allSummaries);
+
+  printSummary(totals, passRate, categories, failures);
+
+  if (!options.skipAnalysis) {
+    await runGeminiAnalysis(passRate, categories, failures);
+  }
+
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
+  const report = { timestamp, totals, categories, failures, passRate };
+
+  await writeFile(
+    `${OUTPUT_DIR}/report-${timestamp}.json`,
+    JSON.stringify(report, null, 2)
+  );
+
+  const html = generateHtmlReport(totals, passRate, categories, failures);
+  await writeFile(`${OUTPUT_DIR}/report-${timestamp}.html`, html);
+
+  console.log(`\n📄 Reports saved to ${OUTPUT_DIR}/`);
+  console.log(`   • report-${timestamp}.json`);
+  console.log(`   • report-${timestamp}.html\n`);
+}
+
+main();
