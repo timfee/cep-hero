@@ -6,7 +6,7 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "test": "bun test --ignore 'evals/**'",
+    "test": "bun test tests/ app/ lib/ components/",
     "evals": "bun evals/run.ts",
     "evals:fast": "EVAL_MANAGE_SERVER=0 bun evals/run.ts",
     "evals:verbose": "EVAL_VERBOSE=1 bun evals/run.ts",
