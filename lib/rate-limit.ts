@@ -25,6 +25,38 @@ function cleanupExpiredEntries() {
 }
 
 /**
+ * Create a new rate limit entry for a first-time or expired identifier.
+ */
+function createNewEntry(
+  identifier: string,
+  maxRequests: number,
+  windowMs: number
+): { allowed: boolean; remaining: number; resetIn: number } {
+  rateLimitStore.set(identifier, {
+    count: 1,
+    resetTime: Date.now() + windowMs,
+  });
+  return { allowed: true, remaining: maxRequests - 1, resetIn: windowMs };
+}
+
+/**
+ * Update an existing rate limit entry and return the result.
+ */
+function updateExistingEntry(
+  entry: RateLimitEntry,
+  maxRequests: number
+): { allowed: boolean; remaining: number; resetIn: number } {
+  const resetIn = entry.resetTime - Date.now();
+
+  if (entry.count >= maxRequests) {
+    return { allowed: false, remaining: 0, resetIn };
+  }
+
+  entry.count += 1;
+  return { allowed: true, remaining: maxRequests - entry.count, resetIn };
+}
+
+/**
  * Check and update rate limit for a given identifier.
  * Returns true if the request is allowed, false if rate limited.
  */
@@ -37,29 +69,18 @@ export function checkRateLimit({
   maxRequests: number;
   windowMs: number;
 }): { allowed: boolean; remaining: number; resetIn: number } {
-  const now = Date.now();
-  const entry = rateLimitStore.get(identifier);
-
   if (rateLimitStore.size > 1000) {
     cleanupExpiredEntries();
   }
 
-  if (!entry || now > entry.resetTime) {
-    rateLimitStore.set(identifier, {
-      count: 1,
-      resetTime: now + windowMs,
-    });
-    return { allowed: true, remaining: maxRequests - 1, resetIn: windowMs };
+  const entry = rateLimitStore.get(identifier);
+  const isExpired = !entry || Date.now() > entry.resetTime;
+
+  if (isExpired) {
+    return createNewEntry(identifier, maxRequests, windowMs);
   }
 
-  const resetIn = entry.resetTime - now;
-
-  if (entry.count >= maxRequests) {
-    return { allowed: false, remaining: 0, resetIn };
-  }
-
-  entry.count += 1;
-  return { allowed: true, remaining: maxRequests - entry.count, resetIn };
+  return updateExistingEntry(entry, maxRequests);
 }
 
 /**
