@@ -80,10 +80,6 @@ export const getAttachmentLabel = (data: AttachmentData): string => {
   return data.filename || (category === "image" ? "Image" : "Attachment");
 };
 
-// ============================================================================
-// Contexts
-// ============================================================================
-
 interface AttachmentsContextValue {
   variant: AttachmentVariant;
 }
@@ -99,13 +95,15 @@ interface AttachmentContextValue {
 
 const AttachmentContext = createContext<AttachmentContextValue | null>(null);
 
-// ============================================================================
-// Hooks
-// ============================================================================
-
+/**
+ * Hook to access attachments container context for variant information.
+ */
 export const useAttachmentsContext = () =>
   useContext(AttachmentsContext) ?? { variant: "grid" as const };
 
+/**
+ * Hook to access individual attachment context for data and remove handler.
+ */
 export const useAttachmentContext = () => {
   const ctx = useContext(AttachmentContext);
   if (!ctx) {
@@ -114,14 +112,13 @@ export const useAttachmentContext = () => {
   return ctx;
 };
 
-// ============================================================================
-// Attachments - Container
-// ============================================================================
-
 export type AttachmentsProps = HTMLAttributes<HTMLDivElement> & {
   variant?: AttachmentVariant;
 };
 
+/**
+ * Container component that provides variant context for child attachments.
+ */
 export const Attachments = ({
   variant = "grid",
   className,
