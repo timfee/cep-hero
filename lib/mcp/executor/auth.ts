@@ -1,24 +1,15 @@
 import { type OAuth2Client } from "google-auth-library";
 
 import { getErrorMessage } from "@/lib/mcp/errors";
-
-interface DebugAuthSuccess {
-  scope: string;
-  expiresIn?: number;
-  issuedTo?: string;
-}
-
-interface DebugAuthError {
-  error: string;
-}
-
-export type DebugAuthResult = DebugAuthSuccess | DebugAuthError;
+import { type DebugAuthResult } from "@/lib/mcp/types";
 
 interface TokenInfo {
   scope?: string;
   expires_in?: number;
   issued_to?: string;
   audience?: string;
+  email?: string;
+  access_type?: string;
   error?: string;
 }
 
@@ -28,7 +19,7 @@ function isValidTokenInfo(data: unknown): data is TokenInfo {
 
 /**
  * Validates the current OAuth access token by querying Google's tokeninfo
- * endpoint. Returns scope, expiry, and issuer on success.
+ * endpoint. Returns scopes, expiry, and email on success.
  */
 export async function debugAuth(auth: OAuth2Client): Promise<DebugAuthResult> {
   const token = await auth.getAccessToken();
@@ -56,11 +47,19 @@ async function fetchTokenInfo(accessToken: string): Promise<DebugAuthResult> {
     }
 
     return {
-      scope: data.scope ?? "",
-      expiresIn: data.expires_in,
-      issuedTo: data.issued_to ?? data.audience,
+      scopes: parseScopes(data.scope),
+      expiresIn: data.expires_in ?? 0,
+      email: data.email,
+      accessType: data.access_type,
     };
   } catch (error) {
     return { error: getErrorMessage(error) };
   }
+}
+
+function parseScopes(scope: string | undefined): string[] {
+  if (typeof scope !== "string" || scope.length === 0) {
+    return [];
+  }
+  return scope.split(" ").filter((s) => s.length > 0);
 }
