@@ -31,9 +31,8 @@ import {
 
 export { loadFixtureData } from "./fixture-loader";
 
-async function resolveValue<T>(value: T): Promise<T> {
-  const resolved = await Promise.resolve(value);
-  return resolved;
+function resolveValue<T>(value: T): Promise<T> {
+  return Promise.resolve(value);
 }
 
 /**

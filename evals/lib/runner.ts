@@ -182,7 +182,7 @@ async function processTurn(
   turnIndex: number,
   turnAssertions: TurnAssertion[],
   fixtures: FixtureData | undefined
-): Promise<string | null> {
+): Promise<void> {
   state.messages.push({ role: "user", content: turn.content });
   const resp = await callChatMessages(state.messages, { fixtures });
   const assistantText = resp.text;
@@ -196,7 +196,6 @@ async function processTurn(
   state.turnResults.push(
     processTurnAssertion(turnIndex, turnToolCalls, assistantText, turnAssertion)
   );
-  return null;
 }
 
 /**

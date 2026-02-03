@@ -269,18 +269,17 @@ export async function callChatMessages(
 /**
  * Call the chat endpoint with a single prompt.
  */
-export async function callChat(
+export function callChat(
   prompt: string,
   options?: CallChatMessagesOptions
 ): Promise<ChatResponse> {
-  const result = await callChatMessages(
+  return callChatMessages(
     [
       { role: "system", content: "You are CEP Hero." },
       { role: "user", content: prompt },
     ],
     options
   );
-  return result;
 }
 
 async function ensureChatReady(url: string): Promise<void> {
