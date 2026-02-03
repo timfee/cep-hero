@@ -99,7 +99,10 @@ export async function getServiceAccountAccessToken(
  */
 export function getServiceAccountSubject(defaultEmail: string) {
   const envEmail = process.env.GOOGLE_TOKEN_EMAIL;
-  return envEmail === undefined || envEmail === "" ? defaultEmail : envEmail;
+  if (envEmail === undefined || envEmail === "") {
+    return defaultEmail;
+  }
+  return envEmail.replaceAll(/^['"]|['"]$/g, "");
 }
 
 /**
