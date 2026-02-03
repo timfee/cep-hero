@@ -382,7 +382,7 @@ async function main(): Promise<void> {
 
   printHeader(options);
 
-  // Start server once for all iterations
+  // Start server once, run all iterations, then release
   await ensureEvalServer({
     chatUrl: "http://localhost:3100/api/chat",
     manageServer: true,
