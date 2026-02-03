@@ -27,7 +27,6 @@ import {
 } from "@/components/ai-elements/conversation";
 import { DlpRulesCard } from "@/components/ai-elements/dlp-rules-card";
 import { EventsTable } from "@/components/ai-elements/events-table";
-import { PulsePillIndicator } from "@/components/ai-elements/loader";
 import {
   Message,
   MessageContent,
@@ -178,6 +177,14 @@ export function ChatConsole() {
   );
 
   const isStreaming = status === "submitted" || status === "streaming";
+
+  // Check if we're waiting for the first response (no assistant message yet)
+  const isWaitingForResponse = useMemo(() => {
+    if (!isStreaming) return false;
+    const lastMessage = messages.at(-1);
+    // Only show loading if user just sent a message and there's no assistant response yet
+    return !lastMessage || lastMessage.role === "user";
+  }, [isStreaming, messages]);
 
   const fallbackActions = useMemo(() => FALLBACK_ACTIONS, []);
 
@@ -501,10 +508,21 @@ export function ChatConsole() {
             );
           })}
 
-          {/* Submitted state loader */}
-          {isStreaming && (
+          {/* Small loading indicator while waiting for first response */}
+          {isWaitingForResponse && (
             <div className="pl-4 lg:pl-6">
-              <PulsePillIndicator label="Working on it" />
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <div className="flex gap-1">
+                  {[0, 1, 2].map((i) => (
+                    <span
+                      key={i}
+                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse"
+                      style={{ animationDelay: `${i * 150}ms` }}
+                    />
+                  ))}
+                </div>
+                <span>Thinking...</span>
+              </div>
             </div>
           )}
         </ConversationContent>
