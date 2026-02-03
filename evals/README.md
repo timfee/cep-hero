@@ -52,6 +52,48 @@ EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
 EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
 ```
 
+## Comprehensive eval runner
+
+For thorough evaluation with aggregated results and AI-powered analysis:
+
+```bash
+# Basic run (all cases, fixture data, skip Gemini analysis)
+bun run evals:comprehensive --skip-analysis
+
+# With LLM judge scoring
+bun run evals:comprehensive --with-judge
+
+# Multiple iterations to identify flaky tests
+bun run evals:comprehensive --iterations 3
+
+# Full run with judge and multiple iterations
+bun run evals:comprehensive:full
+
+# Filter to specific cases
+bun run evals:comprehensive --cases EC-001,EC-002
+```
+
+### CLI options
+
+| Option            | Description                              |
+| ----------------- | ---------------------------------------- |
+| `--with-judge`    | Enable LLM judge for evidence evaluation |
+| `--iterations N`  | Run N times (default: 1)                 |
+| `--skip-analysis` | Skip Gemini 2.5 Pro analysis             |
+| `--cases IDS`     | Filter to specific case IDs              |
+| `--help`          | Show help                                |
+
+### Output
+
+The comprehensive runner produces:
+
+- Beautiful terminal output with pass rates and category breakdown
+- JSON report saved to `evals/comprehensive/reports/`
+- HTML report with dark theme styling
+- Optional Gemini 2.5 Pro analysis with insights and recommendations
+
+Exit code is non-zero if any tests fail (for CI integration).
+
 ## Environment variables
 
 - `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
