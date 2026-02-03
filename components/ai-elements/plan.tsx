@@ -34,6 +34,9 @@ interface PlanContextValue {
 
 const PlanContext = createContext<PlanContextValue | null>(null);
 
+/**
+ * Hook to access plan streaming state from context.
+ */
 const usePlan = () => {
   const context = useContext(PlanContext);
   if (!context) {
@@ -46,6 +49,9 @@ export type PlanProps = ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean;
 };
 
+/**
+ * Root plan container that wraps a collapsible card with streaming context.
+ */
 export const Plan = ({
   className,
   isStreaming = false,
@@ -61,6 +67,9 @@ export const Plan = ({
 
 export type PlanHeaderProps = ComponentProps<typeof CardHeader>;
 
+/**
+ * Plan card header with flex layout for title and actions.
+ */
 export const PlanHeader = ({ className, ...props }: PlanHeaderProps) => (
   <CardHeader
     className={cn("flex items-start justify-between", className)}
@@ -76,6 +85,9 @@ export type PlanTitleProps = Omit<
   children: string;
 };
 
+/**
+ * Plan title with shimmer effect during streaming.
+ */
 export const PlanTitle = ({ children, ...props }: PlanTitleProps) => {
   const { isStreaming } = usePlan();
 
@@ -93,6 +105,9 @@ export type PlanDescriptionProps = Omit<
   children: string;
 };
 
+/**
+ * Plan description with balanced text and shimmer effect during streaming.
+ */
 export const PlanDescription = ({
   className,
   children,
@@ -113,6 +128,9 @@ export const PlanDescription = ({
 
 export type PlanActionProps = ComponentProps<typeof CardAction>;
 
+/**
+ * Action slot in the plan card header.
+ */
 export const PlanAction = (props: PlanActionProps) => (
   <CardAction data-slot="plan-action" {...props} />
 );

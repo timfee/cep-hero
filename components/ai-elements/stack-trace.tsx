@@ -379,6 +379,9 @@ export const StackTraceCopyButton = memo(
 
 export type StackTraceExpandButtonProps = ComponentProps<"div">;
 
+/**
+ * Chevron indicator that rotates based on expanded state.
+ */
 export const StackTraceExpandButton = memo(
   ({ className, ...props }: StackTraceExpandButtonProps) => {
     const { isOpen } = useStackTrace();
@@ -405,6 +408,9 @@ export type StackTraceContentProps = ComponentProps<
   maxHeight?: number;
 };
 
+/**
+ * Collapsible content area with configurable max height.
+ */
 export const StackTraceContent = memo(
   ({
     className,
@@ -436,6 +442,9 @@ export type StackTraceFramesProps = ComponentProps<"div"> & {
   showInternalFrames?: boolean;
 };
 
+/**
+ * Renders parsed stack frames with clickable file paths.
+ */
 export const StackTraceFrames = memo(
   ({
     className,
