@@ -1,4 +1,4 @@
-import { randomUUID } from "crypto";
+import { randomUUID } from "node:crypto";
 
 import { auth } from "@/lib/auth";
 import { writeDebugLog } from "@/lib/debug-log";
@@ -28,7 +28,7 @@ export async function GET(req: Request) {
       });
 
       if (accessTokenResponse?.accessToken) {
-        accessToken = accessTokenResponse.accessToken;
+        ({ accessToken } = accessTokenResponse);
       }
     }
   }

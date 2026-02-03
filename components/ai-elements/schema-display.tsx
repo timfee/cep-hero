@@ -1,12 +1,9 @@
 "use client";
 
+import type { ComponentProps, HTMLAttributes } from "react";
+
 import { ChevronRightIcon } from "lucide-react";
-import {
-  type ComponentProps,
-  createContext,
-  type HTMLAttributes,
-  useContext,
-} from "react";
+import { createContext, useContext } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {
@@ -155,7 +152,7 @@ export const SchemaDisplayPath = ({
   const { path } = useContext(SchemaDisplayContext);
 
   // Highlight path parameters
-  const highlightedPath = path.replace(
+  const highlightedPath = path.replaceAll(
     /\{([^}]+)\}/g,
     '<span class="text-blue-600 dark:text-blue-400">{$1}</span>'
   );

@@ -58,7 +58,10 @@
             "parameters": [
               { "name": "USER_EMAIL", "value": "terminated.user@example.com" },
               { "name": "DEVICE_ID", "value": "win-laptop-001" },
-              { "name": "ACCESSED_RESOURCE", "value": "Google Drive - Confidential Sales Report.xlsx" },
+              {
+                "name": "ACCESSED_RESOURCE",
+                "value": "Google Drive - Confidential Sales Report.xlsx"
+              },
               { "name": "ACCESS_TYPE", "value": "DOWNLOAD" },
               { "name": "USER_STATUS", "value": "SUSPENDED" },
               { "name": "SESSION_VALID", "value": "true" },

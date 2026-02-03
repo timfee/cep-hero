@@ -1,18 +1,14 @@
 "use client";
 
+import type { HTMLAttributes, ReactNode } from "react";
+
 import {
   ChevronRightIcon,
   FileIcon,
   FolderIcon,
   FolderOpenIcon,
 } from "lucide-react";
-import {
-  createContext,
-  type HTMLAttributes,
-  type ReactNode,
-  useContext,
-  useState,
-} from "react";
+import { createContext, useContext, useState } from "react";
 
 import {
   Collapsible,
@@ -30,7 +26,7 @@ interface FileTreeContextType {
 
 const FileTreeContext = createContext<FileTreeContextType>({
   expandedPaths: new Set(),
-  togglePath: () => undefined,
+  togglePath: () => {},
 });
 
 export type FileTreeProps = HTMLAttributes<HTMLDivElement> & {

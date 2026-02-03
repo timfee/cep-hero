@@ -1,9 +1,9 @@
 import { z } from "zod";
 
-export type ChatMessage = {
+export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
-};
+}
 
 const MessagePartSchema = z.object({
   type: z.string().optional(),
@@ -31,7 +31,7 @@ const BodySchema = z.object({
  */
 export function getLastUserMessage(messages: ChatMessage[]): string {
   const lastUser = [...messages]
-    .reverse()
+    .toReversed()
     .find((message) => message.role === "user");
 
   return lastUser?.content ?? "";
@@ -47,9 +47,11 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
   return parsed.data.messages
     .map((msgRaw) => {
       const parsedMsg = MessageSchema.safeParse(msgRaw);
-      if (!parsedMsg.success) return null;
+      if (!parsedMsg.success) {
+        return null;
+      }
 
-      const role = parsedMsg.data.role;
+      const { role } = parsedMsg.data;
       if (role !== "system" && role !== "user" && role !== "assistant") {
         return null;
       }

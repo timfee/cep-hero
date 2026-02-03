@@ -3,8 +3,8 @@
  * Handles loading base fixtures and case-specific overrides.
  */
 
-import { existsSync, readFileSync } from "fs";
-import path from "path";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 
 import type { FixtureData } from "@/lib/mcp/types";
 
@@ -13,13 +13,17 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 }
 
 function loadJsonFile(filePath: string): unknown {
-  const contents = readFileSync(filePath, "utf-8");
+  const contents = readFileSync(filePath, "utf8");
   return JSON.parse(contents) as unknown;
 }
 
 function mergeJson(base: unknown, override: unknown): unknown {
-  if (override === undefined) return base;
-  if (base === undefined) return override;
+  if (override === undefined) {
+    return base;
+  }
+  if (base === undefined) {
+    return override;
+  }
   if (isPlainObject(base) && isPlainObject(override)) {
     const result: Record<string, unknown> = { ...base };
     for (const [key, value] of Object.entries(override)) {
@@ -30,11 +34,11 @@ function mergeJson(base: unknown, override: unknown): unknown {
   return override;
 }
 
-export type LoadFixturesOptions = {
+export interface LoadFixturesOptions {
   useBase?: boolean;
   useFixtures?: boolean;
   rootDir?: string;
-};
+}
 
 /**
  * Load fixture data for an eval case.
@@ -209,7 +213,7 @@ export function buildEvalPrompt(
 }
 
 function formatFileBlock(label: string, filePath: string): string {
-  const contents = readFileSync(filePath, "utf-8");
+  const contents = readFileSync(filePath, "utf8");
   return `--- ${label} ---\n${contents}`;
 }
 

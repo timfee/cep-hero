@@ -1,11 +1,11 @@
 "use client";
 
+import type { ComponentProps, ReactNode } from "react";
+
 import { useControllableState } from "@radix-ui/react-use-controllable-state";
 import { ChevronsUpDownIcon } from "lucide-react";
 import {
-  type ComponentProps,
   createContext,
-  type ReactNode,
   useCallback,
   useContext,
   useEffect,
@@ -292,9 +292,9 @@ export const useAudioDevices = () => {
       );
 
       setDevices(audioInputs);
-    } catch (err) {
+    } catch (error) {
       const message =
-        err instanceof Error ? err.message : "Failed to get audio devices";
+        error instanceof Error ? error.message : "Failed to get audio devices";
 
       setError(message);
       console.error("Error getting audio devices:", message);
@@ -327,9 +327,9 @@ export const useAudioDevices = () => {
 
       setDevices(audioInputs);
       setHasPermission(true);
-    } catch (err) {
+    } catch (error) {
       const message =
-        err instanceof Error ? err.message : "Failed to get audio devices";
+        error instanceof Error ? error.message : "Failed to get audio devices";
 
       setError(message);
       console.error("Error getting audio devices:", message);

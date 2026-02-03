@@ -48,12 +48,18 @@
             "type": "POLICY_APPLICATION",
             "name": "POLICY_SCOPE_MISMATCH",
             "parameters": [
-              { "name": "POLICY_NAME", "value": "chrome.users.BulkDataConnectorEnabled" },
+              {
+                "name": "POLICY_NAME",
+                "value": "chrome.users.BulkDataConnectorEnabled"
+              },
               { "name": "EXPECTED_SCOPE", "value": "orgunits/03ph8a2z4kcgsep" },
               { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
               { "name": "OU_PATH", "value": "/Engineering-Test" },
               { "name": "AFFECTED_USER", "value": "engineer@example.com" },
-              { "name": "NOTE", "value": "Policy targeted at customer level; OU-specific targeting required" }
+              {
+                "name": "NOTE",
+                "value": "Policy targeted at customer level; OU-specific targeting required"
+              }
             ]
           }
         ]

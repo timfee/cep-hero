@@ -18,7 +18,10 @@
               { "name": "LAST_SYNC_TIME", "value": "2026-01-18T08:00:00.000Z" },
               { "name": "HOURS_SINCE_SYNC", "value": "52" },
               { "name": "COMPLIANCE_STATUS", "value": "UNKNOWN" },
-              { "name": "STALE_REASON", "value": "Device offline or Endpoint Verification not running" }
+              {
+                "name": "STALE_REASON",
+                "value": "Device offline or Endpoint Verification not running"
+              }
             ]
           }
         ]

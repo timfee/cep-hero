@@ -16,7 +16,12 @@
         "evals/fixtures/EC-001/eventlog-wifi-fail.txt"
       ],
       "overrides": ["evals/fixtures/EC-001/overrides.json"],
-      "required_evidence": ["ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION", "handshake", "wifi"],
+      "required_evidence": [
+        "ERR_NAME_NOT_RESOLVED",
+        "ERR_CONNECTION",
+        "handshake",
+        "wifi"
+      ],
       "required_tool_calls": ["getChromeEvents"],
       "assertions": [],
       "cleanup": []
@@ -136,7 +141,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-009/overrides.json"],
-      "required_evidence": ["Keychain", "KEYCHAIN_ACCESS_DENIED", "Safe Storage", "macOS"],
+      "required_evidence": [
+        "Keychain",
+        "KEYCHAIN_ACCESS_DENIED",
+        "Safe Storage",
+        "macOS"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -181,7 +191,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-012/overrides.json"],
-      "required_evidence": ["service worker", "status code 2", "extension", "reinstall"],
+      "required_evidence": [
+        "service worker",
+        "status code 2",
+        "extension",
+        "reinstall"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -196,7 +211,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-013/overrides.json"],
-      "required_evidence": ["DEVICE_POWER_FAILURE", "NOT_CHARGING", "DEGRADED", "power cycle"],
+      "required_evidence": [
+        "DEVICE_POWER_FAILURE",
+        "NOT_CHARGING",
+        "DEGRADED",
+        "power cycle"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -239,7 +259,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-016/overrides.json"],
-      "required_evidence": ["PREVIOUS_OWNER", "oldcompany.com", "48 hours", "powerwash"],
+      "required_evidence": [
+        "PREVIOUS_OWNER",
+        "oldcompany.com",
+        "48 hours",
+        "powerwash"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -340,7 +365,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-023/overrides.json"],
-      "required_evidence": ["profile picker", "Citrix", "close", "BrowserSignin"],
+      "required_evidence": [
+        "profile picker",
+        "Citrix",
+        "close",
+        "BrowserSignin"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -468,7 +498,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-031/overrides.json"],
-      "required_evidence": ["is_corporate_device", "PF2ABC123", "inventory", "add serial"],
+      "required_evidence": [
+        "is_corporate_device",
+        "PF2ABC123",
+        "inventory",
+        "add serial"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -504,7 +539,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-033/overrides.json"],
-      "required_evidence": ["CONTENT_UNSCANNED_TIMEOUT", "2500 MB", "evaluation time limit", "increase"],
+      "required_evidence": [
+        "CONTENT_UNSCANNED_TIMEOUT",
+        "2500 MB",
+        "evaluation time limit",
+        "increase"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -523,7 +563,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-034/overrides.json"],
-      "required_evidence": ["FILE_PASSWORD_PROTECTED", "confidential-data.zip", "cannot scan", "decrypt"],
+      "required_evidence": [
+        "FILE_PASSWORD_PROTECTED",
+        "confidential-data.zip",
+        "cannot scan",
+        "decrypt"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -542,7 +587,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-035/overrides.json"],
-      "required_evidence": ["CREDIT_CARD_NUMBER", "product-sku-list.xlsx", "false positive", "tuning"],
+      "required_evidence": [
+        "CREDIT_CARD_NUMBER",
+        "product-sku-list.xlsx",
+        "false positive",
+        "tuning"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -561,7 +611,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-036/overrides.json"],
-      "required_evidence": ["PRINT_JOB_BLOCKED", "Q4-Financial-Report", "DLP rule", "allowlist"],
+      "required_evidence": [
+        "PRINT_JOB_BLOCKED",
+        "Q4-Financial-Report",
+        "DLP rule",
+        "allowlist"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -580,7 +635,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-037/overrides.json"],
-      "required_evidence": ["CLIPBOARD_OPERATION_BLOCKED", "Salesforce", "Personal Gmail", "destination"],
+      "required_evidence": [
+        "CLIPBOARD_OPERATION_BLOCKED",
+        "Salesforce",
+        "Personal Gmail",
+        "destination"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -684,7 +744,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-043/overrides.json"],
-      "required_evidence": ["EXTENSION_INSTALL_FAILED", "CRX_FETCH", "manifest", "force"],
+      "required_evidence": [
+        "EXTENSION_INSTALL_FAILED",
+        "CRX_FETCH",
+        "manifest",
+        "force"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -703,7 +768,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-044/overrides.json"],
-      "required_evidence": ["PERMISSIONS_INCREASE", "EXTENSION_DISABLED", "webRequest", "allowlist"],
+      "required_evidence": [
+        "PERMISSIONS_INCREASE",
+        "EXTENSION_DISABLED",
+        "webRequest",
+        "allowlist"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -760,7 +830,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-047/overrides.json"],
-      "required_evidence": ["52 hours", "lastSyncTime", "Endpoint Verification", "force sync"],
+      "required_evidence": [
+        "52 hours",
+        "lastSyncTime",
+        "Endpoint Verification",
+        "force sync"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -832,7 +907,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-051/overrides.json"],
-      "required_evidence": ["SERVICE_UNAVAILABLE", "TOO_MANY_REQUESTS", "handshake", "allowlist"],
+      "required_evidence": [
+        "SERVICE_UNAVAILABLE",
+        "TOO_MANY_REQUESTS",
+        "handshake",
+        "allowlist"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -870,7 +950,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-053/overrides.json"],
-      "required_evidence": ["EXTENSION_CRASH", "CORRUPTED", "repair", "reinstall"],
+      "required_evidence": [
+        "EXTENSION_CRASH",
+        "CORRUPTED",
+        "repair",
+        "reinstall"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -979,7 +1064,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-060/overrides.json"],
-      "required_evidence": ["DLP-Test", "no DLP rules", "0 rules", "create rule"],
+      "required_evidence": [
+        "DLP-Test",
+        "no DLP rules",
+        "0 rules",
+        "create rule"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -994,7 +1084,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-061/overrides.json"],
-      "required_evidence": ["US_SOCIAL_SECURITY_NUMBER", "NO_MATCH", "threshold", "scope"],
+      "required_evidence": [
+        "US_SOCIAL_SECURITY_NUMBER",
+        "NO_MATCH",
+        "threshold",
+        "scope"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -1248,7 +1343,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-079/overrides.json"],
-      "required_evidence": ["PHONE_NUMBER", "internal-share.example.com", "allowlist", "tuning"],
+      "required_evidence": [
+        "PHONE_NUMBER",
+        "internal-share.example.com",
+        "allowlist",
+        "tuning"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -1307,7 +1407,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-083/overrides.json"],
-      "required_evidence": ["Engineering", "Sales", "Marketing", "organizational unit"],
+      "required_evidence": [
+        "Engineering",
+        "Sales",
+        "Marketing",
+        "organizational unit"
+      ],
       "assertions": [],
       "cleanup": []
     },

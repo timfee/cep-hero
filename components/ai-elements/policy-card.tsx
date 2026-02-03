@@ -46,16 +46,24 @@ export interface PolicyCardProps {
 }
 
 function formatPolicyName(schema?: string): string {
-  if (!schema) return "Unknown Policy";
+  if (!schema) {
+    return "Unknown Policy";
+  }
   // Extract the policy name from schema like "chrome.users.SafeBrowsingProtectionLevel"
   const parts = schema.split(".");
-  return parts[parts.length - 1] || schema;
+  return parts.at(-1) || schema;
 }
 
 function formatValue(value: unknown): string {
-  if (value === null || value === undefined) return "Not set";
-  if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
-  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  if (value === null || value === undefined) {
+    return "Not set";
+  }
+  if (typeof value === "boolean") {
+    return value ? "Enabled" : "Disabled";
+  }
+  if (typeof value === "object") {
+    return JSON.stringify(value, null, 2);
+  }
   return String(value);
 }
 
@@ -197,7 +205,9 @@ export const PolicyList = memo(function PolicyList({
 }: PolicyListProps) {
   const [isOpen, setIsOpen] = useState(false);
 
-  if (policies.length === 0) return null;
+  if (policies.length === 0) {
+    return null;
+  }
 
   const activeCount = policies.filter((p) => {
     const values = p.value?.value ?? {};

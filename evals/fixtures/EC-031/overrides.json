@@ -19,7 +19,10 @@
               { "name": "ACCESS_LEVEL", "value": "CorpDevicesOnly" },
               { "name": "UNMET_ATTRIBUTE", "value": "is_corporate_device" },
               { "name": "DEVICE_CLASSIFICATION", "value": "BYOD" },
-              { "name": "REASON", "value": "Device serial number not found in corporate inventory" }
+              {
+                "name": "REASON",
+                "value": "Device serial number not found in corporate inventory"
+              }
             ]
           }
         ]

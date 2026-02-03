@@ -18,7 +18,10 @@
               { "name": "USER_EMAIL", "value": "john.smith@example.com" },
               { "name": "NEW_VALUE", "value": "j.smith@example.com" },
               { "name": "OLD_VALUE", "value": "john.smith@example.com" },
-              { "name": "CONFLICT_ACCOUNT", "value": "john.smith@gtempaccount.com" }
+              {
+                "name": "CONFLICT_ACCOUNT",
+                "value": "john.smith@gtempaccount.com"
+              }
             ]
           }
         ]
@@ -38,8 +41,14 @@
               { "name": "DEVICE_NAME", "value": "ChromeBook-User-1" },
               { "name": "ATTEMPTED_USER", "value": "john.smith@example.com" },
               { "name": "ERROR_CODE", "value": "ACCOUNT_CONFLICT" },
-              { "name": "ERROR_MESSAGE", "value": "Account conflict detected. A temporary account john.smith@gtempaccount.com exists from a previous rename. User must sign in as Guest or resolve the conflict." },
-              { "name": "SUGGESTED_ACTION", "value": "GUEST_SESSION_OR_CONFLICT_RESOLUTION" }
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Account conflict detected. A temporary account john.smith@gtempaccount.com exists from a previous rename. User must sign in as Guest or resolve the conflict."
+              },
+              {
+                "name": "SUGGESTED_ACTION",
+                "value": "GUEST_SESSION_OR_CONFLICT_RESOLUTION"
+              }
             ]
           }
         ]

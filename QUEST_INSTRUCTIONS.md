@@ -45,6 +45,7 @@ When you run evals with `EVAL_USE_BASE=1`:
 **Important:** By default, fixture data is NOT included in the prompt. This forces the AI to call diagnostic tools (like `getChromeEvents`) to investigate. This tests actual AI behavior, not just "can AI read JSON".
 
 To debug by injecting fixtures into the prompt (not recommended for real testing):
+
 ```bash
 EVAL_INJECT_PROMPT=1 EVAL_USE_BASE=1 bun run evals
 ```
@@ -54,6 +55,7 @@ EVAL_INJECT_PROMPT=1 EVAL_USE_BASE=1 bun run evals
 Evals can require that specific tools are called. This ensures the AI actually investigates rather than giving generic advice.
 
 In `registry.json`:
+
 ```json
 {
   "id": "EC-001",
@@ -63,10 +65,12 @@ In `registry.json`:
 ```
 
 The eval will fail if:
+
 - The AI doesn't call `getChromeEvents`
 - The AI's response doesn't mention the required evidence
 
 This two-layer validation ensures:
+
 1. The AI investigates (calls tools)
 2. The AI finds and reports the right information (evidence check)
 
@@ -179,12 +183,14 @@ Each eval run writes JSON reports to `evals/reports/`. Reports include:
 By default, the eval runner uses an LLM to evaluate evidence requirements semantically. This was implemented to avoid "whack-a-mole" adjustments to evidence requirements.
 
 **How it works:**
+
 1. String matching with text normalization runs first (handles wifi/Wi-Fi, deauth/de-auth variations)
 2. Cases that fail string matching are batched and sent to Gemini
 3. LLM evaluates if the response semantically addresses each evidence concept
 4. Failures are upgraded to passes if the LLM determines evidence is present
 
 **Benefits:**
+
 - Handles synonyms and paraphrasing automatically
 - No need to constantly adjust evidence requirements
 - More robust to natural AI response variation

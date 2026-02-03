@@ -9,6 +9,7 @@ import {
   releaseEvalServer,
 } from "@/lib/test-helpers/eval-server";
 
+import type { EvidenceCheckInput } from "./llm-judge";
 import type { EvalCase } from "./registry";
 import type { EvalReport, EvalSummary } from "./reporter";
 
@@ -20,7 +21,7 @@ import {
   scoreRubric,
 } from "./assertions";
 import { buildEvalPrompt, loadEvalFixtures } from "./fixtures";
-import { batchEvaluateEvidence, type EvidenceCheckInput } from "./llm-judge";
+import { batchEvaluateEvidence } from "./llm-judge";
 import { buildPromptMap, filterEvalCases, loadEvalRegistry } from "./registry";
 import {
   buildSummary,
@@ -34,7 +35,7 @@ import {
 const DEFAULT_CASE_PAUSE_MS = 250;
 const DEFAULT_CHAT_URL = "http://localhost:3100/api/chat";
 
-export type RunnerOptions = {
+export interface RunnerOptions {
   ids?: string;
   categories?: string;
   tags?: string;
@@ -44,12 +45,12 @@ export type RunnerOptions = {
   chatUrl?: string;
   manageServer?: boolean;
   verbose?: boolean;
-};
+}
 
-export type RunnerResult = {
+export interface RunnerResult {
   summary: EvalSummary;
   reports: EvalReport[];
-};
+}
 
 /**
  * Run evals with the given options.
@@ -135,9 +136,9 @@ export async function runEvals(
       const resp = await callChat(prompt, { fixtures });
       responseText = resp.text;
       responseMetadata = resp.metadata;
-      toolCalls = resp.toolCalls;
-    } catch (err) {
-      error = err instanceof Error ? err.message : String(err);
+      ({ toolCalls } = resp);
+    } catch (error) {
+      error = error instanceof Error ? error.message : String(error);
     }
 
     const schemaResult = checkStructuredResponse({
@@ -182,14 +183,18 @@ export async function runEvals(
     let status: EvalReport["status"] = "pass";
     if (error) {
       status = "error";
-    } else if (!schemaResult.passed || !evidenceResult.passed || !toolCallsResult.passed) {
+    } else if (
+      !schemaResult.passed ||
+      !evidenceResult.passed ||
+      !toolCallsResult.passed
+    ) {
       status = "fail";
       if (!error) {
         error = !schemaResult.passed
           ? schemaResult.message
-          : !toolCallsResult.passed
+          : (!toolCallsResult.passed
             ? toolCallsResult.message
-            : evidenceResult.message;
+            : evidenceResult.message);
       }
     } else if (rubricResult && !rubricResult.passed) {
       status = "fail";
@@ -299,7 +304,9 @@ export async function runEvals(
           if (llmResult.passed && report.status === "fail") {
             report.status = "pass";
             report.error = undefined;
-            console.log(`[eval] ${report.caseId} upgraded to pass by LLM judge`);
+            console.log(
+              `[eval] ${report.caseId} upgraded to pass by LLM judge`
+            );
           }
         }
       }
@@ -321,8 +328,8 @@ export async function main(): Promise<void> {
   try {
     const { summary } = await runEvals();
     process.exit(summary.failed + summary.errors > 0 ? 1 : 0);
-  } catch (err) {
-    console.error("[eval] Fatal error:", err);
+  } catch (error) {
+    console.error("[eval] Fatal error:", error);
     process.exit(1);
   }
 }

@@ -4,11 +4,11 @@
  * and report on all assertions.
  */
 
-export type AssertionResult = {
+export interface AssertionResult {
   passed: boolean;
   message: string;
   details?: Record<string, unknown>;
-};
+}
 
 const schemaKeyMap: Record<string, string> = {
   diagnosis: "diagnosis",
@@ -32,9 +32,9 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function normalizeForMatching(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[-_]/g, "") // Remove hyphens and underscores
-    .replace(/[^\w\s]/g, " ") // Replace other punctuation with space
-    .replace(/\s+/g, " ") // Collapse whitespace
+    .replaceAll(/[-_]/g, "") // Remove hyphens and underscores
+    .replaceAll(/[^\w\s]/g, " ") // Replace other punctuation with space
+    .replaceAll(/\s+/g, " ") // Collapse whitespace
     .trim();
 }
 
@@ -76,10 +76,12 @@ export function checkStructuredResponse({
 }
 
 function hasExpectedSchema(metadata: unknown, expected: string[]): boolean {
-  if (!isRecord(metadata)) return false;
+  if (!isRecord(metadata)) {
+    return false;
+  }
   return expected.every((key) => {
     const mapped = schemaKeyMap[key] ?? key;
-    return Object.prototype.hasOwnProperty.call(metadata, mapped);
+    return Object.hasOwn(metadata, mapped);
   });
 }
 

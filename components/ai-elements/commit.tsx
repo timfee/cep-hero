@@ -1,5 +1,7 @@
 "use client";
 
+import type { ComponentProps, HTMLAttributes } from "react";
+
 import {
   CheckIcon,
   CopyIcon,
@@ -8,13 +10,7 @@ import {
   MinusIcon,
   PlusIcon,
 } from "lucide-react";
-import {
-  type ComponentProps,
-  type HTMLAttributes,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";

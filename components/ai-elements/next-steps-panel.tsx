@@ -22,18 +22,23 @@ export const NextStepsPanel = memo(function NextStepsPanel({
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Cleanup timeout on unmount
-  useEffect(() => {
-    return () => {
+  useEffect(
+    () => () => {
       if (timeoutRef.current !== null) {
         clearTimeout(timeoutRef.current);
       }
-    };
-  }, []);
+    },
+    []
+  );
 
-  if (steps.length === 0) return null;
+  if (steps.length === 0) {
+    return null;
+  }
 
   const handleClick = (step: string, idx: number) => {
-    if (disabled || loadingIdx !== null) return;
+    if (disabled || loadingIdx !== null) {
+      return;
+    }
     setLoadingIdx(idx);
     onStepClick?.(step);
     // Clear any existing timeout before setting a new one

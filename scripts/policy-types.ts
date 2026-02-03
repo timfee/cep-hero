@@ -301,10 +301,9 @@ export function parseSupportString(supportString: string): string {
   } else if (endVersion) {
     // Handles ranges like "10-87"
     return `${platformName} versions ${startVersion} to ${endVersion}`;
-  } else {
-    // Handles a single version number, though this is rare in the data.
-    return `${platformName} version ${startVersion}`;
   }
+  // Handles a single version number, though this is rare in the data.
+  return `${platformName} version ${startVersion}`;
 }
 
 /**

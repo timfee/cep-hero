@@ -15,21 +15,21 @@ const USE_EVAL_FIXTURE_MODE =
 let chatReady = false;
 let chatReadyPromise: Promise<void> | undefined;
 
-export type ChatResponse = {
+export interface ChatResponse {
   text: string;
   metadata?: unknown;
   /** Tool names that were called during the conversation */
   toolCalls?: string[];
-};
+}
 
-type ChatMessage = {
+interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;
-};
+}
 
-export type CallChatMessagesOptions = {
+export interface CallChatMessagesOptions {
   fixtures?: FixtureData;
-};
+}
 
 /**
  * Call the chat endpoint with explicit messages.
@@ -76,7 +76,9 @@ export async function callChatMessages(
       retryOptions
     );
   } catch (error) {
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
     if (ALLOW_FAKE_ON_ERROR) {
       return {
         text: "diagnosis: synthetic\nevidence: fixture\nhypotheses: none\nnext steps: review logs",
@@ -90,7 +92,9 @@ export async function callChatMessages(
     }
     throw error;
   } finally {
-    if (timeoutId) clearTimeout(timeoutId);
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
   }
 
   expect(res.status).toBeLessThan(500);
@@ -139,7 +143,10 @@ export async function callChatMessages(
 
     // Extract tool calls
     const toolCalls = chunks
-      .filter((chunk) => chunk.type === "tool-input-start" || chunk.type === "tool-call")
+      .filter(
+        (chunk) =>
+          chunk.type === "tool-input-start" || chunk.type === "tool-call"
+      )
       .map((chunk) => chunk.toolName as string)
       .filter((name): name is string => typeof name === "string");
 
@@ -277,11 +284,11 @@ async function isServerUp(url: string): Promise<boolean> {
   }
 }
 
-type RetryOptions = {
+interface RetryOptions {
   retries: number;
   delayMs: number;
   maxDelayMs: number;
-};
+}
 
 const DEFAULT_RETRY_OPTIONS: RetryOptions = {
   retries: 6,

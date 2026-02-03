@@ -76,7 +76,10 @@
               { "name": "DATA_SIZE_MB", "value": "150" },
               { "name": "TRANSFER_STATUS", "value": "ALLOWED" },
               { "name": "DLP_RULE_APPLIED", "value": "NONE" },
-              { "name": "NOTE", "value": "DLP rules do not cover bulk connector channel - data exfiltrated" }
+              {
+                "name": "NOTE",
+                "value": "DLP rules do not cover bulk connector channel - data exfiltrated"
+              }
             ]
           }
         ]

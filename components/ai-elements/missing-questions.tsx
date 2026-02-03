@@ -33,7 +33,9 @@ export const MissingQuestionsList = memo(function MissingQuestionsList({
   questions,
   className,
 }: MissingQuestionsListProps) {
-  if (questions.length === 0) return null;
+  if (questions.length === 0) {
+    return null;
+  }
 
   return (
     <div className={cn("space-y-2", className)}>

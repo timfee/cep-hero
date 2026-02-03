@@ -3,17 +3,17 @@ import { Index } from "@upstash/vector";
 const DOCS_NAMESPACE = "docs";
 const POLICY_NAMESPACE = "policies";
 
-export type VectorSearchHit = {
+export interface VectorSearchHit {
   id: string | number;
   score: number;
   content?: string;
   metadata?: Record<string, unknown>;
-};
+}
 
-export type VectorSearchResult = {
+export interface VectorSearchResult {
   namespace: "docs" | "policies";
   hits: VectorSearchHit[];
-};
+}
 
 /**
  * Search documentation vectors for troubleshooting context.

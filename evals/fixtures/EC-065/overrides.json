@@ -46,7 +46,10 @@
               { "name": "OU_PATH", "value": "/Web-Off" },
               { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
               { "name": "BLOCKED_ACTION", "value": "WEB_DATA_EXPORT" },
-              { "name": "ERROR_MESSAGE", "value": "Web data connector is disabled. Web data export is blocked." }
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Web data connector is disabled. Web data export is blocked."
+              }
             ]
           }
         ]

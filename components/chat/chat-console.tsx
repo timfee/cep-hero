@@ -6,6 +6,8 @@ import { RefreshCcwIcon, CopyIcon } from "lucide-react";
 import { useCallback, useMemo } from "react";
 import useSWR from "swr";
 
+import type { ActionItem } from "@/components/ai-elements/action-buttons";
+import type { PromptInputMessage } from "@/components/ai-elements/prompt-input";
 import type { ToolPart } from "@/components/ai-elements/tool";
 import type { OverviewData, Suggestion } from "@/lib/overview";
 import type {
@@ -15,10 +17,7 @@ import type {
   SuggestedActionsOutput,
 } from "@/types/chat";
 
-import {
-  ActionButtons,
-  type ActionItem,
-} from "@/components/ai-elements/action-buttons";
+import { ActionButtons } from "@/components/ai-elements/action-buttons";
 import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-policies-card";
 import {
   Conversation,
@@ -41,7 +40,6 @@ import {
   PromptInputTextarea,
   PromptInputSubmit,
   PromptInputFooter,
-  type PromptInputMessage,
 } from "@/components/ai-elements/prompt-input";
 import {
   Reasoning,
@@ -60,15 +58,15 @@ import { cn } from "@/lib/utils";
 
 import { OrgUnitsList } from "./org-units-list";
 
-type OrgUnitsOutput = {
-  orgUnits?: Array<{
+interface OrgUnitsOutput {
+  orgUnits?: {
     orgUnitId?: string;
     name?: string;
     orgUnitPath?: string;
     parentOrgUnitId?: string;
     description?: string;
-  }>;
-};
+  }[];
+}
 
 const CONFIRM_PATTERN = /^confirm\b/i;
 const CANCEL_PATTERN = /^(cancel|no)\b/i;
@@ -98,7 +96,9 @@ const FALLBACK_ACTIONS: ActionItem[] = [
 
 const fetcher = async (url: string) => {
   const res = await fetch(url);
-  if (!res.ok) return null;
+  if (!res.ok) {
+    return null;
+  }
   return res.json();
 };
 
@@ -107,7 +107,7 @@ const fetcher = async (url: string) => {
  */
 function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
   return suggestions
-    .sort((a, b) => a.priority - b.priority)
+    .toSorted((a, b) => a.priority - b.priority)
     .slice(0, 3)
     .map((s, idx) => ({
       id: `empty-${idx}`,
@@ -141,7 +141,7 @@ Is there anything specific you'd like me to help you with?`;
   }
 
   const actionItems = suggestions
-    .sort((a, b) => a.priority - b.priority)
+    .toSorted((a, b) => a.priority - b.priority)
     .slice(0, 3)
     .map((s) => {
       if (s.category === "security") {
@@ -225,7 +225,9 @@ export function ChatConsole() {
         )
         .map(({ part, idx }) => {
           const toolPart = part as ToolPart;
-          if (toolPart.state !== "output-available") return null;
+          if (toolPart.state !== "output-available") {
+            return null;
+          }
           const actions =
             (toolPart.output as SuggestedActionsOutput)?.actions ?? [];
           return {
@@ -257,7 +259,9 @@ export function ChatConsole() {
         );
       }
 
-      if (streaming) return [];
+      if (streaming) {
+        return [];
+      }
       return fallbackActions;
     },
     [fallbackActions]
@@ -266,7 +270,9 @@ export function ChatConsole() {
   const handleSubmit = useCallback(
     (message: PromptInputMessage) => {
       const trimmed = message.text?.trim();
-      if (!trimmed) return;
+      if (!trimmed) {
+        return;
+      }
       track("Chat Message Sent");
       void sendMessage({ text: trimmed });
     },

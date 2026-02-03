@@ -1,5 +1,12 @@
-import { z } from "zod";
+import type { z } from "zod";
 
+import type {
+  DraftPolicyChangeSchema,
+  EnrollBrowserSchema,
+  GetChromeEventsSchema,
+  GetFleetOverviewSchema,
+  ListDLPRulesSchema,
+} from "./registry";
 import type {
   ChromeEventsResult,
   ConnectorConfigResult,
@@ -11,14 +18,6 @@ import type {
   OrgUnitsResult,
   EnrollBrowserResult,
 } from "./types";
-
-import {
-  DraftPolicyChangeSchema,
-  EnrollBrowserSchema,
-  GetChromeEventsSchema,
-  GetFleetOverviewSchema,
-  ListDLPRulesSchema,
-} from "./registry";
 
 /**
  * A tool executor that returns fixture data instead of calling real Google APIs.
@@ -205,14 +204,14 @@ export class FixtureToolExecutor implements IToolExecutor {
   ): Promise<{
     headline: string;
     summary: string;
-    postureCards: Array<{
+    postureCards: {
       label: string;
       value: string;
       note: string;
       source: string;
       action: string;
       lastUpdated?: string;
-    }>;
+    }[];
     suggestions: string[];
     sources: string[];
   }> {

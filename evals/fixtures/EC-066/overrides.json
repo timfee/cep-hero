@@ -46,7 +46,10 @@
               { "name": "OU_PATH", "value": "/FT-Off" },
               { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
               { "name": "BLOCKED_ACTION", "value": "FILE_TRANSFER" },
-              { "name": "ERROR_MESSAGE", "value": "File transfer connector is disabled. File transfers are blocked." }
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "File transfer connector is disabled. File transfers are blocked."
+              }
             ]
           }
         ]

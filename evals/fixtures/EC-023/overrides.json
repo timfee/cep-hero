@@ -15,7 +15,10 @@
               { "name": "DEVICE_ID", "value": "win-vdi-001" },
               { "name": "DEVICE_NAME", "value": "Windows-VDI-Finance-1" },
               { "name": "ERROR_CODE", "value": "PROFILE_PICKER_BLOCKING" },
-              { "name": "ERROR_MESSAGE", "value": "Citrix SPA session launch blocked by Chrome profile picker dialog. Session timed out waiting for profile selection." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Citrix SPA session launch blocked by Chrome profile picker dialog. Session timed out waiting for profile selection."
+              },
               { "name": "CITRIX_APP", "value": "SAP Finance" },
               { "name": "TIMEOUT_SECONDS", "value": "30" },
               { "name": "USER_EMAIL", "value": "accountant@example.com" }
@@ -39,7 +42,10 @@
               { "name": "PICKER_STATE", "value": "MODAL_OPEN" },
               { "name": "PROFILES_AVAILABLE", "value": "3" },
               { "name": "DEFAULT_PROFILE", "value": "Work" },
-              { "name": "SUGGESTION", "value": "Close profile picker or set BrowserSignin policy to disable picker on launch" },
+              {
+                "name": "SUGGESTION",
+                "value": "Close profile picker or set BrowserSignin policy to disable picker on launch"
+              },
               { "name": "USER_EMAIL", "value": "accountant@example.com" }
             ]
           }
@@ -59,7 +65,10 @@
               { "name": "DEVICE_ID", "value": "win-vdi-002" },
               { "name": "DEVICE_NAME", "value": "Windows-VDI-HR-1" },
               { "name": "ERROR_CODE", "value": "PROFILE_PICKER_BLOCKING" },
-              { "name": "ERROR_MESSAGE", "value": "Citrix SPA session launch blocked by Chrome profile picker dialog. User has multiple profiles configured." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Citrix SPA session launch blocked by Chrome profile picker dialog. User has multiple profiles configured."
+              },
               { "name": "CITRIX_APP", "value": "Workday HR" },
               { "name": "TIMEOUT_SECONDS", "value": "30" },
               { "name": "USER_EMAIL", "value": "hr.admin@example.com" }

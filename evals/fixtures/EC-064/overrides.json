@@ -45,7 +45,10 @@
               { "name": "USER_EMAIL", "value": "testuser5@example.com" },
               { "name": "OU_PATH", "value": "/Bulk-Off" },
               { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
-              { "name": "ERROR_MESSAGE", "value": "Bulk data connector is disabled for this organizational unit" }
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Bulk data connector is disabled for this organizational unit"
+              }
             ]
           }
         ]

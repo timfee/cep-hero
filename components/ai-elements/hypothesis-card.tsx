@@ -107,7 +107,9 @@ export const HypothesesList = memo(function HypothesesList({
   const visible = showAll ? hypotheses : hypotheses.slice(0, maxVisible);
   const hiddenCount = hypotheses.length - maxVisible;
 
-  if (hypotheses.length === 0) return null;
+  if (hypotheses.length === 0) {
+    return null;
+  }
 
   return (
     <div className={cn("space-y-2", className)}>

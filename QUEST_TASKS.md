@@ -11,6 +11,7 @@ This document tracks progress on overhauling the CEP-Hero evaluation system. Pro
 **Next Up:** network (6), policy (15), security (6), system (7), updates (1)
 
 **Key Implementations:**
+
 - **Tool call validation** - Evals now verify AI calls diagnostic tools (`evals/lib/assertions.ts`)
 - **No prompt fixture injection** - AI must call tools to get data, not read from prompt
 - **LLM-as-judge** for semantic evidence evaluation (`evals/lib/llm-judge.ts`)
@@ -67,57 +68,57 @@ For each eval case, assess:
 
 ### auth (3 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                             | Reviewed | Fixtures | Notes |
-| ------ | --------------------------------- | -------- | -------- | ----- |
-| EC-014 | Account conflict gtempaccount.com | [x]      | Yes      | gtempaccount rename conflict, guest session required |
-| EC-048 | User session revocation delay     | [x]      | Yes      | Suspended user with active session, token caching |
+| Case   | Title                             | Reviewed | Fixtures | Notes                                                   |
+| ------ | --------------------------------- | -------- | -------- | ------------------------------------------------------- |
+| EC-014 | Account conflict gtempaccount.com | [x]      | Yes      | gtempaccount rename conflict, guest session required    |
+| EC-048 | User session revocation delay     | [x]      | Yes      | Suspended user with active session, token caching       |
 | EC-075 | Token expired                     | [x]      | Yes      | API token expired, error injection for re-auth guidance |
 
 ### browser (3 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                    | Reviewed | Fixtures | Notes |
-| ------ | ---------------------------------------- | -------- | -------- | ----- |
-| EC-007 | Browser crashes (Aw, Snap)               | [x]      | Yes      | RENDERER_OOM, EXTENSION_CRASH, GPU crashes |
+| Case   | Title                                    | Reviewed | Fixtures | Notes                                          |
+| ------ | ---------------------------------------- | -------- | -------- | ---------------------------------------------- |
+| EC-007 | Browser crashes (Aw, Snap)               | [x]      | Yes      | RENDERER_OOM, EXTENSION_CRASH, GPU crashes     |
 | EC-008 | Browser performance (high CPU/slow tabs) | [x]      | Yes      | CPU metrics, extension high CPU (AdBlock Plus) |
-| EC-023 | Citrix SPA profile picker                | [x]      | Yes      | PROFILE_PICKER_BLOCKING, BrowserSignin policy |
+| EC-023 | Citrix SPA profile picker                | [x]      | Yes      | PROFILE_PICKER_BLOCKING, BrowserSignin policy  |
 
 ### connector (8 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                      | Reviewed | Fixtures | Notes |
-| ------ | ------------------------------------------ | -------- | -------- | ----- |
+| Case   | Title                                      | Reviewed | Fixtures | Notes                                                      |
+| ------ | ------------------------------------------ | -------- | -------- | ---------------------------------------------------------- |
 | EC-051 | Connector handshake & service availability | [x]      | Yes      | SERVICE_UNAVAILABLE, TOO_MANY_REQUESTS, handshake failures |
-| EC-057 | Connector scope mis-targeted               | [x]      | Yes      | Customer-level scope instead of Engineering-Test OU |
-| EC-064 | Bulk Data Connector disabled               | [x]      | Yes      | bulkDataConnectorEnabled: false for Bulk-Off OU |
-| EC-065 | Web Data Connector missing                 | [x]      | Yes      | webDataConnectorEnabled: false for Web-Off OU |
-| EC-066 | File Transfer Connector missing            | [x]      | Yes      | fileTransferConnectorEnabled: false for FT-Off OU |
-| EC-067 | Print Connector mis-scoped                 | [x]      | Yes      | Print connector at customer level, not Print-OU |
-| EC-080 | Conflicting DLP vs connector               | [x]      | Yes      | DLP rules don't cover bulk connector channel |
-| EC-082 | Multi-turn connector scope confirmation    | [x]      | Yes      | Multi-turn confirming customer-level scope issue |
+| EC-057 | Connector scope mis-targeted               | [x]      | Yes      | Customer-level scope instead of Engineering-Test OU        |
+| EC-064 | Bulk Data Connector disabled               | [x]      | Yes      | bulkDataConnectorEnabled: false for Bulk-Off OU            |
+| EC-065 | Web Data Connector missing                 | [x]      | Yes      | webDataConnectorEnabled: false for Web-Off OU              |
+| EC-066 | File Transfer Connector missing            | [x]      | Yes      | fileTransferConnectorEnabled: false for FT-Off OU          |
+| EC-067 | Print Connector mis-scoped                 | [x]      | Yes      | Print connector at customer level, not Print-OU            |
+| EC-080 | Conflicting DLP vs connector               | [x]      | Yes      | DLP rules don't cover bulk connector channel               |
+| EC-082 | Multi-turn connector scope confirmation    | [x]      | Yes      | Multi-turn confirming customer-level scope issue           |
 
 ### devices (6 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                  | Reviewed | Fixtures | Notes |
-| ------ | -------------------------------------- | -------- | -------- | ----- |
-| EC-013 | Chromebook battery/power issues        | [x]      | Yes      | DEVICE_POWER_FAILURE, battery DEGRADED, cycle count 892 |
-| EC-016 | Device lockout (previous owner)        | [x]      | Yes      | PREVIOUS_OWNER lockout, oldcompany.com, 48 hour wait |
-| EC-031 | Corporate-owned vs BYOD classification | [x]      | Yes      | is_corporate_device unmet, serial not in inventory |
+| Case   | Title                                  | Reviewed | Fixtures | Notes                                                    |
+| ------ | -------------------------------------- | -------- | -------- | -------------------------------------------------------- |
+| EC-013 | Chromebook battery/power issues        | [x]      | Yes      | DEVICE_POWER_FAILURE, battery DEGRADED, cycle count 892  |
+| EC-016 | Device lockout (previous owner)        | [x]      | Yes      | PREVIOUS_OWNER lockout, oldcompany.com, 48 hour wait     |
+| EC-031 | Corporate-owned vs BYOD classification | [x]      | Yes      | is_corporate_device unmet, serial not in inventory       |
 | EC-047 | Stale device sync                      | [x]      | Yes      | 52 hours since sync, Endpoint Verification not reporting |
-| EC-054 | Deprovisioning gaps                    | [x]      | Yes      | Multiple devices 90+ days stale, Admin SDK deprovision |
-| EC-083 | Check Org Units                        | [x]      | Yes      | Engineering/Sales/Marketing OU structure |
+| EC-054 | Deprovisioning gaps                    | [x]      | Yes      | Multiple devices 90+ days stale, Admin SDK deprovision   |
+| EC-083 | Check Org Units                        | [x]      | Yes      | Engineering/Sales/Marketing OU structure                 |
 
 ### dlp (9 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                | Reviewed | Fixtures | Notes |
-| ------ | ------------------------------------ | -------- | -------- | ----- |
-| EC-033 | Malware scanning timeouts            | [x]      | Yes      | CONTENT_UNSCANNED_TIMEOUT, 2500MB file, 30s limit |
-| EC-034 | Password-protected files blocked     | [x]      | Yes      | FILE_PASSWORD_PROTECTED, cannot scan encrypted ZIP |
+| Case   | Title                                | Reviewed | Fixtures | Notes                                                  |
+| ------ | ------------------------------------ | -------- | -------- | ------------------------------------------------------ |
+| EC-033 | Malware scanning timeouts            | [x]      | Yes      | CONTENT_UNSCANNED_TIMEOUT, 2500MB file, 30s limit      |
+| EC-034 | Password-protected files blocked     | [x]      | Yes      | FILE_PASSWORD_PROTECTED, cannot scan encrypted ZIP     |
 | EC-035 | DLP false positives                  | [x]      | Yes      | CREDIT_CARD_NUMBER matches SKU patterns, tuning needed |
-| EC-036 | Printing restrictions block jobs     | [x]      | Yes      | PRINT_JOB_BLOCKED, financial document, allowlist |
-| EC-037 | Clipboard restrictions               | [x]      | Yes      | CLIPBOARD_OPERATION_BLOCKED, Salesforce to Gmail |
-| EC-060 | DLP rules absent                     | [x]      | Yes      | DLP-Test OU with 0 rules assigned |
-| EC-061 | DLP rule present but not firing      | [x]      | Yes      | US_SOCIAL_SECURITY_NUMBER NO_MATCH, threshold/scope |
-| EC-079 | Detector tuning                      | [x]      | Yes      | PHONE_NUMBER on internal domains, needs allowlist |
-| EC-084 | DLP audit rule setup for all traffic | [x]      | Yes      | Already had fixtures |
+| EC-036 | Printing restrictions block jobs     | [x]      | Yes      | PRINT_JOB_BLOCKED, financial document, allowlist       |
+| EC-037 | Clipboard restrictions               | [x]      | Yes      | CLIPBOARD_OPERATION_BLOCKED, Salesforce to Gmail       |
+| EC-060 | DLP rules absent                     | [x]      | Yes      | DLP-Test OU with 0 rules assigned                      |
+| EC-061 | DLP rule present but not firing      | [x]      | Yes      | US_SOCIAL_SECURITY_NUMBER NO_MATCH, threshold/scope    |
+| EC-079 | Detector tuning                      | [x]      | Yes      | PHONE_NUMBER on internal domains, needs allowlist      |
+| EC-084 | DLP audit rule setup for all traffic | [x]      | Yes      | Already had fixtures                                   |
 
 ### endpoint (4 cases) ✅ FIXTURES COMPLETE
 
@@ -402,15 +403,18 @@ Created fixtures for extensions category (4 cases):
 Implemented semantic evidence evaluation to solve the "whack-a-mole" problem of constantly adjusting evidence requirements.
 
 **Problem:** Exact string matching was too brittle:
+
 - "Wi-Fi" didn't match "wifi" due to hyphen
 - "4-way handshake timeout" didn't match "deauth" (paraphrase)
 - Evidence requirements needed constant adjustment
 
 **Solution:** Two-tier evaluation system:
+
 1. **Text normalization** - First pass removes hyphens, normalizes case
 2. **LLM-as-judge** - Failures get batched and sent to Gemini for semantic evaluation
 
 **Implementation:**
+
 - Created `evals/lib/llm-judge.ts` with batched evaluation (up to 10 cases per LLM call)
 - Uses structured outputs for reliable parsing
 - Modified runner to upgrade failures based on LLM judgment
@@ -418,11 +422,13 @@ Implemented semantic evidence evaluation to solve the "whack-a-mole" problem of 
 **Results:** Enrollment evals: 7/7 (100%) with LLM judge
 
 **Other Changes:**
+
 - Added `searchKnowledge` tool for dynamic RAG during AI reasoning
 - Updated system prompt with guidance on when to search knowledge base
 - Updated QUEST_INSTRUCTIONS.md and MANUAL_TESTING.md with new features
 
 **Key Files Changed:**
+
 - `evals/lib/llm-judge.ts` - New LLM-as-judge module
 - `evals/lib/runner.ts` - Integration with LLM judge
 - `evals/lib/assertions.ts` - Text normalization
@@ -442,16 +448,19 @@ Implemented semantic evidence evaluation to solve the "whack-a-mole" problem of 
 Created fixtures for 14 additional cases across 3 categories:
 
 **Auth category (3 cases):**
+
 - EC-014: gtempaccount.com rename conflict causing guest session requirement
 - EC-048: Suspended user with active session tokens, needs SignOutUser
 - EC-075: API token expired, error injection for re-auth guidance
 
 **Browser category (3 cases):**
+
 - EC-007: Browser crashes (RENDERER_OOM, EXTENSION_CRASH, GPU_CRASH)
 - EC-008: High CPU from extensions (AdBlock Plus), performance metrics
 - EC-023: Citrix SPA profile picker blocking, BrowserSignin policy
 
 **Connector category (8 cases):**
+
 - EC-051: Service unavailable, rate limits, handshake failures
 - EC-057: Customer-level scope instead of Engineering-Test OU
 - EC-064: Bulk Data Connector disabled for Bulk-Off OU
@@ -462,6 +471,7 @@ Created fixtures for 14 additional cases across 3 categories:
 - EC-082: Multi-turn confirming customer-level scope issue
 
 **Total Progress:** 35/85 cases now have fixtures (41%)
+
 - enrollment: 7 ✅
 - events: 2 ✅
 - extensions: 4 ✅
@@ -485,6 +495,7 @@ Created fixtures for 14 additional cases across 3 categories:
 Discovered that the eval system was not actually testing AI behavior - it was testing "can AI read JSON from prompt". Fixed this comprehensively.
 
 **Problem Identified:**
+
 - Fixture data was injected directly into prompts as "Fixture context"
 - AI just read the JSON and extracted error codes
 - No validation that AI called diagnostic tools
@@ -517,11 +528,13 @@ Discovered that the eval system was not actually testing AI behavior - it was te
    - AI now consistently calls tools even with minimal user input
 
 **Test Results:**
+
 - Before fix: 100% pass (meaningless - AI just read prompt)
 - After fix without tool calls: ~40% pass
 - After fix with tool calls + LLM judge: 100% pass (meaningful - AI investigates)
 
 **Key Files Changed:**
+
 - `evals/lib/fixtures.ts` - `injectIntoPrompt` option
 - `evals/lib/registry.ts` - `required_tool_calls` type
 - `evals/lib/assertions.ts` - `checkRequiredToolCalls()` function
@@ -533,6 +546,7 @@ Discovered that the eval system was not actually testing AI behavior - it was te
 - `evals/cases/EC-001...md` - Simplified realistic prompt
 
 **New Environment Variables:**
+
 - `EVAL_INJECT_PROMPT=1` - Inject fixtures into prompt (for debugging, off by default)
 
 **Next Session Should:**

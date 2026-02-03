@@ -44,8 +44,14 @@
               { "name": "DETECTOR", "value": "US_SOCIAL_SECURITY_NUMBER" },
               { "name": "TRIGGER_TYPE", "value": "UPLOAD" },
               { "name": "MATCH_RESULT", "value": "NO_MATCH" },
-              { "name": "POSSIBLE_REASON", "value": "Detector threshold not met or file type not scanned" },
-              { "name": "NOTE", "value": "Check detector settings, file type coverage, and scope configuration" }
+              {
+                "name": "POSSIBLE_REASON",
+                "value": "Detector threshold not met or file type not scanned"
+              },
+              {
+                "name": "NOTE",
+                "value": "Check detector settings, file type coverage, and scope configuration"
+              }
             ]
           }
         ]

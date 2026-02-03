@@ -1,15 +1,10 @@
 import { Index } from "@upstash/vector";
 
-import {
-  getSupportedOnText,
-  type PolicyDefinition,
-  type PolicyTemplates,
-} from "./policy-types";
-import {
-  BATCH_SIZE,
-  type PolicyDocument,
-  UPSTASH_MAX_DATA_SIZE,
-} from "./vector-types";
+import type { PolicyDefinition, PolicyTemplates } from "./policy-types";
+import type { PolicyDocument } from "./vector-types";
+
+import { getSupportedOnText } from "./policy-types";
+import { BATCH_SIZE, UPSTASH_MAX_DATA_SIZE } from "./vector-types";
 
 function generatePolicyMarkdown(policy: PolicyDefinition): string {
   const sections: string[] = [];
@@ -18,10 +13,18 @@ function generatePolicyMarkdown(policy: PolicyDefinition): string {
   sections.push("");
 
   const metadata: string[] = [];
-  if (policy.name) metadata.push(`**Policy Name:** \`${policy.name}\``);
-  if (policy.id) metadata.push(`**Policy ID:** ${policy.id}`);
-  if (policy.deprecated) metadata.push(`**Status:** ⚠️ Deprecated`);
-  if (policy.device_only) metadata.push(`**Scope:** Device-only`);
+  if (policy.name) {
+    metadata.push(`**Policy Name:** \`${policy.name}\``);
+  }
+  if (policy.id) {
+    metadata.push(`**Policy ID:** ${policy.id}`);
+  }
+  if (policy.deprecated) {
+    metadata.push(`**Status:** ⚠️ Deprecated`);
+  }
+  if (policy.device_only) {
+    metadata.push(`**Scope:** Device-only`);
+  }
 
   if (metadata.length > 0) {
     sections.push(metadata.join("  \n"));
@@ -79,13 +82,18 @@ function generatePolicyMarkdown(policy: PolicyDefinition): string {
 
   if (policy.features) {
     const features: string[] = [];
-    if (policy.features.dynamic_refresh)
+    if (policy.features.dynamic_refresh) {
       features.push("Dynamic refresh supported");
-    if (policy.features.per_profile) features.push("Per-profile configuration");
-    if (policy.features.can_be_recommended)
+    }
+    if (policy.features.per_profile) {
+      features.push("Per-profile configuration");
+    }
+    if (policy.features.can_be_recommended) {
       features.push("Can be set as recommended");
-    if (policy.features.can_be_mandatory)
+    }
+    if (policy.features.can_be_mandatory) {
       features.push("Can be set as mandatory");
+    }
 
     if (features.length > 0) {
       sections.push("## Features");

@@ -3,7 +3,7 @@
 import { useChat } from "@ai-sdk/react";
 import { createContext, useContext, useMemo, useState } from "react";
 
-type ChatContextValue = {
+interface ChatContextValue {
   messages: ReturnType<typeof useChat>["messages"];
   status: ReturnType<typeof useChat>["status"];
   input: string;
@@ -11,7 +11,7 @@ type ChatContextValue = {
   sendMessage: ReturnType<typeof useChat>["sendMessage"];
   stop: ReturnType<typeof useChat>["stop"];
   regenerate: ReturnType<typeof useChat>["regenerate"];
-};
+}
 
 const ChatContext = createContext<ChatContextValue | null>(null);
 

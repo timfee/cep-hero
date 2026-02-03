@@ -1,17 +1,23 @@
-import { closeSync, existsSync, openSync, unlinkSync, writeFileSync } from "fs";
+import {
+  closeSync,
+  existsSync,
+  openSync,
+  unlinkSync,
+  writeFileSync,
+} from "node:fs";
 
-type EvalServerState = {
+interface EvalServerState {
   server?: ReturnType<typeof Bun.spawn>;
   startPromise?: Promise<void>;
   ownsServer: boolean;
   ownsLock: boolean;
   refCount: number;
-};
+}
 
-type EnsureEvalServerOptions = {
+interface EnsureEvalServerOptions {
   chatUrl: string;
   manageServer: boolean;
-};
+}
 
 const GLOBAL_KEY = "__cepEvalServer";
 const LOCK_PATH = `${Bun.env.TMPDIR ?? "/tmp"}/cep-eval-server.lock`;

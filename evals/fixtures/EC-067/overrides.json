@@ -40,12 +40,18 @@
             "type": "POLICY_APPLICATION",
             "name": "PRINT_CONNECTOR_SCOPE_MISMATCH",
             "parameters": [
-              { "name": "POLICY_NAME", "value": "chrome.users.PrintConnectorEnabled" },
+              {
+                "name": "POLICY_NAME",
+                "value": "chrome.users.PrintConnectorEnabled"
+              },
               { "name": "EXPECTED_SCOPE", "value": "orgunits/07print0u123" },
               { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
               { "name": "OU_PATH", "value": "/Print-OU" },
               { "name": "AFFECTED_USER", "value": "testuser8@example.com" },
-              { "name": "NOTE", "value": "Print connector policy targeted at customer level; OU-specific targeting required for Print-OU" }
+              {
+                "name": "NOTE",
+                "value": "Print connector policy targeted at customer level; OU-specific targeting required for Print-OU"
+              }
             ]
           }
         ]

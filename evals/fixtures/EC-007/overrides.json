@@ -16,9 +16,15 @@
               { "name": "DEVICE_NAME", "value": "Windows-WS-Finance-1" },
               { "name": "CRASH_ID", "value": "crash-2026012010-001" },
               { "name": "CRASH_TYPE", "value": "RENDERER_OOM" },
-              { "name": "ERROR_MESSAGE", "value": "Aw, Snap! Something went wrong while displaying this webpage. Error code: OUT_OF_MEMORY" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Aw, Snap! Something went wrong while displaying this webpage. Error code: OUT_OF_MEMORY"
+              },
               { "name": "MEMORY_AT_CRASH_MB", "value": "3847" },
-              { "name": "TAB_URL", "value": "https://docs.google.com/spreadsheets/d/large-dataset" },
+              {
+                "name": "TAB_URL",
+                "value": "https://docs.google.com/spreadsheets/d/large-dataset"
+              },
               { "name": "USER_EMAIL", "value": "analyst@example.com" }
             ]
           }
@@ -39,8 +45,14 @@
               { "name": "DEVICE_NAME", "value": "Windows-WS-Finance-2" },
               { "name": "CRASH_ID", "value": "crash-2026012010-002" },
               { "name": "CRASH_TYPE", "value": "EXTENSION_CRASH" },
-              { "name": "ERROR_MESSAGE", "value": "Aw, Snap! Something went wrong while displaying this webpage. Error code: SBOX_FATAL_MEMORY_EXCEEDED" },
-              { "name": "EXTENSION_ID", "value": "kbfnbcaeplbcioakkpcpgfkobkghlhen" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Aw, Snap! Something went wrong while displaying this webpage. Error code: SBOX_FATAL_MEMORY_EXCEEDED"
+              },
+              {
+                "name": "EXTENSION_ID",
+                "value": "kbfnbcaeplbcioakkpcpgfkobkghlhen"
+              },
               { "name": "EXTENSION_NAME", "value": "Grammarly" },
               { "name": "MEMORY_AT_CRASH_MB", "value": "4102" },
               { "name": "USER_EMAIL", "value": "writer@example.com" }
@@ -63,8 +75,14 @@
               { "name": "DEVICE_NAME", "value": "Windows-WS-Design-1" },
               { "name": "CRASH_ID", "value": "crash-2026012010-003" },
               { "name": "CRASH_TYPE", "value": "GPU_PROCESS_CRASH" },
-              { "name": "ERROR_MESSAGE", "value": "Aw, Snap! Something went wrong while displaying this webpage. Error code: GPU_PROCESS_GONE" },
-              { "name": "GPU_INFO", "value": "NVIDIA GeForce RTX 3060 - Driver 531.79" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Aw, Snap! Something went wrong while displaying this webpage. Error code: GPU_PROCESS_GONE"
+              },
+              {
+                "name": "GPU_INFO",
+                "value": "NVIDIA GeForce RTX 3060 - Driver 531.79"
+              },
               { "name": "USER_EMAIL", "value": "designer@example.com" }
             ]
           }

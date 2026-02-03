@@ -1,16 +1,16 @@
 import dotenv from "dotenv";
-import { existsSync } from "fs";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
+import { existsSync } from "node:fs";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 import { makeGoogleClients } from "@/lib/test-helpers/google-admin";
 
-type CheckResult = {
+interface CheckResult {
   ok: boolean;
   warnings: string[];
   errors: string[];
-};
+}
 
 const REQUIRED_SCOPES = [
   "https://www.googleapis.com/auth/admin.directory.user",
@@ -42,7 +42,7 @@ function parseServiceAccountJson(): {
     return { error: "Missing GOOGLE_SERVICE_ACCOUNT_JSON." };
   }
   try {
-    const trimmed = raw.replace(/^['"]|['"]$/g, "");
+    const trimmed = raw.replaceAll(/^['"]|['"]$/g, "");
     const parsed = JSON.parse(trimmed);
     return {
       client_email: parsed.client_email,

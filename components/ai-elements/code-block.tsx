@@ -1,11 +1,16 @@
 "use client";
 
+import type { ComponentProps, CSSProperties, HTMLAttributes } from "react";
+import type {
+  BundledLanguage,
+  BundledTheme,
+  HighlighterGeneric,
+  ThemedToken,
+} from "shiki";
+
 import { CheckIcon, CopyIcon } from "lucide-react";
 import {
-  type ComponentProps,
-  type CSSProperties,
   createContext,
-  type HTMLAttributes,
   memo,
   useContext,
   useEffect,
@@ -13,13 +18,7 @@ import {
   useRef,
   useState,
 } from "react";
-import {
-  type BundledLanguage,
-  type BundledTheme,
-  createHighlighter,
-  type HighlighterGeneric,
-  type ThemedToken,
-} from "shiki";
+import { createHighlighter } from "shiki";
 
 import { Button } from "@/components/ui/button";
 import {

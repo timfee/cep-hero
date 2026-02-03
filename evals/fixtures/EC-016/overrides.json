@@ -17,7 +17,10 @@
               { "name": "SERIAL_NUMBER", "value": "5CD9876543" },
               { "name": "LOCKOUT_REASON", "value": "PREVIOUS_OWNER" },
               { "name": "PREVIOUS_DOMAIN", "value": "oldcompany.com" },
-              { "name": "LOCKOUT_MESSAGE", "value": "This device is locked by previous owner. Contact oldcompany.com administrator." },
+              {
+                "name": "LOCKOUT_MESSAGE",
+                "value": "This device is locked by previous owner. Contact oldcompany.com administrator."
+              },
               { "name": "ENROLLMENT_STATUS", "value": "BLOCKED" }
             ]
           }

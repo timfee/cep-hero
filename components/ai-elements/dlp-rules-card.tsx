@@ -10,18 +10,18 @@ import {
 } from "@/components/ui/tooltip";
 import { TOOLTIPS } from "@/lib/terminology";
 
-type DlpRule = {
+interface DlpRule {
   id?: string;
   displayName?: string;
   description?: string;
   consoleUrl?: string;
-};
+}
 
-type DlpRulesOutput = {
+interface DlpRulesOutput {
   rules?: DlpRule[];
   error?: string;
   suggestion?: string;
-};
+}
 
 export const DlpRulesCard = memo(function DlpRulesCard({
   output,

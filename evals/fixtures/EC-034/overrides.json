@@ -19,7 +19,10 @@
               { "name": "ENCRYPTION_TYPE", "value": "PASSWORD_PROTECTED" },
               { "name": "ACTION_TAKEN", "value": "BLOCKED" },
               { "name": "POLICY_FLAG", "value": "blockPasswordProtectedFiles" },
-              { "name": "ERROR_MESSAGE", "value": "Encrypted ZIP blocked - cannot scan password-protected archives" }
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Encrypted ZIP blocked - cannot scan password-protected archives"
+              }
             ]
           }
         ]

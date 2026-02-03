@@ -15,10 +15,16 @@
               { "name": "DEVICE_ID", "value": "win-corp-005" },
               { "name": "USER_EMAIL", "value": "user@example.com" },
               { "name": "SOURCE_APP", "value": "Salesforce (salesforce.com)" },
-              { "name": "DESTINATION_APP", "value": "Personal Gmail (mail.google.com)" },
+              {
+                "name": "DESTINATION_APP",
+                "value": "Personal Gmail (mail.google.com)"
+              },
               { "name": "OPERATION", "value": "PASTE" },
               { "name": "DATA_TYPE", "value": "TEXT" },
-              { "name": "DLP_RULE", "value": "Block clipboard to personal destinations" },
+              {
+                "name": "DLP_RULE",
+                "value": "Block clipboard to personal destinations"
+              },
               { "name": "ACTION_TAKEN", "value": "BLOCKED" },
               { "name": "EVENT_TYPE", "value": "clipboard_event" }
             ]

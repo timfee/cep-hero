@@ -2,18 +2,24 @@ import { appendFile } from "node:fs/promises";
 
 const LOG_PATH = `${process.cwd()}/debug.log`;
 
-type DebugEntry = {
+interface DebugEntry {
   ts: string;
   event: string;
   data?: unknown;
-};
+}
 
 const REDACT_KEYS = [/token/i, /authorization/i, /cookie/i];
 
 function sanitizeForLog(value: unknown): unknown {
-  if (value === null || value === undefined) return value;
-  if (typeof value === "string") return value;
-  if (typeof value === "number" || typeof value === "boolean") return value;
+  if (value === null || value === undefined) {
+    return value;
+  }
+  if (typeof value === "string") {
+    return value;
+  }
+  if (typeof value === "number" || typeof value === "boolean") {
+    return value;
+  }
   if (Array.isArray(value)) {
     return value.map((item) => sanitizeForLog(item));
   }

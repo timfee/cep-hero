@@ -25,7 +25,9 @@ export const PlanSteps = memo(function PlanSteps({
 }: PlanStepsProps) {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
-  if (steps.length === 0) return null;
+  if (steps.length === 0) {
+    return null;
+  }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>

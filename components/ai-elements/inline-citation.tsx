@@ -1,8 +1,9 @@
 "use client";
 
+import type { ComponentProps } from "react";
+
 import { ArrowLeftIcon, ArrowRightIcon } from "lucide-react";
 import {
-  type ComponentProps,
   createContext,
   useCallback,
   useContext,
@@ -10,10 +11,11 @@ import {
   useState,
 } from "react";
 
+import type { CarouselApi } from "@/components/ui/carousel";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Carousel,
-  type CarouselApi,
   CarouselContent,
   CarouselItem,
 } from "@/components/ui/carousel";

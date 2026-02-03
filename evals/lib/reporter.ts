@@ -3,14 +3,14 @@
  * Handles writing reports to disk and formatting console output.
  */
 
-import { mkdir, writeFile } from "fs/promises";
-import path from "path";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import type { AssertionResult } from "./assertions";
 
 export type EvalReportStatus = "pass" | "fail" | "error";
 
-export type EvalReport = {
+export interface EvalReport {
   runId: string;
   caseId: string;
   title: string;
@@ -38,9 +38,9 @@ export type EvalReport = {
   durationMs: number;
   timestamp: string;
   error?: string;
-};
+}
 
-export type EvalSummary = {
+export interface EvalSummary {
   runId: string;
   timestamp: string;
   totalCases: number;
@@ -49,8 +49,8 @@ export type EvalSummary = {
   errors: number;
   durationMs: number;
   byCategory: Record<string, { total: number; passed: number; failed: number }>;
-  failures: Array<{ id: string; title: string; reason: string }>;
-};
+  failures: { id: string; title: string; reason: string }[];
+}
 
 const DEFAULT_REPORTS_DIR = path.join(process.cwd(), "evals", "reports");
 
@@ -58,7 +58,7 @@ const DEFAULT_REPORTS_DIR = path.join(process.cwd(), "evals", "reports");
  * Generate a unique run ID based on timestamp.
  */
 export function createRunId(date: Date = new Date()): string {
-  return date.toISOString().replace(/[:.]/g, "-");
+  return date.toISOString().replaceAll(/[:.]/g, "-");
 }
 
 /**
@@ -71,7 +71,7 @@ export async function writeEvalReport(
   await mkdir(reportsDir, { recursive: true });
   const fileName = `${report.caseId}-${report.runId}.json`;
   const outputPath = path.join(reportsDir, fileName);
-  await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf-8");
+  await writeFile(outputPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   return outputPath;
 }
 
@@ -85,7 +85,7 @@ export async function writeSummaryReport(
   await mkdir(reportsDir, { recursive: true });
   const fileName = `summary-${summary.runId}.json`;
   const outputPath = path.join(reportsDir, fileName);
-  await writeFile(outputPath, `${JSON.stringify(summary, null, 2)}\n`, "utf-8");
+  await writeFile(outputPath, `${JSON.stringify(summary, null, 2)}\n`, "utf8");
   return outputPath;
 }
 
@@ -96,9 +96,9 @@ export function formatCaseResult(report: EvalReport): string {
   const statusIcon =
     report.status === "pass"
       ? "PASS"
-      : report.status === "fail"
+      : (report.status === "fail"
         ? "FAIL"
-        : "ERR ";
+        : "ERR ");
   const duration = `${report.durationMs}ms`.padStart(7);
   return `[${statusIcon}] ${report.caseId} ${duration} - ${report.title}`;
 }
@@ -156,7 +156,7 @@ export function buildSummary(
     string,
     { total: number; passed: number; failed: number }
   > = {};
-  const failures: Array<{ id: string; title: string; reason: string }> = [];
+  const failures: { id: string; title: string; reason: string }[] = [];
 
   let passed = 0;
   let failed = 0;

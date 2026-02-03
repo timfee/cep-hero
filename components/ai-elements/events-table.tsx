@@ -11,44 +11,50 @@ import {
 import { TOOLTIPS } from "@/lib/terminology";
 import { cn } from "@/lib/utils";
 
-type EventParameter = {
+interface EventParameter {
   name?: string;
   value?: string;
   intValue?: string;
   boolValue?: boolean;
   multiValue?: string[];
-};
+}
 
-type ChromeEvent = {
+interface ChromeEvent {
   id?: { time?: string | null; uniqueQualifier?: string | null };
   actor?: { email?: string | null; profileId?: string | null };
-  events?: Array<{
+  events?: {
     name?: string | null;
     type?: string | null;
     parameters?: EventParameter[];
-  }>;
-};
+  }[];
+}
 
-type ChromeEventsOutput = {
+interface ChromeEventsOutput {
   events?: ChromeEvent[];
   nextPageToken?: string | null;
   error?: string;
   suggestion?: string;
-};
+}
 
 function formatShortDate(value?: string | null): string {
-  if (!value) return "";
+  if (!value) {
+    return "";
+  }
   const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return "";
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
   return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
 }
 
 function humanizeEventName(name?: string | null): string {
-  if (!name) return "Unknown Event";
+  if (!name) {
+    return "Unknown Event";
+  }
   return name
-    .replace(/_/g, " ")
+    .replaceAll("_", " ")
     .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+    .replaceAll(/\b\w/g, (c) => c.toUpperCase());
 }
 
 const NOTABLE_EVENT_NAMES = [
@@ -67,7 +73,9 @@ const NOTABLE_RESULTS = ["BLOCKED", "QUARANTINED", "DENIED"] as const;
 
 function isNotableEvent(event: ChromeEvent): boolean {
   const primary = event.events?.[0];
-  if (!primary) return false;
+  if (!primary) {
+    return false;
+  }
 
   const eventName = primary.name?.toUpperCase() ?? "";
   if (
@@ -92,7 +100,9 @@ function isNotableEvent(event: ChromeEvent): boolean {
 }
 
 function isErrorEvent(type?: string | null): boolean {
-  if (!type) return false;
+  if (!type) {
+    return false;
+  }
   const errorPatterns = [
     "FAILURE",
     "ERROR",

@@ -15,7 +15,10 @@
               { "name": "DEVICE_ID", "value": "chromebook-new-001" },
               { "name": "DEVICE_NAME", "value": "ChromeBook-Enrollment" },
               { "name": "ERROR_CODE", "value": "ERR_NAME_NOT_RESOLVED" },
-              { "name": "ERROR_MESSAGE", "value": "DNS resolution failed for clients.google.com" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "DNS resolution failed for clients.google.com"
+              },
               { "name": "TARGET_HOST", "value": "clients.google.com" },
               { "name": "NET_ERROR", "value": "-105" }
             ]
@@ -36,7 +39,10 @@
               { "name": "DEVICE_ID", "value": "chromebook-new-001" },
               { "name": "DEVICE_NAME", "value": "ChromeBook-Enrollment" },
               { "name": "ERROR_CODE", "value": "ERR_CONNECTION_TIMED_OUT" },
-              { "name": "ERROR_MESSAGE", "value": "TCP connection to enrollment server timed out" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "TCP connection to enrollment server timed out"
+              },
               { "name": "TARGET_ADDRESS", "value": "142.250.72.14:443" },
               { "name": "NET_ERROR", "value": "-118" }
             ]
@@ -58,7 +64,10 @@
               { "name": "DEVICE_NAME", "value": "ChromeBook-Enrollment" },
               { "name": "SSID", "value": "CorpWiFi-Guest" },
               { "name": "ERROR_CODE", "value": "4_WAY_HANDSHAKE_TIMEOUT" },
-              { "name": "ERROR_MESSAGE", "value": "Wi-Fi 4-way handshake timed out during enrollment" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Wi-Fi 4-way handshake timed out during enrollment"
+              },
               { "name": "REASON_CODE", "value": "15" },
               { "name": "ASSOCIATION_STATUS", "value": "FAILED" }
             ]
@@ -80,7 +89,10 @@
               { "name": "DEVICE_NAME", "value": "ChromeBook-Enrollment" },
               { "name": "SSID", "value": "CorpWiFi-Guest" },
               { "name": "REASON_CODE", "value": "4" },
-              { "name": "REASON_MESSAGE", "value": "Disassociated due to inactivity" }
+              {
+                "name": "REASON_MESSAGE",
+                "value": "Disassociated due to inactivity"
+              }
             ]
           }
         ]

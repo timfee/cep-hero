@@ -1,7 +1,7 @@
-import { mkdir, writeFile } from "fs/promises";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
-import path from "path";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 import {
@@ -10,20 +10,20 @@ import {
   makeGoogleClients,
 } from "@/lib/test-helpers/google-admin";
 
-type BaseFixture = {
-  orgUnits: Array<{
+interface BaseFixture {
+  orgUnits: {
     orgUnitId?: string | null;
     orgUnitPath?: string | null;
     name?: string | null;
     parentOrgUnitId?: string | null;
-  }>;
-  policySchemas: Array<{
+  }[];
+  policySchemas: {
     name?: string | null;
     policyDescription?: string | null;
-  }>;
+  }[];
   chromeReports: unknown;
   auditEvents: unknown;
-};
+}
 
 const OUTPUT_DIR = path.join(process.cwd(), "evals", "fixtures", "base");
 
@@ -35,7 +35,7 @@ async function writeFixture(name: string, payload: unknown) {
   await writeFile(
     outputPath,
     `${JSON.stringify(sanitized, null, 2)}\n`,
-    "utf-8"
+    "utf8"
   );
   console.log(`[fixtures] wrote ${outputPath}`);
 }
@@ -43,39 +43,39 @@ async function writeFixture(name: string, payload: unknown) {
 /** Remove emails and customer IDs to avoid leaking PII. */
 function sanitizeFixture(payload: unknown): unknown {
   const raw = JSON.stringify(payload);
-  const redactedEmails = raw.replace(
+  const redactedEmails = raw.replaceAll(
     /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
     "<redacted-email>"
   );
-  const redactedCustomers = redactedEmails.replace(
+  const redactedCustomers = redactedEmails.replaceAll(
     /customers\/[A-Za-z0-9_-]+/g,
     "customers/<redacted>"
   );
-  const redactedPaths = redactedCustomers.replace(
+  const redactedPaths = redactedCustomers.replaceAll(
     /\/home\/[^"\s]+/g,
     "<redacted-path>"
   );
-  const redactedIpv4 = redactedPaths.replace(
+  const redactedIpv4 = redactedPaths.replaceAll(
     /\b\d{1,3}(?:\.\d{1,3}){3}\b/g,
     "<redacted-ipv4>"
   );
-  const redactedIpv6 = redactedIpv4.replace(
+  const redactedIpv6 = redactedIpv4.replaceAll(
     /\b(?=[a-f0-9:]*[a-f])[a-f0-9]{0,4}(?::[a-f0-9]{0,4}){2,}\b/gi,
     "<redacted-ipv6>"
   );
-  const redactedHashes = redactedIpv6.replace(
+  const redactedHashes = redactedIpv6.replaceAll(
     /\b[a-f0-9]{32,256}\b/gi,
     "<redacted-hash>"
   );
-  const redactedCustomerId = redactedHashes.replace(
+  const redactedCustomerId = redactedHashes.replaceAll(
     /"customerId":"[^"]+"/g,
     '"customerId":"<redacted>"'
   );
-  const redactedProfileId = redactedCustomerId.replace(
+  const redactedProfileId = redactedCustomerId.replaceAll(
     /"profileId":"[^"]+"/g,
     '"profileId":"<redacted>"'
   );
-  const redactedUrls = redactedProfileId.replace(
+  const redactedUrls = redactedProfileId.replaceAll(
     /https?:\/\/[^"]+/g,
     "https://<redacted-domain>"
   );

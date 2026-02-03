@@ -1,7 +1,9 @@
+import type { chromepolicy_v1 } from "googleapis";
+
 import { google as googleModel } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { OAuth2Client } from "google-auth-library";
-import { google as googleApis, chromepolicy_v1 } from "googleapis";
+import { google as googleApis } from "googleapis";
 import { StatusCodes } from "http-status-codes";
 import { z } from "zod";
 
@@ -139,29 +141,29 @@ const FleetOverviewResponseSchema = z.object({
 
 export type FleetOverviewResponse = z.infer<typeof FleetOverviewResponseSchema>;
 
-type FleetKnowledgeContext = {
+interface FleetKnowledgeContext {
   docs: VectorSearchResult | null;
   policies: VectorSearchResult | null;
-};
+}
 
-type FleetOverviewFacts = {
+interface FleetOverviewFacts {
   eventCount: number;
   dlpRuleCount: number;
   connectorPolicyCount: number;
   latestEventAt: string | null;
   errors: string[];
-};
+}
 
 type ResolvedPolicy =
   chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
     policyTargetKey?: { targetResource?: string };
   };
 
-type OrgUnit = {
+interface OrgUnit {
   orgUnitId?: string | null;
   parentOrgUnitId?: string | null;
   orgUnitPath?: string | null;
-};
+}
 
 /**
  * Standardized API error response with reauth detection.
@@ -224,7 +226,8 @@ const SESSION_EXPIRED_SUGGESTION =
  * If the error reaches application code, token refresh has already failed.
  */
 function requiresReauthentication(code: number | string | undefined): boolean {
-  const numericCode = typeof code === "string" ? parseInt(code, 10) : code;
+  const numericCode =
+    typeof code === "string" ? Number.parseInt(code, 10) : code;
   return (
     numericCode === StatusCodes.UNAUTHORIZED ||
     numericCode === StatusCodes.FORBIDDEN
@@ -254,7 +257,7 @@ function createApiError(
 function normalizeResource(value: string): string {
   const trimmed = value.trim();
   const stripped = trimmed.replace(/^id:/, "");
-  return stripped.replace(/\/{2,}/g, "/");
+  return stripped.replaceAll(/\/{2,}/g, "/");
 }
 
 function buildOrgUnitTargetResource(value: string): string {
@@ -751,10 +754,10 @@ export class CepToolExecutor {
             orgUnitPath: "/",
           });
           rootOuId = rootRes.data.orgUnitId ?? null;
-        } catch (e) {
+        } catch (error) {
           console.log(
             "[connector-config] explicit root-ou fetch failed",
-            getErrorMessage(e)
+            getErrorMessage(error)
           );
         }
 
@@ -797,8 +800,7 @@ export class CepToolExecutor {
         };
       }
 
-      const resolveErrors: Array<{ targetResource: string; message: string }> =
-        [];
+      const resolveErrors: { targetResource: string; message: string }[] = [];
       for (const targetResource of targetCandidates) {
         attemptedTargets.push(targetResource);
 
@@ -1097,9 +1099,9 @@ export class CepToolExecutor {
       const headline =
         hasDlpRules && hasConnectors
           ? "Your Chrome fleet is configured, but let's verify everything is working."
-          : missingItems.length === 2
+          : (missingItems.length === 2
             ? "Your fleet is missing DLP rules and connector policies - your data may not be protected."
-            : `Your fleet has no ${missingItems[0]} configured - this is a security gap.`;
+            : `Your fleet has no ${missingItems[0]} configured - this is a security gap.`);
 
       return {
         headline,

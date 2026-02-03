@@ -15,7 +15,10 @@
               { "name": "DEVICE_ID", "value": "chromebook-enroll-001" },
               { "name": "DEVICE_NAME", "value": "ChromeBook-Setup" },
               { "name": "ERROR_CODE", "value": "402" },
-              { "name": "ERROR_MESSAGE", "value": "HTTP error 402 - Payment Required. No valid license found." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "HTTP error 402 - Payment Required. No valid license found."
+              },
               { "name": "LICENSE_STATUS", "value": "MISSING" },
               { "name": "ENROLLMENT_STAGE", "value": "LICENSE_CHECK" }
             ]
@@ -36,7 +39,10 @@
               { "name": "DEVICE_ID", "value": "chromebook-enroll-001" },
               { "name": "DEVICE_NAME", "value": "ChromeBook-Setup" },
               { "name": "ERROR_CODE", "value": "NO_VALID_LICENSE" },
-              { "name": "ERROR_MESSAGE", "value": "Chrome Enterprise license not found for this organization. Purchase or assign a license to proceed with enrollment." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Chrome Enterprise license not found for this organization. Purchase or assign a license to proceed with enrollment."
+              },
               { "name": "ORGANIZATION", "value": "example.com" }
             ]
           }

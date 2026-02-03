@@ -37,18 +37,18 @@ EVAL_VERBOSE=1 EVAL_IDS="EC-001" EVAL_USE_FIXTURES=1 bun run evals
 
 ## Environment Variables
 
-| Variable               | Description                                          |
-| ---------------------- | ---------------------------------------------------- |
-| `EVAL_IDS`             | Comma-separated case IDs (e.g., `EC-001,EC-002`)     |
-| `EVAL_CATEGORY`        | Filter by category (e.g., `enrollment`, `connector`) |
-| `EVAL_TAGS`            | Filter by tags                                       |
-| `EVAL_LIMIT`           | Max number of cases to run                           |
-| `EVAL_USE_FIXTURES=1`  | Enable fixture injection (recommended)               |
-| `EVAL_VERBOSE=1`       | Show detailed output                                 |
-| `EVAL_SERIAL=1`        | Run sequentially instead of parallel                 |
-| `EVAL_MANAGE_SERVER=0` | Skip auto server management (use with manual server) |
-| `EVAL_LLM_JUDGE=0` | Disable LLM-as-judge for evidence evaluation (enabled by default) |
-| `EVAL_INJECT_PROMPT=1` | Inject fixtures into prompt instead of returning via tool calls |
+| Variable               | Description                                                       |
+| ---------------------- | ----------------------------------------------------------------- |
+| `EVAL_IDS`             | Comma-separated case IDs (e.g., `EC-001,EC-002`)                  |
+| `EVAL_CATEGORY`        | Filter by category (e.g., `enrollment`, `connector`)              |
+| `EVAL_TAGS`            | Filter by tags                                                    |
+| `EVAL_LIMIT`           | Max number of cases to run                                        |
+| `EVAL_USE_FIXTURES=1`  | Enable fixture injection (recommended)                            |
+| `EVAL_VERBOSE=1`       | Show detailed output                                              |
+| `EVAL_SERIAL=1`        | Run sequentially instead of parallel                              |
+| `EVAL_MANAGE_SERVER=0` | Skip auto server management (use with manual server)              |
+| `EVAL_LLM_JUDGE=0`     | Disable LLM-as-judge for evidence evaluation (enabled by default) |
+| `EVAL_INJECT_PROMPT=1` | Inject fixtures into prompt instead of returning via tool calls   |
 
 ## Reporting Results
 
@@ -106,17 +106,20 @@ Current fixtures are available for:
 ## LLM-as-Judge (Semantic Evidence Evaluation)
 
 By default, the eval runner uses an LLM to evaluate evidence requirements semantically. This handles:
+
 - Synonyms: "wifi" matches "Wi-Fi", "wireless network"
 - Paraphrasing: "deauth" matches "disconnection", "handshake timeout"
 - Semantic equivalence: Error codes can be explained rather than quoted
 
 How it works:
+
 1. String matching runs first (with normalization for hyphens, case, etc.)
 2. Cases that fail string matching are batched and sent to Gemini
 3. LLM evaluates if the response semantically addresses each evidence concept
 4. Failures are upgraded to passes if the LLM determines evidence is present
 
 To disable LLM judging (use strict string matching only):
+
 ```bash
 EVAL_LLM_JUDGE=0 EVAL_CATEGORY="enrollment" bun run evals
 ```
@@ -126,11 +129,13 @@ EVAL_LLM_JUDGE=0 EVAL_CATEGORY="enrollment" bun run evals
 Evals can validate that the AI calls specific tools during troubleshooting. This is controlled by the `required_tool_calls` field in registry.json.
 
 **What gets checked:**
+
 - Tool names are captured from streaming response events
 - Required tools are validated after the response completes
 - Missing tools cause the eval to fail
 
 **Example report output:**
+
 ```json
 {
   "toolCallsResult": {
@@ -142,6 +147,7 @@ Evals can validate that the AI calls specific tools during troubleshooting. This
 ```
 
 **Why this matters:**
+
 - The system prompt instructs the AI to always call `getChromeEvents` first
 - This validates that behavior is actually followed
 - Catches cases where the AI gives generic advice without checking data

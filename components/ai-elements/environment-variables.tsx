@@ -1,13 +1,9 @@
 "use client";
 
+import type { ComponentProps, HTMLAttributes } from "react";
+
 import { CheckIcon, CopyIcon, EyeIcon, EyeOffIcon } from "lucide-react";
-import {
-  type ComponentProps,
-  createContext,
-  type HTMLAttributes,
-  useContext,
-  useState,
-} from "react";
+import { createContext, useContext, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +18,7 @@ interface EnvironmentVariablesContextType {
 const EnvironmentVariablesContext =
   createContext<EnvironmentVariablesContextType>({
     showValues: false,
-    setShowValues: () => undefined,
+    setShowValues: () => {},
   });
 
 export type EnvironmentVariablesProps = HTMLAttributes<HTMLDivElement> & {

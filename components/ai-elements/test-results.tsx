@@ -1,5 +1,7 @@
 "use client";
 
+import type { ComponentProps, HTMLAttributes } from "react";
+
 import {
   CheckCircle2Icon,
   ChevronRightIcon,
@@ -7,12 +9,7 @@ import {
   CircleIcon,
   XCircleIcon,
 } from "lucide-react";
-import {
-  type ComponentProps,
-  createContext,
-  type HTMLAttributes,
-  useContext,
-} from "react";
+import { createContext, useContext } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import {

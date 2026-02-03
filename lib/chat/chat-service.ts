@@ -16,7 +16,7 @@ import {
 } from "@/lib/mcp/registry";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
-import { ChatMessage } from "./request-utils";
+import type { ChatMessage } from "./request-utils";
 
 export const maxDuration = 30;
 
@@ -165,7 +165,7 @@ export async function createChatStream({
       });
 
       if (intentAnalysis.object.needsKnowledge) {
-        const query = intentAnalysis.object.query;
+        const { query } = intentAnalysis.object;
         const [docs, policies] = await Promise.all([
           searchDocs(query),
           searchPolicies(query),
@@ -184,8 +184,8 @@ export async function createChatStream({
           knowledgeContext = `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
         }
       }
-    } catch (err) {
-      console.error("Knowledge retrieval failed:", err);
+    } catch (error) {
+      console.error("Knowledge retrieval failed:", error);
       // Proceed without context on error
     }
   }
@@ -250,9 +250,7 @@ export async function createChatStream({
         inputSchema: z.object({
           actions: z.array(z.string()).describe("List of action commands"),
         }),
-        execute: async ({ actions }) => {
-          return { actions };
-        },
+        execute: async ({ actions }) => ({ actions }),
       }),
 
       draftPolicyChange: tool({

@@ -67,7 +67,9 @@ export async function batchEvaluateEvidence(
 async function evaluateBatch(
   batch: EvidenceCheckInput[]
 ): Promise<EvidenceCheckResult[]> {
-  if (batch.length === 0) return [];
+  if (batch.length === 0) {
+    return [];
+  }
 
   const casesDescription = batch
     .map(

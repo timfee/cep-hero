@@ -64,9 +64,9 @@ const CATEGORY_COLORS: Record<Suggestion["category"], string> = {
   optimization: "border-emerald-500/30 hover:border-emerald-500/50",
 };
 
-type DashboardOverviewProps = {
+interface DashboardOverviewProps {
   onAction: (command: string) => void;
-};
+}
 
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
@@ -170,7 +170,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                 </h2>
                 <div className="space-y-3">
                   {[...data.postureCards]
-                    .sort((a, b) => (a.priority ?? 5) - (b.priority ?? 5))
+                    .toSorted((a, b) => (a.priority ?? 5) - (b.priority ?? 5))
                     .map((card, idx) => {
                       const status = card.status ?? "info";
                       const config = STATUS_CONFIG[status];
@@ -257,7 +257,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                 </h2>
                 <div className="space-y-3">
                   {[...data.suggestions]
-                    .sort((a, b) => a.priority - b.priority)
+                    .toSorted((a, b) => a.priority - b.priority)
                     .map((suggestion, idx) => (
                       <button
                         key={idx}

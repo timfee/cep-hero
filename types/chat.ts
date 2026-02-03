@@ -1,9 +1,11 @@
-export type DiagnosisError = { error: string };
+export interface DiagnosisError {
+  error: string;
+}
 
 /**
  * Tool invocation part used by the chat UI.
  */
-export type ToolInvocationPart = {
+export interface ToolInvocationPart {
   type: `tool-${string}` | "dynamic-tool";
   state:
     | "input-available"
@@ -14,64 +16,64 @@ export type ToolInvocationPart = {
   output?: unknown;
   error?: string;
   errorText?: string;
-};
+}
 
 /**
  * Output shape for suggestActions tool.
  */
-export type SuggestedActionsOutput = {
+export interface SuggestedActionsOutput {
   actions: string[];
-};
+}
 
-export type ChromeEventsOutput = {
-  events?: Array<{
+export interface ChromeEventsOutput {
+  events?: {
     id?: { time?: string | null; uniqueQualifier?: string | null };
     actor?: { email?: string | null; profileId?: string | null };
-    events?: Array<{ name?: string | null; type?: string | null }>;
-  }>;
+    events?: { name?: string | null; type?: string | null }[];
+  }[];
   nextPageToken?: string | null;
   error?: string;
   suggestion?: string;
-};
+}
 
-export type DlpRulesOutput = {
-  rules?: Array<{
+export interface DlpRulesOutput {
+  rules?: {
     id?: string;
     displayName?: string;
     description?: string;
     consoleUrl?: string;
-  }>;
+  }[];
   error?: string;
   suggestion?: string;
-};
+}
 
-export type ConnectorConfigOutput = {
-  value?: Array<{ policyTargetKey?: { targetResource?: string | null } }>;
+export interface ConnectorConfigOutput {
+  value?: { policyTargetKey?: { targetResource?: string | null } }[];
   targetResource?: string | null;
   attemptedTargets?: string[];
-  errors?: Array<{ targetResource?: string | null; message?: string }>;
+  errors?: { targetResource?: string | null; message?: string }[];
   error?: string;
   suggestion?: string;
-};
+}
 
-export type Hypothesis = {
+export interface Hypothesis {
   cause: string;
   confidence: number;
   evidence?: string[];
-};
+}
 
-export type Reference = {
+export interface Reference {
   title: string;
   url: string;
-};
+}
 
-export type MissingQuestion = {
+export interface MissingQuestion {
   question: string;
   why?: string;
   example?: string;
-};
+}
 
-export type ConnectorAnalysis = {
+export interface ConnectorAnalysis {
   total: number;
   byTarget: {
     customer: number;
@@ -83,27 +85,27 @@ export type ConnectorAnalysis = {
   detail: string;
   flag: boolean;
   sampleTarget?: string;
-};
+}
 
-export type EvidencePayload = {
-  checks?: Array<{
+export interface EvidencePayload {
+  checks?: {
     name: string;
     status: "pass" | "fail" | "unknown";
     detail?: string;
     source?: string;
-  }>;
-  gaps?: Array<{ missing: string; why: string }>;
-  signals?: Array<{
+  }[];
+  gaps?: { missing: string; why: string }[];
+  signals?: {
     type: string;
     source: string;
     summary: string;
     referenceUrl?: string;
-  }>;
+  }[];
   sources?: string[];
   connectorAnalysis?: ConnectorAnalysis;
-};
+}
 
-export type DiagnosisPayload = {
+export interface DiagnosisPayload {
   diagnosis?: string;
   hypotheses?: Hypothesis[];
   nextSteps?: string[];
@@ -112,6 +114,6 @@ export type DiagnosisPayload = {
   missingQuestions?: MissingQuestion[];
   evidence?: EvidencePayload;
   reference?: Reference | null;
-};
+}
 
 export type DiagnosisResult = DiagnosisError | DiagnosisPayload;

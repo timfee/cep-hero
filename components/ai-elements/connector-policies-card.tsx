@@ -11,20 +11,20 @@ import {
 } from "@/components/ui/tooltip";
 import { TOOLTIPS } from "@/lib/terminology";
 
-type ResolvedPolicy = {
+interface ResolvedPolicy {
   policyTargetKey?: { targetResource?: string | null };
-};
+}
 
-type ConnectorConfigOutput = {
+interface ConnectorConfigOutput {
   value?: ResolvedPolicy[];
   targetResource?: string | null;
   attemptedTargets?: string[];
-  errors?: Array<{ targetResource?: string | null; message?: string }>;
+  errors?: { targetResource?: string | null; message?: string }[];
   error?: string;
   suggestion?: string;
-};
+}
 
-type ConnectorAnalysis = {
+interface ConnectorAnalysis {
   total: number;
   byTarget: {
     customer: number;
@@ -36,7 +36,7 @@ type ConnectorAnalysis = {
   detail: string;
   flag: boolean;
   sampleTarget?: string;
-};
+}
 
 function analyzePolicies(policies: ResolvedPolicy[]): ConnectorAnalysis {
   const counts: ConnectorAnalysis["byTarget"] = {

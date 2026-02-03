@@ -57,8 +57,8 @@ export const TOOLTIPS: Record<string, string> = {
  */
 function camelCaseToTitle(name: string): string {
   const withSpaces = name
-    .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-    .replace(/[_-]+/g, " ")
+    .replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2")
+    .replaceAll(/[_-]+/g, " ")
     .trim();
 
   if (!withSpaces) {

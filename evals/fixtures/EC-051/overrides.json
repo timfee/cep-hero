@@ -16,7 +16,10 @@
               { "name": "DEVICE_NAME", "value": "Windows-Corp-Sales-1" },
               { "name": "CONNECTOR_TYPE", "value": "BulkDataConnector" },
               { "name": "ERROR_CODE", "value": "SERVICE_UNAVAILABLE" },
-              { "name": "ERROR_MESSAGE", "value": "Connector service unavailable. Content was not scanned." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Connector service unavailable. Content was not scanned."
+              },
               { "name": "RETRY_COUNT", "value": "3" },
               { "name": "USER_EMAIL", "value": "sales.rep@example.com" }
             ]
@@ -38,7 +41,10 @@
               { "name": "DEVICE_NAME", "value": "Windows-Corp-Sales-2" },
               { "name": "CONNECTOR_TYPE", "value": "WebDataConnector" },
               { "name": "ERROR_CODE", "value": "TOO_MANY_REQUESTS" },
-              { "name": "ERROR_MESSAGE", "value": "Rate limit exceeded for connector scanning. Content unscanned." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Rate limit exceeded for connector scanning. Content unscanned."
+              },
               { "name": "RATE_LIMIT_RESET_SECONDS", "value": "60" },
               { "name": "USER_EMAIL", "value": "analyst@example.com" }
             ]
@@ -60,8 +66,14 @@
               { "name": "DEVICE_NAME", "value": "Windows-Corp-Finance-1" },
               { "name": "CONNECTOR_TYPE", "value": "FileTransferConnector" },
               { "name": "ERROR_CODE", "value": "CONNECTION_REFUSED" },
-              { "name": "ERROR_MESSAGE", "value": "Connector handshake failed. Check network allowlist for *.google.com and *.googleapis.com" },
-              { "name": "BLOCKED_ENDPOINT", "value": "chromereporting-pa.googleapis.com" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Connector handshake failed. Check network allowlist for *.google.com and *.googleapis.com"
+              },
+              {
+                "name": "BLOCKED_ENDPOINT",
+                "value": "chromereporting-pa.googleapis.com"
+              },
               { "name": "USER_EMAIL", "value": "accountant@example.com" }
             ]
           }

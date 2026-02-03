@@ -128,7 +128,9 @@ export const EvidencePanel = memo(function EvidencePanel({
   const signalsCount = evidence.signals?.length ?? 0;
   const totalCount = checksCount + gapsCount + signalsCount;
 
-  if (totalCount === 0) return null;
+  if (totalCount === 0) {
+    return null;
+  }
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>

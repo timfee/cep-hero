@@ -19,7 +19,10 @@
               { "name": "DESTINATION_TYPE", "value": "INTERNAL" },
               { "name": "MATCH_COUNT", "value": "50" },
               { "name": "ACTION_TAKEN", "value": "BLOCKED" },
-              { "name": "FALSE_POSITIVE", "value": "Internal domain should be allowlisted" }
+              {
+                "name": "FALSE_POSITIVE",
+                "value": "Internal domain should be allowlisted"
+              }
             ]
           }
         ]
@@ -42,7 +45,10 @@
               { "name": "DESTINATION_TYPE", "value": "INTERNAL" },
               { "name": "MATCH_COUNT", "value": "200" },
               { "name": "ACTION_TAKEN", "value": "BLOCKED" },
-              { "name": "FALSE_POSITIVE", "value": "Internal HR domain should be allowlisted" }
+              {
+                "name": "FALSE_POSITIVE",
+                "value": "Internal HR domain should be allowlisted"
+              }
             ]
           }
         ]

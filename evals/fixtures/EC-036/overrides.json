@@ -16,7 +16,10 @@
               { "name": "USER_EMAIL", "value": "finance@example.com" },
               { "name": "DOCUMENT_NAME", "value": "Q4-Financial-Report.pdf" },
               { "name": "PRINTER_NAME", "value": "HP LaserJet 4th Floor" },
-              { "name": "DLP_RULE", "value": "Block Printing of Financial Documents" },
+              {
+                "name": "DLP_RULE",
+                "value": "Block Printing of Financial Documents"
+              },
               { "name": "DETECTOR_MATCHED", "value": "FINANCIAL_DATA" },
               { "name": "ACTION_TAKEN", "value": "BLOCKED" },
               { "name": "PRINT_EVENT_TYPE", "value": "print_job_event" }

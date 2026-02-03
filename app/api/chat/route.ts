@@ -1,3 +1,4 @@
+import type { ChatMessage } from "@/lib/chat/request-utils";
 import type { FixtureData } from "@/lib/mcp/types";
 
 import { authenticateRequest } from "@/lib/chat/auth-service";
@@ -7,7 +8,6 @@ import {
   getMessagesFromBody,
   getLastUserMessage,
   safeJsonPreview,
-  ChatMessage,
 } from "@/lib/chat/request-utils";
 import { writeDebugLog } from "@/lib/debug-log";
 import {
@@ -71,9 +71,9 @@ export async function POST(req: Request) {
 
   const messages: ChatMessage[] = messagesFromBody.length
     ? messagesFromBody
-    : inlinePrompt
+    : (inlinePrompt
       ? [{ role: "user", content: inlinePrompt }]
-      : [];
+      : []);
 
   if (messages.length === 0) {
     console.warn("POST /api/chat: Empty messages received.", {

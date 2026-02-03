@@ -1,7 +1,11 @@
-import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
+import type { CheerioCrawlingContext } from "crawlee";
+
+import { CheerioCrawler } from "crawlee";
+
+import type { Document } from "./vector-types";
 
 import { getStandardId, processDocs, turndown } from "./utils";
-import { type Document, MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
+import { MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
 
 async function main() {
   const documents: Document[] = [];
@@ -47,9 +51,10 @@ async function main() {
         const urlPath = new URL(request.url).pathname;
         const pathSegments = urlPath.split("/").filter(Boolean);
         title =
-          pathSegments[pathSegments.length - 1]
-            .replace(/-/g, " ")
-            .replace(/\b\w/g, (l) => l.toUpperCase()) || "Untitled";
+          pathSegments
+            .at(-1)
+            .replaceAll("-", " ")
+            .replaceAll(/\b\w/g, (l) => l.toUpperCase()) || "Untitled";
       }
 
       const content = turndown.turndown(articleHtml);

@@ -26,7 +26,10 @@
               { "name": "OU_PATH", "value": "/DLP-Test" },
               { "name": "DLP_RULES_COUNT", "value": "0" },
               { "name": "ENFORCEMENT_STATUS", "value": "NONE" },
-              { "name": "NOTE", "value": "No DLP rules assigned to this OU. Create and apply a DLP rule to enable enforcement." }
+              {
+                "name": "NOTE",
+                "value": "No DLP rules assigned to this OU. Create and apply a DLP rule to enable enforcement."
+              }
             ]
           }
         ]

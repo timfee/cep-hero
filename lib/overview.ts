@@ -4,7 +4,7 @@
 
 export type PostureCardStatus = "healthy" | "warning" | "critical" | "info";
 
-export type OverviewCard = {
+export interface OverviewCard {
   label: string;
   value: string;
   note: string;
@@ -14,7 +14,7 @@ export type OverviewCard = {
   status?: PostureCardStatus;
   progress?: number;
   priority?: number;
-};
+}
 
 export type SuggestionCategory =
   | "security"
@@ -22,20 +22,20 @@ export type SuggestionCategory =
   | "monitoring"
   | "optimization";
 
-export type Suggestion = {
+export interface Suggestion {
   text: string;
   action: string;
   priority: number;
   category: SuggestionCategory;
-};
+}
 
-export type OverviewData = {
+export interface OverviewData {
   headline: string;
   summary: string;
   postureCards: OverviewCard[];
   suggestions: Suggestion[];
   sources: string[];
-};
+}
 
 export const DEFAULT_SUGGESTIONS: Suggestion[] = [
   {
@@ -82,7 +82,9 @@ export const QUICK_ACTIONS = [
  * Returns null if the data is invalid or missing required fields.
  */
 export function normalizeOverview(data: unknown): OverviewData | null {
-  if (!data || typeof data !== "object") return null;
+  if (!data || typeof data !== "object") {
+    return null;
+  }
 
   const obj = data as Record<string, unknown>;
 
@@ -109,7 +111,9 @@ export function normalizeOverview(data: unknown): OverviewData | null {
  * Type guard for validating posture card structure.
  */
 function isValidPostureCard(card: unknown): card is OverviewCard {
-  if (!card || typeof card !== "object") return false;
+  if (!card || typeof card !== "object") {
+    return false;
+  }
   const c = card as Record<string, unknown>;
   return (
     typeof c.label === "string" &&
@@ -124,7 +128,9 @@ function isValidPostureCard(card: unknown): card is OverviewCard {
  * Type guard for validating suggestion structure.
  */
 function isValidSuggestion(suggestion: unknown): suggestion is Suggestion {
-  if (!suggestion || typeof suggestion !== "object") return false;
+  if (!suggestion || typeof suggestion !== "object") {
+    return false;
+  }
   const s = suggestion as Record<string, unknown>;
   const validCategories: SuggestionCategory[] = [
     "security",

@@ -1,3 +1,5 @@
+import type { CheerioCrawlingContext } from "crawlee";
+
 /**
  * IMPORTANT: RATE LIMITING AND SESSION HEADERS
  *
@@ -12,10 +14,12 @@
  *
  * See detailed instructions near the 'headers' constant below.
  */
-import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
+import { CheerioCrawler } from "crawlee";
+
+import type { Document } from "./vector-types";
 
 import { getStandardId, processDocs, turndown } from "./utils";
-import { type Document, MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
+import { MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
 
 type ArticleType = "answer" | "topic";
 
@@ -32,7 +36,7 @@ interface CrawleeError extends Error {
 function extractCleanTitle(element: unknown, url: string): string {
   const title = getElementText(element);
   if (title) {
-    return title.replace(/\s+/g, " ").trim();
+    return title.replaceAll(/\s+/g, " ").trim();
   }
 
   const match = url.match(/\/(answer|topic)\/(\d+)/);
@@ -202,7 +206,7 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
       const cleaned = cleanHtml(articleHtml);
 
       // Only process pages with actual numeric IDs for content extraction
-      if (!request.url.match(/\/(answer|topic)\/(\d+)/)) {
+      if (!/\/(answer|topic)\/(\d+)/.test(request.url)) {
         console.log(
           `Topic/category page (no content extraction): ${request.url}`
         );

@@ -1,9 +1,9 @@
 import { JWT } from "google-auth-library";
 
-type ServiceAccountCredentials = {
+interface ServiceAccountCredentials {
   client_email: string;
   private_key: string;
-};
+}
 
 function loadServiceAccount(): ServiceAccountCredentials {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
@@ -13,15 +13,15 @@ function loadServiceAccount(): ServiceAccountCredentials {
     );
   }
 
-  const trimmed = inline.replace(/^['"]|['"]$/g, "");
+  const trimmed = inline.replaceAll(/^['"]|['"]$/g, "");
   const parsed = JSON.parse(trimmed);
 
   if (!parsed.client_email || !parsed.private_key) {
     throw new Error("Service account JSON missing client_email or private_key");
   }
 
-  const key = parsed.private_key.includes("\\n")
-    ? parsed.private_key.replace(/\\n/g, "\n")
+  const key = parsed.private_key.includes(String.raw`\n`)
+    ? parsed.private_key.replaceAll(String.raw`\n`, "\n")
     : parsed.private_key;
 
   return { client_email: parsed.client_email, private_key: key };

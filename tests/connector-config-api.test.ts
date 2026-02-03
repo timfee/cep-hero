@@ -9,7 +9,7 @@ import {
 
 loadEnvConfig(process.cwd());
 
-const TEST_TIMEOUT_MS = 30000;
+const TEST_TIMEOUT_MS = 30_000;
 const hasServiceAccount = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
 
 describe("Chrome Policy API targetResource behavior", () => {

@@ -1,6 +1,6 @@
 import type { chromepolicy_v1 } from "googleapis";
 
-export type ConnectorAnalysis = {
+export interface ConnectorAnalysis {
   total: number;
   byTarget: {
     customer: number;
@@ -12,7 +12,7 @@ export type ConnectorAnalysis = {
   detail: string;
   flag: boolean;
   sampleTarget?: string;
-};
+}
 
 type ResolvedPolicy =
   chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
@@ -25,14 +25,22 @@ type ResolvedPolicy =
 function classifyTarget(
   targetResource?: string
 ): "customer" | "orgUnit" | "group" | "unknown" {
-  if (!targetResource) return "unknown";
+  if (!targetResource) {
+    return "unknown";
+  }
   const normalized = targetResource.toLowerCase();
-  if (normalized.startsWith("orgunits/") || normalized.includes("/orgunits/"))
+  if (normalized.startsWith("orgunits/") || normalized.includes("/orgunits/")) {
     return "orgUnit";
-  if (normalized.startsWith("groups/") || normalized.includes("/groups/"))
+  }
+  if (normalized.startsWith("groups/") || normalized.includes("/groups/")) {
     return "group";
-  if (normalized.startsWith("customers/") || normalized.includes("/customers/"))
+  }
+  if (
+    normalized.startsWith("customers/") ||
+    normalized.includes("/customers/")
+  ) {
     return "customer";
+  }
   return "unknown";
 }
 

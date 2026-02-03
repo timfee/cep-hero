@@ -19,7 +19,10 @@
               { "name": "SCAN_TIMEOUT_SECONDS", "value": "30" },
               { "name": "EVALUATION_TIME_LIMIT", "value": "30 seconds" },
               { "name": "ACTION_TAKEN", "value": "BLOCKED" },
-              { "name": "ERROR_MESSAGE", "value": "Virus scan failed - scan timed out for large file" }
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Virus scan failed - scan timed out for large file"
+              }
             ]
           }
         ]

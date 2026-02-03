@@ -16,7 +16,10 @@
               { "name": "DEVICE_NAME", "value": "MacBook-Dev-1" },
               { "name": "CPU_PERCENT", "value": "87" },
               { "name": "MEMORY_PERCENT", "value": "72" },
-              { "name": "OFFENDING_PROCESS", "value": "Tab: https://app.slack.com" },
+              {
+                "name": "OFFENDING_PROCESS",
+                "value": "Tab: https://app.slack.com"
+              },
               { "name": "PROCESS_CPU_PERCENT", "value": "45" },
               { "name": "USER_EMAIL", "value": "developer@example.com" }
             ]
@@ -36,7 +39,10 @@
             "parameters": [
               { "name": "DEVICE_ID", "value": "mac-laptop-001" },
               { "name": "DEVICE_NAME", "value": "MacBook-Dev-1" },
-              { "name": "EXTENSION_ID", "value": "bgnkhhnnamicmpeenaelnjfhikgbkllg" },
+              {
+                "name": "EXTENSION_ID",
+                "value": "bgnkhhnnamicmpeenaelnjfhikgbkllg"
+              },
               { "name": "EXTENSION_NAME", "value": "AdBlock Plus" },
               { "name": "CPU_PERCENT", "value": "32" },
               { "name": "MEMORY_MB", "value": "512" },

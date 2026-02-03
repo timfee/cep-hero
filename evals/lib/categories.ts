@@ -3,11 +3,11 @@
  * Categories are organized by failure domain rather than source document.
  */
 
-export type EvalCategory = {
+export interface EvalCategory {
   id: string;
   name: string;
   description: string;
-};
+}
 
 /**
  * Category definitions organized by failure domain.

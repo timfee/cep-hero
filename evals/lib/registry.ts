@@ -3,15 +3,15 @@
  * Standalone module without test framework dependencies.
  */
 
-import { existsSync, readFileSync } from "fs";
-import path from "path";
+import { existsSync, readFileSync } from "node:fs";
+import path from "node:path";
 
-export type EvalRubric = {
+export interface EvalRubric {
   min_score: number;
   criteria: string[];
-};
+}
 
-export type EvalCase = {
+export interface EvalCase {
   id: string;
   title: string;
   category: string;
@@ -29,19 +29,19 @@ export type EvalCase = {
   rubric?: EvalRubric;
   assertions: unknown[];
   cleanup: unknown[];
-};
+}
 
-export type EvalRegistry = {
+export interface EvalRegistry {
   version: string;
   cases: EvalCase[];
-};
+}
 
-export type FilterOptions = {
+export interface FilterOptions {
   ids?: string;
   categories?: string;
   tags?: string;
   limit?: string;
-};
+}
 
 /**
  * Load the eval registry from disk.
@@ -52,7 +52,7 @@ export function loadEvalRegistry(
   if (!existsSync(registryPath)) {
     throw new Error(`Registry not found: ${registryPath}`);
   }
-  const contents = readFileSync(registryPath, "utf-8");
+  const contents = readFileSync(registryPath, "utf8");
   return JSON.parse(contents) as EvalRegistry;
 }
 
@@ -113,7 +113,7 @@ export function buildPromptMap(
       continue;
     }
 
-    const content = readFileSync(caseFilePath, "utf-8");
+    const content = readFileSync(caseFilePath, "utf8");
     const prompt = extractPromptFromMarkdown(content);
     if (prompt) {
       map.set(evalCase.id, prompt);
@@ -154,7 +154,7 @@ export function getCategories(registry: EvalRegistry): string[] {
   for (const evalCase of registry.cases) {
     categories.add(evalCase.category);
   }
-  return Array.from(categories).sort();
+  return [...categories].toSorted();
 }
 
 /**
@@ -167,7 +167,7 @@ export function getTags(registry: EvalRegistry): string[] {
       tags.add(tag);
     }
   }
-  return Array.from(tags).sort();
+  return [...tags].toSorted();
 }
 
 /**

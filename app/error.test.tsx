@@ -68,7 +68,7 @@ describe("Error boundary component", () => {
     const { container } = render(<Error error={mockError} reset={mockReset} />);
 
     // The icon container should be present
-    const iconContainer = container.querySelector(".bg-red-500\\/20");
+    const iconContainer = container.querySelector(String.raw`.bg-red-500\/20`);
     expect(iconContainer).toBeInTheDocument();
   });
 });

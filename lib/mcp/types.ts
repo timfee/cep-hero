@@ -1,8 +1,7 @@
-import { z } from "zod";
+import type { z } from "zod";
 
 import type { FleetOverviewResponse } from "./registry";
-
-import {
+import type {
   DraftPolicyChangeSchema,
   EnrollBrowserSchema,
   GetChromeEventsSchema,
@@ -12,7 +11,7 @@ import {
 
 export type ChromeEventsResult =
   | {
-      events: Array<{
+      events: {
         kind?: string;
         id?: {
           time?: string;
@@ -20,44 +19,44 @@ export type ChromeEventsResult =
           applicationName?: string;
         };
         actor?: { email?: string; profileId?: string };
-        events?: Array<{
+        events?: {
           type?: string;
           name?: string;
-          parameters?: Array<{
+          parameters?: {
             name?: string;
             value?: string;
             intValue?: string;
             boolValue?: boolean;
             multiValue?: string[];
-          }>;
-        }>;
-      }>;
+          }[];
+        }[];
+      }[];
       nextPageToken: string | null;
     }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
 export type DLPRulesResult =
   | {
-      rules: Array<{
+      rules: {
         id: string;
         displayName: string;
         description: string;
         resourceName: string;
         consoleUrl: string;
-      }>;
+      }[];
       help?: unknown;
     }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
 export type OrgUnitsResult =
   | {
-      orgUnits: Array<{
+      orgUnits: {
         orgUnitId?: string | null;
         name?: string | null;
         orgUnitPath?: string | null;
         parentOrgUnitId?: string | null;
         description?: string | null;
-      }>;
+      }[];
     }
   | { error: string; suggestion: string; requiresReauth: boolean };
 
@@ -69,14 +68,14 @@ export type ConnectorConfigResult =
   | {
       status: string;
       policySchemas: string[];
-      value: Array<{
+      value: {
         targetKey?: { targetResource?: string };
         value?: { policySchema?: string; value?: Record<string, unknown> };
         sourceKey?: { targetResource?: string };
-      }>;
+      }[];
       targetResource?: string;
       attemptedTargets?: string[];
-      errors?: Array<{ targetResource: string; message: string }>;
+      errors?: { targetResource: string; message: string }[];
     }
   | {
       error: string;
@@ -96,7 +95,7 @@ export type DebugAuthResult =
     }
   | { error: string };
 
-export type DraftPolicyChangeResult = {
+export interface DraftPolicyChangeResult {
   _type: "ui.confirmation";
   title: string;
   description: string;
@@ -105,7 +104,7 @@ export type DraftPolicyChangeResult = {
   adminConsoleUrl: string;
   intent: string;
   status: string;
-};
+}
 
 export interface IToolExecutor {
   getChromeEvents(
@@ -142,16 +141,16 @@ export interface IToolExecutor {
   >;
 }
 
-export type FixtureData = {
-  orgUnits?: Array<{
+export interface FixtureData {
+  orgUnits?: {
     orgUnitId?: string | null;
     name?: string | null;
     orgUnitPath?: string | null;
     parentOrgUnitId?: string | null;
     description?: string | null;
-  }>;
+  }[];
   auditEvents?: {
-    items?: Array<{
+    items?: {
       kind?: string;
       id?: {
         time?: string;
@@ -159,33 +158,33 @@ export type FixtureData = {
         applicationName?: string;
       };
       actor?: { email?: string; profileId?: string };
-      events?: Array<{
+      events?: {
         type?: string;
         name?: string;
-        parameters?: Array<{
+        parameters?: {
           name?: string;
           value?: string;
           intValue?: string;
           boolValue?: boolean;
           multiValue?: string[];
-        }>;
-      }>;
-    }>;
+        }[];
+      }[];
+    }[];
     nextPageToken?: string;
   };
-  dlpRules?: Array<{
+  dlpRules?: {
     id: string;
     displayName: string;
     description: string;
     resourceName: string;
     consoleUrl: string;
-  }>;
-  connectorPolicies?: Array<{
+  }[];
+  connectorPolicies?: {
     targetKey?: { targetResource?: string };
     value?: { policySchema?: string; value?: Record<string, unknown> };
     sourceKey?: { targetResource?: string };
-  }>;
-  policySchemas?: Array<{ name?: string; policyDescription?: string }>;
+  }[];
+  policySchemas?: { name?: string; policyDescription?: string }[];
   chromeReports?: Record<string, unknown>;
   enrollmentToken?: {
     token?: string;
@@ -194,14 +193,14 @@ export type FixtureData = {
     status?: "valid" | "expired" | "revoked";
     error?: string;
   };
-  browsers?: Array<{
+  browsers?: {
     deviceId?: string;
     machineName?: string;
     browserVersion?: string;
     lastActivityTime?: string;
     orgUnitPath?: string;
     enrolledTime?: string;
-  }>;
+  }[];
   errors?: {
     chromeEvents?: string;
     dlpRules?: string;
@@ -210,4 +209,4 @@ export type FixtureData = {
     enrollBrowser?: string;
     browsers?: string;
   };
-};
+}

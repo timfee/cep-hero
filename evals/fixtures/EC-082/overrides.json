@@ -49,12 +49,21 @@
             "type": "POLICY_APPLICATION",
             "name": "CONNECTOR_SCOPE_CONFIRMED_CUSTOMER_LEVEL",
             "parameters": [
-              { "name": "POLICY_NAME", "value": "chrome.users.BulkDataConnectorEnabled" },
+              {
+                "name": "POLICY_NAME",
+                "value": "chrome.users.BulkDataConnectorEnabled"
+              },
               { "name": "EXPECTED_SCOPE", "value": "orgunits/09eng0test456" },
               { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
               { "name": "OU_PATH", "value": "/Engineering-Test" },
-              { "name": "RESOLUTION", "value": "Re-scope policy to target OU or group instead of customer level" },
-              { "name": "ADMIN_CONSOLE_PATH", "value": "Devices > Chrome > Settings > Users & browsers > Select Engineering-Test OU" }
+              {
+                "name": "RESOLUTION",
+                "value": "Re-scope policy to target OU or group instead of customer level"
+              },
+              {
+                "name": "ADMIN_CONSOLE_PATH",
+                "value": "Devices > Chrome > Settings > Users & browsers > Select Engineering-Test OU"
+              }
             ]
           }
         ]

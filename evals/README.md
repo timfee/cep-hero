@@ -160,12 +160,14 @@ Example (trimmed):
 By default, evidence evaluation uses an LLM to evaluate responses semantically. This solves the "whack-a-mole" problem of constantly adjusting evidence requirements.
 
 **How it works:**
+
 1. String matching with text normalization runs first (handles wifi/Wi-Fi variations)
 2. Cases that fail string matching are batched and sent to Gemini
 3. LLM evaluates if the response semantically addresses each evidence concept
 4. Failures are upgraded to passes if the LLM determines evidence is present
 
 **Why this matters:**
+
 - "Wi-Fi" matches "wifi" (hyphen normalization)
 - "4-way handshake timeout" matches "deauth" (semantic equivalence)
 - No need to constantly tweak evidence requirements
@@ -177,12 +179,14 @@ By default, evidence evaluation uses an LLM to evaluate responses semantically. 
 Evals can require that specific tools are called during the conversation. This ensures the AI follows the standard operating procedure (e.g., always calling `getChromeEvents` first for troubleshooting).
 
 **How it works:**
+
 1. Define `required_tool_calls` in registry.json for a case
 2. The eval runner parses streaming responses to capture tool calls
 3. After the response completes, tool calls are validated against requirements
 4. Missing required tool calls cause the eval to fail
 
 **Registry example:**
+
 ```json
 {
   "id": "EC-001",
@@ -192,11 +196,13 @@ Evals can require that specific tools are called during the conversation. This e
 ```
 
 **Why this matters:**
+
 - Ensures the AI doesn't give generic advice without checking actual data
 - Validates that the AI follows the SOP in the system prompt
 - Catches cases where the AI skips diagnostic steps
 
 **Report output:**
+
 ```json
 {
   "toolCallsResult": {
@@ -339,6 +345,7 @@ User: "The exact prompt the user would ask"
 ```
 
 **Registry fields:**
+
 - `required_evidence` - Terms/phrases that must appear in the response
 - `required_tool_calls` - Tools that must be called (e.g., `getChromeEvents`, `getChromeConnectorConfiguration`)
 

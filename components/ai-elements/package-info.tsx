@@ -1,7 +1,9 @@
 "use client";
 
+import type { HTMLAttributes } from "react";
+
 import { ArrowRightIcon, MinusIcon, PackageIcon, PlusIcon } from "lucide-react";
-import { createContext, type HTMLAttributes, useContext } from "react";
+import { createContext, useContext } from "react";
 
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";

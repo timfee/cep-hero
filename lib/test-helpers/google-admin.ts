@@ -13,13 +13,13 @@ type Directory = admin_directory_v1.Admin;
 type ChromePolicy = chromepolicy_v1.Chromepolicy;
 type ChromeManagement = chromemanagement_v1.Chromemanagement;
 
-export type GoogleClients = {
+export interface GoogleClients {
   directory: Directory;
   policy: ChromePolicy;
   management: ChromeManagement;
   tokenEmail?: string;
   customerId: string;
-};
+}
 
 async function resolveCustomerIdFromPolicySchemas(
   policy: ChromePolicy
@@ -172,13 +172,13 @@ export async function probePolicyTargetResources({
   pageSize?: number;
 }) {
   const { policy, customerId } = await makeGoogleClients();
-  const results: Array<{
+  const results: {
     targetResource: string;
     resolvedPolicies: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[];
-  }> = [];
-  const errors: Array<{ targetResource: string; message: string }> = [];
+  }[] = [];
+  const errors: { targetResource: string; message: string }[] = [];
 
-  const uniqueTargets = Array.from(new Set(targetResources));
+  const uniqueTargets = [...new Set(targetResources)];
 
   for (const targetResource of uniqueTargets) {
     const trimmed = targetResource.trim();
