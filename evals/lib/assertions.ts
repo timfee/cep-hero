@@ -23,6 +23,22 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 /**
+ * Normalize text for fuzzy matching.
+ * - Lowercases
+ * - Removes hyphens, underscores, and common punctuation
+ * - Collapses whitespace
+ * This allows "Wi-Fi" to match "wifi", "de-auth" to match "deauth", etc.
+ */
+function normalizeForMatching(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[-_]/g, "") // Remove hyphens and underscores
+    .replace(/[^\w\s]/g, " ") // Replace other punctuation with space
+    .replace(/\s+/g, " ") // Collapse whitespace
+    .trim();
+}
+
+/**
  * Check if response metadata contains expected schema keys.
  */
 export function checkStructuredResponse({
@@ -109,12 +125,12 @@ export function checkRequiredEvidence({
     return { passed: true, message: "No required evidence specified" };
   }
 
-  const lowerText = text.toLowerCase();
-  const metadataText = metadata ? JSON.stringify(metadata).toLowerCase() : "";
-  const combined = `${lowerText}\n${metadataText}`;
+  // Normalize text for fuzzy matching (handles wifi/wi-fi, deauth/de-auth, etc.)
+  const metadataText = metadata ? JSON.stringify(metadata) : "";
+  const combined = normalizeForMatching(`${text}\n${metadataText}`);
 
   const missing = requiredEvidence.filter(
-    (needle) => !combined.includes(needle.toLowerCase())
+    (needle) => !combined.includes(normalizeForMatching(needle))
   );
 
   if (missing.length === 0) {
@@ -144,13 +160,16 @@ export function scoreRubric({
   metadata: unknown;
   criteria: string[];
 }): { score: number; matched: string[]; missed: string[] } {
-  const combined = `${text.toLowerCase()}\n${metadata ? JSON.stringify(metadata).toLowerCase() : ""}`;
+  // Use normalized matching for consistency with evidence checks
+  const combined = normalizeForMatching(
+    `${text}\n${metadata ? JSON.stringify(metadata) : ""}`
+  );
 
   const matched: string[] = [];
   const missed: string[] = [];
 
   for (const criterion of criteria) {
-    if (combined.includes(criterion.toLowerCase())) {
+    if (combined.includes(normalizeForMatching(criterion))) {
       matched.push(criterion);
     } else {
       missed.push(criterion);

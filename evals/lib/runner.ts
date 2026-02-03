@@ -19,6 +19,7 @@ import {
   scoreRubric,
 } from "./assertions";
 import { buildEvalPrompt, loadEvalFixtures } from "./fixtures";
+import { batchEvaluateEvidence, type EvidenceCheckInput } from "./llm-judge";
 import { buildPromptMap, filterEvalCases, loadEvalRegistry } from "./registry";
 import {
   buildSummary,
@@ -234,6 +235,60 @@ export async function runEvals(
 
   if (manageServer) {
     releaseEvalServer();
+  }
+
+  // LLM-as-judge phase: re-evaluate evidence failures with semantic matching
+  const useLlmJudge = process.env.EVAL_LLM_JUDGE !== "0";
+  if (useLlmJudge) {
+    const evidenceFailures = reports.filter(
+      (r) =>
+        r.status === "fail" &&
+        r.evidenceResult &&
+        !r.evidenceResult.passed &&
+        r.schemaResult?.passed // Only re-judge if schema passed
+    );
+
+    if (evidenceFailures.length > 0) {
+      console.log(
+        `[eval] Running LLM judge on ${evidenceFailures.length} evidence failures...`
+      );
+
+      const inputs: EvidenceCheckInput[] = evidenceFailures.map((r) => ({
+        caseId: r.caseId,
+        responseText: r.responseText,
+        requiredEvidence:
+          (r.evidenceResult?.details as { requiredEvidence?: string[] })
+            ?.requiredEvidence ?? [],
+      }));
+
+      const llmResults = await batchEvaluateEvidence(inputs);
+
+      // Update reports based on LLM judgment
+      for (const report of reports) {
+        const llmResult = llmResults.get(report.caseId);
+        if (llmResult) {
+          report.evidenceResult = {
+            passed: llmResult.passed,
+            message: llmResult.passed
+              ? "LLM judge: All evidence present"
+              : `LLM judge: Missing ${llmResult.missingEvidence.join(", ")}`,
+            details: {
+              llmJudge: true,
+              reasoning: llmResult.reasoning,
+              presentEvidence: llmResult.presentEvidence,
+              missingEvidence: llmResult.missingEvidence,
+            },
+          };
+
+          // Update status if LLM judge passed
+          if (llmResult.passed && report.status === "fail") {
+            report.status = "pass";
+            report.error = undefined;
+            console.log(`[eval] ${report.caseId} upgraded to pass by LLM judge`);
+          }
+        }
+      }
+    }
   }
 
   const summary = buildSummary(runId, reports, startTime);

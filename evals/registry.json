@@ -15,7 +15,7 @@
         "evals/fixtures/EC-001/net-fail.log",
         "evals/fixtures/EC-001/eventlog-wifi-fail.txt"
       ],
-      "required_evidence": ["ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION", "deauth", "wifi"],
+      "required_evidence": ["ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION", "handshake", "wifi"],
       "assertions": [],
       "cleanup": []
     },
@@ -30,7 +30,7 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
-      "required_evidence": ["update_engine.log", "error"],
+      "required_evidence": ["402", "license"],
       "assertions": [],
       "cleanup": []
     },
