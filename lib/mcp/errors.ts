@@ -52,6 +52,9 @@ const API_CONTEXTS = {
   },
 } as const satisfies Record<string, ApiContext>;
 
+/**
+ * Valid API context identifiers for error handling.
+ */
 export type ApiContextKey = keyof typeof API_CONTEXTS;
 
 const SESSION_EXPIRED_SUGGESTION =

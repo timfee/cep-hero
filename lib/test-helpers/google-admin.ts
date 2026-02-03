@@ -21,6 +21,9 @@ type Directory = admin_directory_v1.Admin;
 type ChromePolicy = chromepolicy_v1.Chromepolicy;
 type ChromeManagement = chromemanagement_v1.Chromemanagement;
 
+/**
+ * Authenticated Google Admin SDK client instances.
+ */
 export interface GoogleClients {
   directory: Directory;
   policy: ChromePolicy;
