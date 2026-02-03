@@ -151,19 +151,9 @@ export function FixtureSelector() {
     );
   }
 
+  // Don't render anything if fixtures failed to load (e.g., production mode returns 403)
   if (error && fixtures.length === 0) {
-    return (
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={() => window.location.reload()}
-        title={error}
-        className="border-dashed border-destructive/40"
-      >
-        <FlaskConical className="size-3 text-destructive" />
-        <span className="text-destructive">Error loading</span>
-      </Button>
-    );
+    return null;
   }
 
   return (
