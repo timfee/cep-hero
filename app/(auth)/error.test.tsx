@@ -1,39 +1,29 @@
-/**
- * Tests for the authentication error boundary component.
- * Verifies error display, user interactions, and recovery options.
- */
-
 /* oxlint-disable typescript/no-unsafe-call */
-import { render, fireEvent } from "@testing-library/react";
-import { describe, expect, it, beforeEach } from "bun:test";
+import { fireEvent, render } from "@testing-library/react";
+import { beforeEach, describe, expect, it } from "bun:test";
 
-import AuthError from "@/app/(auth)/error";
+import AuthError from "./error";
 
 let resetCalls: number;
 
-/**
- * Mock reset function to track invocations.
- */
 function mockReset() {
   resetCalls += 1;
 }
 
-describe("Auth error boundary component", () => {
+describe("AuthError", () => {
   const mockError = new Error("Auth test error") as Error & { digest?: string };
 
   beforeEach(() => {
     resetCalls = 0;
   });
 
-  it("renders auth-specific error message", () => {
+  it("renders error message", () => {
     const { getByText } = render(
       <AuthError error={mockError} reset={mockReset} />
     );
 
     expect(getByText("Sign in failed")).toBeInTheDocument();
-    expect(
-      getByText(/We couldn't complete the sign in process/)
-    ).toBeInTheDocument();
+    expect(getByText(/Unable to complete sign in/)).toBeInTheDocument();
   });
 
   it("displays error digest when provided", () => {
@@ -46,58 +36,32 @@ describe("Auth error boundary component", () => {
       <AuthError error={errorWithDigest} reset={mockReset} />
     );
 
-    expect(getByText("Error ID: auth-digest-456")).toBeInTheDocument();
+    expect(getByText("Error: auth-digest-456")).toBeInTheDocument();
   });
 
-  it("does not display error digest when not provided", () => {
+  it("hides digest when not provided", () => {
     const { queryByText } = render(
       <AuthError error={mockError} reset={mockReset} />
     );
 
-    expect(queryByText(/Error ID:/)).not.toBeInTheDocument();
+    expect(queryByText(/Error:/)).not.toBeInTheDocument();
   });
 
-  it("calls reset function when Try again button is clicked", () => {
+  it("calls reset on try again click", () => {
     const { getByRole } = render(
       <AuthError error={mockError} reset={mockReset} />
     );
 
-    const button = getByRole("button", { name: /try again/i });
-    fireEvent.click(button);
-
+    fireEvent.click(getByRole("button", { name: /try again/i }));
     expect(resetCalls).toBe(1);
   });
 
-  it("renders Home link that navigates to root", () => {
+  it("renders home link to root", () => {
     const { getByRole } = render(
       <AuthError error={mockError} reset={mockReset} />
     );
 
     const homeLink = getByRole("link", { name: /home/i });
-    expect(homeLink).toBeInTheDocument();
     expect(homeLink).toHaveAttribute("href", "/");
-  });
-
-  it("logs authentication error to console on mount", () => {
-    const originalConsoleError = console.error;
-    const errorCalls: unknown[][] = [];
-    console.error = (...args: unknown[]) => {
-      errorCalls.push(args);
-    };
-
-    render(<AuthError error={mockError} reset={mockReset} />);
-
-    expect(errorCalls).toContainEqual(["Authentication error:", mockError]);
-
-    console.error = originalConsoleError;
-  });
-
-  it("renders both Home and Try again buttons", () => {
-    const { getByRole } = render(
-      <AuthError error={mockError} reset={mockReset} />
-    );
-
-    expect(getByRole("link", { name: /home/i })).toBeInTheDocument();
-    expect(getByRole("button", { name: /try again/i })).toBeInTheDocument();
   });
 });

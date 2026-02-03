@@ -18,6 +18,7 @@ export default function SignInPage() {
           Chrome Enterprise Premium diagnostics
         </p>
 
+        {/* oxlint-disable-next-line eslint-plugin-react-perf/jsx-no-new-function-as-prop -- simple page, no perf concern */}
         <Button
           className="mt-8 w-full"
           size="lg"
