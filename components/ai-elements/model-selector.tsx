@@ -127,6 +127,9 @@ export const ModelSelectorItem = (props: ModelSelectorItemProps) => (
 
 export type ModelSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
 
+/**
+ * Keyboard shortcut hint for model items.
+ */
 export const ModelSelectorShortcut = (props: ModelSelectorShortcutProps) => (
   <CommandShortcut {...props} />
 );
@@ -135,6 +138,9 @@ export type ModelSelectorSeparatorProps = ComponentProps<
   typeof CommandSeparator
 >;
 
+/**
+ * Visual separator between model groups.
+ */
 export const ModelSelectorSeparator = (props: ModelSelectorSeparatorProps) => (
   <CommandSeparator {...props} />
 );
@@ -203,6 +209,9 @@ export type ModelSelectorLogoProps = Omit<
     | (string & {});
 };
 
+/**
+ * Provider logo image fetched from models.dev CDN.
+ */
 export const ModelSelectorLogo = ({
   provider,
   className,
@@ -220,6 +229,9 @@ export const ModelSelectorLogo = ({
 
 export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
 
+/**
+ * Overlapping logo group for displaying multiple provider logos.
+ */
 export const ModelSelectorLogoGroup = ({
   className,
   ...props
@@ -235,6 +247,9 @@ export const ModelSelectorLogoGroup = ({
 
 export type ModelSelectorNameProps = ComponentProps<"span">;
 
+/**
+ * Model name display with text truncation.
+ */
 export const ModelSelectorName = ({
   className,
   ...props
