@@ -66,9 +66,10 @@ function buildAggregateStats(runs: SingleRunResult[]): AggregateStats {
     const total =
       byMode[mode].passed + byMode[mode].failed + byMode[mode].errors;
     byMode[mode].passRate = total > 0 ? byMode[mode].passed / total : 0;
-    byMode[mode].avgDurationMs = Math.round(
-      byMode[mode].avgDurationMs / modeRuns.length
-    );
+    byMode[mode].avgDurationMs =
+      modeRuns.length > 0
+        ? Math.round(byMode[mode].avgDurationMs / modeRuns.length)
+        : 0;
   }
 
   return {
@@ -153,8 +154,10 @@ function buildCategoryAnalysis(
     }
 
     const avgPassRate =
-      categoryCases.reduce((sum, c) => sum + c.passRate, 0) /
-      categoryCases.length;
+      categoryCases.length > 0
+        ? categoryCases.reduce((sum, c) => sum + c.passRate, 0) /
+          categoryCases.length
+        : 0;
 
     const problematicCases = categoryCases
       .filter((c) => c.passRate < 0.8)

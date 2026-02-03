@@ -27,6 +27,7 @@ import { analyzeWithGemini, formatGeminiAnalysis } from "./analyzer";
 import {
   DEFAULT_ITERATIONS,
   DEFAULT_OUTPUT_DIR,
+  getAllModes,
   getDefaultModes,
 } from "./config";
 import { writeComprehensiveReport } from "./html-reporter";
@@ -55,12 +56,29 @@ function parseArgs(): CliOptions {
 
     if (arg === "--modes" && args[i + 1]) {
       i += 1;
-      options.modes = args[i].split(",") as RunMode[];
+      const inputModes = args[i].split(",");
+      const validModes = getAllModes();
+      const invalidModes = inputModes.filter(
+        (m) => !validModes.includes(m as RunMode)
+      );
+      if (invalidModes.length > 0) {
+        console.error(`Error: Invalid mode(s): ${invalidModes.join(", ")}`);
+        console.error(`Valid modes: ${validModes.join(", ")}`);
+        process.exit(1);
+      }
+      options.modes = inputModes as RunMode[];
     }
 
     if (arg === "--iterations" && args[i + 1]) {
       i += 1;
-      options.iterations = Number.parseInt(args[i], 10);
+      const parsed = Number.parseInt(args[i], 10);
+      if (Number.isNaN(parsed) || parsed < 1) {
+        console.error(
+          `Error: --iterations must be a positive integer, got: ${args[i]}`
+        );
+        process.exit(1);
+      }
+      options.iterations = parsed;
     }
 
     if (arg === "--skip-live") {
@@ -166,7 +184,7 @@ function resolveOptions(cliOptions: CliOptions): ResolvedCliOptions {
 
   let { modes } = cliOptions;
   if (!modes) {
-    modes = skipLive ? getDefaultModes() : getDefaultModes();
+    modes = getDefaultModes();
   } else if (skipLive) {
     modes = modes.filter((m) => !m.startsWith("live"));
   }
