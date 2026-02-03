@@ -60,9 +60,9 @@ When you identify an issue requiring configuration changes:
 # Response Structure
 When troubleshooting, structure your response with clear sections:
 - **Diagnosis**: What is the root cause or likely issue
-- **Evidence**: What data/logs/events support this conclusion
+- **Evidence**: What data/logs/events support this conclusion. IMPORTANT: Cite exact error codes (e.g., ERR_NAME_NOT_RESOLVED, ERR_CONNECTION_TIMED_OUT), log entries, and technical identifiers from the data. Don't paraphrase - quote the actual values.
 - **Hypotheses**: Alternative explanations if the diagnosis is uncertain
-- **Next Steps**: Specific actions the admin should take
+- **Next Steps**: Specific actions the admin should take. Include standard remediation steps like sysprep for VM cloning issues, license verification for enrollment issues, etc.
 
 # CRITICAL: Always Suggest Next Steps
 You MUST call suggestActions at the end of EVERY response with 2-4 relevant options.
@@ -79,7 +79,7 @@ Example actions based on context:
    - listDLPRules (policies list)
 2) Analyze connector policy targeting. If any policies target customers, flag mis-scoping and recommend org unit/group targeting.
 3) If events are empty or errors occur, call debugAuth to inspect scopes/expiry.
-4) If tool outputs include errors, codes, or unfamiliar terms, call searchPolicies or searchDocs to ground the error before proposing fixes.
+4) If tool outputs include errors, codes, or unfamiliar terms, call searchKnowledge to ground the error before proposing fixes.
 5) Present findings concisely with remediation steps.
 6) REQUIRED: Call suggestActions with relevant follow-up options.
 
@@ -89,6 +89,29 @@ Example actions based on context:
 - Chrome Browser Management: https://admin.google.com/ac/chrome/browsers
 - Organizational Units: https://admin.google.com/ac/orgunits
 - Chrome Policies: https://admin.google.com/ac/chrome/settings
+
+# Using searchKnowledge for Accurate Answers
+
+IMPORTANT: When you encounter:
+- Unfamiliar error codes (ERR_NAME_NOT_RESOLVED, etc.)
+- Troubleshooting scenarios you're unsure about (VM cloning, enrollment issues)
+- Questions about best practices or remediation steps
+- Technical terms or field names (targetResource, sysprep, etc.)
+
+Call searchKnowledge with a specific query to retrieve accurate documentation. Don't guess - search first.
+
+Examples of when to search:
+- "duplicate device ID VM cloning fix" → Learn about sysprep
+- "enrollment token targetResource" → Learn about OU targeting
+- "Chrome Enterprise Premium license requirements" → Learn about licensing
+- "ERR_CONNECTION_TIMED_OUT network troubleshooting" → Learn about network diagnostics
+
+# Evidence Requirements
+
+When citing evidence in your diagnosis:
+- Quote exact error codes from logs (ERR_NAME_NOT_RESOLVED, not "DNS failed")
+- Reference specific field names from API responses (targetResource, not "target setting")
+- Include technical identifiers that support your conclusion
 
 Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.`;
 
@@ -235,6 +258,34 @@ export async function createChatStream({
           "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
         inputSchema: DraftPolicyChangeSchema,
         execute: async (args) => await executor.draftPolicyChange(args),
+      }),
+
+      searchKnowledge: tool({
+        description:
+          "Search the knowledge base for documentation about Chrome Enterprise concepts, error codes, troubleshooting steps, and best practices. Use this when you encounter unfamiliar terms, error codes, or need to verify remediation steps.",
+        inputSchema: z.object({
+          query: z
+            .string()
+            .describe(
+              "Search query - include specific terms like error codes, feature names, or concepts"
+            ),
+        }),
+        execute: async ({ query }) => {
+          const [docs, policies] = await Promise.all([
+            searchDocs(query),
+            searchPolicies(query),
+          ]);
+          return {
+            docs: docs.hits.map((h) => ({
+              title: h.metadata?.title,
+              content: h.content,
+            })),
+            policies: policies.hits.map((h) => ({
+              title: h.metadata?.title,
+              content: h.content,
+            })),
+          };
+        },
       }),
     },
   });
