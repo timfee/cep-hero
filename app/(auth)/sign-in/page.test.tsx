@@ -1,5 +1,13 @@
-/* oxlint-disable typescript/no-unsafe-call, eslint-plugin-next/no-img-element, eslint-plugin-jest/require-hook */
-import { mock } from "bun:test";
+import { fireEvent, render } from "@testing-library/react";
+/* oxlint-disable typescript/no-unsafe-call, eslint-plugin-next/no-img-element, eslint-plugin-jest/require-hook, eslint-plugin-import/first, eslint-plugin-import/no-duplicates, no-empty-function, no-duplicate-imports */
+import { beforeEach, describe, expect, it, mock } from "bun:test";
+
+/**
+ * Mock placeholder function for testing.
+ */
+function noop() {
+  // Intentionally empty mock implementation
+}
 
 // Mock next/image
 mock.module("next/image", () => ({
@@ -9,29 +17,27 @@ mock.module("next/image", () => ({
 }));
 
 // Mock vercel analytics
-const mockTrack = mock(() => {});
+const mockTrack = mock(noop);
 mock.module("@vercel/analytics", () => ({
   track: mockTrack,
 }));
 
 // Mock the entire auth-client module to avoid BetterAuth initialization
-const mockSignInSocial = mock(() => {});
+const mockSignInSocial = mock(noop);
+const mockSignOut = mock(noop);
+const mockSignUp = mock(noop);
 mock.module("@/lib/auth-client", () => ({
   authClient: {
     signIn: { social: mockSignInSocial },
-    signOut: mock(() => {}),
-    signUp: mock(() => {}),
+    signOut: mockSignOut,
+    signUp: mockSignUp,
     useSession: () => ({ data: null, isPending: false }),
   },
   signIn: { social: mockSignInSocial },
-  signOut: mock(() => {}),
-  signUp: mock(() => {}),
+  signOut: mockSignOut,
+  signUp: mockSignUp,
   useSession: () => ({ data: null, isPending: false }),
 }));
-
-// Import after mocking
-import { fireEvent, render } from "@testing-library/react";
-import { beforeEach, describe, expect, it } from "bun:test";
 
 const { default: SignInPage } = await import("./page");
 
