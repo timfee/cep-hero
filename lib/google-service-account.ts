@@ -6,25 +6,33 @@ interface ServiceAccountCredentials {
 }
 
 function loadServiceAccount(): ServiceAccountCredentials {
+  const json = getServiceAccountJson();
+  const parsed = parseServiceAccountJson(json);
+  return normalizeCredentials(parsed);
+}
+
+function getServiceAccountJson(): string {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (inline === undefined || inline === "") {
     throw new Error(
       "Missing GOOGLE_SERVICE_ACCOUNT_JSON env for service account credentials"
     );
   }
+  return inline.replaceAll(/^['"]|['"]$/g, "");
+}
 
-  const trimmed = inline.replaceAll(/^['"]|['"]$/g, "");
-  const parsed: unknown = JSON.parse(trimmed);
+function parseServiceAccountJson(json: string): Record<string, unknown> {
+  const parsed: unknown = JSON.parse(json);
   if (!isPlainObject(parsed)) {
     throw new Error("Service account JSON must be an object");
   }
+  return parsed;
+}
 
-  if (
-    typeof parsed.client_email !== "string" ||
-    parsed.client_email.length === 0 ||
-    typeof parsed.private_key !== "string" ||
-    parsed.private_key.length === 0
-  ) {
+function normalizeCredentials(
+  parsed: Record<string, unknown>
+): ServiceAccountCredentials {
+  if (!hasValidCredentials(parsed)) {
     throw new Error("Service account JSON missing client_email or private_key");
   }
 
@@ -33,6 +41,17 @@ function loadServiceAccount(): ServiceAccountCredentials {
     : parsed.private_key;
 
   return { client_email: parsed.client_email, private_key: key };
+}
+
+function hasValidCredentials(
+  parsed: Record<string, unknown>
+): parsed is { client_email: string; private_key: string } {
+  return (
+    typeof parsed.client_email === "string" &&
+    parsed.client_email.length > 0 &&
+    typeof parsed.private_key === "string" &&
+    parsed.private_key.length > 0
+  );
 }
 
 export async function getServiceAccountAccessToken(
