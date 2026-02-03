@@ -1,194 +1,13 @@
 import { type OAuth2Client } from "google-auth-library";
-import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
-import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
-import { formatSettingType, formatSettingValue } from "@/lib/mcp/formatters";
 import { resolveOrgUnitDisplay } from "@/lib/mcp/org-units";
-import {
-  type CreateDLPRuleSchema,
-  type ListDLPRulesSchema,
-} from "@/lib/mcp/schemas";
-import { searchPolicies } from "@/lib/upstash/search";
+import { type CreateDLPRuleSchema } from "@/lib/mcp/schemas";
 
 import { type OrgUnitContext } from "./context";
 import { buildOrgUnitTargetResource } from "./utils";
 
-export type ListDLPRulesArgs = z.infer<typeof ListDLPRulesSchema>;
 export type CreateDLPRuleArgs = z.infer<typeof CreateDLPRuleSchema>;
-
-interface DLPRule {
-  id: string;
-  displayName: string;
-  description: string;
-  settingType: string;
-  orgUnit: string;
-  policyType: string;
-  resourceName: string;
-  consoleUrl: string;
-}
-
-interface ListDLPRulesSuccess {
-  rules: DLPRule[];
-  help?: unknown;
-}
-
-interface ListDLPRulesError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
-export type ListDLPRulesResult = ListDLPRulesSuccess | ListDLPRulesError;
-
-interface CloudIdentityPolicy {
-  name?: string | null;
-  customer?: string | null;
-  type?: string | null;
-  policyQuery?: {
-    query?: string | null;
-    orgUnit?: string | null;
-    sortOrder?: number | null;
-  } | null;
-  setting?: {
-    type?: string | null;
-    value?: Record<string, unknown> | null;
-  } | null;
-}
-
-const DLP_SERVICE_UNAVAILABLE: ListDLPRulesError = {
-  error: "Cloud Identity policy client unavailable",
-  suggestion: "Confirm Cloud Identity API is enabled for this project.",
-  requiresReauth: false,
-};
-
-/**
- * Fetches DLP policies from Cloud Identity and maps them to a structured
- * format with org unit resolution and optional help documentation.
- */
-export async function listDLPRules(
-  auth: OAuth2Client,
-  customerId: string,
-  orgUnitContext: OrgUnitContext,
-  args: ListDLPRulesArgs = {}
-): Promise<ListDLPRulesResult> {
-  const service = googleApis.cloudidentity({ version: "v1", auth });
-  console.log("[dlp-rules] request");
-
-  if (service.policies?.list === undefined) {
-    return DLP_SERVICE_UNAVAILABLE;
-  }
-
-  try {
-    return await fetchAndMapPolicies(service, customerId, orgUnitContext, args);
-  } catch (error: unknown) {
-    logDlpError(error);
-    return createApiError(error, "dlp-rules");
-  }
-}
-
-async function fetchAndMapPolicies(
-  service: {
-    policies?: {
-      list: (args: {
-        filter: string;
-      }) => Promise<{ data: { policies?: CloudIdentityPolicy[] } }>;
-    };
-  },
-  customerId: string,
-  orgUnitContext: OrgUnitContext,
-  args: ListDLPRulesArgs
-): Promise<ListDLPRulesSuccess> {
-  const policiesApi = service.policies;
-  if (policiesApi === undefined) {
-    return { rules: [] };
-  }
-
-  const res = await policiesApi.list({
-    filter: `customer == "customers/${customerId}"`,
-  });
-  logPolicyResponse(res.data.policies);
-
-  const rules = mapPoliciesToRules(res.data.policies ?? [], orgUnitContext);
-  return addHelpIfRequested(rules, args.includeHelp ?? false);
-}
-
-function logPolicyResponse(policies: CloudIdentityPolicy[] | undefined): void {
-  console.log(
-    "[dlp-rules] response",
-    JSON.stringify({
-      count: policies?.length ?? 0,
-      sample: policies?.[0]?.name,
-    })
-  );
-}
-
-async function addHelpIfRequested(
-  rules: DLPRule[],
-  includeHelp: boolean
-): Promise<ListDLPRulesSuccess> {
-  if (!includeHelp || rules.length === 0) {
-    return { rules };
-  }
-  const help = await searchPolicies("Chrome DLP rules", 4);
-  return { rules, help };
-}
-
-function logDlpError(error: unknown): void {
-  const { code, message, errors } = getErrorDetails(error);
-  console.log("[dlp-rules] error", JSON.stringify({ code, message, errors }));
-}
-
-function mapPoliciesToRules(
-  policies: CloudIdentityPolicy[],
-  orgUnitContext: OrgUnitContext
-): DLPRule[] {
-  return policies.map((policy, idx) =>
-    mapPolicyToRule(policy, idx, orgUnitContext)
-  );
-}
-
-function mapPolicyToRule(
-  policy: CloudIdentityPolicy,
-  idx: number,
-  orgUnitContext: OrgUnitContext
-): DLPRule {
-  const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } = orgUnitContext;
-  const resourceName = policy.name ?? "";
-  const id = resourceName.split("/").pop() ?? `rule-${idx + 1}`;
-  const settingType = policy.setting?.type ?? "";
-  const displayName = formatSettingType(settingType) || `Policy ${idx + 1}`;
-  const description = formatSettingDescription(policy.setting?.value);
-  const orgUnitRaw = policy.policyQuery?.orgUnit ?? "";
-  const orgUnit =
-    resolveOrgUnitDisplay(
-      orgUnitRaw,
-      orgUnitNameMap,
-      rootOrgUnitId,
-      rootOrgUnitPath
-    ) ?? orgUnitRaw;
-  const policyType = policy.type ?? "UNKNOWN";
-
-  return {
-    id,
-    displayName,
-    description,
-    settingType,
-    orgUnit,
-    policyType,
-    resourceName,
-    consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-  };
-}
-
-function formatSettingDescription(
-  value: Record<string, unknown> | null | undefined
-): string {
-  if (value === null || value === undefined) {
-    return "";
-  }
-  return formatSettingValue(value);
-}
 
 interface CreateDLPRuleSuccess {
   _type: "ui.success";
@@ -238,33 +57,59 @@ export async function createDLPRule(
   orgUnitContext: OrgUnitContext,
   args: CreateDLPRuleArgs
 ): Promise<CreateDLPRuleResult> {
+  logCreateRequest(args);
+  const targetOrgUnitDisplay = resolveTargetDisplay(
+    args.targetOrgUnit,
+    orgUnitContext
+  );
+  const accessToken = await getAccessToken(auth);
+
+  if (accessToken === null) {
+    return buildNoTokenError(args, targetOrgUnitDisplay);
+  }
+
+  const result = await executeCreateRule(
+    accessToken,
+    customerId,
+    args,
+    targetOrgUnitDisplay
+  );
+  return result;
+}
+
+function logCreateRequest(args: CreateDLPRuleArgs): void {
   console.log("[create-dlp-rule] request", {
     displayName: args.displayName,
     targetOrgUnit: args.targetOrgUnit,
     triggers: args.triggers,
     action: args.action,
   });
+}
 
-  const targetOrgUnitDisplay = resolveTargetDisplay(
-    args.targetOrgUnit,
-    orgUnitContext
-  );
+async function getAccessToken(auth: OAuth2Client): Promise<string | null> {
   const token = await auth.getAccessToken();
   const accessToken = token?.token;
-
   if (typeof accessToken !== "string" || accessToken.length === 0) {
-    return buildNoTokenError(args, targetOrgUnitDisplay);
+    return null;
   }
+  return accessToken;
+}
 
+async function executeCreateRule(
+  accessToken: string,
+  customerId: string,
+  args: CreateDLPRuleArgs,
+  targetOrgUnitDisplay: string
+): Promise<CreateDLPRuleResult> {
   const policyPayload = buildPolicyPayload(customerId, args);
-
   try {
-    return await submitDLPRule(
+    const result = await submitDLPRule(
       accessToken,
       policyPayload,
       args,
       targetOrgUnitDisplay
     );
+    return result;
   } catch (error: unknown) {
     return buildCatchError(error, args, targetOrgUnitDisplay);
   }

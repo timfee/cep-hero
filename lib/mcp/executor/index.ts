@@ -23,12 +23,14 @@ import {
 import { fetchOrgUnitContext, type OrgUnitContext } from "./context";
 import {
   createDLPRule,
-  listDLPRules,
   type CreateDLPRuleArgs,
   type CreateDLPRuleResult,
+} from "./dlp-create";
+import {
+  listDLPRules,
   type ListDLPRulesArgs,
   type ListDLPRulesResult,
-} from "./dlp";
+} from "./dlp-list";
 import {
   enrollBrowser,
   type EnrollBrowserArgs,
