@@ -72,7 +72,7 @@ export async function GET(req: Request) {
 async function handleExistingSession(
   sessionId: string,
   req: Request
-): Promise<Response | null> {
+): Promise<Response> {
   const entry = activeTransports.get(sessionId);
   if (!entry) {
     return new Response("Session not found (or expired).", { status: 404 });
