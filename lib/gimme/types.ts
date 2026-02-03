@@ -4,17 +4,13 @@
 
 /**
  * Result type for enrollment operations.
+ * Basic validation errors (missing fields, invalid format) include an error.
+ * Once validation passes, notificationSentTo is set and details are sent via email.
  */
-export type EnrollmentResult =
-  | {
-      success: true;
-      email: string;
-      notificationSentTo: string;
-    }
-  | {
-      success: false;
-      error: string;
-    };
+export interface EnrollmentResult {
+  notificationSentTo: string;
+  error?: string;
+}
 
 /**
  * Parsed name components.

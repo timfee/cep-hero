@@ -4,7 +4,7 @@
 
 "use client";
 
-import { CheckCircle, AlertCircle, Loader2, Copy, Check } from "lucide-react";
+import { Mail, AlertCircle, Loader2 } from "lucide-react";
 import { useActionState, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -30,100 +30,27 @@ async function enrollAction(
 }
 
 /**
- * Copy button component with feedback.
+ * Check email notification component - shown after request is processed.
  */
-function CopyButton({ text, label }: { text: string; label: string }) {
-  const [copied, setCopied] = useState(false);
-
-  async function handleCopy() {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  }
-
-  return (
-    <Button
-      type="button"
-      variant="outline"
-      size="sm"
-      onClick={handleCopy}
-      className="h-7 gap-1.5"
-    >
-      {copied ? (
-        <>
-          <Check className="h-3 w-3" />
-          Copied
-        </>
-      ) : (
-        <>
-          <Copy className="h-3 w-3" />
-          Copy {label}
-        </>
-      )}
-    </Button>
-  );
-}
-
-/**
- * Success state display component.
- */
-function SuccessResult({
+function CheckEmailNotice({
   email,
-  notificationSentTo,
   onReset,
 }: {
   email: string;
-  notificationSentTo: string;
   onReset: () => void;
 }) {
   return (
     <div className="space-y-4">
-      <Alert className="border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950">
-        <CheckCircle className="h-4 w-4 text-green-600 dark:text-green-400" />
-        <AlertTitle className="text-green-800 dark:text-green-200">
-          Account Created Successfully
+      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertTitle className="text-blue-800 dark:text-blue-200">
+          Check Your Email
         </AlertTitle>
-        <AlertDescription className="text-green-700 dark:text-green-300">
-          Your super admin account has been created and credentials have been
-          sent to your email.
+        <AlertDescription className="text-blue-700 dark:text-blue-300">
+          We&apos;ve sent a notification to <strong>{email}</strong> with the
+          details of your request.
         </AlertDescription>
       </Alert>
-
-      <Card>
-        <CardContent className="space-y-4 pt-6">
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              New Admin Email
-            </label>
-            <div className="mt-1 flex items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2">
-              <code className="text-sm">{email}</code>
-              <CopyButton text={email} label="email" />
-            </div>
-          </div>
-
-          <div>
-            <label className="text-sm font-medium text-muted-foreground">
-              Credentials Sent To
-            </label>
-            <div className="mt-1 rounded-md border bg-muted/50 px-3 py-2">
-              <code className="text-sm">{notificationSentTo}</code>
-            </div>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Check your inbox for the temporary password.
-            </p>
-          </div>
-
-          <div className="rounded-md border bg-muted/30 p-3">
-            <p className="mb-2 text-sm font-medium">Next Steps:</p>
-            <ol className="list-inside list-decimal space-y-1 text-sm text-muted-foreground">
-              <li>Check your email for the temporary password</li>
-              <li>Go to admin.google.com</li>
-              <li>Sign in with your new admin email</li>
-              <li>Change your password when prompted</li>
-            </ol>
-          </div>
-        </CardContent>
-      </Card>
 
       <Button
         type="button"
@@ -131,7 +58,7 @@ function SuccessResult({
         className="w-full"
         onClick={onReset}
       >
-        Create Another Account
+        Submit Another Request
       </Button>
     </div>
   );
@@ -151,11 +78,11 @@ export function EnrollmentForm() {
     setFormKey((prev) => prev + 1);
   }
 
-  if (state?.success) {
+  // Show "check your email" when notification was sent (regardless of outcome)
+  if (state?.notificationSentTo) {
     return (
-      <SuccessResult
-        email={state.email}
-        notificationSentTo={state.notificationSentTo}
+      <CheckEmailNotice
+        email={state.notificationSentTo}
         onReset={handleReset}
       />
     );
@@ -165,7 +92,7 @@ export function EnrollmentForm() {
     <Card key={formKey}>
       <CardContent className="pt-6">
         <form action={formAction} className="space-y-4">
-          {state && !state.success && (
+          {state?.error && (
             <Alert variant="destructive">
               <AlertCircle className="h-4 w-4" />
               <AlertTitle>Error</AlertTitle>
@@ -228,10 +155,10 @@ export function EnrollmentForm() {
             {isPending ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Account...
+                Processing...
               </>
             ) : (
-              "Create Account"
+              "Submit Request"
             )}
           </Button>
         </form>

@@ -19,11 +19,11 @@ import {
   parseName,
   RATE_LIMIT_MAX_REQUESTS,
   RATE_LIMIT_WINDOW_MS,
-  sendWelcomeEmail,
+  sendErrorEmail,
+  sendSuccessEmail,
   stripQuotes,
   userExists,
   validateEmail,
-  validateEnrollmentPassword,
 } from "@/lib/gimme";
 import { checkRateLimit, timingSafeEqual } from "@/lib/rate-limit";
 
@@ -50,7 +50,27 @@ async function getClientIp(): Promise<string> {
 }
 
 /**
+ * Send error email and return standard response.
+ */
+async function sendErrorAndReturn(
+  email: string,
+  name: string,
+  errorMessage: string
+): Promise<EnrollmentResult> {
+  try {
+    await sendErrorEmail(email, name, errorMessage);
+  } catch (emailError) {
+    console.error("[gimme] failed to send error email", {
+      to: email,
+      error: emailError instanceof Error ? emailError.message : "Unknown error",
+    });
+  }
+  return { notificationSentTo: email };
+}
+
+/**
  * Server Action to handle self-enrollment form submission.
+ * Returns only notification status - details are sent via email.
  */
 export async function enrollUser(
   formData: FormData
@@ -69,42 +89,55 @@ export async function enrollUser(
   if (!rateLimit.allowed) {
     const minutes = Math.ceil(rateLimit.resetIn / 60_000);
     return {
-      success: false,
+      notificationSentTo: "",
       error: `Too many requests. Please try again in ${minutes} minutes.`,
     };
   }
 
   if (!name) {
-    return { success: false, error: "Name is required" };
+    return { notificationSentTo: "", error: "Name is required" };
   }
 
   if (name.length > MAX_NAME_LENGTH) {
     return {
-      success: false,
+      notificationSentTo: "",
       error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
     };
   }
 
   const emailResult = validateEmail(email);
   if (!emailResult.valid) {
-    return { success: false, error: emailResult.error };
+    return { notificationSentTo: "", error: emailResult.error };
   }
 
   if (!password) {
-    return { success: false, error: "Enrollment password is required" };
+    return { notificationSentTo: "", error: "Enrollment password is required" };
   }
+
+  // From here on, we have a valid @google.com email.
+  // All outcomes (success or failure) are sent via email only.
+  const { username } = emailResult;
+  const googleEmail = `${username}${ALLOWED_EMAIL_SUFFIX}`;
 
   const enrollmentPassword = stripQuotes(process.env.SELF_ENROLLMENT_PASSWORD);
   if (!enrollmentPassword) {
     console.error("[gimme] SELF_ENROLLMENT_PASSWORD not configured");
-    return { success: false, error: "Self-enrollment is not configured" };
+    return sendErrorAndReturn(
+      googleEmail,
+      name,
+      "Self-enrollment is temporarily unavailable. Please contact an administrator."
+    );
   }
 
   if (!timingSafeEqual(password, enrollmentPassword)) {
-    return { success: false, error: "Invalid enrollment password" };
+    console.log("[gimme] invalid enrollment password", { clientIp });
+    return sendErrorAndReturn(
+      googleEmail,
+      name,
+      "Invalid enrollment password. Please check with your team lead for the correct password."
+    );
   }
 
-  const { username } = emailResult;
   const newEmail = buildTargetEmail(username);
   const newPassword = generatePassword();
   const parsedName = parseName(name);
@@ -117,33 +150,30 @@ export async function enrollUser(
     const exists = await userExists(directory, newEmail);
     if (exists) {
       console.log("[gimme] user already exists", { newEmail });
-      return {
-        success: false,
-        error: `Account ${newEmail} already exists. Contact an administrator for access.`,
-      };
+      return sendErrorAndReturn(
+        googleEmail,
+        name,
+        `Account ${newEmail} already exists. Contact an administrator for access.`
+      );
     }
 
-    await createUser(directory, newEmail, newPassword, parsedName, email);
+    await createUser(directory, newEmail, newPassword, parsedName, googleEmail);
     console.log("[gimme] user created", { newEmail });
 
     await makeUserSuperAdmin(directory, newEmail);
     console.log("[gimme] super admin granted", { newEmail });
 
-    await sendWelcomeEmail(email, name, newEmail, newPassword);
+    await sendSuccessEmail(googleEmail, name, newEmail, newPassword);
 
-    return {
-      success: true,
-      email: newEmail,
-      notificationSentTo: email,
-    };
+    return { notificationSentTo: googleEmail };
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
     console.error("[gimme] error", { error: errorMessage, clientIp });
-    return {
-      success: false,
-      error:
-        "Failed to create account. Please try again or contact an administrator.",
-    };
+    return sendErrorAndReturn(
+      googleEmail,
+      name,
+      "Failed to create account due to a technical error. Please try again or contact an administrator."
+    );
   }
 }

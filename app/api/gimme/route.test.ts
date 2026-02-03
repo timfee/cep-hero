@@ -111,28 +111,18 @@ describe("/api/gimme endpoint", () => {
   });
 
   describe("response structure", () => {
-    it("success response has correct shape", () => {
-      const successResponse = {
-        success: true,
-        message: "Account created successfully",
-        email: "testuser@cep-netnew.cc",
+    it("notification response has correct shape", () => {
+      const notificationResponse = {
         notificationSentTo: "testuser@google.com",
-        instructions: [
-          "Check your email for login credentials",
-          "Sign in at https://admin.google.com with testuser@cep-netnew.cc",
-          "You will be prompted to change your password on first login",
-        ],
+        message: "Check your email for details",
       };
 
-      expect(successResponse).toHaveProperty("success", true);
-      expect(successResponse).toHaveProperty("message");
-      expect(successResponse).toHaveProperty("email");
-      expect(successResponse).toHaveProperty("notificationSentTo");
-      expect(successResponse).toHaveProperty("instructions");
-      expect(Array.isArray(successResponse.instructions)).toBe(true);
+      expect(notificationResponse).toHaveProperty("notificationSentTo");
+      expect(notificationResponse).toHaveProperty("message");
+      expect(typeof notificationResponse.notificationSentTo).toBe("string");
     });
 
-    it("error response has correct shape", () => {
+    it("validation error response has correct shape", () => {
       const errorResponse = {
         error: "Email must end with @google.com",
       };
@@ -150,16 +140,6 @@ describe("/api/gimme endpoint", () => {
       expect(rateLimitResponse).toHaveProperty("error");
       expect(rateLimitResponse).toHaveProperty("retryAfter");
       expect(typeof rateLimitResponse.retryAfter).toBe("number");
-    });
-
-    it("conflict response has correct shape", () => {
-      const conflictResponse = {
-        error:
-          "Account testuser@cep-netnew.cc already exists. Contact an administrator for access.",
-      };
-
-      expect(conflictResponse).toHaveProperty("error");
-      expect(conflictResponse.error).toContain("already exists");
     });
   });
 
@@ -316,14 +296,9 @@ describe("/api/gimme endpoint", () => {
       expect(status).toBe(429);
     });
 
-    it("returns 409 for user already exists", () => {
-      const status = 409;
-      expect(status).toBe(409);
-    });
-
-    it("returns 500 for server errors", () => {
-      const status = 500;
-      expect(status).toBe(500);
+    it("returns 200 for processed requests (details sent via email)", () => {
+      const status = 200;
+      expect(status).toBe(200);
     });
   });
 });
