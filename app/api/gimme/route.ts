@@ -8,7 +8,7 @@ import { OAuth2Client } from "google-auth-library";
 import { google, type admin_directory_v1 } from "googleapis";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
+import { checkRateLimit, getClientIp, timingSafeEqual } from "@/lib/rate-limit";
 
 type DirectoryAdmin = admin_directory_v1.Admin;
 
@@ -51,19 +51,43 @@ function stripQuotes(value: string | undefined): string | undefined {
 }
 
 /**
- * Validate that the request body is a valid object.
+ * Maximum allowed length for name field.
+ */
+const MAX_NAME_LENGTH = 200;
+
+/**
+ * Validate that the request body is a valid object (not null, not array).
  */
 function validateBodyStructure(
   body: unknown
 ): body is Partial<EnrollmentRequest> {
-  return body !== null && body !== undefined && typeof body === "object";
+  return (
+    body !== null &&
+    body !== undefined &&
+    typeof body === "object" &&
+    !Array.isArray(body)
+  );
 }
 
 /**
- * Validate the name field.
+ * Validate the name field with length limits.
  */
-function validateName(name: unknown): name is string {
-  return typeof name === "string" && name.trim().length > 0;
+function validateName(
+  name: unknown
+): { valid: false; error: string } | { valid: true; name: string } {
+  if (typeof name !== "string" || name.trim().length === 0) {
+    return { valid: false, error: "Name is required" };
+  }
+
+  const trimmedName = name.trim();
+  if (trimmedName.length > MAX_NAME_LENGTH) {
+    return {
+      valid: false,
+      error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
+    };
+  }
+
+  return { valid: true, name: trimmedName };
 }
 
 /**
@@ -90,7 +114,7 @@ function validateAndExtractEmail(
 }
 
 /**
- * Validate the enrollment password.
+ * Validate the enrollment password using timing-safe comparison.
  */
 function validateEnrollmentPassword(
   password: unknown
@@ -105,7 +129,7 @@ function validateEnrollmentPassword(
     return { valid: false, error: "Self-enrollment is not configured" };
   }
 
-  if (password !== enrollmentPassword) {
+  if (!timingSafeEqual(password, enrollmentPassword)) {
     return { valid: false, error: "Invalid enrollment password" };
   }
 
@@ -122,8 +146,9 @@ function validateRequest(body: unknown): ValidationResult {
 
   const { name, email, password } = body;
 
-  if (!validateName(name)) {
-    return { valid: false, error: "Name is required" };
+  const nameResult = validateName(name);
+  if (!nameResult.valid) {
+    return nameResult;
   }
 
   const emailResult = validateAndExtractEmail(email);
@@ -136,7 +161,7 @@ function validateRequest(body: unknown): ValidationResult {
     return passwordResult;
   }
 
-  return { valid: true, username: emailResult.username, name: name.trim() };
+  return { valid: true, username: emailResult.username, name: nameResult.name };
 }
 
 /**

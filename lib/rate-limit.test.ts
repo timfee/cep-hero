@@ -4,7 +4,7 @@
 
 import { describe, expect, it, beforeEach } from "bun:test";
 
-import { checkRateLimit, getClientIp } from "./rate-limit";
+import { checkRateLimit, getClientIp, timingSafeEqual } from "./rate-limit";
 
 describe("rate-limit", () => {
   describe("checkRateLimit", () => {
@@ -164,11 +164,33 @@ describe("rate-limit", () => {
       expect(ip).toBe("192.168.1.1");
     });
 
-    it("returns unknown when no IP headers present", () => {
+    it("returns hashed anonymous ID when no IP headers present", () => {
       const request = new Request("http://localhost");
 
       const ip = getClientIp(request);
-      expect(ip).toBe("unknown");
+      expect(ip).toMatch(/^anon-[a-f0-9]{16}$/);
+    });
+  });
+
+  describe("timingSafeEqual", () => {
+    it("returns true for equal strings", () => {
+      expect(timingSafeEqual("password123", "password123")).toBe(true);
+    });
+
+    it("returns false for different strings", () => {
+      expect(timingSafeEqual("password123", "password456")).toBe(false);
+    });
+
+    it("returns false for strings of different lengths", () => {
+      expect(timingSafeEqual("short", "longer-string")).toBe(false);
+    });
+
+    it("returns true for empty strings", () => {
+      expect(timingSafeEqual("", "")).toBe(true);
+    });
+
+    it("returns false for empty vs non-empty string", () => {
+      expect(timingSafeEqual("", "something")).toBe(false);
     });
   });
 });

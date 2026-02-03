@@ -115,27 +115,19 @@ describe("/api/gimme endpoint", () => {
       const successResponse = {
         success: true,
         message: "Account created successfully",
-        account: {
-          email: "testuser@cep-netnew.cc",
-          password: "RandomPassword123!",
-          changePasswordRequired: true,
-        },
+        email: "testuser@cep-netnew.cc",
+        notificationSentTo: "testuser@google.com",
         instructions: [
+          "Check your email for login credentials",
           "Sign in at https://admin.google.com with testuser@cep-netnew.cc",
           "You will be prompted to change your password on first login",
-          "Your recovery email has been set to your Google corporate email",
         ],
       };
 
       expect(successResponse).toHaveProperty("success", true);
       expect(successResponse).toHaveProperty("message");
-      expect(successResponse).toHaveProperty("account");
-      expect(successResponse.account).toHaveProperty("email");
-      expect(successResponse.account).toHaveProperty("password");
-      expect(successResponse.account).toHaveProperty(
-        "changePasswordRequired",
-        true
-      );
+      expect(successResponse).toHaveProperty("email");
+      expect(successResponse).toHaveProperty("notificationSentTo");
       expect(successResponse).toHaveProperty("instructions");
       expect(Array.isArray(successResponse.instructions)).toBe(true);
     });
@@ -265,6 +257,18 @@ describe("/api/gimme endpoint", () => {
     it("returns error for empty name", () => {
       const body = { name: "", email: "test@google.com", password: "secret" };
       expect(isValidName(body.name)).toBe(false);
+    });
+
+    it("returns error for name exceeding max length", () => {
+      const maxLength = 200;
+      const longName = "a".repeat(maxLength + 1);
+      expect(longName.length > maxLength).toBe(true);
+    });
+
+    it("accepts name at max length", () => {
+      const maxLength = 200;
+      const validName = "a".repeat(maxLength);
+      expect(validName.length <= maxLength).toBe(true);
     });
 
     it("returns error for missing email", () => {

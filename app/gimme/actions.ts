@@ -7,13 +7,18 @@
 import { OAuth2Client } from "google-auth-library";
 import { google, type admin_directory_v1 } from "googleapis";
 import { headers } from "next/headers";
+import crypto from "node:crypto";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
+import { checkRateLimit, timingSafeEqual } from "@/lib/rate-limit";
 
 type DirectoryAdmin = admin_directory_v1.Admin;
 
 const TARGET_DOMAIN = "cep-netnew.cc";
 const ALLOWED_EMAIL_SUFFIX = "@google.com";
+const MAX_NAME_LENGTH = 200;
+const RATE_LIMIT_MAX_REQUESTS = 5;
+const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 const ADMIN_SCOPES = [
   "https://www.googleapis.com/auth/admin.directory.user",
@@ -21,13 +26,6 @@ const ADMIN_SCOPES = [
 ];
 
 const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
-
-const RATE_LIMIT_STORE = new Map<
-  string,
-  { count: number; resetTime: number }
->();
-const RATE_LIMIT_MAX = 5;
-const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
 /**
  * Result type for the enrollment action.
@@ -55,6 +53,7 @@ function stripQuotes(value: string | undefined): string | undefined {
 
 /**
  * Get the client IP from request headers.
+ * Falls back to a hash of request metadata to prevent DoS via missing headers.
  */
 async function getClientIp(): Promise<string> {
   const headersList = await headers();
@@ -66,38 +65,11 @@ async function getClientIp(): Promise<string> {
   if (realIp) {
     return realIp;
   }
-  return "unknown";
-}
 
-/**
- * Check rate limit for the given IP.
- */
-function checkRateLimit(ip: string): { allowed: boolean; resetIn: number } {
-  const now = Date.now();
-  const entry = RATE_LIMIT_STORE.get(ip);
-
-  if (RATE_LIMIT_STORE.size > 1000) {
-    for (const [key, val] of RATE_LIMIT_STORE) {
-      if (now > val.resetTime) {
-        RATE_LIMIT_STORE.delete(key);
-      }
-    }
-  }
-
-  if (!entry || now > entry.resetTime) {
-    RATE_LIMIT_STORE.set(ip, {
-      count: 1,
-      resetTime: now + RATE_LIMIT_WINDOW_MS,
-    });
-    return { allowed: true, resetIn: RATE_LIMIT_WINDOW_MS };
-  }
-
-  if (entry.count >= RATE_LIMIT_MAX) {
-    return { allowed: false, resetIn: entry.resetTime - now };
-  }
-
-  entry.count += 1;
-  return { allowed: true, resetIn: entry.resetTime - now };
+  const userAgent = headersList.get("user-agent") ?? "";
+  const acceptLang = headersList.get("accept-language") ?? "";
+  const fallbackData = `${userAgent}:${acceptLang}:${Date.now()}`;
+  return `anon-${crypto.createHash("sha256").update(fallbackData).digest("hex").slice(0, 16)}`;
 }
 
 /**
@@ -325,7 +297,11 @@ export async function enrollUser(
 
   const clientIp = await getClientIp();
 
-  const rateLimit = checkRateLimit(clientIp);
+  const rateLimit = checkRateLimit({
+    identifier: `gimme:${clientIp}`,
+    maxRequests: RATE_LIMIT_MAX_REQUESTS,
+    windowMs: RATE_LIMIT_WINDOW_MS,
+  });
   if (!rateLimit.allowed) {
     const minutes = Math.ceil(rateLimit.resetIn / 60_000);
     return {
@@ -336,6 +312,13 @@ export async function enrollUser(
 
   if (!name) {
     return { success: false, error: "Name is required" };
+  }
+
+  if (name.length > MAX_NAME_LENGTH) {
+    return {
+      success: false,
+      error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
+    };
   }
 
   if (!email) {
@@ -361,7 +344,7 @@ export async function enrollUser(
     return { success: false, error: "Self-enrollment is not configured" };
   }
 
-  if (password !== enrollmentPassword) {
+  if (!timingSafeEqual(password, enrollmentPassword)) {
     return { success: false, error: "Invalid enrollment password" };
   }
 
