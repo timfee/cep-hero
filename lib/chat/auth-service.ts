@@ -92,6 +92,43 @@ function handleTokenResult(
   };
 }
 
+function validateSession(session: unknown): AuthResult | null {
+  if (session === null || session === undefined) {
+    return {
+      status: "unauthorized",
+      error: "Unauthorized. Please sign in to use CEP tools.",
+    };
+  }
+  return null;
+}
+
+function buildSuccessResult(
+  session: unknown,
+  token: string,
+  isTestMode: boolean
+): AuthResult {
+  return {
+    status: "success",
+    session,
+    accessToken: token,
+    isTestMode,
+  };
+}
+
+async function processTokenAndBuildResult(
+  req: Request,
+  session: unknown,
+  isTestBypass: boolean,
+  isEvalTestMode: boolean
+): Promise<AuthResult> {
+  const tokenResult = await getAccessToken(req, isTestBypass);
+  const handled = handleTokenResult(tokenResult);
+  if ("status" in handled) {
+    return handled;
+  }
+  return buildSuccessResult(session, handled.token, isEvalTestMode);
+}
+
 /**
  * Authenticate an incoming request for the chat API.
  * Handles both standard session-based auth and special test-mode bypasses.
@@ -104,23 +141,10 @@ export async function authenticateRequest(req: Request): Promise<AuthResult> {
   }
 
   const session = await getSession(req, isTestBypass);
-  if (session === null || session === undefined) {
-    return {
-      status: "unauthorized",
-      error: "Unauthorized. Please sign in to use CEP tools.",
-    };
+  const sessionError = validateSession(session);
+  if (sessionError) {
+    return sessionError;
   }
 
-  const tokenResult = await getAccessToken(req, isTestBypass);
-  const handled = handleTokenResult(tokenResult);
-  if ("status" in handled) {
-    return handled;
-  }
-
-  return {
-    status: "success",
-    session,
-    accessToken: handled.token,
-    isTestMode: isEvalTestMode,
-  };
+  return processTokenAndBuildResult(req, session, isTestBypass, isEvalTestMode);
 }

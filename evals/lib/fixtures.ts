@@ -229,6 +229,39 @@ function buildPromptBlocks(
   return blocks;
 }
 
+interface ResolvedPromptOptions {
+  rootDir: string;
+  useBase: boolean;
+  useFixtures: boolean;
+  injectIntoPrompt: boolean;
+}
+
+function resolvePromptOptions(
+  options: PromptBuildOptions
+): ResolvedPromptOptions {
+  return {
+    rootDir: options.rootDir ?? process.cwd(),
+    useBase: options.useBase ?? process.env.EVAL_USE_BASE === "1",
+    useFixtures: options.useFixtures ?? process.env.EVAL_USE_FIXTURES === "1",
+    injectIntoPrompt:
+      options.injectIntoPrompt ?? process.env.EVAL_INJECT_PROMPT === "1",
+  };
+}
+
+function shouldSkipFixtureInjection(
+  resolved: ResolvedPromptOptions,
+  options: PromptBuildOptions
+): boolean {
+  if (!resolved.injectIntoPrompt) {
+    return true;
+  }
+  return (
+    !resolved.useFixtures &&
+    !resolved.useBase &&
+    (!options.overrides || options.overrides.length === 0)
+  );
+}
+
 /**
  * Build an eval prompt with optional fixture context attached.
  */
@@ -237,29 +270,19 @@ export function buildEvalPrompt(
   options: PromptBuildOptions = {}
 ): string {
   const base = `${basePrompt}\n\nPlease respond with diagnosis, evidence, hypotheses, and next steps. Keep the response under 800 characters and avoid long nested fields.`;
+  const resolved = resolvePromptOptions(options);
 
-  const rootDir = options.rootDir ?? process.cwd();
-  const useBase = options.useBase ?? process.env.EVAL_USE_BASE === "1";
-  const useFixtures =
-    options.useFixtures ?? process.env.EVAL_USE_FIXTURES === "1";
-  const injectIntoPrompt =
-    options.injectIntoPrompt ?? process.env.EVAL_INJECT_PROMPT === "1";
-
-  if (!injectIntoPrompt) {
-    return base;
-  }
-
-  if (
-    !useFixtures &&
-    !useBase &&
-    (!options.overrides || options.overrides.length === 0)
-  ) {
+  if (shouldSkipFixtureInjection(resolved, options)) {
     return base;
   }
 
   const blocks = buildPromptBlocks(
-    { ...options, useBase, useFixtures },
-    rootDir
+    {
+      ...options,
+      useBase: resolved.useBase,
+      useFixtures: resolved.useFixtures,
+    },
+    resolved.rootDir
   );
   return blocks.length === 0
     ? base

@@ -231,6 +231,101 @@ async function retrieveKnowledge(userMessage: string): Promise<string> {
   }
 }
 
+interface StepAnalysis {
+  hasToolResults: boolean;
+  hasText: boolean;
+  hasSuggestActionsCall: boolean;
+  hasDlpProposalCall: boolean;
+  recommendsDlpProposal: boolean;
+}
+
+interface LastStep {
+  toolResults: unknown[];
+  text: string;
+  toolCalls: { toolName: string }[];
+}
+
+function analyzeLastStep(lastStep: LastStep): StepAnalysis {
+  const hasToolResults = lastStep.toolResults.length > 0;
+  const hasText = lastStep.text.trim().length > 0;
+  const hasSuggestActionsCall = lastStep.toolCalls.some(
+    (call) => call.toolName === "suggestActions"
+  );
+  const hasDlpProposalCall = lastStep.toolCalls.some(
+    (call) => call.toolName === "draftPolicyChange"
+  );
+  const recommendsDlpProposal =
+    /dlp/i.test(lastStep.text) &&
+    /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
+    /(rule|policy)/i.test(lastStep.text);
+
+  return {
+    hasToolResults,
+    hasText,
+    hasSuggestActionsCall,
+    hasDlpProposalCall,
+    recommendsDlpProposal,
+  };
+}
+
+function buildDlpGuardResponse(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# DLP Proposal Guard
+You recommended creating a DLP rule. Now:
+1) Call listDLPRules to show current rules.
+2) Call draftPolicyChange to propose the DLP rule in the SAME step.
+Use a clear display name. If a specific destination like sharefile.com was mentioned, target uploads and include that in the reasoning.
+End by calling suggestActions.`,
+    activeTools: ["listDLPRules", "draftPolicyChange", "suggestActions"],
+  };
+}
+
+function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# Response Completion Guard
+You just received tool results. Provide a concise response with:
+- Diagnosis
+- Evidence (cite exact fields)
+- Hypotheses (only if uncertain)
+- Next Steps (actionable)
+If knowledge results were retrieved, summarize them clearly.
+Use friendly org unit paths only; never show raw org unit IDs.
+End by calling suggestActions with 2-4 options.`,
+    activeTools: ["suggestActions"],
+  };
+}
+
+function buildActionCompletionGuard(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# Action Completion Guard
+You already provided context. Now call suggestActions with 2-4 relevant options.
+If you add any text, keep it to one short sentence.`,
+    activeTools: ["suggestActions"],
+  };
+}
+
+function computeStepResponse(
+  analysis: StepAnalysis,
+  enhancedSystemPrompt: string
+): Record<string, unknown> {
+  if (analysis.recommendsDlpProposal && !analysis.hasDlpProposalCall) {
+    return buildDlpGuardResponse(enhancedSystemPrompt);
+  }
+  if (analysis.hasToolResults && !analysis.hasText) {
+    return buildResponseCompletionGuard(enhancedSystemPrompt);
+  }
+  if (analysis.hasToolResults && !analysis.hasSuggestActionsCall) {
+    return buildActionCompletionGuard(enhancedSystemPrompt);
+  }
+  return {};
+}
+
 /**
  * Creates and configures the AI chat stream with all CEP tools registered.
  */
@@ -269,64 +364,8 @@ export async function createChatStream({
       if (!lastStep) {
         return {};
       }
-
-      const hasToolResults = lastStep.toolResults.length > 0;
-      const hasText = lastStep.text.trim().length > 0;
-      const hasSuggestActionsCall = lastStep.toolCalls.some(
-        (call) => call.toolName === "suggestActions"
-      );
-      const hasDlpProposalCall = lastStep.toolCalls.some(
-        (call) => call.toolName === "draftPolicyChange"
-      );
-
-      const recommendsDlpProposal =
-        /dlp/i.test(lastStep.text) &&
-        /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
-        /(rule|policy)/i.test(lastStep.text);
-
-      if (recommendsDlpProposal && !hasDlpProposalCall) {
-        return {
-          system: `${enhancedSystemPrompt}
-
-# DLP Proposal Guard
-You recommended creating a DLP rule. Now:
-1) Call listDLPRules to show current rules.
-2) Call draftPolicyChange to propose the DLP rule in the SAME step.
-Use a clear display name. If a specific destination like sharefile.com was mentioned, target uploads and include that in the reasoning.
-End by calling suggestActions.`,
-          activeTools: ["listDLPRules", "draftPolicyChange", "suggestActions"],
-        };
-      }
-
-      if (hasToolResults && !hasText) {
-        return {
-          system: `${enhancedSystemPrompt}
-
-# Response Completion Guard
-You just received tool results. Provide a concise response with:
-- Diagnosis
-- Evidence (cite exact fields)
-- Hypotheses (only if uncertain)
-- Next Steps (actionable)
-If knowledge results were retrieved, summarize them clearly.
-Use friendly org unit paths only; never show raw org unit IDs.
-End by calling suggestActions with 2-4 options.`,
-          activeTools: ["suggestActions"],
-        };
-      }
-
-      if (hasToolResults && !hasSuggestActionsCall) {
-        return {
-          system: `${enhancedSystemPrompt}
-
-# Action Completion Guard
-You already provided context. Now call suggestActions with 2-4 relevant options.
-If you add any text, keep it to one short sentence.`,
-          activeTools: ["suggestActions"],
-        };
-      }
-
-      return {};
+      const analysis = analyzeLastStep(lastStep);
+      return computeStepResponse(analysis, enhancedSystemPrompt);
     },
     tools: {
       getChromeEvents: tool({

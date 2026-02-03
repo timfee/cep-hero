@@ -78,10 +78,13 @@ function createExecutor(req: Request, body: unknown) {
     : undefined;
 }
 
-/**
- * Handle streaming CEP chat responses.
- */
-export async function POST(req: Request) {
+interface AuthenticatedRequest {
+  accessToken: string;
+  body: unknown;
+  messages: ChatMessage[];
+}
+
+async function authenticateChat(req: Request): Promise<Response | string> {
   const authResult = await authenticateRequest(req);
   const authError = handleAuthError(
     authResult.status,
@@ -90,18 +93,51 @@ export async function POST(req: Request) {
   if (authError) {
     return authError;
   }
+  const { accessToken } = authResult as { accessToken: string };
+  return accessToken;
+}
+
+function parseBodyAndMessages(
+  body: unknown
+): Response | { body: unknown; messages: ChatMessage[] } {
+  const messages = extractMessages(body);
+  if (messages.length === 0) {
+    return handleEmptyMessages(body);
+  }
+  return { body, messages };
+}
+
+async function validateAndParseRequest(
+  req: Request
+): Promise<Response | AuthenticatedRequest> {
+  const authResult = await authenticateChat(req);
+  if (authResult instanceof Response) {
+    return authResult;
+  }
 
   const body = await parseRequestBody(req);
   if (body instanceof Response) {
     return body;
   }
 
-  const messages = extractMessages(body);
-  if (messages.length === 0) {
-    return handleEmptyMessages(body);
+  const parsed = parseBodyAndMessages(body);
+  if (parsed instanceof Response) {
+    return parsed;
   }
 
-  const { accessToken } = authResult as { accessToken: string };
+  return { accessToken: authResult, ...parsed };
+}
+
+/**
+ * Handle streaming CEP chat responses.
+ */
+export async function POST(req: Request) {
+  const result = await validateAndParseRequest(req);
+  if (result instanceof Response) {
+    return result;
+  }
+
+  const { accessToken, body, messages } = result;
   return createChatStream({
     messages,
     accessToken,

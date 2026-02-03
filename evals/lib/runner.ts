@@ -588,6 +588,29 @@ function buildEvidenceInputs(failures: EvalReport[]): EvidenceCheckInput[] {
   }));
 }
 
+function applyLlmResultsToReports(
+  reports: EvalReport[],
+  llmResults: Map<string, LlmJudgeResult>
+): void {
+  for (const report of reports) {
+    const llmResult = llmResults.get(report.caseId);
+    if (llmResult) {
+      updateReportWithLlmResult(report, llmResult);
+    }
+  }
+}
+
+async function processEvidenceFailures(
+  evidenceFailures: EvalReport[]
+): Promise<Map<string, LlmJudgeResult>> {
+  console.log(
+    `[eval] Running LLM judge on ${evidenceFailures.length} evidence failures...`
+  );
+  const inputs = buildEvidenceInputs(evidenceFailures);
+  const llmResults = await batchEvaluateEvidence(inputs);
+  return llmResults;
+}
+
 async function applyLlmJudgePhase(reports: EvalReport[]): Promise<void> {
   const useLlmJudge = process.env.EVAL_LLM_JUDGE !== "0";
   if (!useLlmJudge) {
@@ -599,19 +622,8 @@ async function applyLlmJudgePhase(reports: EvalReport[]): Promise<void> {
     return;
   }
 
-  console.log(
-    `[eval] Running LLM judge on ${evidenceFailures.length} evidence failures...`
-  );
-
-  const inputs = buildEvidenceInputs(evidenceFailures);
-  const llmResults = await batchEvaluateEvidence(inputs);
-
-  for (const report of reports) {
-    const llmResult = llmResults.get(report.caseId);
-    if (llmResult) {
-      updateReportWithLlmResult(report, llmResult);
-    }
-  }
+  const llmResults = await processEvidenceFailures(evidenceFailures);
+  applyLlmResultsToReports(reports, llmResults);
 }
 
 function parsePauseMs(raw: string | undefined): number {

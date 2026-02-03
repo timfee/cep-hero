@@ -133,7 +133,7 @@ export class FixtureToolExecutor implements IToolExecutor {
   }
 
   async debugAuth(): Promise<DebugAuthResult> {
-    const authResult = buildDebugAuthResponse();
+    const authResult = buildDebugAuthResponse(this.fixtures);
     const result = await resolveValue(authResult);
     return result;
   }
@@ -149,7 +149,7 @@ export class FixtureToolExecutor implements IToolExecutor {
   async applyPolicyChange(
     args: z.infer<typeof ApplyPolicyChangeSchema>
   ): Promise<ApplyPolicyChangeResult> {
-    const applyResult = buildApplyPolicyResponse(args);
+    const applyResult = buildApplyPolicyResponse(args, this.fixtures);
     const result = await resolveValue(applyResult);
     return result;
   }
@@ -186,7 +186,7 @@ interface FleetOverviewFixtureResponse {
   sources: string[];
 }
 
-function buildDebugAuthResponse(): DebugAuthResult {
+function buildDebugAuthResponse(_fixtures: FixtureData): DebugAuthResult {
   return {
     scopes: [
       "https://www.googleapis.com/auth/admin.reports.audit.readonly",
@@ -201,7 +201,8 @@ function buildDebugAuthResponse(): DebugAuthResult {
 }
 
 function buildApplyPolicyResponse(
-  args: z.infer<typeof ApplyPolicyChangeSchema>
+  args: z.infer<typeof ApplyPolicyChangeSchema>,
+  _fixtures: FixtureData
 ): ApplyPolicyChangeResult {
   return {
     _type: "ui.success",
