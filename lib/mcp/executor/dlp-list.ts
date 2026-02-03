@@ -14,6 +14,9 @@ import { searchPolicies } from "@/lib/upstash/search";
 
 import { type OrgUnitContext } from "./context";
 
+/**
+ * Arguments for listing DLP rules from Cloud Identity.
+ */
 export type ListDLPRulesArgs = z.infer<typeof ListDLPRulesSchema>;
 
 interface DLPRule {
@@ -38,6 +41,9 @@ interface ListDLPRulesError {
   requiresReauth: boolean;
 }
 
+/**
+ * Result of listing DLP rules, either a list of rules or an error.
+ */
 export type ListDLPRulesResult = ListDLPRulesSuccess | ListDLPRulesError;
 
 interface CloudIdentityPolicy {

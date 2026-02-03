@@ -14,6 +14,9 @@ import {
 
 type DirectoryService = admin_directory_v1.Admin;
 
+/**
+ * Cached organizational unit data for policy resolution and display names.
+ */
 export interface OrgUnitContext {
   orgUnitList: OrgUnit[];
   orgUnitNameMap: Map<string, string>;

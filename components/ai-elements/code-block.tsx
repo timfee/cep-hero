@@ -1,3 +1,7 @@
+/**
+ * Code block components with Shiki syntax highlighting.
+ * Supports multiple languages, themes, line numbers, and copy-to-clipboard functionality.
+ */
 "use client";
 
 import type { ComponentProps, CSSProperties, HTMLAttributes } from "react";
@@ -30,16 +34,23 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-// Shiki uses bitflags for font styles: 1=italic, 2=bold, 4=underline
+/**
+ * Checks if font style includes italic using Shiki's bitflag system.
+ */
 // biome-ignore lint/suspicious/noBitwiseOperators: shiki bitflag check
 const isItalic = (fontStyle: number | undefined) => fontStyle && fontStyle & 1;
+/**
+ * Checks if font style includes bold using Shiki's bitflag system.
+ */
 // biome-ignore lint/suspicious/noBitwiseOperators: shiki bitflag check
 const isBold = (fontStyle: number | undefined) => fontStyle && fontStyle & 2;
+/**
+ * Checks if font style includes underline using Shiki's bitflag system.
+ */
 const isUnderline = (fontStyle: number | undefined) =>
   // biome-ignore lint/suspicious/noBitwiseOperators: shiki bitflag check
   fontStyle && fontStyle & 4;
 
-// Transform tokens to include pre-computed keys to avoid noArrayIndexKey lint
 interface KeyedToken {
   token: ThemedToken;
   key: string;
@@ -49,6 +60,9 @@ interface KeyedLine {
   key: string;
 }
 
+/**
+ * Adds unique keys to tokens for stable React rendering.
+ */
 const addKeysToTokens = (lines: ThemedToken[][]): KeyedLine[] =>
   lines.map((line, lineIdx) => ({
     key: `line-${lineIdx}`,
@@ -58,7 +72,9 @@ const addKeysToTokens = (lines: ThemedToken[][]): KeyedLine[] =>
     })),
   }));
 
-// Token rendering component
+/**
+ * Renders a single syntax-highlighted token with appropriate styles.
+ */
 const TokenSpan = ({ token }: { token: ThemedToken }) => (
   <span
     className="dark:!bg-[var(--shiki-dark-bg)] dark:!text-[var(--shiki-dark)]"
@@ -77,7 +93,9 @@ const TokenSpan = ({ token }: { token: ThemedToken }) => (
   </span>
 );
 
-// Line rendering component
+/**
+ * Renders a line of syntax-highlighted tokens with optional line numbers.
+ */
 const LineSpan = ({
   keyedLine,
   showLineNumbers,
@@ -94,7 +112,6 @@ const LineSpan = ({
   </span>
 );
 
-// Types
 type CodeBlockProps = HTMLAttributes<HTMLDivElement> & {
   code: string;
   language: BundledLanguage;
@@ -111,29 +128,31 @@ interface CodeBlockContextType {
   code: string;
 }
 
-// Context
 const CodeBlockContext = createContext<CodeBlockContextType>({
   code: "",
 });
 
-// Highlighter cache (singleton per language)
 const highlighterCache = new Map<
   string,
   Promise<HighlighterGeneric<BundledLanguage, BundledTheme>>
 >();
 
-// Token cache
 const tokensCache = new Map<string, TokenizedCode>();
 
-// Subscribers for async token updates
 const subscribers = new Map<string, Set<(result: TokenizedCode) => void>>();
 
+/**
+ * Generates a cache key for tokenized code based on language and content.
+ */
 const getTokensCacheKey = (code: string, language: BundledLanguage) => {
   const start = code.slice(0, 100);
   const end = code.length > 100 ? code.slice(-100) : "";
   return `${language}:${code.length}:${start}:${end}`;
 };
 
+/**
+ * Gets or creates a Shiki highlighter for the specified language.
+ */
 const getHighlighter = (
   language: BundledLanguage
 ): Promise<HighlighterGeneric<BundledLanguage, BundledTheme>> => {
@@ -151,7 +170,9 @@ const getHighlighter = (
   return highlighterPromise;
 };
 
-// Create raw tokens for immediate display while highlighting loads
+/**
+ * Creates raw tokens for immediate display while highlighting loads.
+ */
 const createRawTokens = (code: string): TokenizedCode => ({
   tokens: code.split("\n").map((line) =>
     line === ""
@@ -167,7 +188,10 @@ const createRawTokens = (code: string): TokenizedCode => ({
   bg: "transparent",
 });
 
-// Synchronous highlight with callback for async results
+/**
+ * Highlights code with caching and async callback for results.
+ * Returns cached tokens immediately if available, otherwise triggers async highlighting.
+ */
 export function highlightCode(
   code: string,
   language: BundledLanguage,
@@ -229,7 +253,6 @@ export function highlightCode(
   return null;
 }
 
-// Line number styles using CSS counters
 const LINE_NUMBER_CLASSES = cn(
   "block",
   "before:content-[counter(line)]",
@@ -243,6 +266,9 @@ const LINE_NUMBER_CLASSES = cn(
   "before:select-none"
 );
 
+/**
+ * Memoized code block body with syntax-highlighted lines.
+ */
 const CodeBlockBody = memo(
   ({
     tokenized,
@@ -297,6 +323,9 @@ const CodeBlockBody = memo(
     prevProps.className === nextProps.className
 );
 
+/**
+ * Outer container with border, background, and content visibility optimization.
+ */
 export const CodeBlockContainer = ({
   className,
   language,
@@ -318,6 +347,9 @@ export const CodeBlockContainer = ({
   />
 );
 
+/**
+ * Header section with muted background for filename and actions.
+ */
 export const CodeBlockHeader = ({
   children,
   className,
@@ -334,6 +366,9 @@ export const CodeBlockHeader = ({
   </div>
 );
 
+/**
+ * Title container for code block header content.
+ */
 export const CodeBlockTitle = ({
   children,
   className,
@@ -344,6 +379,9 @@ export const CodeBlockTitle = ({
   </div>
 );
 
+/**
+ * Monospace filename display in the header.
+ */
 export const CodeBlockFilename = ({
   children,
   className,
@@ -354,6 +392,9 @@ export const CodeBlockFilename = ({
   </span>
 );
 
+/**
+ * Container for action buttons like copy and language selector.
+ */
 export const CodeBlockActions = ({
   children,
   className,
@@ -364,6 +405,9 @@ export const CodeBlockActions = ({
   </div>
 );
 
+/**
+ * Renders the highlighted code content with async loading support.
+ */
 export const CodeBlockContent = ({
   code,
   language,
@@ -396,6 +440,9 @@ export const CodeBlockContent = ({
   );
 };
 
+/**
+ * Complete code block with context provider, container, and content.
+ */
 export const CodeBlock = ({
   code,
   language,
@@ -422,6 +469,9 @@ export type CodeBlockCopyButtonProps = ComponentProps<typeof Button> & {
   timeout?: number;
 };
 
+/**
+ * Copy button with clipboard integration and success feedback.
+ */
 export const CodeBlockCopyButton = ({
   onCopy,
   onError,
@@ -479,6 +529,9 @@ export const CodeBlockCopyButton = ({
 
 export type CodeBlockLanguageSelectorProps = ComponentProps<typeof Select>;
 
+/**
+ * Wrapper for language selection dropdown.
+ */
 export const CodeBlockLanguageSelector = (
   props: CodeBlockLanguageSelectorProps
 ) => <Select {...props} />;
@@ -487,6 +540,9 @@ export type CodeBlockLanguageSelectorTriggerProps = ComponentProps<
   typeof SelectTrigger
 >;
 
+/**
+ * Trigger button for the language selector dropdown.
+ */
 export const CodeBlockLanguageSelectorTrigger = ({
   className,
   ...props
@@ -505,6 +561,9 @@ export type CodeBlockLanguageSelectorValueProps = ComponentProps<
   typeof SelectValue
 >;
 
+/**
+ * Displays the currently selected language value.
+ */
 export const CodeBlockLanguageSelectorValue = (
   props: CodeBlockLanguageSelectorValueProps
 ) => <SelectValue {...props} />;
@@ -513,6 +572,9 @@ export type CodeBlockLanguageSelectorContentProps = ComponentProps<
   typeof SelectContent
 >;
 
+/**
+ * Dropdown content panel for language options.
+ */
 export const CodeBlockLanguageSelectorContent = ({
   align = "end",
   ...props
