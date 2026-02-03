@@ -9,6 +9,11 @@ import { generateObject } from "ai";
 import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
+import {
+  ensureEvalServer,
+  releaseEvalServer,
+} from "@/lib/test-helpers/eval-server";
+
 const REPORTS_DIR = "evals/reports";
 const OUTPUT_DIR = "evals/comprehensive/reports";
 
@@ -54,8 +59,6 @@ function parseCliArgs(): CliOptions | null {
   if (showHelp) {
     console.log(`
 Usage: bun evals/comprehensive/index.ts [options]
-
-NOTE: Start the dev server first: bun run dev
 
 Options:
   --with-judge      Enable LLM judge
@@ -168,7 +171,6 @@ function printHeader(options: CliOptions): void {
   console.log("═".repeat(60));
   console.log(`  Iterations: ${options.iterations}`);
   console.log(`  LLM Judge: ${options.withJudge ? "enabled" : "disabled"}`);
-  console.log("  Server: expects bun run dev running on :3100");
   console.log(`${"═".repeat(60)}\n`);
 }
 
@@ -380,19 +382,26 @@ async function main(): Promise<void> {
 
   printHeader(options);
 
-  // NOTE: Server must be running separately (bun run dev)
-  // This script passes EVAL_MANAGE_SERVER=0 to subprocess
+  // Start server once, run all iterations, then release
+  await ensureEvalServer({
+    chatUrl: "http://localhost:3100/api/chat",
+    manageServer: true,
+  });
 
   const allSummaries: Summary[] = [];
 
-  for (let i = 0; i < options.iterations; i += 1) {
-    if (options.iterations > 1) {
-      console.log(`\n── Run ${i + 1}/${options.iterations} ──\n`);
+  try {
+    for (let i = 0; i < options.iterations; i += 1) {
+      if (options.iterations > 1) {
+        console.log(`\n── Run ${i + 1}/${options.iterations} ──\n`);
+      }
+      const summary = await runEvals(options);
+      if (summary) {
+        allSummaries.push(summary);
+      }
     }
-    const summary = await runEvals(options);
-    if (summary) {
-      allSummaries.push(summary);
-    }
+  } finally {
+    releaseEvalServer();
   }
 
   if (allSummaries.length === 0) {
