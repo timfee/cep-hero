@@ -96,9 +96,8 @@ describe("buildEvidence connector handling", () => {
         attemptedTargets: ["orgunits/root"],
       },
       authDebugResult: {
-        scope: "https://www.googleapis.com/auth/admin.directory.user",
+        scopes: ["https://www.googleapis.com/auth/admin.directory.user"],
         expiresIn: 1000,
-        issuedTo: undefined,
       },
     });
 
