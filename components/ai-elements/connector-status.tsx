@@ -1,3 +1,7 @@
+/**
+ * Connector status component for displaying connector policy analysis results.
+ * Shows health status and highlights mis-scoped policies.
+ */
 "use client";
 
 import { AlertCircle, CheckCircle } from "lucide-react";
