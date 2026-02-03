@@ -1,10 +1,8 @@
-import type { Metadata } from "next";
-
 import { Analytics } from "@vercel/analytics/next";
+import { type Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
-import { Providers } from "./providers";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -21,7 +19,7 @@ const geistMono = Geist_Mono({
  * This enables better SEO and can be extended to include
  * dynamic values based on environment or configuration.
  */
-export async function generateMetadata(): Promise<Metadata> {
+export function generateMetadata(): Metadata {
   const baseUrl =
     process.env.NEXT_PUBLIC_BASE_URL ?? "https://cep-hero.vercel.app";
 
@@ -77,7 +75,7 @@ export default function RootLayout({
       <body
         className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}
       >
-        <Providers>{children}</Providers>
+        {children}
         <Analytics />
       </body>
     </html>

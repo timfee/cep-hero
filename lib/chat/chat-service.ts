@@ -1,8 +1,6 @@
 import { google } from "@ai-sdk/google";
-import { generateObject, streamText, tool, stepCountIs } from "ai";
+import { generateText, Output, streamText, stepCountIs, tool } from "ai";
 import { z } from "zod";
-
-import type { IToolExecutor } from "@/lib/mcp/types";
 
 import {
   CepToolExecutor,
@@ -14,9 +12,10 @@ import {
   ListDLPRulesSchema,
   ListOrgUnitsSchema,
 } from "@/lib/mcp/registry";
+import { type IToolExecutor } from "@/lib/mcp/types";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
-import type { ChatMessage } from "./request-utils";
+import { type ChatMessage } from "./request-utils";
 
 export const maxDuration = 30;
 
@@ -126,61 +125,84 @@ interface CreateChatStreamParams {
 /**
  * Creates and configures the AI chat stream with all CEP tools registered.
  *
- * @param params - Configuration parameters for the chat stream.
- * @param params.messages - The conversation history.
- * @param params.accessToken - Google OAuth access token for tool execution.
- * @returns A streaming response compatible with the AI SDK.
+ * @param {CreateChatStreamParams} params - Configuration parameters for the chat stream.
+ * @param {ChatMessage[]} params.messages - The conversation history.
+ * @param {string} params.accessToken - Google OAuth access token for tool execution.
+ * @returns {Promise<Response>} A streaming response compatible with the AI SDK.
  */
 export async function createChatStream({
   messages,
   accessToken,
   executor: providedExecutor,
 }: CreateChatStreamParams) {
-  const executor: IToolExecutor =
-    providedExecutor ?? (new CepToolExecutor(accessToken) as IToolExecutor);
+  const executor = providedExecutor ?? new CepToolExecutor(accessToken);
 
   // 1. Analyze intent and proactively retrieve knowledge (RAG)
-  const lastUserMessage = messages
-    .filter((m) => m.role === "user")
-    .at(-1)?.content;
+  const lastUserMessage = messages.findLast(
+    (message) => message.role === "user"
+  )?.content;
 
   let knowledgeContext = "";
 
-  if (lastUserMessage) {
+  if (typeof lastUserMessage === "string" && lastUserMessage.length > 0) {
     try {
       // Fast pass to check if we need to search docs
-      const intentAnalysis = await generateObject({
+      const intentAnalysis = await generateText({
         model: google("gemini-2.0-flash-001"), // Use a fast model for routing
-        schema: z.object({
-          needsKnowledge: z
-            .boolean()
-            .describe(
-              "True if the user is asking about concepts, errors, policies, or configuration steps."
-            ),
-          query: z
-            .string()
-            .describe("The search query for documentation and policies"),
+        output: Output.object({
+          schema: z.object({
+            needsKnowledge: z
+              .boolean()
+              .describe(
+                "True if the user is asking about concepts, errors, policies, or configuration steps."
+              ),
+            query: z
+              .string()
+              .describe("The search query for documentation and policies"),
+          }),
         }),
         prompt: `Analyze the user's latest message: "${lastUserMessage}". Do they need documentation or policy definitions?`,
       });
 
-      if (intentAnalysis.object.needsKnowledge) {
-        const { query } = intentAnalysis.object;
+      if (intentAnalysis.output.needsKnowledge) {
+        const { query } = intentAnalysis.output;
         const [docs, policies] = await Promise.all([
           searchDocs(query),
           searchPolicies(query),
         ]);
 
-        const docSnippets =
-          docs?.hits
-            ?.map((d) => `[Doc: ${d.metadata?.title}]\n${d.content}`)
-            .join("\n\n") || "";
-        const policySnippets =
-          policies?.hits
-            ?.map((p) => `[Policy: ${p.metadata?.title}]\n${p.content}`)
-            .join("\n\n") || "";
+        const docSnippets = Array.isArray(docs?.hits)
+          ? docs.hits
+              .map((d) => {
+                const title =
+                  typeof d?.metadata?.title === "string"
+                    ? d.metadata.title
+                    : "Untitled";
+                const content =
+                  typeof d?.content === "string"
+                    ? d.content
+                    : String(d.content ?? "");
+                return `[Doc: ${title}]\n${content}`;
+              })
+              .join("\n\n")
+          : "";
+        const policySnippets = Array.isArray(policies?.hits)
+          ? policies.hits
+              .map((p) => {
+                const title =
+                  typeof p?.metadata?.title === "string"
+                    ? p.metadata.title
+                    : "Untitled";
+                const content =
+                  typeof p?.content === "string"
+                    ? p.content
+                    : String(p.content ?? "");
+                return `[Policy: ${title}]\n${content}`;
+              })
+              .join("\n\n")
+          : "";
 
-        if (docSnippets || policySnippets) {
+        if (docSnippets.length > 0 || policySnippets.length > 0) {
           knowledgeContext = `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
         }
       }
@@ -204,44 +226,44 @@ export async function createChatStream({
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
         inputSchema: GetChromeEventsSchema,
-        execute: async (args) => await executor.getChromeEvents(args),
+        execute: async (args) => executor.getChromeEvents(args),
       }),
 
       getChromeConnectorConfiguration: tool({
         description: "Fetch Chrome connector configuration policies.",
         inputSchema: GetConnectorConfigSchema,
-        execute: async () => await executor.getChromeConnectorConfiguration(),
+        execute: async () => executor.getChromeConnectorConfiguration(),
       }),
 
       listDLPRules: tool({
         description: "List DLP rules from Cloud Identity.",
         inputSchema: ListDLPRulesSchema,
-        execute: async (args) => await executor.listDLPRules(args),
+        execute: async (args) => executor.listDLPRules(args),
       }),
 
       enrollBrowser: tool({
         description:
           "Generate a Chrome Browser Cloud Management enrollment token.",
         inputSchema: EnrollBrowserSchema,
-        execute: async (args) => await executor.enrollBrowser(args),
+        execute: async (args) => executor.enrollBrowser(args),
       }),
 
       listOrgUnits: tool({
         description: "List all organizational units (OUs).",
         inputSchema: ListOrgUnitsSchema,
-        execute: async () => await executor.listOrgUnits(),
+        execute: async () => executor.listOrgUnits(),
       }),
 
       getFleetOverview: tool({
         description: "Summarize fleet posture from live CEP data.",
         inputSchema: GetFleetOverviewSchema,
-        execute: async (args) => await executor.getFleetOverview(args),
+        execute: async (args) => executor.getFleetOverview(args),
       }),
 
       debugAuth: tool({
         description: "Inspect access token scopes and expiry.",
         inputSchema: debugAuthSchema,
-        execute: async () => await executor.debugAuth(),
+        execute: async () => executor.debugAuth(),
       }),
 
       suggestActions: tool({
@@ -250,14 +272,14 @@ export async function createChatStream({
         inputSchema: z.object({
           actions: z.array(z.string()).describe("List of action commands"),
         }),
-        execute: async ({ actions }) => ({ actions }),
+        execute: ({ actions }) => ({ actions }),
       }),
 
       draftPolicyChange: tool({
         description:
           "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
         inputSchema: DraftPolicyChangeSchema,
-        execute: async (args) => await executor.draftPolicyChange(args),
+        execute: async (args) => executor.draftPolicyChange(args),
       }),
 
       searchKnowledge: tool({

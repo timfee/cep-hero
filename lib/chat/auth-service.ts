@@ -5,7 +5,7 @@ const EVAL_TEST_MODE_ENABLED = process.env.EVAL_TEST_MODE === "1";
 export type AuthResult =
   | {
       status: "success";
-      session: any;
+      session: unknown;
       accessToken: string;
       isTestMode: boolean;
     }
@@ -16,8 +16,8 @@ export type AuthResult =
  * Authenticate an incoming request for the chat API.
  * Handles both standard session-based auth and special test-mode bypasses.
  *
- * @param req - The incoming request object.
- * @returns An AuthResult object indicating success, failure, or a test mode intercept.
+ * @param {Request} req - The incoming request object.
+ * @returns {Promise<AuthResult>} An AuthResult object indicating success, failure, or a test mode intercept.
  */
 export async function authenticateRequest(req: Request): Promise<AuthResult> {
   const isTestBypass = req.headers.get("x-test-bypass") === "1";

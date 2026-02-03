@@ -1,22 +1,22 @@
-import type { z } from "zod";
+import { type z } from "zod";
 
-import type {
-  DraftPolicyChangeSchema,
-  EnrollBrowserSchema,
-  GetChromeEventsSchema,
-  GetFleetOverviewSchema,
-  ListDLPRulesSchema,
+import {
+  type DraftPolicyChangeSchema,
+  type EnrollBrowserSchema,
+  type GetChromeEventsSchema,
+  type GetFleetOverviewSchema,
+  type ListDLPRulesSchema,
 } from "./registry";
-import type {
-  ChromeEventsResult,
-  ConnectorConfigResult,
-  DebugAuthResult,
-  DLPRulesResult,
-  DraftPolicyChangeResult,
-  FixtureData,
-  IToolExecutor,
-  OrgUnitsResult,
-  EnrollBrowserResult,
+import {
+  type ChromeEventsResult,
+  type ConnectorConfigResult,
+  type DebugAuthResult,
+  type DLPRulesResult,
+  type DraftPolicyChangeResult,
+  type FixtureData,
+  type IToolExecutor,
+  type OrgUnitsResult,
+  type EnrollBrowserResult,
 } from "./types";
 
 /**
@@ -33,7 +33,8 @@ export class FixtureToolExecutor implements IToolExecutor {
   async getChromeEvents(
     args: z.infer<typeof GetChromeEventsSchema>
   ): Promise<ChromeEventsResult> {
-    if (this.fixtures.errors?.chromeEvents) {
+    await Promise.resolve();
+    if (typeof this.fixtures.errors?.chromeEvents === "string") {
       return {
         error: this.fixtures.errors.chromeEvents,
         suggestion: "This is a fixture error for testing.",
@@ -54,7 +55,8 @@ export class FixtureToolExecutor implements IToolExecutor {
   async listDLPRules(
     _args?: z.infer<typeof ListDLPRulesSchema>
   ): Promise<DLPRulesResult> {
-    if (this.fixtures.errors?.dlpRules) {
+    await Promise.resolve();
+    if (typeof this.fixtures.errors?.dlpRules === "string") {
       return {
         error: this.fixtures.errors.dlpRules,
         suggestion: "This is a fixture error for testing.",
@@ -68,7 +70,8 @@ export class FixtureToolExecutor implements IToolExecutor {
   }
 
   async listOrgUnits(): Promise<OrgUnitsResult> {
-    if (this.fixtures.errors?.orgUnits) {
+    await Promise.resolve();
+    if (typeof this.fixtures.errors?.orgUnits === "string") {
       return {
         error: this.fixtures.errors.orgUnits,
         suggestion: "This is a fixture error for testing.",
@@ -84,8 +87,9 @@ export class FixtureToolExecutor implements IToolExecutor {
   async enrollBrowser(
     _args: z.infer<typeof EnrollBrowserSchema>
   ): Promise<EnrollBrowserResult> {
+    await Promise.resolve();
     // Check for error injection
-    if (this.fixtures.errors?.enrollBrowser) {
+    if (typeof this.fixtures.errors?.enrollBrowser === "string") {
       return {
         error: this.fixtures.errors.enrollBrowser,
         suggestion:
@@ -95,11 +99,11 @@ export class FixtureToolExecutor implements IToolExecutor {
     }
 
     // Check for custom enrollment token fixture
-    if (this.fixtures.enrollmentToken) {
+    if (this.fixtures.enrollmentToken !== undefined) {
       const { token, expiresAt, status, error } = this.fixtures.enrollmentToken;
 
       // If token has error or bad status, return error
-      if (error) {
+      if (typeof error === "string") {
         return {
           error,
           suggestion: "Check enrollment token configuration.",
@@ -135,7 +139,8 @@ export class FixtureToolExecutor implements IToolExecutor {
   }
 
   async getChromeConnectorConfiguration(): Promise<ConnectorConfigResult> {
-    if (this.fixtures.errors?.connectorConfig) {
+    await Promise.resolve();
+    if (typeof this.fixtures.errors?.connectorConfig === "string") {
       return {
         error: this.fixtures.errors.connectorConfig,
         suggestion: "This is a fixture error for testing.",
@@ -169,7 +174,9 @@ export class FixtureToolExecutor implements IToolExecutor {
     };
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async debugAuth(): Promise<DebugAuthResult> {
+    await Promise.resolve();
     return {
       scopes: [
         "https://www.googleapis.com/auth/admin.reports.audit.readonly",
@@ -183,9 +190,11 @@ export class FixtureToolExecutor implements IToolExecutor {
     };
   }
 
+  // eslint-disable-next-line class-methods-use-this
   async draftPolicyChange(
     args: z.infer<typeof DraftPolicyChangeSchema>
   ): Promise<DraftPolicyChangeResult> {
+    await Promise.resolve();
     return {
       _type: "ui.confirmation",
       title: `Proposed Change: ${args.policyName}`,
@@ -215,6 +224,7 @@ export class FixtureToolExecutor implements IToolExecutor {
     suggestions: string[];
     sources: string[];
   }> {
+    await Promise.resolve();
     const eventCount = this.fixtures.auditEvents?.items?.length ?? 0;
     const dlpRuleCount = this.fixtures.dlpRules?.length ?? 0;
     const connectorPolicyCount = this.fixtures.connectorPolicies?.length ?? 0;
@@ -268,29 +278,36 @@ export function loadFixtureData(
   const base = isPlainObject(baseData) ? baseData : {};
   const override = isPlainObject(overrideData) ? overrideData : {};
 
-  const merged = mergeJson(base, override) as Record<string, unknown>;
+  const merged = mergeJson(base, override);
+  const mergedObject = isPlainObject(merged) ? merged : {};
 
   return {
-    orgUnits: Array.isArray(merged.orgUnits) ? merged.orgUnits : undefined,
-    auditEvents: isPlainObject(merged.auditEvents)
-      ? (merged.auditEvents as FixtureData["auditEvents"])
+    orgUnits: Array.isArray(mergedObject.orgUnits)
+      ? mergedObject.orgUnits
       : undefined,
-    dlpRules: Array.isArray(merged.dlpRules) ? merged.dlpRules : undefined,
-    connectorPolicies: Array.isArray(merged.connectorPolicies)
-      ? merged.connectorPolicies
+    auditEvents: isPlainObject(mergedObject.auditEvents)
+      ? (mergedObject.auditEvents as FixtureData["auditEvents"])
       : undefined,
-    policySchemas: Array.isArray(merged.policySchemas)
-      ? merged.policySchemas
+    dlpRules: Array.isArray(mergedObject.dlpRules)
+      ? mergedObject.dlpRules
       : undefined,
-    chromeReports: isPlainObject(merged.chromeReports)
-      ? (merged.chromeReports as Record<string, unknown>)
+    connectorPolicies: Array.isArray(mergedObject.connectorPolicies)
+      ? mergedObject.connectorPolicies
       : undefined,
-    enrollmentToken: isPlainObject(merged.enrollmentToken)
-      ? (merged.enrollmentToken as FixtureData["enrollmentToken"])
+    policySchemas: Array.isArray(mergedObject.policySchemas)
+      ? mergedObject.policySchemas
       : undefined,
-    browsers: Array.isArray(merged.browsers) ? merged.browsers : undefined,
-    errors: isPlainObject(merged.errors)
-      ? (merged.errors as FixtureData["errors"])
+    chromeReports: isPlainObject(mergedObject.chromeReports)
+      ? mergedObject.chromeReports
+      : undefined,
+    enrollmentToken: isPlainObject(mergedObject.enrollmentToken)
+      ? (mergedObject.enrollmentToken as FixtureData["enrollmentToken"])
+      : undefined,
+    browsers: Array.isArray(mergedObject.browsers)
+      ? mergedObject.browsers
+      : undefined,
+    errors: isPlainObject(mergedObject.errors)
+      ? (mergedObject.errors as FixtureData["errors"])
       : undefined,
   };
 }

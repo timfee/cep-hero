@@ -23,4 +23,9 @@
 
 import { main } from "./lib/runner";
 
-main();
+try {
+  await main();
+} catch (error) {
+  console.error("[eval] Fatal error:", error);
+  process.exit(1);
+}

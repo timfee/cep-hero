@@ -98,9 +98,9 @@ export const ActionButtons = memo(function ActionButtons({
               "inline-flex cursor-pointer items-center gap-2 whitespace-normal rounded-md px-3 py-2 text-left text-xs font-medium leading-snug transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
               action.primary || isConfirm
                 ? "bg-foreground text-background hover:bg-foreground/90"
-                : (isCancel
+                : isCancel
                   ? "bg-muted/40 text-muted-foreground hover:bg-muted/50"
-                  : "bg-muted text-foreground hover:bg-muted/80"),
+                  : "bg-muted text-foreground hover:bg-muted/80",
               isDisabled && "pointer-events-none opacity-50",
               isLoading && "cursor-wait"
             )}

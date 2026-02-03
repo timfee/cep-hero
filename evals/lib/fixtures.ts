@@ -3,13 +3,18 @@
  * Handles loading base fixtures and case-specific overrides.
  */
 
+/* eslint-disable import/no-nodejs-modules */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
-import type { FixtureData } from "@/lib/mcp/types";
+import { type FixtureData } from "@/lib/mcp/types";
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function isNonEmptyString(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
 }
 
 function loadJsonFile(filePath: string): unknown {
@@ -69,7 +74,8 @@ export function loadEvalFixtures(
       "api-base.json"
     );
     if (existsSync(basePath)) {
-      baseData = loadJsonFile(basePath) as Record<string, unknown>;
+      const loaded = loadJsonFile(basePath);
+      baseData = isPlainObject(loaded) ? loaded : {};
     }
   }
 
@@ -83,28 +89,34 @@ export function loadEvalFixtures(
   let overrideData: Record<string, unknown> = {};
 
   if (existsSync(caseOverridePath)) {
-    overrideData = loadJsonFile(caseOverridePath) as Record<string, unknown>;
+    const loaded = loadJsonFile(caseOverridePath);
+    overrideData = isPlainObject(loaded) ? loaded : {};
   }
 
-  const merged = mergeJson(baseData, overrideData) as Record<string, unknown>;
+  const merged = mergeJson(baseData, overrideData);
+  const mergedObject = isPlainObject(merged) ? merged : {};
 
   return {
-    orgUnits: Array.isArray(merged.orgUnits) ? merged.orgUnits : undefined,
-    auditEvents: isPlainObject(merged.auditEvents)
-      ? (merged.auditEvents as FixtureData["auditEvents"])
+    orgUnits: Array.isArray(mergedObject.orgUnits)
+      ? mergedObject.orgUnits
       : undefined,
-    dlpRules: Array.isArray(merged.dlpRules) ? merged.dlpRules : undefined,
-    connectorPolicies: Array.isArray(merged.connectorPolicies)
-      ? merged.connectorPolicies
+    auditEvents: isPlainObject(mergedObject.auditEvents)
+      ? (mergedObject.auditEvents as FixtureData["auditEvents"])
       : undefined,
-    policySchemas: Array.isArray(merged.policySchemas)
-      ? merged.policySchemas
+    dlpRules: Array.isArray(mergedObject.dlpRules)
+      ? mergedObject.dlpRules
       : undefined,
-    chromeReports: isPlainObject(merged.chromeReports)
-      ? (merged.chromeReports as Record<string, unknown>)
+    connectorPolicies: Array.isArray(mergedObject.connectorPolicies)
+      ? mergedObject.connectorPolicies
       : undefined,
-    errors: isPlainObject(merged.errors)
-      ? (merged.errors as FixtureData["errors"])
+    policySchemas: Array.isArray(mergedObject.policySchemas)
+      ? mergedObject.policySchemas
+      : undefined,
+    chromeReports: isPlainObject(mergedObject.chromeReports)
+      ? mergedObject.chromeReports
+      : undefined,
+    errors: isPlainObject(mergedObject.errors)
+      ? (mergedObject.errors as FixtureData["errors"])
       : undefined,
   };
 }
@@ -159,7 +171,7 @@ export function buildEvalPrompt(
     }
   }
 
-  if (caseId) {
+  if (isNonEmptyString(caseId)) {
     const perCaseOverridePath = path.join(
       rootDir,
       "evals",

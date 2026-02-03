@@ -1,9 +1,9 @@
 "use client";
 
 import { track } from "@vercel/analytics";
-import { Chrome, Lock } from "lucide-react";
+import { Globe, Lock } from "lucide-react";
 import Image from "next/image";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { authClient } from "@/lib/auth-client";
@@ -11,21 +11,20 @@ import { authClient } from "@/lib/auth-client";
 export default function SignInPage() {
   const [isLoading, setLoading] = useState(false);
 
-  const handleGoogleSignIn = async () => {
-    await track("Sign In Clicked");
-    await authClient.signIn.social({
-      provider: "google",
-      callbackURL: "/",
-      fetchOptions: {
-        onRequest: () => {
-          setLoading(true);
-        },
-        onResponse: () => {
-          setLoading(false);
-        },
-      },
-    });
-  };
+  const handleGoogleSignInClick = useCallback(async () => {
+    setLoading(true);
+    try {
+      track("Sign In Clicked");
+      await authClient.signIn.social({
+        provider: "google",
+        callbackURL: "/",
+      });
+    } catch (error: unknown) {
+      console.error("[auth] sign-in failed", error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-background px-4">
@@ -53,7 +52,8 @@ export default function SignInPage() {
 
           {/* Google Sign In Button */}
           <Button
-            onClick={handleGoogleSignIn}
+            // oxlint-disable-next-line typescript/no-misused-promises
+            onClick={handleGoogleSignInClick}
             disabled={isLoading}
             className="w-full"
             size="lg"
@@ -90,11 +90,11 @@ export default function SignInPage() {
             </p>
             <ul className="space-y-2 text-xs text-muted-foreground">
               <li className="flex items-start gap-2">
-                <Chrome className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                <Globe className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>Chrome management and reporting access</span>
               </li>
               <li className="flex items-start gap-2">
-                <Lock className="mt-0.5 h-3.5 w-3.5 flex-shrink-0" />
+                <Lock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>Cloud Identity policies and audit logs</span>
               </li>
             </ul>

@@ -9,10 +9,6 @@ import {
   releaseEvalServer,
 } from "@/lib/test-helpers/eval-server";
 
-import type { EvidenceCheckInput } from "./llm-judge";
-import type { EvalCase } from "./registry";
-import type { EvalReport, EvalSummary } from "./reporter";
-
 import {
   checkRequiredEvidence,
   checkRequiredToolCalls,
@@ -21,9 +17,16 @@ import {
   scoreRubric,
 } from "./assertions";
 import { buildEvalPrompt, loadEvalFixtures } from "./fixtures";
-import { batchEvaluateEvidence } from "./llm-judge";
-import { buildPromptMap, filterEvalCases, loadEvalRegistry } from "./registry";
+import { type EvidenceCheckInput, batchEvaluateEvidence } from "./llm-judge";
 import {
+  type EvalCase,
+  buildPromptMap,
+  filterEvalCases,
+  loadEvalRegistry,
+} from "./registry";
+import {
+  type EvalReport,
+  type EvalSummary,
   buildSummary,
   createRunId,
   formatCaseResult,
@@ -64,9 +67,14 @@ export async function runEvals(
     tags = process.env.EVAL_TAGS,
     limit = process.env.EVAL_LIMIT,
     parallel = process.env.EVAL_SERIAL !== "1",
-    pauseMs = process.env.EVAL_CASE_PAUSE_MS
-      ? Number.parseInt(process.env.EVAL_CASE_PAUSE_MS, 10)
-      : DEFAULT_CASE_PAUSE_MS,
+    pauseMs = (() => {
+      const raw = process.env.EVAL_CASE_PAUSE_MS;
+      if (raw === undefined || raw === "") {
+        return DEFAULT_CASE_PAUSE_MS;
+      }
+      const parsed = Number.parseInt(raw, 10);
+      return Number.isNaN(parsed) ? DEFAULT_CASE_PAUSE_MS : parsed;
+    })(),
     chatUrl = process.env.CHAT_URL ?? DEFAULT_CHAT_URL,
     manageServer = process.env.EVAL_MANAGE_SERVER !== "0",
     verbose = process.env.EVAL_VERBOSE === "1",
@@ -112,7 +120,7 @@ export async function runEvals(
 
   async function runCase(evalCase: EvalCase): Promise<EvalReport> {
     if (!parallel && pauseMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, pauseMs));
+      await Bun.sleep(pauseMs);
     }
 
     const basePrompt =
@@ -137,8 +145,11 @@ export async function runEvals(
       responseText = resp.text;
       responseMetadata = resp.metadata;
       ({ toolCalls } = resp);
-    } catch (error) {
-      error = error instanceof Error ? error.message : String(error);
+    } catch (caughtError) {
+      error =
+        caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError);
     }
 
     const schemaResult = checkStructuredResponse({
@@ -160,7 +171,7 @@ export async function runEvals(
     });
 
     let rubricResult: EvalReport["rubricResult"] = undefined;
-    if (evalCase.rubric) {
+    if (evalCase.rubric !== undefined) {
       const { score, matched, missed } = scoreRubric({
         text: responseText,
         metadata: responseMetadata,
@@ -181,7 +192,7 @@ export async function runEvals(
     }
 
     let status: EvalReport["status"] = "pass";
-    if (error) {
+    if (typeof error === "string" && error.length > 0) {
       status = "error";
     } else if (
       !schemaResult.passed ||
@@ -189,18 +200,20 @@ export async function runEvals(
       !toolCallsResult.passed
     ) {
       status = "fail";
-      if (!error) {
-        error = !schemaResult.passed
-          ? schemaResult.message
-          : (!toolCallsResult.passed
-            ? toolCallsResult.message
-            : evidenceResult.message);
+      const failureMessages: string[] = [];
+      if (!schemaResult.passed) {
+        failureMessages.push(schemaResult.message);
       }
+      if (!toolCallsResult.passed) {
+        failureMessages.push(toolCallsResult.message);
+      }
+      if (!evidenceResult.passed) {
+        failureMessages.push(evidenceResult.message);
+      }
+      error ??= failureMessages[0];
     } else if (rubricResult && !rubricResult.passed) {
       status = "fail";
-      if (!error) {
-        error = `Rubric score ${rubricResult.score} below minimum ${rubricResult.minScore}`;
-      }
+      error ??= `Rubric score ${rubricResult.score} below minimum ${rubricResult.minScore}`;
     }
 
     const report: EvalReport = {
@@ -263,7 +276,7 @@ export async function runEvals(
     const evidenceFailures = reports.filter(
       (r) =>
         r.status === "fail" &&
-        r.evidenceResult &&
+        r.evidenceResult !== undefined &&
         !r.evidenceResult.passed &&
         r.schemaResult?.passed // Only re-judge if schema passed
     );
@@ -276,9 +289,7 @@ export async function runEvals(
       const inputs: EvidenceCheckInput[] = evidenceFailures.map((r) => ({
         caseId: r.caseId,
         responseText: r.responseText,
-        requiredEvidence:
-          (r.evidenceResult?.details as { requiredEvidence?: string[] })
-            ?.requiredEvidence ?? [],
+        requiredEvidence: getRequiredEvidenceFromDetails(r.evidenceResult),
       }));
 
       const llmResults = await batchEvaluateEvidence(inputs);
@@ -332,4 +343,21 @@ export async function main(): Promise<void> {
     console.error("[eval] Fatal error:", error);
     process.exit(1);
   }
+}
+
+function getRequiredEvidenceFromDetails(
+  result: EvalReport["evidenceResult"]
+): string[] {
+  const details = result?.details;
+  if (!isRecord(details)) {
+    return [];
+  }
+  const required = details.requiredEvidence;
+  return Array.isArray(required)
+    ? required.filter((item): item is string => typeof item === "string")
+    : [];
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }

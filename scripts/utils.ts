@@ -1,9 +1,11 @@
 import { Index } from "@upstash/vector";
 import TurndownService from "turndown";
 
-import type { Document } from "./vector-types";
-
-import { BATCH_SIZE, UPSTASH_MAX_DATA_SIZE } from "./vector-types";
+import {
+  BATCH_SIZE,
+  UPSTASH_MAX_DATA_SIZE,
+  type Document,
+} from "./vector-types";
 
 export const turndown = new TurndownService({
   headingStyle: "atx",
@@ -39,7 +41,7 @@ export async function processDocs(documents: Document[]): Promise<void> {
 
   const index = Index.fromEnv();
 
-  for (let i = 0; i < batches.length; i++) {
+  for (let i = 0; i < batches.length; i += 1) {
     const batch = batches[i];
     console.log(`\nBatch ${i + 1}/${batches.length}:`);
 

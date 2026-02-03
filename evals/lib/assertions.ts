@@ -123,12 +123,13 @@ export function checkRequiredEvidence({
   metadata: unknown;
   requiredEvidence: string[] | undefined;
 }): AssertionResult {
-  if (!requiredEvidence || requiredEvidence.length === 0) {
+  if (requiredEvidence === undefined || requiredEvidence.length === 0) {
     return { passed: true, message: "No required evidence specified" };
   }
 
   // Normalize text for fuzzy matching (handles wifi/wi-fi, deauth/de-auth, etc.)
-  const metadataText = metadata ? JSON.stringify(metadata) : "";
+  const metadataText =
+    metadata !== undefined && metadata !== null ? JSON.stringify(metadata) : "";
   const combined = normalizeForMatching(`${text}\n${metadataText}`);
 
   const missing = requiredEvidence.filter(
@@ -164,7 +165,11 @@ export function scoreRubric({
 }): { score: number; matched: string[]; missed: string[] } {
   // Use normalized matching for consistency with evidence checks
   const combined = normalizeForMatching(
-    `${text}\n${metadata ? JSON.stringify(metadata) : ""}`
+    `${text}\n${
+      metadata !== undefined && metadata !== null
+        ? JSON.stringify(metadata)
+        : ""
+    }`
   );
 
   const matched: string[] = [];
@@ -191,11 +196,11 @@ export function checkRequiredToolCalls({
   toolCalls: string[] | undefined;
   requiredToolCalls: string[] | undefined;
 }): AssertionResult {
-  if (!requiredToolCalls || requiredToolCalls.length === 0) {
+  if (requiredToolCalls === undefined || requiredToolCalls.length === 0) {
     return { passed: true, message: "No required tool calls specified" };
   }
 
-  const called = new Set(toolCalls ?? []);
+  const called = new Set(toolCalls);
   const missing = requiredToolCalls.filter((tool) => !called.has(tool));
 
   if (missing.length === 0) {

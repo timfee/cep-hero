@@ -1,3 +1,4 @@
+/* eslint-disable import/no-nodejs-modules */
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
@@ -32,21 +33,30 @@ function loadEnv() {
 }
 
 /** Parse and validate service account JSON from env. */
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function parseServiceAccountJson(): {
   client_email?: string;
   private_key?: string;
   error?: string;
 } {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!raw) {
+  if (raw === undefined || raw === "") {
     return { error: "Missing GOOGLE_SERVICE_ACCOUNT_JSON." };
   }
   try {
     const trimmed = raw.replaceAll(/^['"]|['"]$/g, "");
-    const parsed = JSON.parse(trimmed);
+    const parsed: unknown = JSON.parse(trimmed);
+    if (!isPlainObject(parsed)) {
+      return { error: "Invalid GOOGLE_SERVICE_ACCOUNT_JSON: not an object." };
+    }
+    const clientEmail = parsed.client_email;
+    const privateKey = parsed.private_key;
     return {
-      client_email: parsed.client_email,
-      private_key: parsed.private_key,
+      client_email: typeof clientEmail === "string" ? clientEmail : undefined,
+      private_key: typeof privateKey === "string" ? privateKey : undefined,
     };
   } catch (error) {
     return { error: `Invalid GOOGLE_SERVICE_ACCOUNT_JSON: ${String(error)}` };
@@ -63,26 +73,37 @@ async function checkCredentials(): Promise<CheckResult> {
   const testDomain = process.env.TEST_USER_DOMAIN;
 
   const serviceAccount = parseServiceAccountJson();
-  if (serviceAccount.error) {
+  if (typeof serviceAccount.error === "string") {
     errors.push(serviceAccount.error);
   } else {
-    if (!serviceAccount.client_email) {
+    if (
+      serviceAccount.client_email === undefined ||
+      serviceAccount.client_email === ""
+    ) {
       errors.push("Service account JSON missing client_email.");
     }
-    if (!serviceAccount.private_key) {
+    if (
+      serviceAccount.private_key === undefined ||
+      serviceAccount.private_key === ""
+    ) {
       errors.push("Service account JSON missing private_key.");
     }
   }
 
-  if (!tokenEmail) {
+  if (tokenEmail === undefined || tokenEmail === "") {
     errors.push("Missing GOOGLE_TOKEN_EMAIL (impersonation subject).");
   }
 
-  if (!customerId) {
+  if (customerId === undefined || customerId === "") {
     warnings.push("GOOGLE_CUSTOMER_ID not set; will attempt to resolve.");
   }
 
-  if (!testDomain && tokenEmail && !tokenEmail.includes("@")) {
+  if (
+    (testDomain === undefined || testDomain === "") &&
+    tokenEmail !== undefined &&
+    tokenEmail !== "" &&
+    !tokenEmail.includes("@")
+  ) {
     warnings.push("TEST_USER_DOMAIN not set; using token email domain.");
   }
 
@@ -155,7 +176,9 @@ async function run() {
   process.exitCode = result.ok ? 0 : 1;
 }
 
-run().catch((error) => {
+try {
+  await run();
+} catch (error) {
   console.error("[credentials] failed", error);
   process.exitCode = 1;
-});
+}

@@ -1,4 +1,5 @@
-import type { CheerioCrawlingContext } from "crawlee";
+/* eslint-disable @typescript-eslint/unbound-method */
+import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
 /**
  * IMPORTANT: RATE LIMITING AND SESSION HEADERS
@@ -14,12 +15,8 @@ import type { CheerioCrawlingContext } from "crawlee";
  *
  * See detailed instructions near the 'headers' constant below.
  */
-import { CheerioCrawler } from "crawlee";
-
-import type { Document } from "./vector-types";
-
 import { getStandardId, processDocs, turndown } from "./utils";
-import { MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
+import { MAX_CONCURRENCY, MAX_REQUESTS, type Document } from "./vector-types";
 
 type ArticleType = "answer" | "topic";
 
@@ -35,7 +32,7 @@ interface CrawleeError extends Error {
  */
 function extractCleanTitle(element: unknown, url: string): string {
   const title = getElementText(element);
-  if (title) {
+  if (title.length > 0) {
     return title.replaceAll(/\s+/g, " ").trim();
   }
 
@@ -73,20 +70,20 @@ function parseArticleType(value: string | undefined): ArticleType | undefined {
  * Read text content from an element-like object.
  */
 function getElementText(element: unknown): string | null {
-  if (!element || typeof element !== "object" || element === null) {
+  if (element === null || typeof element !== "object") {
     return null;
   }
 
   // Safe check for 'text' method common in Cheerio elements
-  if (
-    "text" in element &&
-    typeof (element as { text: unknown }).text === "function"
-  ) {
-    try {
-      const text = (element as { text: () => unknown }).text();
-      return typeof text === "string" ? text : null;
-    } catch {
-      return null;
+  if (isRecord(element)) {
+    const textFn = element.text;
+    if (typeof textFn === "function") {
+      try {
+        const text = textFn.call(element);
+        return typeof text === "string" ? text : null;
+      } catch {
+        return null;
+      }
     }
   }
 
@@ -101,15 +98,22 @@ function cleanHtml(html: string): string {
  * Helper to allow pasting full fetch options object or just the headers.
  */
 function resolveHeaders(input: unknown): Record<string, string> {
-  if (
-    input &&
-    typeof input === "object" &&
-    "headers" in input &&
-    typeof (input as { headers: unknown }).headers === "object"
-  ) {
-    return (input as { headers: Record<string, string> }).headers;
+  if (isRecord(input) && isRecord(input.headers)) {
+    return coerceHeaders(input.headers);
   }
-  return input as Record<string, string>;
+  if (isRecord(input)) {
+    return coerceHeaders(input);
+  }
+  return {};
+}
+
+function coerceHeaders(value: Record<string, unknown>): Record<string, string> {
+  return Object.fromEntries(
+    Object.entries(value).filter((entry): entry is [string, string] => {
+      const [, headerValue] = entry;
+      return typeof headerValue === "string";
+    })
+  );
 }
 
 /**
@@ -171,7 +175,7 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
     ],
 
     failedRequestHandler({ request, error: rawError }) {
-      const error = rawError as CrawleeError;
+      const error = isCrawleeError(rawError) ? rawError : undefined;
       // Check for 429 in both standard error object and Crawlee/got response
       const statusCode = error?.response?.statusCode ?? error?.statusCode;
 
@@ -181,12 +185,8 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
       console.log(`Failed to crawl: ${request.url}`);
     },
 
-    async requestHandler({
-      request,
-      response,
-      $,
-      enqueueLinks,
-    }: CheerioCrawlingContext) {
+    async requestHandler(context: CheerioCrawlingContext) {
+      const { request, response, $, enqueueLinks } = context;
       if (response.statusCode === 429) {
         console.error(INSTRUCTION_MESSAGE);
         return;
@@ -348,4 +348,16 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
   await crawler.teardown();
 }
 
-main().catch(console.error);
+try {
+  await main();
+} catch (error) {
+  console.error(error);
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isCrawleeError(error: unknown): error is CrawleeError {
+  return isRecord(error);
+}

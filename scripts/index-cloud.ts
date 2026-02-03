@@ -1,11 +1,8 @@
-import type { CheerioCrawlingContext } from "crawlee";
-
-import { CheerioCrawler } from "crawlee";
-
-import type { Document } from "./vector-types";
+/* eslint-disable @typescript-eslint/unbound-method */
+import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
 import { getStandardId, processDocs, turndown } from "./utils";
-import { MAX_CONCURRENCY, MAX_REQUESTS } from "./vector-types";
+import { MAX_CONCURRENCY, MAX_REQUESTS, type Document } from "./vector-types";
 
 async function main() {
   const documents: Document[] = [];
@@ -20,7 +17,8 @@ async function main() {
       },
     ],
 
-    async requestHandler({ request, $, enqueueLinks }: CheerioCrawlingContext) {
+    async requestHandler(context: CheerioCrawlingContext) {
+      const { request, $, enqueueLinks } = context;
       const articleHtml = $("div.devsite-article-body").html() ?? "";
       const articleId = getStandardId(request.url);
 
@@ -114,4 +112,8 @@ async function main() {
   await crawler.teardown();
 }
 
-main().catch(console.error);
+try {
+  await main();
+} catch (error) {
+  console.error(error);
+}

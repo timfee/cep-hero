@@ -1,5 +1,4 @@
-import type { Metadata } from "next";
-
+import { type Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
@@ -9,7 +8,7 @@ import { auth } from "@/lib/auth";
  * Generate metadata for auth pages.
  * Uses the template from the root layout.
  */
-export async function generateMetadata(): Promise<Metadata> {
+export function generateMetadata(): Metadata {
   return {
     title: "Sign In",
     description:

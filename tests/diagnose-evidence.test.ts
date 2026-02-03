@@ -44,13 +44,14 @@ describe("buildEvidence connector handling", () => {
     expect(
       evidence.gaps?.some((g) => g.missing.includes("Connector policies"))
     ).toBe(true);
-    expect(
-      evidence.signals?.some(
-        (s) =>
-          s.summary.includes("customer level") ||
-          s.summary.includes("org units or groups")
-      )
-    ).toBe(true);
+    const signalSummaries = evidence.signals?.map((signal) => signal.summary);
+    const hasExpectedSummary =
+      signalSummaries?.some((summary) =>
+        ["customer level", "org units or groups"].some((snippet) =>
+          summary.includes(snippet)
+        )
+      ) ?? false;
+    expect(hasExpectedSummary).toBe(true);
   });
 
   it("marks pass and suggests confirmation when scoped correctly", () => {

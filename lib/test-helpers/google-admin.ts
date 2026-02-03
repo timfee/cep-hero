@@ -1,11 +1,15 @@
-import type {
-  admin_directory_v1,
-  chromepolicy_v1,
-  chromemanagement_v1,
-} from "googleapis";
-
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { OAuth2Client } from "google-auth-library";
-import { google } from "googleapis";
+import {
+  google,
+  type admin_directory_v1,
+  type chromepolicy_v1,
+  type chromemanagement_v1,
+} from "googleapis";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
@@ -111,10 +115,10 @@ export async function listUsers({
 
 export async function detectDomainFromUsers() {
   const users = await listUsers({ maxResults: 50 });
-  const domains = users
+  const domain = users
     .map((user) => user.primaryEmail?.split("@")[1])
-    .filter((domain): domain is string => Boolean(domain));
-  return domains[0] ?? null;
+    .find((candidate): candidate is string => typeof candidate === "string");
+  return domain ?? null;
 }
 
 export async function getRootOrgUnit() {

@@ -31,7 +31,7 @@ export default function AuthError({
           temporary issue or a problem with your Google Workspace account
           permissions.
         </p>
-        {error.digest && (
+        {typeof error.digest === "string" && error.digest.length > 0 && (
           <p className="mb-4 font-mono text-xs text-muted-foreground">
             Error ID: {error.digest}
           </p>

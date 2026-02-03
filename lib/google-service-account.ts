@@ -7,16 +7,24 @@ interface ServiceAccountCredentials {
 
 function loadServiceAccount(): ServiceAccountCredentials {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (!inline) {
+  if (inline === undefined || inline === "") {
     throw new Error(
       "Missing GOOGLE_SERVICE_ACCOUNT_JSON env for service account credentials"
     );
   }
 
   const trimmed = inline.replaceAll(/^['"]|['"]$/g, "");
-  const parsed = JSON.parse(trimmed);
+  const parsed: unknown = JSON.parse(trimmed);
+  if (!isPlainObject(parsed)) {
+    throw new Error("Service account JSON must be an object");
+  }
 
-  if (!parsed.client_email || !parsed.private_key) {
+  if (
+    typeof parsed.client_email !== "string" ||
+    parsed.client_email.length === 0 ||
+    typeof parsed.private_key !== "string" ||
+    parsed.private_key.length === 0
+  ) {
     throw new Error("Service account JSON missing client_email or private_key");
   }
 
@@ -39,12 +47,17 @@ export async function getServiceAccountAccessToken(
     subject,
   });
   const result = await jwt.authorize();
-  if (!result.access_token) {
+  if (typeof result.access_token !== "string" || result.access_token === "") {
     throw new Error("Failed to obtain service account access token");
   }
   return result.access_token;
 }
 
 export function getServiceAccountSubject(defaultEmail: string) {
-  return process.env.GOOGLE_TOKEN_EMAIL ?? defaultEmail;
+  const envEmail = process.env.GOOGLE_TOKEN_EMAIL;
+  return envEmail === undefined || envEmail === "" ? defaultEmail : envEmail;
+}
+
+function isPlainObject(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
 }

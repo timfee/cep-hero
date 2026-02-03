@@ -1,3 +1,4 @@
+/* eslint-disable import/no-nodejs-modules */
 import {
   closeSync,
   existsSync,
@@ -26,14 +27,12 @@ function getState(): EvalServerState {
   const global = globalThis as typeof globalThis & {
     [GLOBAL_KEY]?: EvalServerState;
   };
-  if (!global[GLOBAL_KEY]) {
-    global[GLOBAL_KEY] = {
-      ownsServer: false,
-      ownsLock: false,
-      refCount: 0,
-    } satisfies EvalServerState;
-  }
-  return global[GLOBAL_KEY] as EvalServerState;
+  global[GLOBAL_KEY] ??= {
+    ownsServer: false,
+    ownsLock: false,
+    refCount: 0,
+  } satisfies EvalServerState;
+  return global[GLOBAL_KEY];
 }
 
 /** Ensure a single eval dev server is running. */
@@ -59,8 +58,8 @@ export async function ensureEvalServer({
     return;
   }
 
-  if (!state.startPromise) {
-    state.startPromise = (async () => {
+  state.startPromise ??= (async () => {
+    try {
       if (await isServerUp(chatUrl)) {
         return;
       }
@@ -76,10 +75,10 @@ export async function ensureEvalServer({
       });
       state.ownsServer = true;
       await waitForServer(chatUrl, 60, 500);
-    })().finally(() => {
+    } finally {
       state.startPromise = undefined;
-    });
-  }
+    }
+  })();
 
   await state.startPromise;
 }
@@ -128,7 +127,7 @@ async function waitForServer(
     if (await isServerUp(url)) {
       return;
     }
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    await Bun.sleep(delayMs);
   }
 }
 

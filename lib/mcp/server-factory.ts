@@ -1,5 +1,3 @@
-import type { SSEServerTransport } from "@modelcontextprotocol/sdk/server/sse.js";
-
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -15,11 +13,6 @@ import {
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 /**
- * In-memory transport registry for MCP SSE sessions.
- */
-export const transportMap = new Map<string, SSEServerTransport>();
-
-/**
  * Create an MCP server with CEP tool registrations.
  */
 export function createMcpServer(accessToken: string) {
@@ -30,10 +23,12 @@ export function createMcpServer(accessToken: string) {
 
   const executor = new CepToolExecutor(accessToken);
 
-  server.tool(
+  server.registerTool(
     "getChromeEvents",
-    "Get recent real Chrome security events and logs.",
-    GetChromeEventsSchema.shape,
+    {
+      description: "Get recent real Chrome security events and logs.",
+      inputSchema: GetChromeEventsSchema,
+    },
     async (args) => {
       const result = await executor.getChromeEvents(args);
       return {
@@ -42,10 +37,12 @@ export function createMcpServer(accessToken: string) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "listDLPRules",
-    "List current DLP policies from Cloud Identity.",
-    ListDLPRulesSchema.shape,
+    {
+      description: "List current DLP policies from Cloud Identity.",
+      inputSchema: ListDLPRulesSchema,
+    },
     async (_args) => {
       const result = await executor.listDLPRules();
       return {
@@ -54,10 +51,12 @@ export function createMcpServer(accessToken: string) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "enrollBrowser",
-    "Generate a real browser enrollment token.",
-    EnrollBrowserSchema.shape,
+    {
+      description: "Generate a real browser enrollment token.",
+      inputSchema: EnrollBrowserSchema,
+    },
     async (args) => {
       const result = await executor.enrollBrowser(args);
       return {
@@ -66,10 +65,12 @@ export function createMcpServer(accessToken: string) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "listOrgUnits",
-    "List all organizational units (OUs).",
-    ListOrgUnitsSchema.shape,
+    {
+      description: "List all organizational units (OUs).",
+      inputSchema: ListOrgUnitsSchema,
+    },
     async (_args) => {
       const result = await executor.listOrgUnits();
       return {
@@ -78,10 +79,12 @@ export function createMcpServer(accessToken: string) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "getChromeConnectorConfiguration",
-    "Inspect Chrome connector configurations.",
-    GetConnectorConfigSchema.shape,
+    {
+      description: "Inspect Chrome connector configurations.",
+      inputSchema: GetConnectorConfigSchema,
+    },
     async (_args) => {
       const result = await executor.getChromeConnectorConfiguration();
       return {
@@ -90,10 +93,12 @@ export function createMcpServer(accessToken: string) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "getFleetOverview",
-    "Summarize fleet posture from live CEP data.",
-    GetFleetOverviewSchema.shape,
+    {
+      description: "Summarize fleet posture from live CEP data.",
+      inputSchema: GetFleetOverviewSchema,
+    },
     async (args) => {
       const result = await executor.getFleetOverview(args);
       return {
@@ -102,14 +107,16 @@ export function createMcpServer(accessToken: string) {
     }
   );
 
-  server.tool(
+  server.registerTool(
     "searchKnowledge",
-    "Search help docs or policy references for grounding.",
-    z.object({
-      query: z.string().min(1),
-      scope: z.enum(["docs", "policies"]).optional(),
-      topK: z.number().min(1).max(8).optional(),
-    }).shape,
+    {
+      description: "Search help docs or policy references for grounding.",
+      inputSchema: z.object({
+        query: z.string().min(1),
+        scope: z.enum(["docs", "policies"]).optional(),
+        topK: z.number().min(1).max(8).optional(),
+      }),
+    },
     async (args) => {
       const topK = args.topK ?? 4;
       if (args.scope === "policies") {

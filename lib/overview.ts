@@ -82,18 +82,18 @@ export const QUICK_ACTIONS = [
  * Returns null if the data is invalid or missing required fields.
  */
 export function normalizeOverview(data: unknown): OverviewData | null {
-  if (!data || typeof data !== "object") {
+  if (!isRecord(data)) {
     return null;
   }
 
-  const obj = data as Record<string, unknown>;
+  const obj = data;
 
   const postureCards = Array.isArray(obj.postureCards)
-    ? (obj.postureCards as OverviewCard[]).filter(isValidPostureCard)
+    ? obj.postureCards.filter(isValidPostureCard)
     : [];
 
   const suggestions = Array.isArray(obj.suggestions)
-    ? (obj.suggestions as Suggestion[]).filter(isValidSuggestion)
+    ? obj.suggestions.filter(isValidSuggestion)
     : [];
 
   return {
@@ -102,7 +102,7 @@ export function normalizeOverview(data: unknown): OverviewData | null {
     postureCards,
     suggestions,
     sources: Array.isArray(obj.sources)
-      ? (obj.sources as string[]).filter((s) => typeof s === "string")
+      ? obj.sources.filter((s) => typeof s === "string")
       : [],
   };
 }
@@ -111,10 +111,10 @@ export function normalizeOverview(data: unknown): OverviewData | null {
  * Type guard for validating posture card structure.
  */
 function isValidPostureCard(card: unknown): card is OverviewCard {
-  if (!card || typeof card !== "object") {
+  if (!isRecord(card)) {
     return false;
   }
-  const c = card as Record<string, unknown>;
+  const c = card;
   return (
     typeof c.label === "string" &&
     typeof c.value === "string" &&
@@ -128,23 +128,27 @@ function isValidPostureCard(card: unknown): card is OverviewCard {
  * Type guard for validating suggestion structure.
  */
 function isValidSuggestion(suggestion: unknown): suggestion is Suggestion {
-  if (!suggestion || typeof suggestion !== "object") {
+  if (!isRecord(suggestion)) {
     return false;
   }
-  const s = suggestion as Record<string, unknown>;
-  const validCategories: SuggestionCategory[] = [
+  const s = suggestion;
+  const validCategories = [
     "security",
     "compliance",
     "monitoring",
     "optimization",
-  ];
+  ] as const;
   return (
     typeof s.text === "string" &&
     typeof s.action === "string" &&
     typeof s.priority === "number" &&
     typeof s.category === "string" &&
-    validCategories.includes(s.category as SuggestionCategory)
+    (validCategories as readonly string[]).includes(s.category)
   );
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 /**

@@ -30,7 +30,7 @@ export default function Error({
           An unexpected error occurred. Please try again or contact support if
           the problem persists.
         </p>
-        {error.digest && (
+        {typeof error.digest === "string" && error.digest.length > 0 && (
           <p className="mb-4 font-mono text-xs text-muted-foreground">
             Error ID: {error.digest}
           </p>

@@ -1,14 +1,19 @@
+/* oxlint-disable typescript/no-unsafe-call */
 import { render, fireEvent } from "@testing-library/react";
-import { describe, expect, it, mock, spyOn, beforeEach } from "bun:test";
+import { describe, expect, it, beforeEach } from "bun:test";
 
 import AuthError from "@/app/(auth)/error";
 
+const mockReset = () => {
+  resetCalls += 1;
+};
+let resetCalls: number;
+
 describe("Auth error boundary component", () => {
-  const mockReset = mock(() => {});
   const mockError = new Error("Auth test error") as Error & { digest?: string };
 
   beforeEach(() => {
-    mockReset.mockClear();
+    resetCalls = 0;
   });
 
   it("renders auth-specific error message", () => {
@@ -51,7 +56,7 @@ describe("Auth error boundary component", () => {
     const button = getByRole("button", { name: /try again/i });
     fireEvent.click(button);
 
-    expect(mockReset).toHaveBeenCalledTimes(1);
+    expect(resetCalls).toBe(1);
   });
 
   it("renders Home link that navigates to root", () => {
@@ -65,13 +70,17 @@ describe("Auth error boundary component", () => {
   });
 
   it("logs authentication error to console on mount", () => {
-    const consoleSpy = spyOn(console, "error").mockImplementation(() => {});
+    const originalConsoleError = console.error;
+    const errorCalls: unknown[][] = [];
+    console.error = (...args: unknown[]) => {
+      errorCalls.push(args);
+    };
 
     render(<AuthError error={mockError} reset={mockReset} />);
 
-    expect(consoleSpy).toHaveBeenCalledWith("Authentication error:", mockError);
+    expect(errorCalls).toContainEqual(["Authentication error:", mockError]);
 
-    consoleSpy.mockRestore();
+    console.error = originalConsoleError;
   });
 
   it("renders both Home and Try again buttons", () => {

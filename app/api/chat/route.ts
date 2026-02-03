@@ -1,15 +1,11 @@
-import type { ChatMessage } from "@/lib/chat/request-utils";
-import type { FixtureData } from "@/lib/mcp/types";
-
 import { authenticateRequest } from "@/lib/chat/auth-service";
 import { createChatStream } from "@/lib/chat/chat-service";
 import {
+  type ChatMessage,
   extractInlinePrompt,
   getMessagesFromBody,
-  getLastUserMessage,
   safeJsonPreview,
 } from "@/lib/chat/request-utils";
-import { writeDebugLog } from "@/lib/debug-log";
 import {
   FixtureToolExecutor,
   loadFixtureData,
@@ -17,15 +13,19 @@ import {
 
 export const maxDuration = 30;
 
-function extractFixtureData(body: unknown): FixtureData | null {
-  if (!body || typeof body !== "object") {
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function extractFixtureData(body: unknown) {
+  if (!isRecord(body)) {
     return null;
   }
   const fixtures = Reflect.get(body, "fixtures");
-  if (!fixtures || typeof fixtures !== "object") {
+  if (!isRecord(fixtures)) {
     return null;
   }
-  return fixtures as FixtureData;
+  return fixtures;
 }
 
 /**
@@ -36,48 +36,42 @@ export async function POST(req: Request) {
   const authResult = await authenticateRequest(req);
 
   if (authResult.status === "unauthorized") {
-    return new Response(JSON.stringify({ error: authResult.error }), {
-      status: 401,
-    });
+    return Response.json({ error: authResult.error }, { status: 401 });
   }
 
   if (authResult.status === "test_mode_response") {
-    return new Response(
-      JSON.stringify({
+    return Response.json(
+      {
         error:
           "Test mode response not supported. Use fixture injection instead.",
-      }),
-      {
-        status: 400,
-      }
+      },
+      { status: 400 }
     );
   }
 
-  const { session, accessToken, isTestMode } = authResult;
+  const { accessToken } = authResult;
 
   // 2. Parse Request Body
   let body: unknown;
   try {
     body = await req.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON body." }), {
-      status: 400,
-    });
+    return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
   const messagesFromBody = getMessagesFromBody(body);
   const inlinePrompt = extractInlinePrompt(body);
-  const prompt = getLastUserMessage(messagesFromBody) || inlinePrompt;
 
-  const messages: ChatMessage[] = messagesFromBody.length
-    ? messagesFromBody
-    : (inlinePrompt
-      ? [{ role: "user", content: inlinePrompt }]
-      : []);
+  let messages: ChatMessage[] = [];
+  if (messagesFromBody.length > 0) {
+    messages = messagesFromBody;
+  } else if (inlinePrompt) {
+    messages = [{ role: "user", content: inlinePrompt }];
+  }
 
   if (messages.length === 0) {
     console.warn("POST /api/chat: Empty messages received.", {
-      body: typeof body === "object" ? body : safeJsonPreview(body),
+      body: isRecord(body) ? body : safeJsonPreview(body),
     });
     return new Response("I didn't receive a message. Please try again.", {
       status: 200,
@@ -91,18 +85,6 @@ export async function POST(req: Request) {
     isEvalTestMode && fixtureData
       ? new FixtureToolExecutor(loadFixtureData(fixtureData))
       : undefined;
-
-  // 4. Log Request
-  await writeDebugLog("chat.request", {
-    prompt,
-    user: session.user?.id,
-    evalTestMode: isTestMode,
-    fixtureMode: !!executor,
-    messageCount: messages.length,
-    lastMessageRole: messages.at(-1)?.role,
-    lastMessageLen: messages.at(-1)?.content?.length ?? 0,
-    bodyPreview: safeJsonPreview(body),
-  });
 
   // 5. Create and Return Chat Stream
   return createChatStream({

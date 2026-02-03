@@ -11,6 +11,58 @@ loadEnvConfig(process.cwd());
 
 const TEST_TIMEOUT_MS = 30_000;
 const hasServiceAccount = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+const runIt = hasServiceAccount ? it : it.skip;
+
+type OrgUnit = {
+  orgUnitId?: string | null;
+  orgUnitPath?: string | null;
+  parentOrgUnitId?: string | null;
+};
+
+function normalizeOrgUnitId(orgUnitId?: string | null): string | null {
+  if (!orgUnitId) {
+    return null;
+  }
+  return orgUnitId.replace(/^id:/, "");
+}
+
+function buildTargetResources(orgUnits: OrgUnit[]): string[] {
+  const [firstOu] = orgUnits;
+  const rootOu = orgUnits.find((ou) => ou.orgUnitPath === "/");
+  const firstId = normalizeOrgUnitId(firstOu?.orgUnitId);
+  const rootId = normalizeOrgUnitId(rootOu?.orgUnitId);
+  const resources = [
+    firstId ? `orgunits/${firstId}` : null,
+    rootId ? `orgunits/${rootId}` : null,
+  ].filter((value): value is string => Boolean(value));
+  return Array.from(new Set(resources));
+}
+
+function summarizeResolvedPolicies(
+  results: Array<{
+    targetResource?: string;
+    resolvedPolicies: Array<{ targetKey?: { targetResource?: string } }>;
+  }>
+) {
+  return results.map((result) => {
+    const [firstPolicy] = result.resolvedPolicies;
+    return {
+      targetResource: result.targetResource,
+      policyCount: result.resolvedPolicies.length,
+      sampleTarget: firstPolicy?.targetKey?.targetResource ?? null,
+    };
+  });
+}
+
+async function requireParentOrgUnitId(): Promise<string> {
+  const orgUnits = await listOrgUnits();
+  const [firstOu] = orgUnits;
+  const parentId = normalizeOrgUnitId(firstOu?.parentOrgUnitId);
+  if (!parentId) {
+    throw new Error("No parent org unit ID found");
+  }
+  return parentId;
+}
 
 describe("Chrome Policy API targetResource behavior", () => {
   beforeAll(() => {
@@ -21,14 +73,9 @@ describe("Chrome Policy API targetResource behavior", () => {
     }
   });
 
-  it(
+  runIt(
     "lists org units to understand structure",
     async () => {
-      if (!hasServiceAccount) {
-        expect(true).toBe(true);
-        return;
-      }
-
       const orgUnits = await listOrgUnits();
       console.log(
         "[connector-config-api] org units:",
@@ -48,34 +95,13 @@ describe("Chrome Policy API targetResource behavior", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "probes different targetResource formats",
     async () => {
-      if (!hasServiceAccount) {
-        expect(true).toBe(true);
-        return;
-      }
-
       const { customerId } = await makeGoogleClients();
       const orgUnits = await listOrgUnits();
 
-      const targetResources: string[] = [];
-
-      if (orgUnits.length > 0) {
-        const firstOu = orgUnits[0];
-        if (firstOu?.orgUnitId) {
-          const rawId = firstOu.orgUnitId.replace(/^id:/, "");
-          targetResources.push(`orgunits/${rawId}`);
-        }
-      }
-
-      const rootOu = orgUnits.find((ou) => ou.orgUnitPath === "/");
-      if (rootOu?.orgUnitId) {
-        const rawId = rootOu.orgUnitId.replace(/^id:/, "");
-        if (!targetResources.includes(`orgunits/${rawId}`)) {
-          targetResources.push(`orgunits/${rawId}`);
-        }
-      }
+      const targetResources = buildTargetResources(orgUnits);
 
       console.log(
         "[connector-config-api] testing targetResources:",
@@ -92,16 +118,7 @@ describe("Chrome Policy API targetResource behavior", () => {
 
       console.log(
         "[connector-config-api] results:",
-        JSON.stringify(
-          results.map((r) => ({
-            targetResource: r.targetResource,
-            policyCount: r.resolvedPolicies.length,
-            sampleTarget:
-              r.resolvedPolicies[0]?.targetKey?.targetResource ?? null,
-          })),
-          null,
-          2
-        )
+        JSON.stringify(summarizeResolvedPolicies(results), null, 2)
       );
 
       console.log(
@@ -114,14 +131,9 @@ describe("Chrome Policy API targetResource behavior", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "verifies empty string is rejected",
     async () => {
-      if (!hasServiceAccount) {
-        expect(true).toBe(true);
-        return;
-      }
-
       const { results, errors } = await probePolicyTargetResources({
         policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
         targetResources: [""],
@@ -142,14 +154,9 @@ describe("Chrome Policy API targetResource behavior", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "verifies my_customer is rejected as org unit",
     async () => {
-      if (!hasServiceAccount) {
-        expect(true).toBe(true);
-        return;
-      }
-
       const { results, errors } = await probePolicyTargetResources({
         policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
         targetResources: ["orgunits/my_customer"],
@@ -170,23 +177,10 @@ describe("Chrome Policy API targetResource behavior", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "tests parent org unit ID (root)",
     async () => {
-      if (!hasServiceAccount) {
-        expect(true).toBe(true);
-        return;
-      }
-
-      const orgUnits = await listOrgUnits();
-      const firstOu = orgUnits[0];
-      const parentId = firstOu?.parentOrgUnitId?.replace(/^id:/, "");
-
-      if (!parentId) {
-        console.log("[connector-config-api] no parent org unit ID found");
-        expect(true).toBe(true);
-        return;
-      }
+      const parentId = await requireParentOrgUnitId();
 
       console.log("[connector-config-api] testing parent ID:", parentId);
 

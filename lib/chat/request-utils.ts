@@ -26,8 +26,8 @@ const BodySchema = z.object({
 /**
  * Extract the most recent user message content from a list of messages.
  *
- * @param messages - The list of chat messages.
- * @returns The content of the last message with role 'user', or an empty string.
+ * @param {ChatMessage[]} messages - The list of chat messages.
+ * @returns {string} The content of the last message with role 'user', or an empty string.
  */
 export function getLastUserMessage(messages: ChatMessage[]): string {
   const lastUser = [...messages]
@@ -56,11 +56,7 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
         return null;
       }
 
-      return normalizeMessage(
-        parsedMsg.data as z.infer<typeof MessageSchema> & {
-          role: "system" | "user" | "assistant";
-        }
-      );
+      return normalizeMessage(parsedMsg.data);
     })
     .filter((msg): msg is ChatMessage => msg !== null);
 }
@@ -69,8 +65,8 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
  * Extract a simple prompt string from the body if messages are missing.
  * Supports 'input' or 'content' fields.
  *
- * @param body - The raw request body.
- * @returns The extracted prompt string, or empty string if not found.
+ * @param {unknown} body - The raw request body.
+ * @returns {string} The extracted prompt string, or empty string if not found.
  */
 export function extractInlinePrompt(body: unknown): string {
   const parsed = BodySchema.safeParse(body);
@@ -96,8 +92,9 @@ export function extractInlinePrompt(body: unknown): string {
  * Safely preview a JSON object as a string, truncated to a limit.
  * Useful for logging without flooding the console.
  *
- * @param value - The value to stringify.
- * @param limit - Max length of the output string (default 500).
+ * @param {unknown} value - The value to stringify.
+ * @param {number} limit - Max length of the output string (default 500).
+ * @returns {string} The preview string.
  */
 export function safeJsonPreview(value: unknown, limit = 500): string {
   try {
@@ -111,9 +108,9 @@ export function safeJsonPreview(value: unknown, limit = 500): string {
 function normalizeMessage(
   value: z.infer<typeof MessageSchema>
 ): ChatMessage | null {
-  const content = stringifyContent(value.content || value.parts);
+  const content = stringifyContent(value.content ?? value.parts);
 
-  if (!content) {
+  if (content.length === 0) {
     return null;
   }
 
@@ -137,7 +134,10 @@ function stringifyContent(raw: unknown): string {
   }
 
   if (Array.isArray(raw)) {
-    const parts = raw as z.infer<typeof MessagePartSchema>[];
+    const parts = raw
+      .map((item) => MessagePartSchema.safeParse(item))
+      .filter((result) => result.success)
+      .map((result) => result.data);
 
     const textParts = parts
       .map((part) => {
@@ -156,7 +156,7 @@ function stringifyContent(raw: unknown): string {
 
         return "";
       })
-      .filter(Boolean);
+      .filter((part) => part.length > 0);
 
     return textParts.join("\n").trim();
   }

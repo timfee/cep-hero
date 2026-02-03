@@ -100,16 +100,37 @@ Use an OAuth token from the web sign-in flow. Application Default Credentials an
 
 ### 3. Connect External Agents (Claude/Gemini CLI)
 
-**SSE Endpoint:** `http://localhost:3000/api/mcp`
+**Streamable HTTP Endpoint:** `http://localhost:3000/api/mcp`
 
 **Authorization:**
 
 - Use the same OAuth bearer token issued by the web UI session: `Authorization: Bearer <token>`.
 
-#### Example `curl` Test
+**Client headers (MCP Streamable HTTP):**
+
+- Initialization requests must `POST` with `Accept: application/json, text/event-stream` and `Content-Type: application/json`.
+- After initialization, include `Mcp-Session-Id: <sessionId>` on all requests.
+- For event streams, `GET` with `Accept: text/event-stream` and `Mcp-Session-Id`.
+
+#### Example `curl` Test (Initialize)
 
 ```bash
-curl -N -H "Authorization: Bearer <token>" http://localhost:3000/api/mcp
+curl -N \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -X POST \
+  --data '{
+    "jsonrpc":"2.0",
+    "id":1,
+    "method":"initialize",
+    "params":{
+      "protocolVersion":"2025-03-26",
+      "capabilities":{},
+      "clientInfo":{"name":"curl","version":"1.0.0"}
+    }
+  }' \
+  http://localhost:3000/api/mcp
 ```
 
 ---
@@ -168,7 +189,7 @@ bun run fixtures:capture
 ## 📂 Project Structure
 
 - **`lib/mcp/registry.ts`**: Deterministic tools + evidence extraction + structured AI summaries.
-- **`lib/mcp/server-factory.ts`**: MCP tool registrations and SSE transport.
+- **`lib/mcp/server-factory.ts`**: MCP tool registrations and Streamable HTTP transport.
 - **`app/api/chat/route.ts`**: Chat endpoint that exposes tools to the UI.
-- **`app/api/mcp/route.ts`**: MCP Server endpoint via Server-Sent Events (SSE).
+- **`app/api/mcp/route.ts`**: MCP Server endpoint via Streamable HTTP.
 - **`app/api/overview/route.ts`**: Fleet overview endpoint backed by `getFleetOverview`.

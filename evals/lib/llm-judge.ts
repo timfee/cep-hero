@@ -100,6 +100,7 @@ ${casesDescription}
 Evaluate each case and return structured results.`;
 
   try {
+    // eslint-disable-next-line @typescript-eslint/no-deprecated
     const response = await generateObject({
       model: google("gemini-2.0-flash-001"),
       schema: EvidenceResultSchema,

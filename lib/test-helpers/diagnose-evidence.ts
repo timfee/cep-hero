@@ -1,7 +1,6 @@
-import type { CepToolExecutor } from "@/lib/mcp/registry";
-import type { EvidencePayload } from "@/types/chat";
-
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
+import { type CepToolExecutor } from "@/lib/mcp/registry";
+import { type EvidencePayload } from "@/types/chat";
 
 /**
  * Build evidence payloads for tests without calling the model.

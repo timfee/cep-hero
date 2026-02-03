@@ -1,3 +1,4 @@
+/* eslint-disable import/no-nodejs-modules */
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 import { mkdir, writeFile } from "node:fs/promises";
@@ -107,7 +108,7 @@ async function captureChromeReports() {
 /** Capture Admin Reports audit sample for fixture base. */
 async function captureAuditEvents() {
   const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
-  if (!tokenEmail) {
+  if (tokenEmail === undefined || tokenEmail === "") {
     return { error: "GOOGLE_TOKEN_EMAIL is not set." };
   }
   try {
@@ -130,18 +131,18 @@ async function captureAuditEvents() {
 }
 
 async function run() {
-  const orgUnits = (await listOrgUnits()).slice(0, 10).map((unit) => ({
+  const orgUnitsResponse = await listOrgUnits();
+  const orgUnits = orgUnitsResponse.slice(0, 10).map((unit) => ({
     orgUnitId: unit.orgUnitId ?? null,
     orgUnitPath: unit.orgUnitPath ?? null,
     name: unit.name ?? null,
     parentOrgUnitId: unit.parentOrgUnitId ?? null,
   }));
-  const policySchemas = (await listPolicySchemas({ pageSize: 10 })).map(
-    (schema) => ({
-      name: schema.name ?? null,
-      policyDescription: schema.policyDescription ?? null,
-    })
-  );
+  const policySchemasResponse = await listPolicySchemas({ pageSize: 10 });
+  const policySchemas = policySchemasResponse.map((schema) => ({
+    name: schema.name ?? null,
+    policyDescription: schema.policyDescription ?? null,
+  }));
   const chromeReports = await captureChromeReports();
   const auditEvents = await captureAuditEvents();
 
@@ -155,7 +156,9 @@ async function run() {
   await writeFixture("api-base.json", payload);
 }
 
-run().catch((error) => {
+try {
+  await run();
+} catch (error) {
   console.error("[fixtures] capture failed", error);
   process.exitCode = 1;
-});
+}

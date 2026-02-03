@@ -3,10 +3,11 @@
  * Handles writing reports to disk and formatting console output.
  */
 
+/* eslint-disable import/no-nodejs-modules */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
-import type { AssertionResult } from "./assertions";
+import { type AssertionResult } from "./assertions";
 
 export type EvalReportStatus = "pass" | "fail" | "error";
 
@@ -93,12 +94,12 @@ export async function writeSummaryReport(
  * Format a single case result for console output.
  */
 export function formatCaseResult(report: EvalReport): string {
-  const statusIcon =
-    report.status === "pass"
-      ? "PASS"
-      : (report.status === "fail"
-        ? "FAIL"
-        : "ERR ");
+  let statusIcon = "ERR ";
+  if (report.status === "pass") {
+    statusIcon = "PASS";
+  } else if (report.status === "fail") {
+    statusIcon = "FAIL";
+  }
   const duration = `${report.durationMs}ms`.padStart(7);
   return `[${statusIcon}] ${report.caseId} ${duration} - ${report.title}`;
 }
@@ -163,24 +164,22 @@ export function buildSummary(
   let errors = 0;
 
   for (const report of reports) {
-    if (!byCategory[report.category]) {
-      byCategory[report.category] = { total: 0, passed: 0, failed: 0 };
-    }
-    byCategory[report.category].total++;
+    byCategory[report.category] ??= { total: 0, passed: 0, failed: 0 };
+    byCategory[report.category].total += 1;
 
     if (report.status === "pass") {
-      passed++;
-      byCategory[report.category].passed++;
+      passed += 1;
+      byCategory[report.category].passed += 1;
     } else if (report.status === "fail") {
-      failed++;
-      byCategory[report.category].failed++;
+      failed += 1;
+      byCategory[report.category].failed += 1;
       failures.push({
         id: report.caseId,
         title: report.title,
         reason: report.error ?? "Assertion failed",
       });
     } else {
-      errors++;
+      errors += 1;
       failures.push({
         id: report.caseId,
         title: report.title,

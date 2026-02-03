@@ -1,6 +1,7 @@
+/* eslint-disable jest/require-hook */
 import { expect } from "bun:test";
 
-import type { FixtureData } from "@/lib/mcp/types";
+import { type FixtureData } from "@/lib/mcp/types";
 
 const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 const USE_FAKE_CHAT = process.env.EVAL_TEST_MODE === "1";
@@ -45,7 +46,9 @@ export async function callChatMessages(
   const controller = new AbortController();
   const timeoutId =
     Number.isFinite(CHAT_TIMEOUT_MS) && CHAT_TIMEOUT_MS > 0
-      ? setTimeout(() => controller.abort(), CHAT_TIMEOUT_MS)
+      ? setTimeout(() => {
+          controller.abort();
+        }, CHAT_TIMEOUT_MS)
       : undefined;
 
   let res: Response;
@@ -57,7 +60,8 @@ export async function callChatMessages(
       "Content-Type": "application/json",
       "X-Test-Bypass": "1",
     };
-    const useFixtureMode = USE_EVAL_FIXTURE_MODE && options?.fixtures;
+    const useFixtureMode =
+      USE_EVAL_FIXTURE_MODE && options?.fixtures !== undefined;
     if (useFixtureMode) {
       headers["X-Eval-Test-Mode"] = "1";
     }
@@ -65,18 +69,17 @@ export async function callChatMessages(
     if (useFixtureMode && options?.fixtures) {
       body.fixtures = options.fixtures;
     }
-    res = await fetchWithRetry(
-      () =>
-        fetch(CHAT_URL, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(body),
-          signal: controller.signal,
-        }),
-      retryOptions
-    );
+    res = await fetchWithRetry(async () => {
+      const response = await fetch(CHAT_URL, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      return response;
+    }, retryOptions);
   } catch (error) {
-    if (timeoutId) {
+    if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
     if (ALLOW_FAKE_ON_ERROR) {
@@ -92,7 +95,7 @@ export async function callChatMessages(
     }
     throw error;
   } finally {
-    if (timeoutId) {
+    if (timeoutId !== undefined) {
       clearTimeout(timeoutId);
     }
   }
@@ -105,9 +108,9 @@ export async function callChatMessages(
   }
 
   try {
-    const data = JSON.parse(bodyText);
+    const data: unknown = JSON.parse(bodyText);
     const errorMessage = getOptionalString(data, "error");
-    if (errorMessage) {
+    if (typeof errorMessage === "string" && errorMessage.length > 0) {
       if (ALLOW_FAKE_ON_ERROR) {
         return syntheticResponse();
       }
@@ -115,7 +118,7 @@ export async function callChatMessages(
     }
     const textLines: string[] = [];
     const diagnosis = getOptionalString(data, "diagnosis");
-    if (diagnosis) {
+    if (typeof diagnosis === "string" && diagnosis.length > 0) {
       textLines.push(diagnosis);
     }
     const nextSteps = getStringArray(data, "nextSteps");
@@ -132,9 +135,9 @@ export async function callChatMessages(
     const chunks = lines
       .filter((line) => line.startsWith("data:"))
       .map((line) => line.replace(/^data:\s*/, ""))
-      .filter((chunk) => chunk && chunk !== "[done]")
+      .filter((chunk) => chunk.length > 0 && chunk !== "[done]")
       .map(parseJson)
-      .filter((chunk): chunk is Record<string, unknown> => chunk !== undefined);
+      .filter((chunk): chunk is Record<string, unknown> => isRecord(chunk));
 
     // Extract text deltas
     const deltas = chunks
@@ -143,11 +146,11 @@ export async function callChatMessages(
 
     // Extract tool calls
     const toolCalls = chunks
-      .filter(
-        (chunk) =>
-          chunk.type === "tool-input-start" || chunk.type === "tool-call"
-      )
-      .map((chunk) => chunk.toolName as string)
+      .filter((chunk) => {
+        const { type } = chunk;
+        return type === "tool-input-start" || type === "tool-call";
+      })
+      .map((chunk) => chunk.toolName)
       .filter((name): name is string => typeof name === "string");
 
     return {
@@ -201,7 +204,7 @@ function parseJson(value: string): unknown {
  * AI SDK uses "textDelta" field, not "delta".
  */
 function getTextDelta(value: unknown): string | undefined {
-  if (!value || typeof value !== "object") {
+  if (!isRecord(value)) {
     return undefined;
   }
 
@@ -220,7 +223,7 @@ function getTextDelta(value: unknown): string | undefined {
  * Extract a string property from unknown objects.
  */
 function getOptionalString(value: unknown, key: string): string | undefined {
-  if (!value || typeof value !== "object") {
+  if (!isRecord(value)) {
     return undefined;
   }
 
@@ -232,7 +235,7 @@ function getOptionalString(value: unknown, key: string): string | undefined {
  * Extract a string array from unknown objects.
  */
 function getStringArray(value: unknown, key: string): string[] {
-  if (!value || typeof value !== "object") {
+  if (!isRecord(value)) {
     return [];
   }
 
@@ -248,17 +251,21 @@ async function ensureChatReady(url: string): Promise<void> {
     return;
   }
 
-  if (!chatReadyPromise) {
-    chatReadyPromise = waitForChatReady(url, 8, 250)
-      .then((ready) => {
-        chatReady = ready;
-      })
-      .finally(() => {
-        chatReadyPromise = undefined;
-      });
-  }
+  chatReadyPromise ??= (async () => {
+    try {
+      chatReady = await waitForChatReady(url, 8, 250);
+    } finally {
+      chatReadyPromise = undefined;
+    }
+  })();
 
-  await chatReadyPromise;
+  if (chatReadyPromise !== undefined) {
+    await chatReadyPromise;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
 }
 
 async function waitForChatReady(
@@ -270,7 +277,7 @@ async function waitForChatReady(
     if (await isServerUp(url)) {
       return true;
     }
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    await Bun.sleep(delayMs);
   }
   return false;
 }
@@ -316,7 +323,7 @@ async function fetchWithRetry(
     }
 
     const jitterMs = Math.floor(Math.random() * 200);
-    await new Promise((resolve) => setTimeout(resolve, delay + jitterMs));
+    await Bun.sleep(delay + jitterMs);
     delay = Math.min(options.maxDelayMs, Math.ceil(delay * 1.8));
     attempt += 1;
   }

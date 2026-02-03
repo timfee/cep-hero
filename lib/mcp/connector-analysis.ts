@@ -1,4 +1,4 @@
-import type { chromepolicy_v1 } from "googleapis";
+import { type chromepolicy_v1 } from "googleapis";
 
 export interface ConnectorAnalysis {
   total: number;
@@ -25,7 +25,7 @@ type ResolvedPolicy =
 function classifyTarget(
   targetResource?: string
 ): "customer" | "orgUnit" | "group" | "unknown" {
-  if (!targetResource) {
+  if (targetResource === undefined || targetResource.length === 0) {
     return "unknown";
   }
   const normalized = targetResource.toLowerCase();
@@ -76,7 +76,8 @@ export function analyzeConnectorPolicies(
     misScoped: misScoped.length,
     detail,
     flag: misScoped.length > 0,
-    sampleTarget: misScoped[0] ? getTargetResource(misScoped[0]) : undefined,
+    sampleTarget:
+      misScoped.length > 0 ? getTargetResource(misScoped[0]) : undefined,
   };
 }
 

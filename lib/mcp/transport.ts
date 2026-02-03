@@ -1,5 +1,5 @@
-import type { Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
-import type { JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
+import { type Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
+import { type JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 
 import { writeDebugLog } from "@/lib/debug-log";
 
@@ -24,15 +24,16 @@ export class NextJsSseTransport implements Transport {
   /**
    * Start hook required by the MCP transport interface.
    */
-  async start(): Promise<void> {}
+  // eslint-disable-next-line class-methods-use-this
+  async start(): Promise<void> {
+    await Promise.resolve();
+  }
 
   /**
    * Forward a JSON-RPC message from the POST handler to the SDK.
    */
-  async handlePostMessage(message: JSONRPCMessage) {
-    if (this._messageHandler) {
-      this._messageHandler(message);
-    }
+  handlePostMessage(message: JSONRPCMessage): void {
+    this._messageHandler?.(message);
   }
 
   /**
@@ -43,7 +44,10 @@ export class NextJsSseTransport implements Transport {
   }
 
   get onmessage() {
-    return this._messageHandler!;
+    if (!this._messageHandler) {
+      throw new Error("MCP transport message handler is not set.");
+    }
+    return this._messageHandler;
   }
 
   /**
@@ -58,11 +62,11 @@ export class NextJsSseTransport implements Transport {
     }
 
     const event = `event: message\ndata: ${JSON.stringify(message)}\n\n`;
+    this._controller.enqueue(new TextEncoder().encode(event));
     await writeDebugLog("mcp.message.out", {
       sessionId: this._sessionId,
       message,
     });
-    this._controller.enqueue(new TextEncoder().encode(event));
   }
 
   /**
@@ -72,9 +76,15 @@ export class NextJsSseTransport implements Transport {
     if (this._controller) {
       try {
         this._controller.close();
-      } catch {}
+      } catch (error) {
+        console.warn(
+          `[Transport ${this._sessionId}] Failed to close controller`,
+          error
+        );
+      }
     }
     this.onclose?.();
+    await Promise.resolve();
   }
 
   /**

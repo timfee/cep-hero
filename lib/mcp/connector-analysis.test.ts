@@ -1,6 +1,5 @@
-import type { chromepolicy_v1 } from "googleapis";
-
 import { describe, expect, it } from "bun:test";
+import { type chromepolicy_v1 } from "googleapis";
 
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
 

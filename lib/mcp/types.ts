@@ -1,12 +1,12 @@
-import type { z } from "zod";
+import { type z } from "zod";
 
-import type { FleetOverviewResponse } from "./registry";
-import type {
-  DraftPolicyChangeSchema,
-  EnrollBrowserSchema,
-  GetChromeEventsSchema,
-  GetFleetOverviewSchema,
-  ListDLPRulesSchema,
+import {
+  type DraftPolicyChangeSchema,
+  type EnrollBrowserSchema,
+  type FleetOverviewResponse,
+  type GetChromeEventsSchema,
+  type GetFleetOverviewSchema,
+  type ListDLPRulesSchema,
 } from "./registry";
 
 export type ChromeEventsResult =

@@ -3,6 +3,7 @@
  * Standalone module without test framework dependencies.
  */
 
+/* eslint-disable import/no-nodejs-modules */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
@@ -43,6 +44,21 @@ export interface FilterOptions {
   limit?: string;
 }
 
+function isNonEmptyString(value: string | undefined): value is string {
+  return typeof value === "string" && value.trim().length > 0;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function isEvalRegistry(value: unknown): value is EvalRegistry {
+  if (!isRecord(value)) {
+    return false;
+  }
+  return typeof value.version === "string" && Array.isArray(value.cases);
+}
+
 /**
  * Load the eval registry from disk.
  */
@@ -53,7 +69,11 @@ export function loadEvalRegistry(
     throw new Error(`Registry not found: ${registryPath}`);
   }
   const contents = readFileSync(registryPath, "utf8");
-  return JSON.parse(contents) as EvalRegistry;
+  const parsed: unknown = JSON.parse(contents);
+  if (!isEvalRegistry(parsed)) {
+    throw new Error("Invalid eval registry format");
+  }
+  return parsed;
 }
 
 /**
@@ -65,12 +85,12 @@ export function filterEvalCases(
 ): EvalCase[] {
   let filtered = cases;
 
-  if (options.ids) {
+  if (isNonEmptyString(options.ids)) {
     const idSet = new Set(options.ids.split(",").map((id) => id.trim()));
     filtered = filtered.filter((c) => idSet.has(c.id));
   }
 
-  if (options.categories) {
+  if (isNonEmptyString(options.categories)) {
     const categorySet = new Set(
       options.categories.split(",").map((cat) => cat.trim().toLowerCase())
     );
@@ -79,7 +99,7 @@ export function filterEvalCases(
     );
   }
 
-  if (options.tags) {
+  if (isNonEmptyString(options.tags)) {
     const tagSet = new Set(
       options.tags.split(",").map((tag) => tag.trim().toLowerCase())
     );
@@ -88,7 +108,7 @@ export function filterEvalCases(
     );
   }
 
-  if (options.limit) {
+  if (isNonEmptyString(options.limit)) {
     const limit = Number.parseInt(options.limit, 10);
     if (!Number.isNaN(limit) && limit > 0) {
       filtered = filtered.slice(0, limit);
@@ -115,7 +135,7 @@ export function buildPromptMap(
 
     const content = readFileSync(caseFilePath, "utf8");
     const prompt = extractPromptFromMarkdown(content);
-    if (prompt) {
+    if (typeof prompt === "string" && prompt.length > 0) {
       map.set(evalCase.id, prompt);
     }
   }
