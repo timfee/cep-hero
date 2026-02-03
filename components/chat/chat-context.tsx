@@ -27,46 +27,31 @@ export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
   const { activeFixture, isFixtureMode } = useFixtureContext();
 
-  // Custom fetch that adds fixture headers when in demo mode
-  const customFetch = useCallback(
-    async (url: RequestInfo | URL, options?: RequestInit) => {
-      const headers = new Headers(options?.headers);
-
-      if (isFixtureMode) {
-        headers.set("x-eval-test-mode", "1");
-      }
-
-      return fetch(url, {
-        ...options,
-        headers,
-      });
-    },
-    [isFixtureMode]
-  );
-
   const {
     messages,
     status,
     sendMessage: originalSendMessage,
     stop,
     regenerate,
-  } = useChat({
-    fetch: customFetch,
-  });
+  } = useChat();
 
-  // Wrap sendMessage to include fixture data in the body
+  // Wrap sendMessage to include fixture headers and data when in demo mode
   const sendMessage = useCallback<typeof originalSendMessage>(
-    (options) => {
+    (message, options) => {
       if (isFixtureMode && activeFixture) {
-        return originalSendMessage({
+        return originalSendMessage(message, {
           ...options,
+          headers: {
+            ...options?.headers,
+            "x-eval-test-mode": "1",
+          },
           body: {
-            ...((options as { body?: Record<string, unknown> }).body ?? {}),
+            ...options?.body,
             fixtures: activeFixture.data,
           },
         });
       }
-      return originalSendMessage(options);
+      return originalSendMessage(message, options);
     },
     [originalSendMessage, isFixtureMode, activeFixture]
   );
