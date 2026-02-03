@@ -14,9 +14,15 @@
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-004" },
               { "name": "ERROR_CODE", "value": "SERVICE_UNAVAILABLE" },
-              { "name": "ERROR_MESSAGE", "value": "Citrix SPA authentication service returned 503 Service Unavailable." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Citrix SPA authentication service returned 503 Service Unavailable."
+              },
               { "name": "HTTP_STATUS", "value": "503" },
-              { "name": "SERVICE_URL", "value": "https://auth.citrix.example.com/spa/authenticate" },
+              {
+                "name": "SERVICE_URL",
+                "value": "https://auth.citrix.example.com/spa/authenticate"
+              },
               { "name": "USER_EMAIL", "value": "user@example.com" }
             ]
           }
@@ -35,7 +41,10 @@
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-004" },
               { "name": "ERROR_CODE", "value": "BACKEND_OUTAGE" },
-              { "name": "ERROR_MESSAGE", "value": "Backend service outage detected. Multiple authentication attempts failed." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Backend service outage detected. Multiple authentication attempts failed."
+              },
               { "name": "RETRY_COUNT", "value": "3" },
               { "name": "LAST_RETRY_AT", "value": "2026-01-20T16:05:00.000Z" },
               { "name": "USER_EMAIL", "value": "user@example.com" }
@@ -56,8 +65,14 @@
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-004" },
               { "name": "WARNING_CODE", "value": "CONTACT_SUPPORT" },
-              { "name": "WARNING_MESSAGE", "value": "Persistent service outage. Contact Citrix support with logs from chrome://policy and chrome://net-export." },
-              { "name": "LOGS_TO_COLLECT", "value": "chrome://policy, chrome://net-export, Citrix SPA diagnostic logs" },
+              {
+                "name": "WARNING_MESSAGE",
+                "value": "Persistent service outage. Contact Citrix support with logs from chrome://policy and chrome://net-export."
+              },
+              {
+                "name": "LOGS_TO_COLLECT",
+                "value": "chrome://policy, chrome://net-export, Citrix SPA diagnostic logs"
+              },
               { "name": "SUPPORT_TICKET_RECOMMENDED", "value": "true" },
               { "name": "USER_EMAIL", "value": "admin@example.com" }
             ]

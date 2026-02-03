@@ -15,7 +15,12 @@
         "evals/fixtures/EC-001/net-fail.log",
         "evals/fixtures/EC-001/eventlog-wifi-fail.txt"
       ],
-      "required_evidence": ["ERR_NAME_NOT_RESOLVED", "ERR_CONNECTION", "deauth", "wifi"],
+      "required_evidence": [
+        "ERR_NAME_NOT_RESOLVED",
+        "ERR_CONNECTION",
+        "deauth",
+        "wifi"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -128,7 +133,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-009/overrides.json"],
-      "required_evidence": ["Keychain", "KEYCHAIN_ACCESS_DENIED", "Safe Storage", "macOS"],
+      "required_evidence": [
+        "Keychain",
+        "KEYCHAIN_ACCESS_DENIED",
+        "Safe Storage",
+        "macOS"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -173,7 +183,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-012/overrides.json"],
-      "required_evidence": ["service worker", "status code 2", "extension", "reinstall"],
+      "required_evidence": [
+        "service worker",
+        "status code 2",
+        "extension",
+        "reinstall"
+      ],
       "assertions": [],
       "cleanup": []
     },
@@ -656,7 +671,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-043/overrides.json"],
-      "required_evidence": ["EXTENSION_INSTALL_FAILED", "CRX_FETCH", "manifest", "force"],
+      "required_evidence": [
+        "EXTENSION_INSTALL_FAILED",
+        "CRX_FETCH",
+        "manifest",
+        "force"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -675,7 +695,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-044/overrides.json"],
-      "required_evidence": ["PERMISSIONS_INCREASE", "EXTENSION_DISABLED", "webRequest", "allowlist"],
+      "required_evidence": [
+        "PERMISSIONS_INCREASE",
+        "EXTENSION_DISABLED",
+        "webRequest",
+        "allowlist"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -836,7 +861,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-053/overrides.json"],
-      "required_evidence": ["EXTENSION_CRASH", "CORRUPTED", "repair", "reinstall"],
+      "required_evidence": [
+        "EXTENSION_CRASH",
+        "CORRUPTED",
+        "repair",
+        "reinstall"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
@@ -967,7 +997,12 @@
       "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-062/overrides.json"],
-      "required_evidence": ["CloudReporting", "disabled", "Events-Off", "enable"],
+      "required_evidence": [
+        "CloudReporting",
+        "disabled",
+        "Events-Off",
+        "enable"
+      ],
       "assertions": [],
       "cleanup": []
     },

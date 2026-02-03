@@ -37,15 +37,15 @@ EVAL_VERBOSE=1 EVAL_IDS="EC-001" EVAL_USE_FIXTURES=1 bun run evals
 
 ## Environment Variables
 
-| Variable | Description |
-|----------|-------------|
-| `EVAL_IDS` | Comma-separated case IDs (e.g., `EC-001,EC-002`) |
-| `EVAL_CATEGORY` | Filter by category (e.g., `enrollment`, `connector`) |
-| `EVAL_TAGS` | Filter by tags |
-| `EVAL_LIMIT` | Max number of cases to run |
-| `EVAL_USE_FIXTURES=1` | Enable fixture injection (recommended) |
-| `EVAL_VERBOSE=1` | Show detailed output |
-| `EVAL_SERIAL=1` | Run sequentially instead of parallel |
+| Variable               | Description                                          |
+| ---------------------- | ---------------------------------------------------- |
+| `EVAL_IDS`             | Comma-separated case IDs (e.g., `EC-001,EC-002`)     |
+| `EVAL_CATEGORY`        | Filter by category (e.g., `enrollment`, `connector`) |
+| `EVAL_TAGS`            | Filter by tags                                       |
+| `EVAL_LIMIT`           | Max number of cases to run                           |
+| `EVAL_USE_FIXTURES=1`  | Enable fixture injection (recommended)               |
+| `EVAL_VERBOSE=1`       | Show detailed output                                 |
+| `EVAL_SERIAL=1`        | Run sequentially instead of parallel                 |
 | `EVAL_MANAGE_SERVER=0` | Skip auto server management (use with manual server) |
 
 ## Reporting Results
@@ -53,7 +53,9 @@ EVAL_VERBOSE=1 EVAL_IDS="EC-001" EVAL_USE_FIXTURES=1 bun run evals
 After running evals, report these details:
 
 ### 1. Summary Output
+
 Copy the summary block from terminal output:
+
 ```
 ════════════════════════════════════════════════════════════
 EVAL RUN SUMMARY
@@ -68,18 +70,23 @@ Errors:    X
 ```
 
 ### 2. For Failed Cases
+
 If any cases fail, include:
+
 - Case ID and error message
 - The `responseText` from the report file (in `evals/reports/`)
 
 Example:
+
 ```bash
 # View a specific report
 cat evals/reports/EC-001-*.json | jq '{caseId, status, error, responseText}'
 ```
 
 ### 3. AI Response Sample
+
 For debugging response format issues, include a sample of what the AI actually returned:
+
 ```bash
 cat evals/reports/EC-001-*.json | jq -r '.responseText' | head -50
 ```
@@ -88,24 +95,27 @@ cat evals/reports/EC-001-*.json | jq -r '.responseText' | head -50
 
 Current fixtures are available for:
 
-| Category | Case IDs | Status |
-|----------|----------|--------|
-| enrollment | EC-001, EC-002, EC-004, EC-018, EC-046, EC-069, EC-070 | Ready |
-| events | EC-052, EC-062 | Ready |
-| extensions | EC-043, EC-044, EC-045, EC-053 | Ready |
+| Category   | Case IDs                                               | Status |
+| ---------- | ------------------------------------------------------ | ------ |
+| enrollment | EC-001, EC-002, EC-004, EC-018, EC-046, EC-069, EC-070 | Ready  |
+| events     | EC-052, EC-062                                         | Ready  |
+| extensions | EC-043, EC-044, EC-045, EC-053                         | Ready  |
 
 ## Troubleshooting
 
 ### "Cannot connect to API" errors
+
 - Verify `GOOGLE_GENERATIVE_AI_API_KEY` is set
 - Check network connectivity to `generativelanguage.googleapis.com`
 
 ### "Response missing expected schema" errors
+
 - The AI response format doesn't match expected structure
 - Check `responseText` in the report to see what was returned
 - May need to adjust system prompt in `lib/chat/chat-service.ts`
 
 ### Server not responding
+
 - Ensure dev server is running on port 3100
 - Check for port conflicts: `lsof -i:3100`
 

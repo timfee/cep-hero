@@ -57,7 +57,10 @@
             "name": "POLICY_CONFLICT_DETECTED",
             "parameters": [
               { "name": "DEVICE_ID", "value": "DUPLICATE-ID-abc123def456" },
-              { "name": "CONFLICT_REASON", "value": "DUPLICATE_MACHINE_IDENTIFIER" },
+              {
+                "name": "CONFLICT_REASON",
+                "value": "DUPLICATE_MACHINE_IDENTIFIER"
+              },
               { "name": "AFFECTED_MACHINES", "value": "VM-Clone-A, VM-Clone-B" }
             ]
           }

@@ -12,12 +12,18 @@
             "type": "EXTENSION_REQUEST_TYPE",
             "name": "EXTENSION_DISABLED",
             "parameters": [
-              { "name": "EXTENSION_ID", "value": "gighmmpiobklfepjocnamgkkbiglidom" },
+              {
+                "name": "EXTENSION_ID",
+                "value": "gighmmpiobklfepjocnamgkkbiglidom"
+              },
               { "name": "EXTENSION_NAME", "value": "Ad Blocker Plus" },
               { "name": "DISABLE_REASON", "value": "PERMISSIONS_INCREASE" },
               { "name": "OLD_VERSION", "value": "3.14.0" },
               { "name": "NEW_VERSION", "value": "3.15.0" },
-              { "name": "NEW_PERMISSIONS", "value": "webRequest, webRequestBlocking, tabs, <all_urls>" },
+              {
+                "name": "NEW_PERMISSIONS",
+                "value": "webRequest, webRequestBlocking, tabs, <all_urls>"
+              },
               { "name": "DEVICE_ID", "value": "device-abc123" }
             ]
           }

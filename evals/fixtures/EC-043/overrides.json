@@ -16,7 +16,10 @@
               { "name": "EXTENSION_NAME", "value": "Corporate Security Tool" },
               { "name": "INSTALL_TYPE", "value": "FORCE_INSTALLED" },
               { "name": "ERROR_CODE", "value": "CRX_FETCH_FAILED" },
-              { "name": "ERROR_DETAIL", "value": "HTTP 404 - Extension not found in Chrome Web Store" },
+              {
+                "name": "ERROR_DETAIL",
+                "value": "HTTP 404 - Extension not found in Chrome Web Store"
+              },
               { "name": "DEVICE_ID", "value": "device-abc123" },
               { "name": "MACHINE_NAME", "value": "LAPTOP-ENG-042" }
             ]
@@ -38,7 +41,10 @@
               { "name": "EXTENSION_NAME", "value": "Corporate Security Tool" },
               { "name": "INSTALL_TYPE", "value": "FORCE_INSTALLED" },
               { "name": "ERROR_CODE", "value": "MANIFEST_INVALID" },
-              { "name": "ERROR_DETAIL", "value": "Invalid manifest: missing 'version' field" },
+              {
+                "name": "ERROR_DETAIL",
+                "value": "Invalid manifest: missing 'version' field"
+              },
               { "name": "DEVICE_ID", "value": "device-xyz789" },
               { "name": "MACHINE_NAME", "value": "DESKTOP-HR-019" }
             ]

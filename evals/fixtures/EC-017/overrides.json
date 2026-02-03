@@ -14,7 +14,10 @@
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-001" },
               { "name": "ERROR_CODE", "value": "POLICY_LIMIT_EXCEEDED" },
-              { "name": "ERROR_MESSAGE", "value": "Provisioning failed. Maximum group limit (8) exceeded. Found 12 groups in policy assignment." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Provisioning failed. Maximum group limit (8) exceeded. Found 12 groups in policy assignment."
+              },
               { "name": "GROUP_COUNT", "value": "12" },
               { "name": "MAX_GROUPS", "value": "8" },
               { "name": "USER_EMAIL", "value": "admin@example.com" }
@@ -34,8 +37,14 @@
             "name": "SPA_SESSION_FAILURE",
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-001" },
-              { "name": "ERROR_CODE", "value": "COMPLEX_POLICY_EVALUATION_TIMEOUT" },
-              { "name": "ERROR_MESSAGE", "value": "Session initialization failed. Policy evaluation timed out due to complex nested conditions." },
+              {
+                "name": "ERROR_CODE",
+                "value": "COMPLEX_POLICY_EVALUATION_TIMEOUT"
+              },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Session initialization failed. Policy evaluation timed out due to complex nested conditions."
+              },
               { "name": "POLICY_CONDITIONS_COUNT", "value": "15" },
               { "name": "USER_EMAIL", "value": "user@example.com" }
             ]
@@ -54,8 +63,14 @@
             "name": "SPA_CONFIG_WARNING",
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-001" },
-              { "name": "WARNING_CODE", "value": "SERVER_TO_CLIENT_UNSUPPORTED" },
-              { "name": "WARNING_MESSAGE", "value": "Server-to-client policy direction is not supported. Use client-to-server configuration." },
+              {
+                "name": "WARNING_CODE",
+                "value": "SERVER_TO_CLIENT_UNSUPPORTED"
+              },
+              {
+                "name": "WARNING_MESSAGE",
+                "value": "Server-to-client policy direction is not supported. Use client-to-server configuration."
+              },
               { "name": "RECOMMENDED_ACTION", "value": "SPLIT_POLICIES" },
               { "name": "USER_EMAIL", "value": "admin@example.com" }
             ]

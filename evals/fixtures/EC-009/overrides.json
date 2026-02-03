@@ -17,7 +17,10 @@
               { "name": "OS_TYPE", "value": "macOS" },
               { "name": "OS_VERSION", "value": "14.2.1" },
               { "name": "ERROR_CODE", "value": "KEYCHAIN_ACCESS_DENIED" },
-              { "name": "ERROR_MESSAGE", "value": "Keychain access denied for Safe Storage. User authorization required." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Keychain access denied for Safe Storage. User authorization required."
+              },
               { "name": "USER_EMAIL", "value": "admin@example.com" }
             ]
           }
@@ -38,7 +41,10 @@
               { "name": "DEVICE_NAME", "value": "MacBook-Admin-1" },
               { "name": "OS_TYPE", "value": "macOS" },
               { "name": "ERROR_CODE", "value": "SAFE_STORAGE_LOCKED" },
-              { "name": "ERROR_MESSAGE", "value": "Cannot read Safe Storage key from Keychain. Keychain is locked or access is blocked for Endpoint Verification." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Cannot read Safe Storage key from Keychain. Keychain is locked or access is blocked for Endpoint Verification."
+              },
               { "name": "USER_EMAIL", "value": "admin@example.com" },
               { "name": "KEYCHAIN_ERROR_CODE", "value": "-25293" }
             ]

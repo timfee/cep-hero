@@ -14,8 +14,14 @@
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-002" },
               { "name": "ERROR_CODE", "value": "GROUP_MEMBERSHIP_NOT_VISIBLE" },
-              { "name": "ERROR_MESSAGE", "value": "Cannot retrieve group membership. Google Group visibility settings restrict access." },
-              { "name": "GROUP_EMAIL", "value": "restricted-group@example.com" },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Cannot retrieve group membership. Google Group visibility settings restrict access."
+              },
+              {
+                "name": "GROUP_EMAIL",
+                "value": "restricted-group@example.com"
+              },
               { "name": "VISIBILITY_SETTING", "value": "MEMBERS_ONLY" },
               { "name": "USER_EMAIL", "value": "admin@example.com" }
             ]
@@ -34,9 +40,18 @@
             "name": "SPA_DIRECTORY_API_ERROR",
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-002" },
-              { "name": "ERROR_CODE", "value": "DIRECTORY_API_PERMISSION_DENIED" },
-              { "name": "ERROR_MESSAGE", "value": "Directory API request denied. Service account lacks groups.read permission." },
-              { "name": "API_SCOPE", "value": "admin.directory.group.member.readonly" },
+              {
+                "name": "ERROR_CODE",
+                "value": "DIRECTORY_API_PERMISSION_DENIED"
+              },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Directory API request denied. Service account lacks groups.read permission."
+              },
+              {
+                "name": "API_SCOPE",
+                "value": "admin.directory.group.member.readonly"
+              },
               { "name": "REQUIRED_PERMISSION", "value": "groups.read" },
               { "name": "USER_EMAIL", "value": "admin@example.com" }
             ]
@@ -56,9 +71,15 @@
             "parameters": [
               { "name": "INTEGRATION_ID", "value": "citrix-spa-002" },
               { "name": "WARNING_CODE", "value": "GROUP_BASED_POLICY_SKIPPED" },
-              { "name": "WARNING_MESSAGE", "value": "Group-based policy not applied. Unable to verify user membership in target group." },
+              {
+                "name": "WARNING_MESSAGE",
+                "value": "Group-based policy not applied. Unable to verify user membership in target group."
+              },
               { "name": "POLICY_NAME", "value": "Engineering-Access-Policy" },
-              { "name": "TARGET_GROUP", "value": "engineering-team@example.com" },
+              {
+                "name": "TARGET_GROUP",
+                "value": "engineering-team@example.com"
+              },
               { "name": "USER_EMAIL", "value": "user@example.com" }
             ]
           }
