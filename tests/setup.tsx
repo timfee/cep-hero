@@ -8,7 +8,13 @@ import { afterEach, beforeAll } from "bun:test";
 import "@testing-library/jest-dom";
 
 beforeAll(() => {
-  GlobalRegistrator.register();
+  GlobalRegistrator.register({
+    settings: {
+      fetch: {
+        disableSameOriginPolicy: true,
+      },
+    },
+  });
 });
 
 afterEach(() => {
