@@ -177,6 +177,22 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 - Don't use `.only` or `.skip` in committed code
 - Keep test suites reasonably flat - avoid excessive `describe` nesting
 
+### Environment Variables
+
+Environment variables set via shell or `.env` files may contain surrounding quotes that need to be stripped. This is a common source of subtle bugs.
+
+**When debugging Google API authentication errors:**
+
+1. Check if env vars have surrounding quotes: `echo "${VAR_NAME:0:1}"` - if it shows `'` or `"`, quotes need stripping
+2. The error `Invalid impersonation "sub" field` typically means `GOOGLE_TOKEN_EMAIL` has quotes around the email
+3. Always strip quotes from env vars before using them: `value.replace(/^['"]|['"]$/g, "")`
+
+**Common env vars that need quote handling:**
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` - JSON credentials (already handled in `lib/google-service-account.ts`)
+- `GOOGLE_TOKEN_EMAIL` - Email for domain-wide delegation impersonation
+- `GOOGLE_CUSTOMER_ID` - Google Workspace customer ID
+
 ## Evaluation Framework
 
 The eval framework tests AI diagnostic capabilities using fixture injection for deterministic, reproducible results.
