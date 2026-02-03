@@ -1,5 +1,5 @@
 import { render, waitFor } from "@testing-library/react";
-import { describe, expect, it, mock, beforeEach } from "bun:test";
+import { beforeEach, describe, expect, it, mock } from "bun:test";
 
 import { FixtureProvider } from "@/lib/fixtures/context";
 
@@ -11,9 +11,10 @@ function renderWithProvider(ui: React.ReactNode) {
 
 describe("FixtureSelector", () => {
   beforeEach(() => {
-    // Mock fetch to return fixture list
+    // Mock fetch to return fixture list with ok: true
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             fixtures: [
@@ -55,7 +56,26 @@ describe("FixtureSelector", () => {
 
     await waitFor(() => {
       const combobox = container.querySelector('[role="combobox"]');
-      expect(combobox).toBeInTheDocument();
+      expect(combobox).not.toBeNull();
+    });
+  });
+
+  it("shows error state when fetch fails", async () => {
+    // Override mock to simulate failure
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
+        ok: false,
+        status: 500,
+        json: () => Promise.resolve({ error: "Server error" }),
+      })
+    ) as unknown as typeof fetch;
+
+    const { container } = renderWithProvider(<FixtureSelector />);
+
+    await waitFor(() => {
+      const errorText = container.querySelector(".text-destructive");
+      expect(errorText).not.toBeNull();
+      expect(errorText?.textContent).toBe("Error loading");
     });
   });
 });
