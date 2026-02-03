@@ -38,6 +38,9 @@ export const TaskItemFile = ({
 
 export type TaskItemProps = ComponentProps<"div">;
 
+/**
+ * Individual task item display with muted text styling.
+ */
 export const TaskItem = ({ children, className, ...props }: TaskItemProps) => (
   <div className={cn("text-muted-foreground text-sm", className)} {...props}>
     {children}
@@ -46,6 +49,9 @@ export const TaskItem = ({ children, className, ...props }: TaskItemProps) => (
 
 export type TaskProps = ComponentProps<typeof Collapsible>;
 
+/**
+ * Root collapsible container for task display.
+ */
 export const Task = ({
   defaultOpen = true,
   className,
@@ -58,6 +64,9 @@ export type TaskTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
   title: string;
 };
 
+/**
+ * Clickable trigger with search icon and chevron indicator.
+ */
 export const TaskTrigger = ({
   children,
   className,
@@ -77,6 +86,9 @@ export const TaskTrigger = ({
 
 export type TaskContentProps = ComponentProps<typeof CollapsibleContent>;
 
+/**
+ * Animated collapsible content area with left border accent.
+ */
 export const TaskContent = ({
   children,
   className,

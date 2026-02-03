@@ -1,4 +1,8 @@
-// Structured data display components
+/**
+ * Barrel exports for AI element components used in chat interfaces.
+ * Groups components by category: structured data, actions, text/streaming, and shared utilities.
+ */
+
 export { HypothesisCard, HypothesesList } from "./hypothesis-card";
 export {
   EvidencePanel,
