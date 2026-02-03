@@ -8,13 +8,12 @@ import { OAuth2Client } from "google-auth-library";
 import { google, type admin_directory_v1 } from "googleapis";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
+import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 type DirectoryAdmin = admin_directory_v1.Admin;
-import { checkRateLimit, getClientIp } from "@/lib/rate-limit";
 
 const TARGET_DOMAIN = "cep-netnew.cc";
 const ALLOWED_EMAIL_SUFFIX = "@google.com";
-
 const RATE_LIMIT_MAX_REQUESTS = 5;
 const RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000;
 
@@ -50,19 +49,27 @@ function stripQuotes(value: string | undefined): string | undefined {
 }
 
 /**
- * Validate the enrollment request body.
+ * Validate that the request body is a valid object.
  */
-function validateRequest(body: unknown): ValidationResult {
-  if (!body || typeof body !== "object") {
-    return { valid: false, error: "Invalid request body" };
-  }
+function validateBodyStructure(
+  body: unknown
+): body is Partial<EnrollmentRequest> {
+  return body !== null && body !== undefined && typeof body === "object";
+}
 
-  const { name, email, password } = body as Partial<EnrollmentRequest>;
+/**
+ * Validate the name field.
+ */
+function validateName(name: unknown): name is string {
+  return typeof name === "string" && name.trim().length > 0;
+}
 
-  if (typeof name !== "string" || name.trim().length === 0) {
-    return { valid: false, error: "Name is required" };
-  }
-
+/**
+ * Validate the email field and extract username.
+ */
+function validateAndExtractEmail(
+  email: unknown
+): { valid: false; error: string } | { valid: true; username: string } {
   if (typeof email !== "string" || email.trim().length === 0) {
     return { valid: false, error: "Email is required" };
   }
@@ -77,6 +84,15 @@ function validateRequest(body: unknown): ValidationResult {
     return { valid: false, error: "Invalid email format" };
   }
 
+  return { valid: true, username };
+}
+
+/**
+ * Validate the enrollment password.
+ */
+function validateEnrollmentPassword(
+  password: unknown
+): { valid: false; error: string } | { valid: true } {
   if (typeof password !== "string" || password.length === 0) {
     return { valid: false, error: "Password is required" };
   }
@@ -91,7 +107,34 @@ function validateRequest(body: unknown): ValidationResult {
     return { valid: false, error: "Invalid enrollment password" };
   }
 
-  return { valid: true, username, name: name.trim() };
+  return { valid: true };
+}
+
+/**
+ * Validate the enrollment request body.
+ */
+function validateRequest(body: unknown): ValidationResult {
+  if (!validateBodyStructure(body)) {
+    return { valid: false, error: "Invalid request body" };
+  }
+
+  const { name, email, password } = body;
+
+  if (!validateName(name)) {
+    return { valid: false, error: "Name is required" };
+  }
+
+  const emailResult = validateAndExtractEmail(email);
+  if (!emailResult.valid) {
+    return emailResult;
+  }
+
+  const passwordResult = validateEnrollmentPassword(password);
+  if (!passwordResult.valid) {
+    return passwordResult;
+  }
+
+  return { valid: true, username: emailResult.username, name: name.trim() };
 }
 
 /**
@@ -153,10 +196,7 @@ function parseName(fullName: string): {
   if (parts.length === 1) {
     return { givenName: parts[0], familyName: parts[0] };
   }
-  return {
-    givenName: parts[0],
-    familyName: parts.slice(1).join(" "),
-  };
+  return { givenName: parts[0], familyName: parts.slice(1).join(" ") };
 }
 
 /**
@@ -170,7 +210,6 @@ async function createUserAccount(
   recoveryEmail: string
 ) {
   const { givenName, familyName } = parseName(fullName);
-
   const result = await directory.users.insert({
     requestBody: {
       primaryEmail,
@@ -180,7 +219,6 @@ async function createUserAccount(
       recoveryEmail,
     },
   });
-
   return result.data;
 }
 
@@ -188,10 +226,70 @@ async function createUserAccount(
  * Grant super admin privileges to a user.
  */
 async function makeUserSuperAdmin(directory: DirectoryAdmin, userKey: string) {
-  await directory.users.makeAdmin({
-    userKey,
-    requestBody: { status: true },
+  await directory.users.makeAdmin({ userKey, requestBody: { status: true } });
+}
+
+/**
+ * Build rate limit error response.
+ */
+function buildRateLimitResponse(resetIn: number) {
+  const retryAfter = Math.ceil(resetIn / 1000);
+  return Response.json(
+    { error: "Too many requests. Please try again later.", retryAfter },
+    { status: 429, headers: { "Retry-After": String(retryAfter) } }
+  );
+}
+
+/**
+ * Build success response with account details.
+ */
+function buildSuccessResponse(email: string, password: string) {
+  return Response.json({
+    success: true,
+    message: "Account created successfully",
+    account: { email, password, changePasswordRequired: true },
+    instructions: [
+      `Sign in at https://admin.google.com with ${email}`,
+      "You will be prompted to change your password on first login",
+      "Your recovery email has been set to your Google corporate email",
+    ],
   });
+}
+
+/**
+ * Create the user account and grant admin privileges.
+ */
+async function createAndPromoteUser(
+  username: string,
+  name: string,
+  clientIp: string
+): Promise<Response> {
+  const newEmail = `${username}@${TARGET_DOMAIN}`;
+  const newPassword = generatePassword();
+  const googleEmail = `${username}${ALLOWED_EMAIL_SUFFIX}`;
+
+  console.log("[gimme] creating account", { username, newEmail, clientIp });
+
+  const directory = await createAdminClient();
+
+  const exists = await userExists(directory, newEmail);
+  if (exists) {
+    console.log("[gimme] user already exists", { newEmail });
+    return Response.json(
+      {
+        error: `Account ${newEmail} already exists. Contact an administrator for access.`,
+      },
+      { status: 409 }
+    );
+  }
+
+  await createUserAccount(directory, newEmail, newPassword, name, googleEmail);
+  console.log("[gimme] user created", { newEmail });
+
+  await makeUserSuperAdmin(directory, newEmail);
+  console.log("[gimme] super admin granted", { newEmail });
+
+  return buildSuccessResponse(newEmail, newPassword);
 }
 
 /**
@@ -208,18 +306,7 @@ export async function POST(request: Request) {
 
   if (!rateLimitResult.allowed) {
     console.log("[gimme] rate limited", { clientIp });
-    return Response.json(
-      {
-        error: "Too many requests. Please try again later.",
-        retryAfter: Math.ceil(rateLimitResult.resetIn / 1000),
-      },
-      {
-        status: 429,
-        headers: {
-          "Retry-After": String(Math.ceil(rateLimitResult.resetIn / 1000)),
-        },
-      }
-    );
+    return buildRateLimitResponse(rateLimitResult.resetIn);
   }
 
   let body: unknown;
@@ -238,53 +325,12 @@ export async function POST(request: Request) {
     return Response.json({ error: validation.error }, { status: 400 });
   }
 
-  const { username, name } = validation;
-  const newEmail = `${username}@${TARGET_DOMAIN}`;
-  const newPassword = generatePassword();
-  const googleEmail = `${username}${ALLOWED_EMAIL_SUFFIX}`;
-
-  console.log("[gimme] creating account", { username, newEmail, clientIp });
-
   try {
-    const directory = await createAdminClient();
-
-    const exists = await userExists(directory, newEmail);
-    if (exists) {
-      console.log("[gimme] user already exists", { newEmail });
-      return Response.json(
-        {
-          error: `Account ${newEmail} already exists. Contact an administrator for access.`,
-        },
-        { status: 409 }
-      );
-    }
-
-    await createUserAccount(
-      directory,
-      newEmail,
-      newPassword,
-      name,
-      googleEmail
+    return await createAndPromoteUser(
+      validation.username,
+      validation.name,
+      clientIp
     );
-    console.log("[gimme] user created", { newEmail });
-
-    await makeUserSuperAdmin(directory, newEmail);
-    console.log("[gimme] super admin granted", { newEmail });
-
-    return Response.json({
-      success: true,
-      message: "Account created successfully",
-      account: {
-        email: newEmail,
-        password: newPassword,
-        changePasswordRequired: true,
-      },
-      instructions: [
-        `Sign in at https://admin.google.com with ${newEmail}`,
-        "You will be prompted to change your password on first login",
-        "Your recovery email has been set to your Google corporate email",
-      ],
-    });
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
