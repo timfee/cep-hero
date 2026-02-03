@@ -137,6 +137,9 @@ export const PlanAction = (props: PlanActionProps) => (
 
 export type PlanContentProps = ComponentProps<typeof CardContent>;
 
+/**
+ * Collapsible content area for plan details.
+ */
 export const PlanContent = (props: PlanContentProps) => (
   <CollapsibleContent asChild>
     <CardContent data-slot="plan-content" {...props} />
@@ -145,12 +148,18 @@ export const PlanContent = (props: PlanContentProps) => (
 
 export type PlanFooterProps = ComponentProps<"div">;
 
+/**
+ * Footer section of the plan card.
+ */
 export const PlanFooter = (props: PlanFooterProps) => (
   <CardFooter data-slot="plan-footer" {...props} />
 );
 
 export type PlanTriggerProps = ComponentProps<typeof CollapsibleTrigger>;
 
+/**
+ * Toggle button for expanding or collapsing the plan content.
+ */
 export const PlanTrigger = ({ className, ...props }: PlanTriggerProps) => (
   <CollapsibleTrigger asChild>
     <Button
