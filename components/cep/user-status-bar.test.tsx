@@ -1,8 +1,6 @@
 import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, mock, beforeEach, afterEach } from "bun:test";
 
-import { UserStatusBar } from "./user-status-bar";
-
 const mockPush = mock(() => {});
 
 mock.module("next/navigation", () => ({
@@ -11,6 +9,9 @@ mock.module("next/navigation", () => ({
     refresh: mock(() => {}),
   }),
 }));
+
+// Import after mock.module to ensure the mock is used
+import { UserStatusBar } from "./user-status-bar";
 
 describe("UserStatusBar component", () => {
   const originalFetch = globalThis.fetch;

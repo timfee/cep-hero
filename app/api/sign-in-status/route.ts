@@ -39,7 +39,8 @@ async function getGoogleTokenInfo(
     const response = await fetch(
       `https://oauth2.googleapis.com/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
     );
-    return response.ok ? ((await response.json()) as GoogleTokenInfo) : null;
+    const data = (await response.json()) as GoogleTokenInfo;
+    return data;
   } catch {
     return null;
   }
