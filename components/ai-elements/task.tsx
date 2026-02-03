@@ -1,3 +1,7 @@
+/**
+ * Task display components for showing collapsible task items with file badges.
+ * Used to display search tasks and their results in a collapsible format.
+ */
 "use client";
 
 import type { ComponentProps } from "react";
@@ -13,6 +17,9 @@ import { cn } from "@/lib/utils";
 
 export type TaskItemFileProps = ComponentProps<"div">;
 
+/**
+ * Badge-styled file indicator for task items.
+ */
 export const TaskItemFile = ({
   children,
   className,
