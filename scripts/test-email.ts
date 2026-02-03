@@ -6,7 +6,7 @@
 import { JWT } from "google-auth-library";
 import { google } from "googleapis";
 
-const GMAIL_SCOPES = ["https://mail.google.com/"];
+const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
 
 function stripQuotes(value: string | undefined): string | undefined {
   if (value === undefined || value === "") {
