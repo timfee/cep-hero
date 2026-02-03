@@ -180,6 +180,38 @@ export function scoreRubric({
 }
 
 /**
+ * Check if required tools were called.
+ */
+export function checkRequiredToolCalls({
+  toolCalls,
+  requiredToolCalls,
+}: {
+  toolCalls: string[] | undefined;
+  requiredToolCalls: string[] | undefined;
+}): AssertionResult {
+  if (!requiredToolCalls || requiredToolCalls.length === 0) {
+    return { passed: true, message: "No required tool calls specified" };
+  }
+
+  const called = new Set(toolCalls ?? []);
+  const missing = requiredToolCalls.filter((tool) => !called.has(tool));
+
+  if (missing.length === 0) {
+    return {
+      passed: true,
+      message: `All required tools called: ${requiredToolCalls.join(", ")}`,
+      details: { requiredToolCalls, actualToolCalls: toolCalls },
+    };
+  }
+
+  return {
+    passed: false,
+    message: `Missing required tool calls: ${missing.join(", ")}`,
+    details: { requiredToolCalls, actualToolCalls: toolCalls, missing },
+  };
+}
+
+/**
  * Check if rubric score meets minimum threshold.
  */
 export function checkRubricScore({

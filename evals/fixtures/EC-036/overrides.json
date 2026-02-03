@@ -1,0 +1,43 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T13:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "PRINT_JOB_BLOCKED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-corp-004" },
+              { "name": "USER_EMAIL", "value": "finance@example.com" },
+              { "name": "DOCUMENT_NAME", "value": "Q4-Financial-Report.pdf" },
+              { "name": "PRINTER_NAME", "value": "HP LaserJet 4th Floor" },
+              { "name": "DLP_RULE", "value": "Block Printing of Financial Documents" },
+              { "name": "DETECTOR_MATCHED", "value": "FINANCIAL_DATA" },
+              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
+              { "name": "PRINT_EVENT_TYPE", "value": "print_job_event" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dlpRules": [
+    {
+      "name": "rules/dlp-print-financial",
+      "displayName": "Block Printing of Financial Documents",
+      "description": "Prevents printing of documents containing financial data",
+      "condition": {
+        "expression": "contentInfo.detectors.containsDetector('FINANCIAL_DATA')"
+      },
+      "action": "BLOCK",
+      "triggers": ["PRINT"],
+      "enabled": true,
+      "note": "Consider adding printer allowlist or refining detector"
+    }
+  ]
+}

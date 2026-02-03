@@ -4,16 +4,18 @@ This document tracks progress on overhauling the CEP-Hero evaluation system. Pro
 
 ## Quick Resume (for new sessions)
 
-**Current Progress:** 21/85 cases have fixtures (25%)
+**Current Progress:** 50/85 cases have fixtures (59%)
 
-**Categories Complete:** enrollment (7), events (2), extensions (4), endpoint (4), integration (4)
+**Categories Complete:** enrollment (7), events (2), extensions (4), endpoint (4), integration (4), auth (3), browser (3), connector (8), devices (6), dlp (9)
 
-**Next Up:** auth (3), browser (3), connector (8)
+**Next Up:** network (6), policy (15), security (6), system (7), updates (1)
 
 **Key Implementations:**
-- LLM-as-judge for semantic evidence evaluation (`evals/lib/llm-judge.ts`)
-- searchKnowledge tool for dynamic RAG (`lib/chat/chat-service.ts`)
-- Text normalization for fuzzy matching (`evals/lib/assertions.ts`)
+- **Tool call validation** - Evals now verify AI calls diagnostic tools (`evals/lib/assertions.ts`)
+- **No prompt fixture injection** - AI must call tools to get data, not read from prompt
+- **LLM-as-judge** for semantic evidence evaluation (`evals/lib/llm-judge.ts`)
+- **searchKnowledge tool** for dynamic RAG (`lib/chat/chat-service.ts`)
+- **Assertive system prompt** - AI always calls `getChromeEvents` first for any issue
 
 **To continue:** Read Session Log at bottom, then pick up with "Next Session Should" items.
 
@@ -63,59 +65,59 @@ For each eval case, assess:
 4. Are fixtures in place and reflective of actual API responses?
 5. Can we improve UI rendering based on fixture exploration?
 
-### auth (3 cases)
+### auth (3 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                             | Reviewed | Fixtures | Notes |
 | ------ | --------------------------------- | -------- | -------- | ----- |
-| EC-014 | Account conflict gtempaccount.com | [ ]      | No       |       |
-| EC-048 | User session revocation delay     | [ ]      | No       |       |
-| EC-075 | Token expired                     | [ ]      | No       |       |
+| EC-014 | Account conflict gtempaccount.com | [x]      | Yes      | gtempaccount rename conflict, guest session required |
+| EC-048 | User session revocation delay     | [x]      | Yes      | Suspended user with active session, token caching |
+| EC-075 | Token expired                     | [x]      | Yes      | API token expired, error injection for re-auth guidance |
 
-### browser (3 cases)
+### browser (3 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                    | Reviewed | Fixtures | Notes |
 | ------ | ---------------------------------------- | -------- | -------- | ----- |
-| EC-007 | Browser crashes (Aw, Snap)               | [ ]      | No       |       |
-| EC-008 | Browser performance (high CPU/slow tabs) | [ ]      | No       |       |
-| EC-023 | Citrix SPA profile picker                | [ ]      | No       |       |
+| EC-007 | Browser crashes (Aw, Snap)               | [x]      | Yes      | RENDERER_OOM, EXTENSION_CRASH, GPU crashes |
+| EC-008 | Browser performance (high CPU/slow tabs) | [x]      | Yes      | CPU metrics, extension high CPU (AdBlock Plus) |
+| EC-023 | Citrix SPA profile picker                | [x]      | Yes      | PROFILE_PICKER_BLOCKING, BrowserSignin policy |
 
-### connector (8 cases)
+### connector (8 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                      | Reviewed | Fixtures | Notes |
 | ------ | ------------------------------------------ | -------- | -------- | ----- |
-| EC-051 | Connector handshake & service availability | [ ]      | No       |       |
-| EC-057 | Connector scope mis-targeted               | [ ]      | No       |       |
-| EC-064 | Bulk Data Connector disabled               | [ ]      | No       |       |
-| EC-065 | Web Data Connector missing                 | [ ]      | No       |       |
-| EC-066 | File Transfer Connector missing            | [ ]      | No       |       |
-| EC-067 | Print Connector mis-scoped                 | [ ]      | No       |       |
-| EC-080 | Conflicting DLP vs connector               | [ ]      | No       |       |
-| EC-082 | Multi-turn connector scope confirmation    | [ ]      | No       |       |
+| EC-051 | Connector handshake & service availability | [x]      | Yes      | SERVICE_UNAVAILABLE, TOO_MANY_REQUESTS, handshake failures |
+| EC-057 | Connector scope mis-targeted               | [x]      | Yes      | Customer-level scope instead of Engineering-Test OU |
+| EC-064 | Bulk Data Connector disabled               | [x]      | Yes      | bulkDataConnectorEnabled: false for Bulk-Off OU |
+| EC-065 | Web Data Connector missing                 | [x]      | Yes      | webDataConnectorEnabled: false for Web-Off OU |
+| EC-066 | File Transfer Connector missing            | [x]      | Yes      | fileTransferConnectorEnabled: false for FT-Off OU |
+| EC-067 | Print Connector mis-scoped                 | [x]      | Yes      | Print connector at customer level, not Print-OU |
+| EC-080 | Conflicting DLP vs connector               | [x]      | Yes      | DLP rules don't cover bulk connector channel |
+| EC-082 | Multi-turn connector scope confirmation    | [x]      | Yes      | Multi-turn confirming customer-level scope issue |
 
-### devices (6 cases)
+### devices (6 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                  | Reviewed | Fixtures | Notes |
 | ------ | -------------------------------------- | -------- | -------- | ----- |
-| EC-013 | Chromebook battery/power issues        | [ ]      | No       |       |
-| EC-016 | Device lockout (previous owner)        | [ ]      | No       |       |
-| EC-031 | Corporate-owned vs BYOD classification | [ ]      | No       |       |
-| EC-047 | Stale device sync                      | [ ]      | No       |       |
-| EC-054 | Deprovisioning gaps                    | [ ]      | No       |       |
-| EC-083 | Check Org Units                        | [ ]      | No       |       |
+| EC-013 | Chromebook battery/power issues        | [x]      | Yes      | DEVICE_POWER_FAILURE, battery DEGRADED, cycle count 892 |
+| EC-016 | Device lockout (previous owner)        | [x]      | Yes      | PREVIOUS_OWNER lockout, oldcompany.com, 48 hour wait |
+| EC-031 | Corporate-owned vs BYOD classification | [x]      | Yes      | is_corporate_device unmet, serial not in inventory |
+| EC-047 | Stale device sync                      | [x]      | Yes      | 52 hours since sync, Endpoint Verification not reporting |
+| EC-054 | Deprovisioning gaps                    | [x]      | Yes      | Multiple devices 90+ days stale, Admin SDK deprovision |
+| EC-083 | Check Org Units                        | [x]      | Yes      | Engineering/Sales/Marketing OU structure |
 
-### dlp (9 cases)
+### dlp (9 cases) ✅ FIXTURES COMPLETE
 
 | Case   | Title                                | Reviewed | Fixtures | Notes |
 | ------ | ------------------------------------ | -------- | -------- | ----- |
-| EC-033 | Malware scanning timeouts            | [ ]      | No       |       |
-| EC-034 | Password-protected files blocked     | [ ]      | No       |       |
-| EC-035 | DLP false positives                  | [ ]      | No       |       |
-| EC-036 | Printing restrictions block jobs     | [ ]      | No       |       |
-| EC-037 | Clipboard restrictions               | [ ]      | No       |       |
-| EC-060 | DLP rules absent                     | [ ]      | No       |       |
-| EC-061 | DLP rule present but not firing      | [ ]      | No       |       |
-| EC-079 | Detector tuning                      | [ ]      | No       |       |
-| EC-084 | DLP audit rule setup for all traffic | [ ]      | Yes      |       |
+| EC-033 | Malware scanning timeouts            | [x]      | Yes      | CONTENT_UNSCANNED_TIMEOUT, 2500MB file, 30s limit |
+| EC-034 | Password-protected files blocked     | [x]      | Yes      | FILE_PASSWORD_PROTECTED, cannot scan encrypted ZIP |
+| EC-035 | DLP false positives                  | [x]      | Yes      | CREDIT_CARD_NUMBER matches SKU patterns, tuning needed |
+| EC-036 | Printing restrictions block jobs     | [x]      | Yes      | PRINT_JOB_BLOCKED, financial document, allowlist |
+| EC-037 | Clipboard restrictions               | [x]      | Yes      | CLIPBOARD_OPERATION_BLOCKED, Salesforce to Gmail |
+| EC-060 | DLP rules absent                     | [x]      | Yes      | DLP-Test OU with 0 rules assigned |
+| EC-061 | DLP rule present but not firing      | [x]      | Yes      | US_SOCIAL_SECURITY_NUMBER NO_MATCH, threshold/scope |
+| EC-079 | Detector tuning                      | [x]      | Yes      | PHONE_NUMBER on internal domains, needs allowlist |
+| EC-084 | DLP audit rule setup for all traffic | [x]      | Yes      | Already had fixtures |
 
 ### endpoint (4 cases) ✅ FIXTURES COMPLETE
 
@@ -432,3 +434,110 @@ Implemented semantic evidence evaluation to solve the "whack-a-mole" problem of 
 2. Continue with browser category (3 cases)
 3. Start connector category (8 cases)
 4. Run full eval suite to validate LLM judge across all categories
+
+### Session 5: 2026-02-02
+
+**Completed:**
+
+Created fixtures for 14 additional cases across 3 categories:
+
+**Auth category (3 cases):**
+- EC-014: gtempaccount.com rename conflict causing guest session requirement
+- EC-048: Suspended user with active session tokens, needs SignOutUser
+- EC-075: API token expired, error injection for re-auth guidance
+
+**Browser category (3 cases):**
+- EC-007: Browser crashes (RENDERER_OOM, EXTENSION_CRASH, GPU_CRASH)
+- EC-008: High CPU from extensions (AdBlock Plus), performance metrics
+- EC-023: Citrix SPA profile picker blocking, BrowserSignin policy
+
+**Connector category (8 cases):**
+- EC-051: Service unavailable, rate limits, handshake failures
+- EC-057: Customer-level scope instead of Engineering-Test OU
+- EC-064: Bulk Data Connector disabled for Bulk-Off OU
+- EC-065: Web Data Connector disabled for Web-Off OU
+- EC-066: File Transfer Connector disabled for FT-Off OU
+- EC-067: Print Connector mis-scoped at customer level
+- EC-080: DLP rules don't cover bulk connector channel
+- EC-082: Multi-turn confirming customer-level scope issue
+
+**Total Progress:** 35/85 cases now have fixtures (41%)
+- enrollment: 7 ✅
+- events: 2 ✅
+- extensions: 4 ✅
+- endpoint: 4 ✅
+- integration: 4 ✅
+- auth: 3 ✅ (NEW)
+- browser: 3 ✅ (NEW)
+- connector: 8 ✅ (NEW)
+
+**Next Session Should:**
+
+1. Continue with devices category (6 cases)
+2. Continue with dlp category (9 cases)
+3. Continue with network category (6 cases)
+4. Run full eval suite to validate fixtures across all completed categories
+
+### Session 6: 2026-02-03
+
+**Major Overhaul: Tool Call Validation & Realistic Testing**
+
+Discovered that the eval system was not actually testing AI behavior - it was testing "can AI read JSON from prompt". Fixed this comprehensively.
+
+**Problem Identified:**
+- Fixture data was injected directly into prompts as "Fixture context"
+- AI just read the JSON and extracted error codes
+- No validation that AI called diagnostic tools
+- 100% pass rate was misleading - AI wasn't investigating, just reading
+
+**Solution Implemented:**
+
+1. **Separated prompt injection from tool fixtures**
+   - `evals/lib/fixtures.ts`: Added `injectIntoPrompt` option (defaults to `false`)
+   - Fixtures now only go to `FixtureToolExecutor` for tool interception
+   - AI must call tools to get data
+
+2. **Added tool call validation**
+   - `evals/lib/registry.ts`: Added `required_tool_calls?: string[]` field
+   - `evals/lib/assertions.ts`: Added `checkRequiredToolCalls()` function
+   - `evals/lib/reporter.ts`: Added `toolCallsResult` and `toolCalls` to reports
+   - `evals/lib/runner.ts`: Integrated tool call validation into pass/fail logic
+
+3. **Captured tool calls from streaming response**
+   - `lib/test-helpers/chat-client.ts`: Parse `tool-input-start` events from stream
+   - Returns `toolCalls: string[]` in `ChatResponse`
+
+4. **Made system prompt more assertive**
+   - `lib/chat/chat-service.ts`: Updated SOP to ALWAYS call `getChromeEvents` first
+   - Added: "NEVER respond with generic troubleshooting steps without first calling getChromeEvents"
+   - Fixed inconsistent AI behavior where it sometimes gave generic advice
+
+5. **Simplified prompts to be realistic**
+   - `evals/cases/EC-001...md`: Changed from "Can you check the Chrome events for network errors?" to just "Enrollment is failing"
+   - AI now consistently calls tools even with minimal user input
+
+**Test Results:**
+- Before fix: 100% pass (meaningless - AI just read prompt)
+- After fix without tool calls: ~40% pass
+- After fix with tool calls + LLM judge: 100% pass (meaningful - AI investigates)
+
+**Key Files Changed:**
+- `evals/lib/fixtures.ts` - `injectIntoPrompt` option
+- `evals/lib/registry.ts` - `required_tool_calls` type
+- `evals/lib/assertions.ts` - `checkRequiredToolCalls()` function
+- `evals/lib/reporter.ts` - Tool call tracking in reports
+- `evals/lib/runner.ts` - Tool call validation integration
+- `lib/test-helpers/chat-client.ts` - Tool call parsing from stream
+- `lib/chat/chat-service.ts` - Assertive system prompt
+- `evals/registry.json` - Added `required_tool_calls` to EC-001, EC-057
+- `evals/cases/EC-001...md` - Simplified realistic prompt
+
+**New Environment Variables:**
+- `EVAL_INJECT_PROMPT=1` - Inject fixtures into prompt (for debugging, off by default)
+
+**Next Session Should:**
+
+1. Add `required_tool_calls` to more registry entries
+2. Continue with remaining fixture categories (network, policy, security, system, updates)
+3. Run full eval suite to establish new baseline
+4. Consider adding multi-turn conversation testing

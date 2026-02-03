@@ -1,0 +1,41 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CHROMEOS_DEVICE",
+            "name": "DEVICE_LOCKOUT",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "chromebook-locked-001" },
+              { "name": "DEVICE_NAME", "value": "ChromeBook-Locked" },
+              { "name": "SERIAL_NUMBER", "value": "5CD9876543" },
+              { "name": "LOCKOUT_REASON", "value": "PREVIOUS_OWNER" },
+              { "name": "PREVIOUS_DOMAIN", "value": "oldcompany.com" },
+              { "name": "LOCKOUT_MESSAGE", "value": "This device is locked by previous owner. Contact oldcompany.com administrator." },
+              { "name": "ENROLLMENT_STATUS", "value": "BLOCKED" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "chromeReports": {
+    "deviceOwnershipInfo": [
+      {
+        "deviceId": "chromebook-locked-001",
+        "serialNumber": "5CD9876543",
+        "ownershipStatus": "LOCKED",
+        "previousOwner": "oldcompany.com",
+        "lockType": "ENTERPRISE_LOCK",
+        "lockTimeRemaining": "48 hours",
+        "resolution": "Wait for lock expiration or contact previous owner to release device"
+      }
+    ]
+  }
+}

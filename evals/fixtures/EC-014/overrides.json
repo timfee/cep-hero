@@ -1,0 +1,68 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:00:00.000Z",
+          "applicationName": "admin"
+        },
+        "actor": {
+          "email": "admin@example.com"
+        },
+        "events": [
+          {
+            "type": "USER_SETTINGS",
+            "name": "RENAME_USER",
+            "parameters": [
+              { "name": "USER_EMAIL", "value": "john.smith@example.com" },
+              { "name": "NEW_VALUE", "value": "j.smith@example.com" },
+              { "name": "OLD_VALUE", "value": "john.smith@example.com" },
+              { "name": "CONFLICT_ACCOUNT", "value": "john.smith@gtempaccount.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:30:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CHROMEOS_DEVICE",
+            "name": "DEVICE_SIGN_IN_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "chromebook-123" },
+              { "name": "DEVICE_NAME", "value": "ChromeBook-User-1" },
+              { "name": "ATTEMPTED_USER", "value": "john.smith@example.com" },
+              { "name": "ERROR_CODE", "value": "ACCOUNT_CONFLICT" },
+              { "name": "ERROR_MESSAGE", "value": "Account conflict detected. A temporary account john.smith@gtempaccount.com exists from a previous rename. User must sign in as Guest or resolve the conflict." },
+              { "name": "SUGGESTED_ACTION", "value": "GUEST_SESSION_OR_CONFLICT_RESOLUTION" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:35:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CHROMEOS_DEVICE",
+            "name": "GUEST_SESSION_STARTED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "chromebook-123" },
+              { "name": "DEVICE_NAME", "value": "ChromeBook-User-1" },
+              { "name": "REASON", "value": "NETWORK_ACTIVATION_REQUIRED" },
+              { "name": "BLOCKED_ACCOUNT", "value": "john.smith@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -14,6 +14,7 @@ import type { EvalReport, EvalSummary } from "./reporter";
 
 import {
   checkRequiredEvidence,
+  checkRequiredToolCalls,
   checkRubricScore,
   checkStructuredResponse,
   scoreRubric,
@@ -115,22 +116,26 @@ export async function runEvals(
 
     const basePrompt =
       promptMap.get(evalCase.id) ?? `Help me troubleshoot: ${evalCase.title}`;
+    // By default, do NOT inject fixtures into prompt - force AI to call tools
     const prompt = buildEvalPrompt(basePrompt, {
       fixtures: evalCase.fixtures,
       overrides: evalCase.overrides,
       caseId: evalCase.id,
+      // injectIntoPrompt defaults to false unless EVAL_INJECT_PROMPT=1
     });
     const fixtures = loadEvalFixtures(evalCase.id);
     const caseStart = performance.now();
 
     let responseText = "";
     let responseMetadata: unknown = undefined;
+    let toolCalls: string[] | undefined;
     let error: string | undefined;
 
     try {
       const resp = await callChat(prompt, { fixtures });
       responseText = resp.text;
       responseMetadata = resp.metadata;
+      toolCalls = resp.toolCalls;
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
     }
@@ -145,6 +150,12 @@ export async function runEvals(
       text: responseText,
       metadata: responseMetadata,
       requiredEvidence: evalCase.required_evidence,
+    });
+
+    // Validate required tool calls (if specified)
+    const toolCallsResult = checkRequiredToolCalls({
+      toolCalls,
+      requiredToolCalls: evalCase.required_tool_calls,
     });
 
     let rubricResult: EvalReport["rubricResult"] = undefined;
@@ -171,12 +182,14 @@ export async function runEvals(
     let status: EvalReport["status"] = "pass";
     if (error) {
       status = "error";
-    } else if (!schemaResult.passed || !evidenceResult.passed) {
+    } else if (!schemaResult.passed || !evidenceResult.passed || !toolCallsResult.passed) {
       status = "fail";
       if (!error) {
         error = !schemaResult.passed
           ? schemaResult.message
-          : evidenceResult.message;
+          : !toolCallsResult.passed
+            ? toolCallsResult.message
+            : evidenceResult.message;
       }
     } else if (rubricResult && !rubricResult.passed) {
       status = "fail";
@@ -199,6 +212,8 @@ export async function runEvals(
       expectedSchema: evalCase.expected_schema,
       schemaResult,
       evidenceResult,
+      toolCallsResult,
+      toolCalls,
       rubricResult,
       status,
       durationMs: Math.round(performance.now() - caseStart),

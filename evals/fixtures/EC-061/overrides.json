@@ -1,0 +1,55 @@
+{
+  "orgUnits": [
+    {
+      "name": "DLP-Active",
+      "orgUnitId": "orgunits/dlp-active-001",
+      "orgUnitPath": "/DLP-Active",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "dlpRules": [
+    {
+      "name": "rules/dlp-pii-ssn",
+      "displayName": "Block SSN uploads",
+      "description": "Blocks files containing SSN patterns on upload",
+      "condition": {
+        "expression": "contentInfo.detectors.containsDetector('US_SOCIAL_SECURITY_NUMBER')"
+      },
+      "action": "BLOCK",
+      "triggers": ["UPLOAD"],
+      "enabled": true,
+      "targetResource": "orgunits/dlp-active-001",
+      "note": "Rule exists but may not cover all destinations or file types"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T16:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "DLP_RULE_NOT_TRIGGERED",
+            "parameters": [
+              { "name": "USER_EMAIL", "value": "testuser2@example.com" },
+              { "name": "OU_PATH", "value": "/DLP-Active" },
+              { "name": "FILE_NAME", "value": "employee-data.xlsx" },
+              { "name": "DESTINATION", "value": "Google Drive" },
+              { "name": "DLP_RULE", "value": "Block SSN uploads" },
+              { "name": "DETECTOR", "value": "US_SOCIAL_SECURITY_NUMBER" },
+              { "name": "TRIGGER_TYPE", "value": "UPLOAD" },
+              { "name": "MATCH_RESULT", "value": "NO_MATCH" },
+              { "name": "POSSIBLE_REASON", "value": "Detector threshold not met or file type not scanned" },
+              { "name": "NOTE", "value": "Check detector settings, file type coverage, and scope configuration" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

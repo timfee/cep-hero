@@ -1,0 +1,45 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T14:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "CLIPBOARD_OPERATION_BLOCKED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-corp-005" },
+              { "name": "USER_EMAIL", "value": "user@example.com" },
+              { "name": "SOURCE_APP", "value": "Salesforce (salesforce.com)" },
+              { "name": "DESTINATION_APP", "value": "Personal Gmail (mail.google.com)" },
+              { "name": "OPERATION", "value": "PASTE" },
+              { "name": "DATA_TYPE", "value": "TEXT" },
+              { "name": "DLP_RULE", "value": "Block clipboard to personal destinations" },
+              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
+              { "name": "EVENT_TYPE", "value": "clipboard_event" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dlpRules": [
+    {
+      "name": "rules/dlp-clipboard-block-external",
+      "displayName": "Block clipboard to personal destinations",
+      "description": "Prevents copy/paste from protected apps to personal destinations",
+      "condition": {
+        "expression": "destination.isPersonal == true"
+      },
+      "action": "BLOCK",
+      "triggers": ["CLIPBOARD"],
+      "enabled": true,
+      "protectedSources": ["*.salesforce.com", "*.workday.com"],
+      "note": "Adjust DLP clipboard policy to allow specific destinations"
+    }
+  ]
+}

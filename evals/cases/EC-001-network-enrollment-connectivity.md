@@ -13,7 +13,7 @@ during initial setup.
 
 ## Conversation
 
-User: “Enrollment fails during setup. The device can’t connect to Wi‑Fi.”
+User: "Enrollment is failing"
 
 ## Expected result
 

@@ -1,0 +1,55 @@
+{
+  "orgUnits": [
+    {
+      "name": "Print-OU",
+      "orgUnitId": "orgunits/07print0u123",
+      "orgUnitPath": "/Print-OU",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "name": "chrome.users.PrintConnectorEnabled",
+      "value": {
+        "printConnectorEnabled": true
+      },
+      "targetResource": "customers/C00000000",
+      "sourceResource": "customers/C00000000",
+      "note": "Print connector applied at customer level - does not target Print-OU specifically"
+    },
+    {
+      "name": "chrome.users.CloudReporting",
+      "value": {
+        "cloudReportingEnabled": true
+      },
+      "targetResource": "customers/C00000000",
+      "sourceResource": "customers/C00000000"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:30:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "POLICY_APPLICATION",
+            "name": "PRINT_CONNECTOR_SCOPE_MISMATCH",
+            "parameters": [
+              { "name": "POLICY_NAME", "value": "chrome.users.PrintConnectorEnabled" },
+              { "name": "EXPECTED_SCOPE", "value": "orgunits/07print0u123" },
+              { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
+              { "name": "OU_PATH", "value": "/Print-OU" },
+              { "name": "AFFECTED_USER", "value": "testuser8@example.com" },
+              { "name": "NOTE", "value": "Print connector policy targeted at customer level; OU-specific targeting required for Print-OU" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

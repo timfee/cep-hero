@@ -1,0 +1,36 @@
+{
+  "orgUnits": [
+    {
+      "name": "DLP-Test",
+      "orgUnitId": "orgunits/dlp-test-001",
+      "orgUnitPath": "/DLP-Test",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "dlpRules": [],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T15:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "DLP_RULES_QUERY",
+            "parameters": [
+              { "name": "USER_EMAIL", "value": "testuser2@example.com" },
+              { "name": "OU_PATH", "value": "/DLP-Test" },
+              { "name": "DLP_RULES_COUNT", "value": "0" },
+              { "name": "ENFORCEMENT_STATUS", "value": "NONE" },
+              { "name": "NOTE", "value": "No DLP rules assigned to this OU. Create and apply a DLP rule to enable enforcement." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

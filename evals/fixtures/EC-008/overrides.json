@@ -1,0 +1,99 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "BROWSER_PERFORMANCE",
+            "name": "HIGH_CPU_ALERT",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "mac-laptop-001" },
+              { "name": "DEVICE_NAME", "value": "MacBook-Dev-1" },
+              { "name": "CPU_PERCENT", "value": "87" },
+              { "name": "MEMORY_PERCENT", "value": "72" },
+              { "name": "OFFENDING_PROCESS", "value": "Tab: https://app.slack.com" },
+              { "name": "PROCESS_CPU_PERCENT", "value": "45" },
+              { "name": "USER_EMAIL", "value": "developer@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:30:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "BROWSER_PERFORMANCE",
+            "name": "EXTENSION_HIGH_CPU",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "mac-laptop-001" },
+              { "name": "DEVICE_NAME", "value": "MacBook-Dev-1" },
+              { "name": "EXTENSION_ID", "value": "bgnkhhnnamicmpeenaelnjfhikgbkllg" },
+              { "name": "EXTENSION_NAME", "value": "AdBlock Plus" },
+              { "name": "CPU_PERCENT", "value": "32" },
+              { "name": "MEMORY_MB", "value": "512" },
+              { "name": "USER_EMAIL", "value": "developer@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "chromeReports": {
+    "appUsageMetrics": [
+      {
+        "deviceId": "mac-laptop-001",
+        "deviceName": "MacBook-Dev-1",
+        "appId": "Tab: https://app.slack.com",
+        "appName": "Slack Web App",
+        "cpuUsagePercent": 45,
+        "memoryUsageMb": 890,
+        "networkBytesIn": 15234567,
+        "networkBytesOut": 2345678,
+        "reportTime": "2026-01-20T09:00:00.000Z"
+      },
+      {
+        "deviceId": "mac-laptop-001",
+        "deviceName": "MacBook-Dev-1",
+        "appId": "Extension: bgnkhhnnamicmpeenaelnjfhikgbkllg",
+        "appName": "AdBlock Plus",
+        "cpuUsagePercent": 32,
+        "memoryUsageMb": 512,
+        "networkBytesIn": 0,
+        "networkBytesOut": 0,
+        "reportTime": "2026-01-20T09:30:00.000Z"
+      },
+      {
+        "deviceId": "mac-laptop-002",
+        "deviceName": "MacBook-Sales-1",
+        "appId": "Tab: https://www.salesforce.com",
+        "appName": "Salesforce",
+        "cpuUsagePercent": 28,
+        "memoryUsageMb": 650,
+        "networkBytesIn": 8234567,
+        "networkBytesOut": 1234567,
+        "reportTime": "2026-01-20T09:15:00.000Z"
+      }
+    ]
+  },
+  "browsers": [
+    {
+      "deviceId": "mac-laptop-001",
+      "machineName": "MacBook-Dev-1",
+      "lastActivityTime": "2026-01-20T09:30:00.000Z",
+      "browserVersion": "122.0.6261.95",
+      "osVersion": "macOS 14.2.1",
+      "extensionCount": 12,
+      "averageCpuPercent": 65,
+      "averageMemoryMb": 3200
+    }
+  ]
+}

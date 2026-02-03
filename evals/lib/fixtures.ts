@@ -117,6 +117,7 @@ export function buildEvalPrompt(
     rootDir?: string;
     useBase?: boolean;
     useFixtures?: boolean;
+    injectIntoPrompt?: boolean;
   } = {}
 ): string {
   const base = `${basePrompt}\n\nPlease respond with diagnosis, evidence, hypotheses, and next steps. Keep the response under 800 characters and avoid long nested fields.`;
@@ -128,7 +129,14 @@ export function buildEvalPrompt(
     rootDir = process.cwd(),
     useBase = process.env.EVAL_USE_BASE === "1",
     useFixtures = process.env.EVAL_USE_FIXTURES === "1",
+    // NEW: Control whether to inject fixtures into prompt (default: false for realistic testing)
+    injectIntoPrompt = process.env.EVAL_INJECT_PROMPT === "1",
   } = options;
+
+  // If not injecting into prompt, return base prompt only
+  if (!injectIntoPrompt) {
+    return base;
+  }
 
   if (!useFixtures && !useBase && (!overrides || overrides.length === 0)) {
     return base;

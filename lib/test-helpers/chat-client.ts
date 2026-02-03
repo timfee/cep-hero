@@ -18,6 +18,8 @@ let chatReadyPromise: Promise<void> | undefined;
 export type ChatResponse = {
   text: string;
   metadata?: unknown;
+  /** Tool names that were called during the conversation */
+  toolCalls?: string[];
 };
 
 type ChatMessage = {
@@ -121,15 +123,30 @@ export async function callChatMessages(
     if (ALLOW_FAKE_ON_ERROR) {
       return syntheticResponse();
     }
+    // Parse streaming response
     const lines = bodyText.split("\n");
-    const deltas = lines
+    const chunks = lines
       .filter((line) => line.startsWith("data:"))
       .map((line) => line.replace(/^data:\s*/, ""))
       .filter((chunk) => chunk && chunk !== "[done]")
       .map(parseJson)
+      .filter((chunk): chunk is Record<string, unknown> => chunk !== undefined);
+
+    // Extract text deltas
+    const deltas = chunks
       .map(getTextDelta)
       .filter((delta): delta is string => typeof delta === "string");
-    return { text: deltas.join("") || bodyText };
+
+    // Extract tool calls
+    const toolCalls = chunks
+      .filter((chunk) => chunk.type === "tool-input-start" || chunk.type === "tool-call")
+      .map((chunk) => chunk.toolName as string)
+      .filter((name): name is string => typeof name === "string");
+
+    return {
+      text: deltas.join("") || bodyText,
+      toolCalls: toolCalls.length > 0 ? [...new Set(toolCalls)] : undefined,
+    };
   }
 }
 

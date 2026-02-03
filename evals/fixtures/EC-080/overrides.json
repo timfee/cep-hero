@@ -1,0 +1,86 @@
+{
+  "orgUnits": [
+    {
+      "name": "Conflict-Test",
+      "orgUnitId": "orgunits/08conflict123",
+      "orgUnitPath": "/Conflict-Test",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "name": "chrome.users.BulkDataConnectorEnabled",
+      "value": {
+        "bulkDataConnectorEnabled": true
+      },
+      "targetResource": "orgunits/08conflict123",
+      "sourceResource": "orgunits/08conflict123",
+      "note": "Bulk connector enabled - allows data to leave via this channel"
+    },
+    {
+      "name": "chrome.users.CloudReporting",
+      "value": {
+        "cloudReportingEnabled": true
+      },
+      "targetResource": "orgunits/08conflict123",
+      "sourceResource": "orgunits/08conflict123"
+    }
+  ],
+  "dlpRules": [
+    {
+      "name": "rules/dlp-pii-block-web",
+      "displayName": "Block PII on Web Upload",
+      "description": "Blocks PII data on web uploads",
+      "condition": {
+        "expression": "contentInfo.detectors.containsDetector('PII_DETECTOR')"
+      },
+      "action": "BLOCK",
+      "triggers": ["WEB_UPLOAD"],
+      "enabled": true,
+      "targetResource": "orgunits/08conflict123",
+      "note": "DLP rule blocks web uploads but does NOT cover bulk connector channel"
+    },
+    {
+      "name": "rules/dlp-pii-block-download",
+      "displayName": "Block PII on Download",
+      "description": "Blocks PII data on downloads",
+      "condition": {
+        "expression": "contentInfo.detectors.containsDetector('PII_DETECTOR')"
+      },
+      "action": "BLOCK",
+      "triggers": ["DOWNLOAD"],
+      "enabled": true,
+      "targetResource": "orgunits/08conflict123",
+      "note": "DLP rule blocks downloads but bulk connector bypasses this"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER",
+            "name": "BULK_EXFIL_ALLOWED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-conflict-001" },
+              { "name": "DEVICE_NAME", "value": "Windows-Conflict-Test" },
+              { "name": "USER_EMAIL", "value": "user@example.com" },
+              { "name": "OU_PATH", "value": "/Conflict-Test" },
+              { "name": "CONNECTOR_TYPE", "value": "BulkDataConnector" },
+              { "name": "DATA_SIZE_MB", "value": "150" },
+              { "name": "TRANSFER_STATUS", "value": "ALLOWED" },
+              { "name": "DLP_RULE_APPLIED", "value": "NONE" },
+              { "name": "NOTE", "value": "DLP rules do not cover bulk connector channel - data exfiltrated" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

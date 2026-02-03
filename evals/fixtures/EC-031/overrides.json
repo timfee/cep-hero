@@ -1,0 +1,46 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T11:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "ACCESS_CONTROL",
+            "name": "ACCESS_DENIED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "laptop-byod-001" },
+              { "name": "DEVICE_NAME", "value": "Company-Laptop-Sales" },
+              { "name": "SERIAL_NUMBER", "value": "PF2ABC123" },
+              { "name": "USER_EMAIL", "value": "sales.rep@example.com" },
+              { "name": "ACCESS_LEVEL", "value": "CorpDevicesOnly" },
+              { "name": "UNMET_ATTRIBUTE", "value": "is_corporate_device" },
+              { "name": "DEVICE_CLASSIFICATION", "value": "BYOD" },
+              { "name": "REASON", "value": "Device serial number not found in corporate inventory" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "chromeReports": {
+    "deviceInventory": [
+      {
+        "deviceId": "laptop-byod-001",
+        "serialNumber": "PF2ABC123",
+        "model": "Dell Latitude 5520",
+        "isCorporateOwned": false,
+        "enrollmentType": "BYOD",
+        "inventoryStatus": "NOT_IN_INVENTORY",
+        "note": "Serial number PF2ABC123 not found in corporate device inventory. Add to inventory to classify as corporate-owned."
+      }
+    ],
+    "corporateInventory": {
+      "registeredSerials": ["PF2XYZ789", "PF2DEF456", "PF2GHI012"],
+      "note": "Serial PF2ABC123 is missing from this list"
+    }
+  }
+}

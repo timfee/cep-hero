@@ -24,6 +24,9 @@ export type EvalReport = {
   expectedSchema: string[];
   schemaResult: AssertionResult;
   evidenceResult: AssertionResult;
+  toolCallsResult?: AssertionResult;
+  /** Actual tools that were called during the eval */
+  toolCalls?: string[];
   rubricResult?: {
     score: number;
     minScore: number;

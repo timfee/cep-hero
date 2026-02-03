@@ -34,15 +34,41 @@ The system consists of several interconnected parts:
 
 ### How Fixture Injection Works
 
-When you run evals with `EVAL_USE_BASE=1` and `EVAL_USE_FIXTURES=1`:
+When you run evals with `EVAL_USE_BASE=1`:
 
 1. The test file loads fixtures via `loadEvalFixtures(caseId)` which merges base data with case-specific overrides
 2. Fixtures are sent to the chat API in the request body with `X-Eval-Test-Mode: 1` header
 3. The API creates a `FixtureToolExecutor` that returns fixture data instead of calling Google APIs
-4. The AI reasons over the fixture data and produces diagnostic output
-5. The test validates the response structure, evidence markers, and rubric criteria
+4. **The AI must call tools to get the data** - fixtures are NOT injected into the prompt by default
+5. The runner validates: tool calls, response structure, evidence markers, and rubric criteria
 
-This approach enables fast, reproducible, quota-free testing while still exercising the full AI reasoning pipeline.
+**Important:** By default, fixture data is NOT included in the prompt. This forces the AI to call diagnostic tools (like `getChromeEvents`) to investigate. This tests actual AI behavior, not just "can AI read JSON".
+
+To debug by injecting fixtures into the prompt (not recommended for real testing):
+```bash
+EVAL_INJECT_PROMPT=1 EVAL_USE_BASE=1 bun run evals
+```
+
+### Tool Call Validation
+
+Evals can require that specific tools are called. This ensures the AI actually investigates rather than giving generic advice.
+
+In `registry.json`:
+```json
+{
+  "id": "EC-001",
+  "required_tool_calls": ["getChromeEvents"],
+  "required_evidence": ["ERR_NAME_NOT_RESOLVED", "wifi"]
+}
+```
+
+The eval will fail if:
+- The AI doesn't call `getChromeEvents`
+- The AI's response doesn't mention the required evidence
+
+This two-layer validation ensures:
+1. The AI investigates (calls tools)
+2. The AI finds and reports the right information (evidence check)
 
 ## Running Evals
 
@@ -94,8 +120,10 @@ Control eval behavior with these environment variables:
 
 | Variable               | Purpose                                                                                                                                                        |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `EVAL_USE_BASE=1`      | Load base fixtures from `evals/fixtures/base/api-base.json`                                                                                                    |
+| `EVAL_USE_BASE=1`      | Load base fixtures from `evals/fixtures/base/api-base.json` and pass to FixtureToolExecutor                                                                    |
 | `EVAL_USE_FIXTURES=1`  | Load case-specific overrides from `evals/fixtures/EC-###/`                                                                                                     |
+| `EVAL_INJECT_PROMPT=1` | Inject fixture data into prompt (debugging only - off by default to force tool calling)                                                                        |
+| `EVAL_LLM_JUDGE=0`     | Disable LLM-as-judge for evidence evaluation (enabled by default)                                                                                              |
 | `EVAL_TEST_MODE=1`     | Return synthetic responses without calling the AI (fast mode)                                                                                                  |
 | `EVAL_IDS`             | Comma-separated list of case IDs to run                                                                                                                        |
 | `EVAL_CATEGORY`        | Filter by category (policy, dlp, connector, system, enrollment, security, network, devices, integration, extensions, endpoint, browser, auth, events, updates) |

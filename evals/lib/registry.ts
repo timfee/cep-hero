@@ -24,6 +24,8 @@ export type EvalCase = {
   fixtures?: string[];
   overrides?: string[];
   required_evidence?: string[];
+  /** Tools that MUST be called for this eval to pass (e.g., ["getChromeEvents"]) */
+  required_tool_calls?: string[];
   rubric?: EvalRubric;
   assertions: unknown[];
   cleanup: unknown[];

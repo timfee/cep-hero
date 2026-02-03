@@ -48,6 +48,7 @@ EVAL_VERBOSE=1 EVAL_IDS="EC-001" EVAL_USE_FIXTURES=1 bun run evals
 | `EVAL_SERIAL=1`        | Run sequentially instead of parallel                 |
 | `EVAL_MANAGE_SERVER=0` | Skip auto server management (use with manual server) |
 | `EVAL_LLM_JUDGE=0` | Disable LLM-as-judge for evidence evaluation (enabled by default) |
+| `EVAL_INJECT_PROMPT=1` | Inject fixtures into prompt instead of returning via tool calls |
 
 ## Reporting Results
 
@@ -119,6 +120,31 @@ To disable LLM judging (use strict string matching only):
 ```bash
 EVAL_LLM_JUDGE=0 EVAL_CATEGORY="enrollment" bun run evals
 ```
+
+## Tool Call Validation
+
+Evals can validate that the AI calls specific tools during troubleshooting. This is controlled by the `required_tool_calls` field in registry.json.
+
+**What gets checked:**
+- Tool names are captured from streaming response events
+- Required tools are validated after the response completes
+- Missing tools cause the eval to fail
+
+**Example report output:**
+```json
+{
+  "toolCallsResult": {
+    "passed": false,
+    "message": "Missing required tool calls: getChromeEvents"
+  },
+  "toolCalls": ["suggestActions"]
+}
+```
+
+**Why this matters:**
+- The system prompt instructs the AI to always call `getChromeEvents` first
+- This validates that behavior is actually followed
+- Catches cases where the AI gives generic advice without checking data
 
 ## Troubleshooting
 

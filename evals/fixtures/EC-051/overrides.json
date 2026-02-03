@@ -1,0 +1,72 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER",
+            "name": "CONTENT_UNSCANNED_SERVICE_UNAVAILABLE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-corp-001" },
+              { "name": "DEVICE_NAME", "value": "Windows-Corp-Sales-1" },
+              { "name": "CONNECTOR_TYPE", "value": "BulkDataConnector" },
+              { "name": "ERROR_CODE", "value": "SERVICE_UNAVAILABLE" },
+              { "name": "ERROR_MESSAGE", "value": "Connector service unavailable. Content was not scanned." },
+              { "name": "RETRY_COUNT", "value": "3" },
+              { "name": "USER_EMAIL", "value": "sales.rep@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:05:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER",
+            "name": "CONTENT_UNSCANNED_TOO_MANY_REQUESTS",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-corp-002" },
+              { "name": "DEVICE_NAME", "value": "Windows-Corp-Sales-2" },
+              { "name": "CONNECTOR_TYPE", "value": "WebDataConnector" },
+              { "name": "ERROR_CODE", "value": "TOO_MANY_REQUESTS" },
+              { "name": "ERROR_MESSAGE", "value": "Rate limit exceeded for connector scanning. Content unscanned." },
+              { "name": "RATE_LIMIT_RESET_SECONDS", "value": "60" },
+              { "name": "USER_EMAIL", "value": "analyst@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T10:10:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER",
+            "name": "CONNECTOR_HANDSHAKE_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-corp-003" },
+              { "name": "DEVICE_NAME", "value": "Windows-Corp-Finance-1" },
+              { "name": "CONNECTOR_TYPE", "value": "FileTransferConnector" },
+              { "name": "ERROR_CODE", "value": "CONNECTION_REFUSED" },
+              { "name": "ERROR_MESSAGE", "value": "Connector handshake failed. Check network allowlist for *.google.com and *.googleapis.com" },
+              { "name": "BLOCKED_ENDPOINT", "value": "chromereporting-pa.googleapis.com" },
+              { "name": "USER_EMAIL", "value": "accountant@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

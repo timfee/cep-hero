@@ -1,0 +1,63 @@
+{
+  "orgUnits": [
+    {
+      "name": "Engineering-Test",
+      "orgUnitId": "orgunits/03ph8a2z4kcgsep",
+      "orgUnitPath": "/Engineering-Test",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "name": "chrome.users.BulkDataConnectorEnabled",
+      "value": {
+        "bulkDataConnectorEnabled": true
+      },
+      "targetResource": "customers/C00000000",
+      "sourceResource": "customers/C00000000",
+      "note": "Policy applied at customer level - will NOT apply specifically to Engineering-Test OU"
+    },
+    {
+      "name": "chrome.users.WebDataConnectorEnabled",
+      "value": {
+        "webDataConnectorEnabled": true
+      },
+      "targetResource": "customers/C00000000",
+      "sourceResource": "customers/C00000000"
+    },
+    {
+      "name": "chrome.users.CloudReporting",
+      "value": {
+        "cloudReportingEnabled": true
+      },
+      "targetResource": "customers/C00000000",
+      "sourceResource": "customers/C00000000"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "POLICY_APPLICATION",
+            "name": "POLICY_SCOPE_MISMATCH",
+            "parameters": [
+              { "name": "POLICY_NAME", "value": "chrome.users.BulkDataConnectorEnabled" },
+              { "name": "EXPECTED_SCOPE", "value": "orgunits/03ph8a2z4kcgsep" },
+              { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
+              { "name": "OU_PATH", "value": "/Engineering-Test" },
+              { "name": "AFFECTED_USER", "value": "engineer@example.com" },
+              { "name": "NOTE", "value": "Policy targeted at customer level; OU-specific targeting required" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

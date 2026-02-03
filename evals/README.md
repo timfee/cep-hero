@@ -56,6 +56,7 @@ EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
 
 - `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
 - `EVAL_USE_FIXTURES=1` - Load case-specific overrides from `evals/fixtures/EC-###/`
+- `EVAL_INJECT_PROMPT=1` - Inject fixture data into prompt (default: off, fixtures returned via tool calls)
 - `EVAL_IDS=EC-001,EC-002` - Run specific eval IDs
 - `EVAL_CATEGORY=connector` - Run evals in a category
 - `EVAL_TAGS=dlp` - Run evals with specific tags
@@ -170,6 +171,46 @@ By default, evidence evaluation uses an LLM to evaluate responses semantically. 
 - No need to constantly tweak evidence requirements
 
 **Disable with:** `EVAL_LLM_JUDGE=0`
+
+## Tool Call Validation
+
+Evals can require that specific tools are called during the conversation. This ensures the AI follows the standard operating procedure (e.g., always calling `getChromeEvents` first for troubleshooting).
+
+**How it works:**
+1. Define `required_tool_calls` in registry.json for a case
+2. The eval runner parses streaming responses to capture tool calls
+3. After the response completes, tool calls are validated against requirements
+4. Missing required tool calls cause the eval to fail
+
+**Registry example:**
+```json
+{
+  "id": "EC-001",
+  "required_tool_calls": ["getChromeEvents"],
+  ...
+}
+```
+
+**Why this matters:**
+- Ensures the AI doesn't give generic advice without checking actual data
+- Validates that the AI follows the SOP in the system prompt
+- Catches cases where the AI skips diagnostic steps
+
+**Report output:**
+```json
+{
+  "toolCallsResult": {
+    "passed": false,
+    "message": "Missing required tool calls: getChromeEvents",
+    "details": {
+      "requiredToolCalls": ["getChromeEvents"],
+      "actualToolCalls": ["suggestActions"],
+      "missing": ["getChromeEvents"]
+    }
+  },
+  "toolCalls": ["suggestActions"]
+}
+```
 
 ## What to do when a result is wrong
 
@@ -292,9 +333,14 @@ User: "The exact prompt the user would ask"
   "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
   "fixtures": [],
   "required_evidence": ["key", "terms"],
+  "required_tool_calls": ["getChromeEvents"],
   "rubric": { "min_score": 2, "criteria": ["diagnosis", "evidence", "next"] }
 }
 ```
+
+**Registry fields:**
+- `required_evidence` - Terms/phrases that must appear in the response
+- `required_tool_calls` - Tools that must be called (e.g., `getChromeEvents`, `getChromeConnectorConfiguration`)
 
 **Step 3**: Optionally create fixtures in `evals/fixtures/EC-086/overrides.json`.
 

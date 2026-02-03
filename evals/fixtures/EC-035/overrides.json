@@ -1,0 +1,45 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T12:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "DLP_RULE_TRIGGERED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-corp-003" },
+              { "name": "USER_EMAIL", "value": "inventory@example.com" },
+              { "name": "FILE_NAME", "value": "product-sku-list.xlsx" },
+              { "name": "PREDEFINED_DETECTOR", "value": "CREDIT_CARD_NUMBER" },
+              { "name": "MATCH_COUNT", "value": "15" },
+              { "name": "SNIPPET", "value": "SKU-1234-5678-9012, SKU-2345-6789-0123, SKU-3456-7890-1234..." },
+              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
+              { "name": "FALSE_POSITIVE_LIKELY", "value": "true" },
+              { "name": "NOTE", "value": "Pattern matches credit card format but content is product SKU list" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dlpRules": [
+    {
+      "name": "rules/dlp-pii-credit-card",
+      "displayName": "Block Credit Card Numbers",
+      "description": "Blocks files containing credit card patterns",
+      "condition": {
+        "expression": "contentInfo.detectors.containsDetector('CREDIT_CARD_NUMBER')"
+      },
+      "action": "BLOCK",
+      "triggers": ["UPLOAD", "DOWNLOAD"],
+      "enabled": true,
+      "threshold": 1,
+      "note": "Consider tuning threshold or adding exclusions for SKU patterns"
+    }
+  ]
+}

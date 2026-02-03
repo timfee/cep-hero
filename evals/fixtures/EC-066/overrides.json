@@ -1,0 +1,56 @@
+{
+  "orgUnits": [
+    {
+      "name": "FT-Off",
+      "orgUnitId": "orgunits/06ft0ff789",
+      "orgUnitPath": "/FT-Off",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "name": "chrome.users.FileTransferConnectorEnabled",
+      "value": {
+        "fileTransferConnectorEnabled": false
+      },
+      "targetResource": "orgunits/06ft0ff789",
+      "sourceResource": "orgunits/06ft0ff789",
+      "note": "File transfer connector explicitly disabled for this OU"
+    },
+    {
+      "name": "chrome.users.CloudReporting",
+      "value": {
+        "cloudReportingEnabled": true
+      },
+      "targetResource": "orgunits/06ft0ff789",
+      "sourceResource": "orgunits/06ft0ff789"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER",
+            "name": "FILE_TRANSFER_BLOCKED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-ft-001" },
+              { "name": "DEVICE_NAME", "value": "Windows-FT-Test" },
+              { "name": "USER_EMAIL", "value": "testuser7@example.com" },
+              { "name": "OU_PATH", "value": "/FT-Off" },
+              { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
+              { "name": "BLOCKED_ACTION", "value": "FILE_TRANSFER" },
+              { "name": "ERROR_MESSAGE", "value": "File transfer connector is disabled. File transfers are blocked." }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T09:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CHROMEOS_DEVICE",
+            "name": "DEVICE_POWER_FAILURE",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "chromebook-power-001" },
+              { "name": "DEVICE_NAME", "value": "ChromeBook-Lab-5" },
+              { "name": "SERIAL_NUMBER", "value": "5CD1234567" },
+              { "name": "MODEL", "value": "HP Chromebook 14" },
+              { "name": "BATTERY_STATUS", "value": "NOT_CHARGING" },
+              { "name": "BATTERY_HEALTH", "value": "DEGRADED" },
+              { "name": "BATTERY_CYCLE_COUNT", "value": "892" },
+              { "name": "POWER_STATE", "value": "OFF" },
+              { "name": "LAST_KNOWN_CHARGE", "value": "0%" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-19T16:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CHROMEOS_DEVICE",
+            "name": "BATTERY_WARNING",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "chromebook-power-001" },
+              { "name": "DEVICE_NAME", "value": "ChromeBook-Lab-5" },
+              { "name": "WARNING_TYPE", "value": "BATTERY_CRITICAL" },
+              { "name": "BATTERY_PERCENT", "value": "5" },
+              { "name": "ESTIMATED_TIME_REMAINING", "value": "10 minutes" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "chromeReports": {
+    "deviceHardwareInfo": [
+      {
+        "deviceId": "chromebook-power-001",
+        "serialNumber": "5CD1234567",
+        "model": "HP Chromebook 14",
+        "batteryInfo": {
+          "status": "NOT_CHARGING",
+          "health": "DEGRADED",
+          "cycleCount": 892,
+          "designCapacity": "45000 mWh",
+          "fullChargeCapacity": "28000 mWh",
+          "currentCapacity": "0 mWh"
+        },
+        "powerInfo": {
+          "acConnected": true,
+          "chargingState": "NOT_CHARGING",
+          "lastPowerOnTime": "2026-01-19T08:00:00.000Z"
+        }
+      }
+    ]
+  }
+}

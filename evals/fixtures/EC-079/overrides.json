@@ -1,0 +1,67 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T17:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "DLP_RULE_TRIGGERED",
+            "parameters": [
+              { "name": "USER_EMAIL", "value": "user@example.com" },
+              { "name": "DETECTOR_NAME", "value": "PHONE_NUMBER" },
+              { "name": "FILE_NAME", "value": "internal-contacts.csv" },
+              { "name": "DESTINATION", "value": "internal-share.example.com" },
+              { "name": "DESTINATION_TYPE", "value": "INTERNAL" },
+              { "name": "MATCH_COUNT", "value": "50" },
+              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
+              { "name": "FALSE_POSITIVE", "value": "Internal domain should be allowlisted" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T17:05:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DLP_EVENT",
+            "name": "DLP_RULE_TRIGGERED",
+            "parameters": [
+              { "name": "USER_EMAIL", "value": "hr@example.com" },
+              { "name": "DETECTOR_NAME", "value": "PHONE_NUMBER" },
+              { "name": "FILE_NAME", "value": "employee-directory.xlsx" },
+              { "name": "DESTINATION", "value": "hr-portal.example.com" },
+              { "name": "DESTINATION_TYPE", "value": "INTERNAL" },
+              { "name": "MATCH_COUNT", "value": "200" },
+              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
+              { "name": "FALSE_POSITIVE", "value": "Internal HR domain should be allowlisted" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "dlpRules": [
+    {
+      "name": "rules/dlp-phone-detector",
+      "displayName": "Block Phone Numbers",
+      "description": "Blocks files containing phone number patterns",
+      "condition": {
+        "expression": "contentInfo.detectors.containsDetector('PHONE_NUMBER')"
+      },
+      "action": "BLOCK",
+      "triggers": ["UPLOAD", "DOWNLOAD"],
+      "enabled": true,
+      "allowlistDomains": [],
+      "note": "Add internal domains to allowlist: internal-share.example.com, hr-portal.example.com"
+    }
+  ]
+}

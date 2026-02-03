@@ -2,7 +2,7 @@
 
 ## Summary
 
-Admins need net logs to diagnose connectivity or proxy issues.
+Admins need net logs to diagnose connectivity or proxy issues. This is a how-to question, not a troubleshooting scenario.
 
 ## Reproduction
 
@@ -12,13 +12,13 @@ Admins need net logs to diagnose connectivity or proxy issues.
 
 ## Conversation
 
-User: “How do I capture net logs for this issue?”
+User: "How do I capture network logs in Chrome?"
 
 ## Expected result
 
-- Diagnosis describes when net logs are required.
-- Evidence references net-export or log-net-log usage.
-- Next steps provide exact collection steps and tooling.
+- Explains how to use chrome://net-export
+- Provides step-by-step instructions
+- No diagnosis/evidence structure required (this is a how-to)
 
 ## Cleanup
 

@@ -1,0 +1,55 @@
+{
+  "orgUnits": [
+    {
+      "name": "Bulk-Off",
+      "orgUnitId": "orgunits/04bulk0ff123",
+      "orgUnitPath": "/Bulk-Off",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "name": "chrome.users.BulkDataConnectorEnabled",
+      "value": {
+        "bulkDataConnectorEnabled": false
+      },
+      "targetResource": "orgunits/04bulk0ff123",
+      "sourceResource": "orgunits/04bulk0ff123",
+      "note": "Bulk data connector explicitly disabled for this OU"
+    },
+    {
+      "name": "chrome.users.CloudReporting",
+      "value": {
+        "cloudReportingEnabled": true
+      },
+      "targetResource": "orgunits/04bulk0ff123",
+      "sourceResource": "orgunits/04bulk0ff123"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T08:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER",
+            "name": "BULK_CONNECTOR_DISABLED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "win-bulk-001" },
+              { "name": "DEVICE_NAME", "value": "Windows-Bulk-Test" },
+              { "name": "USER_EMAIL", "value": "testuser5@example.com" },
+              { "name": "OU_PATH", "value": "/Bulk-Off" },
+              { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
+              { "name": "ERROR_MESSAGE", "value": "Bulk data connector is disabled for this organizational unit" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}

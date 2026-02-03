@@ -1,0 +1,39 @@
+{
+  "orgUnits": [
+    {
+      "name": "Engineering",
+      "orgUnitId": "orgunits/eng001",
+      "orgUnitPath": "/Engineering",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    },
+    {
+      "name": "Sales",
+      "orgUnitId": "orgunits/sales001",
+      "orgUnitPath": "/Sales",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    },
+    {
+      "name": "Marketing",
+      "orgUnitId": "orgunits/mkt001",
+      "orgUnitPath": "/Marketing",
+      "parentOrgUnitId": "orgunits/",
+      "parentOrgUnitPath": "/"
+    },
+    {
+      "name": "Engineering-Dev",
+      "orgUnitId": "orgunits/engdev001",
+      "orgUnitPath": "/Engineering/Dev",
+      "parentOrgUnitId": "orgunits/eng001",
+      "parentOrgUnitPath": "/Engineering"
+    },
+    {
+      "name": "Engineering-QA",
+      "orgUnitId": "orgunits/engqa001",
+      "orgUnitPath": "/Engineering/QA",
+      "parentOrgUnitId": "orgunits/eng001",
+      "parentOrgUnitPath": "/Engineering"
+    }
+  ]
+}

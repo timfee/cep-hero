@@ -16,6 +16,14 @@
               {
                 "name": "error",
                 "value": "UPDATE_ENGINE_ERROR"
+              },
+              {
+                "name": "log_source",
+                "value": "update_engine.log"
+              },
+              {
+                "name": "details",
+                "value": "Scatter factor set to 14 days; target version pinned to 119.0.6045.123"
               }
             ]
           }
