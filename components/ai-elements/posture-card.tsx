@@ -1,3 +1,7 @@
+/**
+ * Posture card components for displaying security posture metrics.
+ * Shows posture data with values, notes, and action buttons.
+ */
 "use client";
 
 import { ArrowRight } from "lucide-react";
@@ -30,6 +34,9 @@ export interface PostureCardProps {
   onAction?: (action: string) => void;
 }
 
+/**
+ * Animated card displaying a single posture metric with optional action button.
+ */
 export const PostureCard = memo(function PostureCard({
   card,
   className,
@@ -100,6 +107,9 @@ export interface PostureCardListProps {
   onAction?: (action: string) => void;
 }
 
+/**
+ * Grid layout for displaying multiple posture cards with empty state handling.
+ */
 export const PostureCardList = memo(function PostureCardList({
   cards,
   className,
