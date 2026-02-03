@@ -10,14 +10,3 @@ GlobalRegistrator.register();
 afterEach(() => {
   cleanup();
 });
-
-// Mock Next.js navigation
-const mockPush = () => {};
-const mockReplace = () => {};
-const mockRefresh = () => {};
-
-globalThis.__NEXT_ROUTER_MOCK__ = {
-  push: mockPush,
-  replace: mockReplace,
-  refresh: mockRefresh,
-};
