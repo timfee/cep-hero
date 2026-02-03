@@ -45,16 +45,32 @@ export function FixtureSelector() {
   const [categories, setCategories] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [loadingFixture, setLoadingFixture] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // Fetch available fixtures on mount
   useEffect(() => {
     async function fetchFixtures() {
       setLoading(true);
-      const response = await fetch("/api/fixtures");
-      const data: FixturesResponse = await response.json();
-      setFixtures(data.fixtures);
-      setCategories(data.categories);
-      setLoading(false);
+      setError(null);
+      try {
+        const response = await fetch("/api/fixtures");
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            (errorData as { error?: string }).error ??
+              `Failed to load fixtures: ${response.status}`
+          );
+        }
+        const data: FixturesResponse = await response.json();
+        setFixtures(data.fixtures);
+        setCategories(data.categories);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setError(message);
+        console.error("[fixture-selector] Failed to fetch fixtures:", message);
+      } finally {
+        setLoading(false);
+      }
     }
     void fetchFixtures();
   }, []);
@@ -67,16 +83,30 @@ export function FixtureSelector() {
       }
 
       setLoadingFixture(true);
-      const response = await fetch(`/api/fixtures/${fixtureId}`);
-      const data: FixtureDetailResponse = await response.json();
-
-      setActiveFixture({
-        id: data.id,
-        title: data.title,
-        category: data.category,
-        data: data.data,
-      });
-      setLoadingFixture(false);
+      setError(null);
+      try {
+        const response = await fetch(`/api/fixtures/${fixtureId}`);
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(
+            (errorData as { error?: string }).error ??
+              `Failed to load fixture: ${response.status}`
+          );
+        }
+        const data: FixtureDetailResponse = await response.json();
+        setActiveFixture({
+          id: data.id,
+          title: data.title,
+          category: data.category,
+          data: data.data,
+        });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Unknown error";
+        setError(message);
+        console.error("[fixture-selector] Failed to load fixture:", message);
+      } finally {
+        setLoadingFixture(false);
+      }
     },
     [setActiveFixture, clearFixture]
   );
@@ -95,6 +125,20 @@ export function FixtureSelector() {
       <Button variant="outline" size="sm" disabled>
         <Loader2 className="animate-spin" />
         Loading scenarios...
+      </Button>
+    );
+  }
+
+  if (error && fixtures.length === 0) {
+    return (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={() => window.location.reload()}
+        title={error}
+      >
+        <FlaskConical className="size-3" />
+        <span className="text-destructive">Error loading</span>
       </Button>
     );
   }

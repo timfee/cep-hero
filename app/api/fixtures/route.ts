@@ -26,12 +26,30 @@ export interface FixtureListItem {
  * GET /api/fixtures
  * Returns a list of available fixture scenarios that can be used to override live data.
  * Only includes cases that have override files.
+ * Only available in development or when EVAL_TEST_MODE is enabled.
  */
 export async function GET() {
-  const registryPath = join(process.cwd(), "evals/registry.json");
+  // Feature flag: only allow in development or explicit test mode
+  const isDev = process.env.NODE_ENV === "development";
+  const isTestMode = process.env.EVAL_TEST_MODE === "1";
+  if (!isDev && !isTestMode) {
+    return Response.json(
+      { error: "Fixture API is not available in production" },
+      { status: 403 }
+    );
+  }
 
-  const registryContent = await readFile(registryPath, "utf8");
-  const registry: Registry = JSON.parse(registryContent);
+  let registry: Registry;
+  try {
+    const registryPath = join(process.cwd(), "evals/registry.json");
+    const registryContent = await readFile(registryPath, "utf8");
+    registry = JSON.parse(registryContent);
+  } catch {
+    return Response.json(
+      { error: "Failed to load fixture registry" },
+      { status: 500 }
+    );
+  }
 
   const fixtures: FixtureListItem[] = registry.cases
     .filter((c) => c.overrides && c.overrides.length > 0)
