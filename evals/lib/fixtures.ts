@@ -2,7 +2,6 @@
  * Fixture loading utilities for evals that handle loading base fixtures and case-specific overrides.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 

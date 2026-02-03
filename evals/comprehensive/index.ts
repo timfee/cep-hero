@@ -68,10 +68,18 @@ Options:
   const iterationsArg = args.find((_, i) => args[i - 1] === "--iterations");
   const casesArg = args.find((_, i) => args[i - 1] === "--cases");
 
+  const iterations = iterationsArg ? Number.parseInt(iterationsArg, 10) : 1;
+  if (Number.isNaN(iterations) || iterations < 1) {
+    console.error(
+      `Error: --iterations must be a positive integer, got: ${iterationsArg}`
+    );
+    process.exit(1);
+  }
+
   return {
     withJudge: args.includes("--with-judge"),
     skipAnalysis: args.includes("--skip-analysis"),
-    iterations: iterationsArg ? Number.parseInt(iterationsArg, 10) : 1,
+    iterations,
     casesArg,
   };
 }
@@ -411,6 +419,11 @@ async function main(): Promise<void> {
   console.log(`\n📄 Reports saved to ${OUTPUT_DIR}/`);
   console.log(`   • report-${timestamp}.json`);
   console.log(`   • report-${timestamp}.html\n`);
+
+  // Exit with non-zero code if there are failures (for CI/automation)
+  if (totals.failed > 0) {
+    process.exit(1);
+  }
 }
 
 main();

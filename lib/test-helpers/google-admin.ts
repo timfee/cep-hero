@@ -2,11 +2,6 @@
  * Google Admin SDK client utilities for integration tests.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable @typescript-eslint/no-unsafe-call */
-/* eslint-disable @typescript-eslint/no-unsafe-member-access */
-/* eslint-disable @typescript-eslint/no-unsafe-return */
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { OAuth2Client } from "google-auth-library";
 import {
   google,
@@ -21,6 +16,9 @@ type Directory = admin_directory_v1.Admin;
 type ChromePolicy = chromepolicy_v1.Chromepolicy;
 type ChromeManagement = chromemanagement_v1.Chromemanagement;
 
+/**
+ * Authenticated Google Admin SDK client instances.
+ */
 export interface GoogleClients {
   directory: Directory;
   policy: ChromePolicy;
@@ -83,11 +81,21 @@ function createGoogleApiClients(auth: OAuth2Client) {
 }
 
 /**
+ * Strip surrounding quotes from environment variable values.
+ */
+function stripQuotes(value: string | undefined) {
+  if (value === undefined || value === "") {
+    return;
+  }
+  return value.replaceAll(/^['"]|['"]$/g, "");
+}
+
+/**
  * Create and configure all Google Admin SDK clients.
  */
 export async function makeGoogleClients(): Promise<GoogleClients> {
-  const envCustomerId = process.env.GOOGLE_CUSTOMER_ID;
-  const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
+  const envCustomerId = stripQuotes(process.env.GOOGLE_CUSTOMER_ID);
+  const tokenEmail = stripQuotes(process.env.GOOGLE_TOKEN_EMAIL);
   const auth = await createAuthClient(tokenEmail);
   const { directory, policy, management } = createGoogleApiClients(auth);
 

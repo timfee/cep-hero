@@ -11,6 +11,9 @@ import { type EnrollBrowserSchema } from "@/lib/mcp/schemas";
 
 import { buildOrgUnitTargetResource } from "./utils";
 
+/**
+ * Arguments for generating a Chrome Browser Cloud Management enrollment token.
+ */
 export type EnrollBrowserArgs = z.infer<typeof EnrollBrowserSchema>;
 
 /**
@@ -37,6 +40,9 @@ interface EnrollBrowserError {
   requiresReauth: boolean;
 }
 
+/**
+ * Result of generating an enrollment token, either a token or an error.
+ */
 export type EnrollBrowserResult = EnrollBrowserSuccess | EnrollBrowserError;
 
 interface EnrollmentResponse {

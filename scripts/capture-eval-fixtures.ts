@@ -2,7 +2,6 @@
  * Captures base fixture data from Google APIs for eval testing with PII redaction.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 import { mkdir, writeFile } from "node:fs/promises";

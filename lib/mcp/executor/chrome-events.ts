@@ -9,6 +9,9 @@ import { type z } from "zod";
 import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
 import { type GetChromeEventsSchema } from "@/lib/mcp/schemas";
 
+/**
+ * Arguments for fetching Chrome audit events from the Admin SDK Reports API.
+ */
 export type ChromeEventsArgs = z.infer<typeof GetChromeEventsSchema>;
 type Activity = admin_reports_v1.Schema$Activity;
 
@@ -23,6 +26,9 @@ interface ChromeEventsError {
   requiresReauth: boolean;
 }
 
+/**
+ * Result of fetching Chrome audit events, either a list of events or an error.
+ */
 export type ChromeEventsResult = ChromeEventsSuccess | ChromeEventsError;
 
 /**
