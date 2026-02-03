@@ -2,7 +2,6 @@
  * Debug logging utilities that sanitize sensitive data before writing to disk.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import { appendFile } from "node:fs/promises";
 
 const LOG_PATH = `${process.cwd()}/debug.log`;

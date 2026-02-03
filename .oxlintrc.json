@@ -14,7 +14,13 @@
     "no-unused-vars": "warn",
     "no-multi-comp": "off",
     "typescript/no-import-type-side-effects": "off",
-    "import/consistent-type-specifier-style": ["error", "prefer-inline"]
+    "import/consistent-type-specifier-style": ["error", "prefer-inline"],
+
+    "jsdoc/check-property-names": "error",
+    "jsdoc/check-tag-names": "error",
+    "jsdoc/empty-tags": "error",
+    "jsdoc/require-param": "off",
+    "jsdoc/require-returns": "off"
   },
   "extends": [
     "./node_modules/ultracite/config/oxlint/core/.oxlintrc.json",

@@ -11,6 +11,9 @@ import { type CreateDLPRuleSchema } from "@/lib/mcp/schemas";
 import { type OrgUnitContext } from "./context";
 import { buildOrgUnitTargetResource } from "./utils";
 
+/**
+ * Arguments for creating a new DLP rule via Cloud Identity.
+ */
 export type CreateDLPRuleArgs = z.infer<typeof CreateDLPRuleSchema>;
 
 /**
@@ -65,6 +68,9 @@ interface CreateDLPRuleError {
   consoleUrl: string;
 }
 
+/**
+ * Result of creating a DLP rule: success, manual steps fallback, or error.
+ */
 export type CreateDLPRuleResult =
   | CreateDLPRuleSuccess
   | CreateDLPRuleManualSteps

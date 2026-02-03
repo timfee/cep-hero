@@ -2,8 +2,14 @@
  * Overview data types and utilities for the CEP Hero dashboard.
  */
 
+/**
+ * Health status indicator for posture cards.
+ */
 export type PostureCardStatus = "healthy" | "warning" | "critical" | "info";
 
+/**
+ * A single posture card displaying a fleet metric or status.
+ */
 export interface OverviewCard {
   label: string;
   value: string;
@@ -16,12 +22,18 @@ export interface OverviewCard {
   priority?: number;
 }
 
+/**
+ * Classification category for actionable suggestions.
+ */
 export type SuggestionCategory =
   | "security"
   | "compliance"
   | "monitoring"
   | "optimization";
 
+/**
+ * An actionable recommendation displayed to the user.
+ */
 export interface Suggestion {
   text: string;
   action: string;
@@ -29,6 +41,9 @@ export interface Suggestion {
   category: SuggestionCategory;
 }
 
+/**
+ * Complete overview response containing fleet summary and recommendations.
+ */
 export interface OverviewData {
   headline: string;
   summary: string;

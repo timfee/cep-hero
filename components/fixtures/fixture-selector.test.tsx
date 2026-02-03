@@ -73,9 +73,9 @@ describe("FixtureSelector", () => {
     const { container } = renderWithProvider(<FixtureSelector />);
 
     await waitFor(() => {
-      const errorText = container.querySelector(".text-destructive");
-      expect(errorText).not.toBeNull();
-      expect(errorText?.textContent).toBe("Error loading");
+      const errorSpan = container.querySelector("span.text-destructive");
+      expect(errorSpan).not.toBeNull();
+      expect(errorSpan?.textContent).toBe("Error loading");
     });
   });
 });

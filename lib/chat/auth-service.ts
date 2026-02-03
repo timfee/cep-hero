@@ -6,6 +6,9 @@ import { auth } from "@/lib/auth";
 
 const EVAL_TEST_MODE_ENABLED = process.env.EVAL_TEST_MODE === "1";
 
+/**
+ * Result from authenticating a chat API request.
+ */
 export type AuthResult =
   | {
       status: "success";
