@@ -2,7 +2,6 @@
  * Crawls Google Cloud Chrome Enterprise Premium documentation and indexes to Upstash Vector.
  */
 
-/* eslint-disable @typescript-eslint/unbound-method */
 import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
 import { getStandardId, processDocs, turndown } from "./utils";

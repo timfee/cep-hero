@@ -3,7 +3,6 @@
  * Verifies skeleton structure and animations match the sign-in page layout.
  */
 
-/* eslint-disable @typescript-eslint/no-unsafe-call */
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "bun:test";
 

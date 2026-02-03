@@ -3,7 +3,7 @@
  */
 
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
 import { GEMINI_ANALYSIS_MODEL } from "./config";
@@ -186,15 +186,17 @@ export async function analyzeWithGemini(
   const prompt = buildAnalysisPrompt(results);
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    const response = await generateObject({
+    const response = await generateText({
       model: google(GEMINI_ANALYSIS_MODEL),
-      schema: GeminiAnalysisSchema,
+      output: Output.object({ schema: GeminiAnalysisSchema }),
       prompt,
     });
 
     console.log("[comprehensive] Gemini analysis complete");
-    return response.object;
+    if (!response.output) {
+      throw new Error("No output generated");
+    }
+    return response.output;
   } catch (error) {
     console.error("[comprehensive] Gemini analysis failed:", error);
 
