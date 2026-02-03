@@ -34,6 +34,7 @@ import { orchestrateRuns } from "./orchestrator";
 import {
   type CliOptions,
   type ComprehensiveReport,
+  type ResolvedCliOptions,
   type RunMode,
 } from "./types";
 
@@ -159,11 +160,11 @@ Examples:
 /**
  * Resolve options from CLI args and environment variables.
  */
-function resolveOptions(cliOptions: CliOptions): Required<CliOptions> {
+function resolveOptions(cliOptions: CliOptions): ResolvedCliOptions {
   const skipLive =
     cliOptions.skipLive || process.env.COMPREHENSIVE_SKIP_LIVE === "1";
 
-  let {modes} = cliOptions;
+  let { modes } = cliOptions;
   if (!modes) {
     modes = skipLive ? getDefaultModes() : getDefaultModes();
   } else if (skipLive) {

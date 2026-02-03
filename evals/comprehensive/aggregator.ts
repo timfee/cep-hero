@@ -40,7 +40,7 @@ function buildAggregateStats(runs: SingleRunResult[]): AggregateStats {
   let totalPassed = 0;
 
   for (const run of runs) {
-    const {mode} = run;
+    const { mode } = run;
     if (!byMode[mode]) {
       byMode[mode] = {
         passRate: 0,
