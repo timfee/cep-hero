@@ -7,7 +7,10 @@ import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 
-const BATCH_SIZE = 10; // Process up to 10 cases per LLM call
+/**
+ * Process up to 10 cases per LLM call
+ */
+const BATCH_SIZE = 10;
 
 export interface EvidenceCheckInput {
   caseId: string;

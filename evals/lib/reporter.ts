@@ -104,11 +104,8 @@ export function formatCaseResult(report: EvalReport): string {
   return `[${statusIcon}] ${report.caseId} ${duration} - ${report.title}`;
 }
 
-/**
- * Format the summary for console output.
- */
-export function formatSummary(summary: EvalSummary): string {
-  const lines: string[] = [
+function formatSummaryHeader(summary: EvalSummary): string[] {
+  return [
     "",
     "═".repeat(60),
     "EVAL RUN SUMMARY",
@@ -122,27 +119,110 @@ export function formatSummary(summary: EvalSummary): string {
     `Errors:    ${summary.errors}`,
     "",
   ];
+}
 
-  if (Object.keys(summary.byCategory).length > 0) {
-    lines.push("By Category:");
-    for (const [category, stats] of Object.entries(summary.byCategory)) {
-      const pct =
-        stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) : 0;
-      lines.push(`  ${category}: ${stats.passed}/${stats.total} (${pct}%)`);
-    }
-    lines.push("");
+function formatCategoryStats(summary: EvalSummary): string[] {
+  if (Object.keys(summary.byCategory).length === 0) {
+    return [];
   }
-
-  if (summary.failures.length > 0) {
-    lines.push("Failures:");
-    for (const failure of summary.failures) {
-      lines.push(`  ${failure.id}: ${failure.reason}`);
-    }
-    lines.push("");
+  const lines = ["By Category:"];
+  for (const [category, stats] of Object.entries(summary.byCategory)) {
+    const pct =
+      stats.total > 0 ? Math.round((stats.passed / stats.total) * 100) : 0;
+    lines.push(`  ${category}: ${stats.passed}/${stats.total} (${pct}%)`);
   }
+  lines.push("");
+  return lines;
+}
 
-  lines.push("═".repeat(60));
+function formatFailureList(summary: EvalSummary): string[] {
+  if (summary.failures.length === 0) {
+    return [];
+  }
+  const lines = ["Failures:"];
+  for (const failure of summary.failures) {
+    lines.push(`  ${failure.id}: ${failure.reason}`);
+  }
+  lines.push("");
+  return lines;
+}
+
+/**
+ * Format the summary for console output.
+ */
+export function formatSummary(summary: EvalSummary): string {
+  const lines = [
+    ...formatSummaryHeader(summary),
+    ...formatCategoryStats(summary),
+    ...formatFailureList(summary),
+    "═".repeat(60),
+  ];
   return lines.join("\n");
+}
+
+interface SummaryAccumulator {
+  byCategory: Record<string, { total: number; passed: number; failed: number }>;
+  failures: { id: string; title: string; reason: string }[];
+  passed: number;
+  failed: number;
+  errors: number;
+}
+
+function createSummaryAccumulator(): SummaryAccumulator {
+  return { byCategory: {}, failures: [], passed: 0, failed: 0, errors: 0 };
+}
+
+function processPassedReport(
+  accumulator: SummaryAccumulator,
+  report: EvalReport
+): void {
+  accumulator.passed += 1;
+  accumulator.byCategory[report.category].passed += 1;
+}
+
+function processFailedReport(
+  accumulator: SummaryAccumulator,
+  report: EvalReport
+): void {
+  accumulator.failed += 1;
+  accumulator.byCategory[report.category].failed += 1;
+  accumulator.failures.push({
+    id: report.caseId,
+    title: report.title,
+    reason: report.error ?? "Assertion failed",
+  });
+}
+
+function processErrorReport(
+  accumulator: SummaryAccumulator,
+  report: EvalReport
+): void {
+  accumulator.errors += 1;
+  accumulator.failures.push({
+    id: report.caseId,
+    title: report.title,
+    reason: report.error ?? "Unknown error",
+  });
+}
+
+function processReport(
+  accumulator: SummaryAccumulator,
+  report: EvalReport
+): void {
+  accumulator.byCategory[report.category] ??= {
+    total: 0,
+    passed: 0,
+    failed: 0,
+  };
+  accumulator.byCategory[report.category].total += 1;
+
+  if (report.status === "pass") {
+    processPassedReport(accumulator, report);
+  } else if (report.status === "fail") {
+    processFailedReport(accumulator, report);
+  } else {
+    processErrorReport(accumulator, report);
+  }
 }
 
 /**
@@ -153,50 +233,20 @@ export function buildSummary(
   reports: EvalReport[],
   startTime: number
 ): EvalSummary {
-  const byCategory: Record<
-    string,
-    { total: number; passed: number; failed: number }
-  > = {};
-  const failures: { id: string; title: string; reason: string }[] = [];
-
-  let passed = 0;
-  let failed = 0;
-  let errors = 0;
-
+  const accumulator = createSummaryAccumulator();
   for (const report of reports) {
-    byCategory[report.category] ??= { total: 0, passed: 0, failed: 0 };
-    byCategory[report.category].total += 1;
-
-    if (report.status === "pass") {
-      passed += 1;
-      byCategory[report.category].passed += 1;
-    } else if (report.status === "fail") {
-      failed += 1;
-      byCategory[report.category].failed += 1;
-      failures.push({
-        id: report.caseId,
-        title: report.title,
-        reason: report.error ?? "Assertion failed",
-      });
-    } else {
-      errors += 1;
-      failures.push({
-        id: report.caseId,
-        title: report.title,
-        reason: report.error ?? "Unknown error",
-      });
-    }
+    processReport(accumulator, report);
   }
 
   return {
     runId,
     timestamp: new Date().toISOString(),
     totalCases: reports.length,
-    passed,
-    failed,
-    errors,
+    passed: accumulator.passed,
+    failed: accumulator.failed,
+    errors: accumulator.errors,
     durationMs: Math.round(performance.now() - startTime),
-    byCategory,
-    failures,
+    byCategory: accumulator.byCategory,
+    failures: accumulator.failures,
   };
 }

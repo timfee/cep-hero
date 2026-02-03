@@ -159,13 +159,175 @@ interface CreateChatStreamParams {
   executor?: IToolExecutor;
 }
 
+interface SearchHit {
+  metadata?: { title?: string };
+  content?: string;
+}
+
+function formatHits(hits: SearchHit[] | undefined, prefix: string): string {
+  if (!Array.isArray(hits)) {
+    return "";
+  }
+  return hits
+    .map((item) => {
+      const title =
+        typeof item?.metadata?.title === "string"
+          ? item.metadata.title
+          : "Untitled";
+      const content =
+        typeof item?.content === "string"
+          ? item.content
+          : String(item.content ?? "");
+      return `[${prefix}: ${title}]\n${content}`;
+    })
+    .join("\n\n");
+}
+
+async function analyzeIntent(userMessage: string) {
+  const result = await generateText({
+    model: google("gemini-2.0-flash-001"),
+    output: Output.object({
+      schema: z.object({
+        needsKnowledge: z
+          .boolean()
+          .describe(
+            "True if the user is asking about concepts, errors, policies, or configuration steps."
+          ),
+        query: z
+          .string()
+          .describe("The search query for documentation and policies"),
+      }),
+    }),
+    prompt: `Analyze the user's latest message: "${userMessage}". Do they need documentation or policy definitions?`,
+  });
+  return result;
+}
+
+async function fetchKnowledgeSnippets(query: string): Promise<string> {
+  const [docs, policies] = await Promise.all([
+    searchDocs(query),
+    searchPolicies(query),
+  ]);
+  const docSnippets = formatHits(docs?.hits, "Doc");
+  const policySnippets = formatHits(policies?.hits, "Policy");
+  if (docSnippets.length === 0 && policySnippets.length === 0) {
+    return "";
+  }
+  return `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
+}
+
+async function retrieveKnowledge(userMessage: string): Promise<string> {
+  if (typeof userMessage !== "string" || userMessage.length === 0) {
+    return "";
+  }
+  try {
+    const intentAnalysis = await analyzeIntent(userMessage);
+    return intentAnalysis.output.needsKnowledge
+      ? await fetchKnowledgeSnippets(intentAnalysis.output.query)
+      : "";
+  } catch (error) {
+    console.error("Knowledge retrieval failed:", error);
+    return "";
+  }
+}
+
+interface StepAnalysis {
+  hasToolResults: boolean;
+  hasText: boolean;
+  hasSuggestActionsCall: boolean;
+  hasDlpProposalCall: boolean;
+  recommendsDlpProposal: boolean;
+}
+
+interface LastStep {
+  toolResults: unknown[];
+  text: string;
+  toolCalls: { toolName: string }[];
+}
+
+function analyzeLastStep(lastStep: LastStep): StepAnalysis {
+  const hasToolResults = lastStep.toolResults.length > 0;
+  const hasText = lastStep.text.trim().length > 0;
+  const hasSuggestActionsCall = lastStep.toolCalls.some(
+    (call) => call.toolName === "suggestActions"
+  );
+  const hasDlpProposalCall = lastStep.toolCalls.some(
+    (call) => call.toolName === "draftPolicyChange"
+  );
+  const recommendsDlpProposal =
+    /dlp/i.test(lastStep.text) &&
+    /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
+    /(rule|policy)/i.test(lastStep.text);
+
+  return {
+    hasToolResults,
+    hasText,
+    hasSuggestActionsCall,
+    hasDlpProposalCall,
+    recommendsDlpProposal,
+  };
+}
+
+function buildDlpGuardResponse(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# DLP Proposal Guard
+You recommended creating a DLP rule. Now:
+1) Call listDLPRules to show current rules.
+2) Call draftPolicyChange to propose the DLP rule in the SAME step.
+Use a clear display name. If a specific destination like sharefile.com was mentioned, target uploads and include that in the reasoning.
+End by calling suggestActions.`,
+    activeTools: ["listDLPRules", "draftPolicyChange", "suggestActions"],
+  };
+}
+
+function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# Response Completion Guard
+You just received tool results. Provide a concise response with:
+- Diagnosis
+- Evidence (cite exact fields)
+- Hypotheses (only if uncertain)
+- Next Steps (actionable)
+If knowledge results were retrieved, summarize them clearly.
+Use friendly org unit paths only; never show raw org unit IDs.
+End by calling suggestActions with 2-4 options.`,
+    activeTools: ["suggestActions"],
+  };
+}
+
+function buildActionCompletionGuard(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# Action Completion Guard
+You already provided context. Now call suggestActions with 2-4 relevant options.
+If you add any text, keep it to one short sentence.`,
+    activeTools: ["suggestActions"],
+  };
+}
+
+function computeStepResponse(
+  analysis: StepAnalysis,
+  enhancedSystemPrompt: string
+): Record<string, unknown> {
+  if (analysis.recommendsDlpProposal && !analysis.hasDlpProposalCall) {
+    return buildDlpGuardResponse(enhancedSystemPrompt);
+  }
+  if (analysis.hasToolResults && !analysis.hasText) {
+    return buildResponseCompletionGuard(enhancedSystemPrompt);
+  }
+  if (analysis.hasToolResults && !analysis.hasSuggestActionsCall) {
+    return buildActionCompletionGuard(enhancedSystemPrompt);
+  }
+  return {};
+}
+
 /**
  * Creates and configures the AI chat stream with all CEP tools registered.
- *
- * @param {CreateChatStreamParams} params - Configuration parameters for the chat stream.
- * @param {ChatMessage[]} params.messages - The conversation history.
- * @param {string} params.accessToken - Google OAuth access token for tool execution.
- * @returns {Promise<Response>} A streaming response compatible with the AI SDK.
  */
 export async function createChatStream({
   messages,
@@ -173,83 +335,9 @@ export async function createChatStream({
   executor: providedExecutor,
 }: CreateChatStreamParams) {
   const executor = providedExecutor ?? new CepToolExecutor(accessToken);
-
-  const lastUserMessage = messages.findLast(
-    (message) => message.role === "user"
-  )?.content;
-
-  let knowledgeContext = "";
-
-  if (typeof lastUserMessage === "string" && lastUserMessage.length > 0) {
-    try {
-      // Fast pass to check if we need to search docs
-      const intentAnalysis = await generateText({
-        model: google("gemini-2.0-flash-001"), // Use a fast model for routing
-        output: Output.object({
-          schema: z.object({
-            needsKnowledge: z
-              .boolean()
-              .describe(
-                "True if the user is asking about concepts, errors, policies, or configuration steps."
-              ),
-            query: z
-              .string()
-              .describe("The search query for documentation and policies"),
-          }),
-        }),
-        prompt: `Analyze the user's latest message: "${lastUserMessage}". Do they need documentation or policy definitions?`,
-      });
-
-      if (intentAnalysis.output.needsKnowledge) {
-        const { query } = intentAnalysis.output;
-        const [docs, policies] = await Promise.all([
-          searchDocs(query),
-          searchPolicies(query),
-        ]);
-
-        const docSnippets = Array.isArray(docs?.hits)
-          ? docs.hits
-              .map((d) => {
-                const title =
-                  typeof d?.metadata?.title === "string"
-                    ? d.metadata.title
-                    : "Untitled";
-                const content =
-                  typeof d?.content === "string"
-                    ? d.content
-                    : String(d.content ?? "");
-                return `[Doc: ${title}]\n${content}`;
-              })
-              .join("\n\n")
-          : "";
-        const policySnippets = Array.isArray(policies?.hits)
-          ? policies.hits
-              .map((p) => {
-                const title =
-                  typeof p?.metadata?.title === "string"
-                    ? p.metadata.title
-                    : "Untitled";
-                const content =
-                  typeof p?.content === "string"
-                    ? p.content
-                    : String(p.content ?? "");
-                return `[Policy: ${title}]\n${content}`;
-              })
-              .join("\n\n")
-          : "";
-
-        if (docSnippets.length > 0 || policySnippets.length > 0) {
-          knowledgeContext = `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
-        }
-      }
-    } catch (error) {
-      console.error("Knowledge retrieval failed:", error);
-      // Proceed without context on error
-    }
-  }
-
-  // Inject knowledge into the system prompt or as a context message
-  // We'll append it to the system prompt for visibility
+  const lastUserMessage =
+    messages.findLast((message) => message.role === "user")?.content ?? "";
+  const knowledgeContext = await retrieveKnowledge(lastUserMessage);
   const enhancedSystemPrompt = knowledgeContext
     ? `${systemPrompt}${knowledgeContext}`
     : systemPrompt;
@@ -276,107 +364,72 @@ export async function createChatStream({
       if (!lastStep) {
         return {};
       }
-
-      const hasToolResults = lastStep.toolResults.length > 0;
-      const hasText = lastStep.text.trim().length > 0;
-      const hasSuggestActionsCall = lastStep.toolCalls.some(
-        (call) => call.toolName === "suggestActions"
-      );
-      const hasDlpProposalCall = lastStep.toolCalls.some(
-        (call) => call.toolName === "draftPolicyChange"
-      );
-
-      const recommendsDlpProposal =
-        /dlp/i.test(lastStep.text) &&
-        /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
-        /(rule|policy)/i.test(lastStep.text);
-
-      if (recommendsDlpProposal && !hasDlpProposalCall) {
-        return {
-          system: `${enhancedSystemPrompt}
-
-# DLP Proposal Guard
-You recommended creating a DLP rule. Now:
-1) Call listDLPRules to show current rules.
-2) Call draftPolicyChange to propose the DLP rule in the SAME step.
-Use a clear display name. If a specific destination like sharefile.com was mentioned, target uploads and include that in the reasoning.
-End by calling suggestActions.`,
-          activeTools: ["listDLPRules", "draftPolicyChange", "suggestActions"],
-        };
-      }
-
-      if (hasToolResults && !hasText) {
-        return {
-          system: `${enhancedSystemPrompt}
-
-# Response Completion Guard
-You just received tool results. Provide a concise response with:
-- Diagnosis
-- Evidence (cite exact fields)
-- Hypotheses (only if uncertain)
-- Next Steps (actionable)
-If knowledge results were retrieved, summarize them clearly.
-Use friendly org unit paths only; never show raw org unit IDs.
-End by calling suggestActions with 2-4 options.`,
-          activeTools: ["suggestActions"],
-        };
-      }
-
-      if (hasToolResults && !hasSuggestActionsCall) {
-        return {
-          system: `${enhancedSystemPrompt}
-
-# Action Completion Guard
-You already provided context. Now call suggestActions with 2-4 relevant options.
-If you add any text, keep it to one short sentence.`,
-          activeTools: ["suggestActions"],
-        };
-      }
-
-      return {};
+      const analysis = analyzeLastStep(lastStep);
+      return computeStepResponse(analysis, enhancedSystemPrompt);
     },
     tools: {
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
         inputSchema: GetChromeEventsSchema,
-        execute: async (args) => executor.getChromeEvents(args),
+        execute: async (args) => {
+          const result = await executor.getChromeEvents(args);
+          return result;
+        },
       }),
 
       getChromeConnectorConfiguration: tool({
         description: "Fetch Chrome connector configuration policies.",
         inputSchema: GetConnectorConfigSchema,
-        execute: async () => executor.getChromeConnectorConfiguration(),
+        execute: async () => {
+          const result = await executor.getChromeConnectorConfiguration();
+          return result;
+        },
       }),
 
       listDLPRules: tool({
         description: "List DLP rules from Cloud Identity.",
         inputSchema: ListDLPRulesSchema,
-        execute: async (args) => executor.listDLPRules(args),
+        execute: async (args) => {
+          const result = await executor.listDLPRules(args);
+          return result;
+        },
       }),
 
       enrollBrowser: tool({
         description:
           "Generate a Chrome Browser Cloud Management enrollment token.",
         inputSchema: EnrollBrowserSchema,
-        execute: async (args) => executor.enrollBrowser(args),
+        execute: async (args) => {
+          const result = await executor.enrollBrowser(args);
+          return result;
+        },
       }),
 
       listOrgUnits: tool({
         description: "List all organizational units (OUs).",
         inputSchema: ListOrgUnitsSchema,
-        execute: async () => executor.listOrgUnits(),
+        execute: async () => {
+          const result = await executor.listOrgUnits();
+          return result;
+        },
       }),
 
       getFleetOverview: tool({
         description: "Summarize fleet posture from live CEP data.",
         inputSchema: GetFleetOverviewSchema,
-        execute: async (args) => executor.getFleetOverview(args),
+        execute: async (args) => {
+          const result = await executor.getFleetOverview(args);
+          return result;
+        },
       }),
 
       debugAuth: tool({
         description: "Inspect access token scopes and expiry.",
         inputSchema: debugAuthSchema,
-        execute: async () => executor.debugAuth(),
+        execute: async () => {
+          const result = await executor.debugAuth();
+          return result;
+        },
       }),
 
       suggestActions: tool({
@@ -392,21 +445,30 @@ If you add any text, keep it to one short sentence.`,
         description:
           "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
         inputSchema: DraftPolicyChangeSchema,
-        execute: async (args) => executor.draftPolicyChange(args),
+        execute: async (args) => {
+          const result = await executor.draftPolicyChange(args);
+          return result;
+        },
       }),
 
       applyPolicyChange: tool({
         description:
           "Apply a policy change after user confirmation. Use this when the user says 'Confirm' after a draftPolicyChange proposal.",
         inputSchema: ApplyPolicyChangeSchema,
-        execute: async (args) => executor.applyPolicyChange(args),
+        execute: async (args) => {
+          const result = await executor.applyPolicyChange(args);
+          return result;
+        },
       }),
 
       createDLPRule: tool({
         description:
           "Create a DLP (Data Loss Prevention) rule to monitor or block sensitive data. Use this for setting up audit rules or data protection policies.",
         inputSchema: CreateDLPRuleSchema,
-        execute: async (args) => executor.createDLPRule(args),
+        execute: async (args) => {
+          const result = await executor.createDLPRule(args);
+          return result;
+        },
       }),
 
       searchKnowledge: tool({

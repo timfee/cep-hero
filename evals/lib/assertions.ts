@@ -30,12 +30,17 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * This allows "Wi-Fi" to match "wifi", "de-auth" to match "deauth", etc.
  */
 function normalizeForMatching(text: string): string {
-  return text
-    .toLowerCase()
-    .replaceAll(/[-_]/g, "") // Remove hyphens and underscores
-    .replaceAll(/[^\w\s]/g, " ") // Replace other punctuation with space
-    .replaceAll(/\s+/g, " ") // Collapse whitespace
-    .trim();
+  return (
+    text
+      .toLowerCase()
+      // Remove hyphens and underscores
+      .replaceAll(/[-_]/g, "")
+      // Replace other punctuation with space
+      .replaceAll(/[^\w\s]/g, " ")
+      // Collapse whitespace
+      .replaceAll(/\s+/g, " ")
+      .trim()
+  );
 }
 
 /**

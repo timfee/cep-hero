@@ -1,7 +1,7 @@
 import { render, fireEvent } from "@testing-library/react";
 import { describe, expect, it, mock, spyOn, beforeEach } from "bun:test";
 
-import Error from "@/app/error";
+import ErrorBoundary from "@/app/error";
 
 describe("Error boundary component", () => {
   const mockReset = mock(() => {});
@@ -14,7 +14,9 @@ describe("Error boundary component", () => {
   });
 
   it("renders error message", () => {
-    const { getByText } = render(<Error error={mockError} reset={mockReset} />);
+    const { getByText } = render(
+      <ErrorBoundary error={mockError} reset={mockReset} />
+    );
 
     expect(getByText("Something went wrong")).toBeInTheDocument();
     expect(
@@ -31,7 +33,7 @@ describe("Error boundary component", () => {
     errorWithDigest.digest = "abc123";
 
     const { getByText } = render(
-      <Error error={errorWithDigest} reset={mockReset} />
+      <ErrorBoundary error={errorWithDigest} reset={mockReset} />
     );
 
     expect(getByText("Error ID: abc123")).toBeInTheDocument();
@@ -39,14 +41,16 @@ describe("Error boundary component", () => {
 
   it("does not display error digest when not provided", () => {
     const { queryByText } = render(
-      <Error error={mockError} reset={mockReset} />
+      <ErrorBoundary error={mockError} reset={mockReset} />
     );
 
     expect(queryByText(/Error ID:/)).not.toBeInTheDocument();
   });
 
   it("calls reset function when Try again button is clicked", () => {
-    const { getByRole } = render(<Error error={mockError} reset={mockReset} />);
+    const { getByRole } = render(
+      <ErrorBoundary error={mockError} reset={mockReset} />
+    );
 
     const button = getByRole("button", { name: /try again/i });
     fireEvent.click(button);
@@ -57,7 +61,7 @@ describe("Error boundary component", () => {
   it("logs error to console on mount", () => {
     const consoleSpy = spyOn(console, "error").mockImplementation(() => {});
 
-    render(<Error error={mockError} reset={mockReset} />);
+    render(<ErrorBoundary error={mockError} reset={mockReset} />);
 
     expect(consoleSpy).toHaveBeenCalledWith("Application error:", mockError);
 
@@ -65,7 +69,9 @@ describe("Error boundary component", () => {
   });
 
   it("renders the alert icon", () => {
-    const { container } = render(<Error error={mockError} reset={mockReset} />);
+    const { container } = render(
+      <ErrorBoundary error={mockError} reset={mockReset} />
+    );
 
     // The icon container should be present
     const iconContainer = container.querySelector(String.raw`.bg-red-500\/20`);

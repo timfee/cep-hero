@@ -1,5 +1,6 @@
 /* eslint-disable jest/require-hook */
 import { expect } from "bun:test";
+import { z } from "zod";
 
 import { type FixtureData } from "@/lib/mcp/types";
 
@@ -19,7 +20,6 @@ let chatReadyPromise: Promise<void> | undefined;
 export interface ChatResponse {
   text: string;
   metadata?: unknown;
-  /** Tool names that were called during the conversation */
   toolCalls?: string[];
 }
 
@@ -30,6 +30,217 @@ interface ChatMessage {
 
 export interface CallChatMessagesOptions {
   fixtures?: FixtureData;
+}
+
+const ChatResponseSchema = z.object({
+  error: z.string().optional(),
+  diagnosis: z.string().optional(),
+  nextSteps: z.array(z.string()).optional(),
+});
+
+const StreamChunkSchema = z.object({
+  type: z.string().optional(),
+  textDelta: z.string().optional(),
+  delta: z.string().optional(),
+  toolName: z.string().optional(),
+});
+
+function syntheticResponse(): ChatResponse {
+  return {
+    text: "diagnosis: synthetic\nevidence: fixture\nhypotheses: none\nnext steps: review logs",
+    metadata: {
+      diagnosis: "synthetic",
+      evidence: "fixture",
+      hypotheses: "none",
+      nextSteps: ["review logs"],
+    },
+  };
+}
+
+function buildFetchHeaders(useFixtureMode: boolean): Record<string, string> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Test-Bypass": "1",
+  };
+  if (useFixtureMode) {
+    headers["X-Eval-Test-Mode"] = "1";
+  }
+  return headers;
+}
+
+function buildFetchBody(
+  messages: ChatMessage[],
+  useFixtureMode: boolean,
+  fixtures?: FixtureData
+): Record<string, unknown> {
+  const body: Record<string, unknown> = { messages };
+  if (useFixtureMode && fixtures) {
+    body.fixtures = fixtures;
+  }
+  return body;
+}
+
+function handleErrorResponse(errorMessage: string): ChatResponse {
+  if (ALLOW_FAKE_ON_ERROR) {
+    return syntheticResponse();
+  }
+  return { text: `error: ${errorMessage}` };
+}
+
+function buildTextFromParsedData(
+  diagnosis: string | undefined,
+  nextSteps: string[]
+): string {
+  const textLines: string[] = [];
+  if (typeof diagnosis === "string" && diagnosis.length > 0) {
+    textLines.push(diagnosis);
+  }
+  if (nextSteps.length > 0) {
+    textLines.push(`Next: ${nextSteps.join("; ")}`);
+  }
+  return textLines.join("\n");
+}
+
+function parseJsonResponse(bodyText: string): ChatResponse | null {
+  const data: unknown = JSON.parse(bodyText);
+  const parsed = ChatResponseSchema.safeParse(data);
+  if (!parsed.success) {
+    return null;
+  }
+  const errorMessage = parsed.data.error;
+  if (typeof errorMessage === "string" && errorMessage.length > 0) {
+    return handleErrorResponse(errorMessage);
+  }
+  const text = buildTextFromParsedData(
+    parsed.data.diagnosis,
+    parsed.data.nextSteps ?? []
+  );
+  return { text, metadata: data };
+}
+
+function parseStreamChunk(
+  chunk: string
+): z.infer<typeof StreamChunkSchema> | null {
+  try {
+    const data: unknown = JSON.parse(chunk);
+    const parsed = StreamChunkSchema.safeParse(data);
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+function extractStreamChunks(
+  bodyText: string
+): z.infer<typeof StreamChunkSchema>[] {
+  return bodyText
+    .split("\n")
+    .filter((line) => line.startsWith("data:"))
+    .map((line) => line.replace(/^data:\s*/, ""))
+    .filter((chunk) => chunk.length > 0 && chunk !== "[done]")
+    .map(parseStreamChunk)
+    .filter(
+      (chunk): chunk is z.infer<typeof StreamChunkSchema> => chunk !== null
+    );
+}
+
+function parseStreamingResponse(bodyText: string): ChatResponse {
+  const chunks = extractStreamChunks(bodyText);
+
+  const deltas = chunks
+    .filter((chunk) => chunk.type === "text-delta")
+    .map((chunk) => chunk.textDelta ?? chunk.delta)
+    .filter((delta): delta is string => typeof delta === "string");
+
+  const toolCalls = chunks
+    .filter(
+      (chunk) => chunk.type === "tool-input-start" || chunk.type === "tool-call"
+    )
+    .map((chunk) => chunk.toolName)
+    .filter((name): name is string => typeof name === "string");
+
+  return {
+    text: deltas.join("") || bodyText,
+    toolCalls: toolCalls.length > 0 ? [...new Set(toolCalls)] : undefined,
+  };
+}
+
+function processResponseBody(bodyText: string): ChatResponse {
+  if (ALLOW_FAKE_ON_ERROR && bodyText.trim().length < 10) {
+    return syntheticResponse();
+  }
+  try {
+    const jsonResponse = parseJsonResponse(bodyText);
+    if (jsonResponse !== null) {
+      return jsonResponse;
+    }
+    return parseStreamingResponse(bodyText);
+  } catch {
+    if (ALLOW_FAKE_ON_ERROR) {
+      return syntheticResponse();
+    }
+    return parseStreamingResponse(bodyText);
+  }
+}
+
+async function executeRequest(
+  messages: ChatMessage[],
+  options: CallChatMessagesOptions | undefined,
+  controller: AbortController
+): Promise<Response> {
+  const useFixtureMode =
+    USE_EVAL_FIXTURE_MODE && options?.fixtures !== undefined;
+  const headers = buildFetchHeaders(useFixtureMode);
+  const body = buildFetchBody(messages, useFixtureMode, options?.fixtures);
+  const retryOptions = ALLOW_FAKE_ON_ERROR
+    ? { retries: 2, delayMs: 300, maxDelayMs: 1000 }
+    : undefined;
+
+  const result = await fetchWithRetry(async () => {
+    const response = await fetch(CHAT_URL, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    return response;
+  }, retryOptions);
+  return result;
+}
+
+function createTimeoutId(
+  controller: AbortController
+): NodeJS.Timeout | undefined {
+  if (!Number.isFinite(CHAT_TIMEOUT_MS) || CHAT_TIMEOUT_MS <= 0) {
+    return undefined;
+  }
+  return setTimeout(() => {
+    controller.abort();
+  }, CHAT_TIMEOUT_MS);
+}
+
+async function executeAndProcessRequest(
+  messages: ChatMessage[],
+  options: CallChatMessagesOptions | undefined,
+  controller: AbortController
+): Promise<ChatResponse> {
+  const res = await executeRequest(messages, options, controller);
+  expect(res.status).toBeLessThan(500);
+  const bodyText = await res.text();
+  return processResponseBody(bodyText);
+}
+
+function handleChatError(error: unknown): ChatResponse {
+  if (ALLOW_FAKE_ON_ERROR) {
+    return syntheticResponse();
+  }
+  throw error;
+}
+
+function clearTimeoutIfSet(timeoutId: NodeJS.Timeout | undefined): void {
+  if (timeoutId !== undefined) {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
@@ -44,138 +255,21 @@ export async function callChatMessages(
   }
   await ensureChatReady(CHAT_URL);
   const controller = new AbortController();
-  const timeoutId =
-    Number.isFinite(CHAT_TIMEOUT_MS) && CHAT_TIMEOUT_MS > 0
-      ? setTimeout(() => {
-          controller.abort();
-        }, CHAT_TIMEOUT_MS)
-      : undefined;
+  const timeoutId = createTimeoutId(controller);
 
-  let res: Response;
   try {
-    const retryOptions = ALLOW_FAKE_ON_ERROR
-      ? { retries: 2, delayMs: 300, maxDelayMs: 1000 }
-      : undefined;
-    const headers: Record<string, string> = {
-      "Content-Type": "application/json",
-      "X-Test-Bypass": "1",
-    };
-    const useFixtureMode =
-      USE_EVAL_FIXTURE_MODE && options?.fixtures !== undefined;
-    if (useFixtureMode) {
-      headers["X-Eval-Test-Mode"] = "1";
-    }
-    const body: Record<string, unknown> = { messages };
-    if (useFixtureMode && options?.fixtures) {
-      body.fixtures = options.fixtures;
-    }
-    res = await fetchWithRetry(async () => {
-      const response = await fetch(CHAT_URL, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(body),
-        signal: controller.signal,
-      });
-      return response;
-    }, retryOptions);
+    return await executeAndProcessRequest(messages, options, controller);
   } catch (error) {
-    if (timeoutId !== undefined) {
-      clearTimeout(timeoutId);
-    }
-    if (ALLOW_FAKE_ON_ERROR) {
-      return {
-        text: "diagnosis: synthetic\nevidence: fixture\nhypotheses: none\nnext steps: review logs",
-        metadata: {
-          diagnosis: "synthetic",
-          evidence: "fixture",
-          hypotheses: "none",
-          nextSteps: ["review logs"],
-        },
-      } satisfies ChatResponse;
-    }
-    throw error;
+    return handleChatError(error);
   } finally {
-    if (timeoutId !== undefined) {
-      clearTimeout(timeoutId);
-    }
+    clearTimeoutIfSet(timeoutId);
   }
-
-  expect(res.status).toBeLessThan(500);
-  const bodyText = await res.text();
-
-  if (ALLOW_FAKE_ON_ERROR && bodyText.trim().length < 10) {
-    return syntheticResponse();
-  }
-
-  try {
-    const data: unknown = JSON.parse(bodyText);
-    const errorMessage = getOptionalString(data, "error");
-    if (typeof errorMessage === "string" && errorMessage.length > 0) {
-      if (ALLOW_FAKE_ON_ERROR) {
-        return syntheticResponse();
-      }
-      return { text: `error: ${errorMessage}` };
-    }
-    const textLines: string[] = [];
-    const diagnosis = getOptionalString(data, "diagnosis");
-    if (typeof diagnosis === "string" && diagnosis.length > 0) {
-      textLines.push(diagnosis);
-    }
-    const nextSteps = getStringArray(data, "nextSteps");
-    if (nextSteps.length > 0) {
-      textLines.push(`Next: ${nextSteps.join("; ")}`);
-    }
-    return { text: textLines.join("\n"), metadata: data };
-  } catch {
-    if (ALLOW_FAKE_ON_ERROR) {
-      return syntheticResponse();
-    }
-    // Parse streaming response
-    const lines = bodyText.split("\n");
-    const chunks = lines
-      .filter((line) => line.startsWith("data:"))
-      .map((line) => line.replace(/^data:\s*/, ""))
-      .filter((chunk) => chunk.length > 0 && chunk !== "[done]")
-      .map(parseJson)
-      .filter((chunk): chunk is Record<string, unknown> => isRecord(chunk));
-
-    // Extract text deltas
-    const deltas = chunks
-      .map(getTextDelta)
-      .filter((delta): delta is string => typeof delta === "string");
-
-    // Extract tool calls
-    const toolCalls = chunks
-      .filter((chunk) => {
-        const { type } = chunk;
-        return type === "tool-input-start" || type === "tool-call";
-      })
-      .map((chunk) => chunk.toolName)
-      .filter((name): name is string => typeof name === "string");
-
-    return {
-      text: deltas.join("") || bodyText,
-      toolCalls: toolCalls.length > 0 ? [...new Set(toolCalls)] : undefined,
-    };
-  }
-}
-
-function syntheticResponse(): ChatResponse {
-  return {
-    text: "diagnosis: synthetic\nevidence: fixture\nhypotheses: none\nnext steps: review logs",
-    metadata: {
-      diagnosis: "synthetic",
-      evidence: "fixture",
-      hypotheses: "none",
-      nextSteps: ["review logs"],
-    },
-  };
 }
 
 /**
  * Call the chat endpoint with a single prompt.
  */
-export async function callChat(
+export function callChat(
   prompt: string,
   options?: CallChatMessagesOptions
 ): Promise<ChatResponse> {
@@ -186,64 +280,6 @@ export async function callChat(
     ],
     options
   );
-}
-
-/**
- * Parse JSON safely, returning undefined on failure.
- */
-function parseJson(value: string): unknown {
-  try {
-    return JSON.parse(value);
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Extract text delta payload from a streaming chunk.
- * AI SDK uses "textDelta" field, not "delta".
- */
-function getTextDelta(value: unknown): string | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const type = Reflect.get(value, "type");
-  // AI SDK uses "textDelta" not "delta"
-  const delta = Reflect.get(value, "textDelta") ?? Reflect.get(value, "delta");
-
-  if (type !== "text-delta") {
-    return undefined;
-  }
-
-  return typeof delta === "string" ? delta : undefined;
-}
-
-/**
- * Extract a string property from unknown objects.
- */
-function getOptionalString(value: unknown, key: string): string | undefined {
-  if (!isRecord(value)) {
-    return undefined;
-  }
-
-  const property = Reflect.get(value, key);
-  return typeof property === "string" ? property : undefined;
-}
-
-/**
- * Extract a string array from unknown objects.
- */
-function getStringArray(value: unknown, key: string): string[] {
-  if (!isRecord(value)) {
-    return [];
-  }
-
-  const property = Reflect.get(value, key);
-  return Array.isArray(property) &&
-    property.every((item) => typeof item === "string")
-    ? property
-    : [];
 }
 
 async function ensureChatReady(url: string): Promise<void> {
@@ -262,10 +298,6 @@ async function ensureChatReady(url: string): Promise<void> {
   if (chatReadyPromise !== undefined) {
     await chatReadyPromise;
   }
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
 }
 
 async function waitForChatReady(
@@ -303,29 +335,60 @@ const DEFAULT_RETRY_OPTIONS: RetryOptions = {
   maxDelayMs: 5000,
 };
 
+function shouldReturnResponse(
+  status: number,
+  attempt: number,
+  maxRetries: number
+): boolean {
+  return !isRetryableStatus(status) || attempt >= maxRetries;
+}
+
+async function waitBeforeRetry(
+  delay: number,
+  maxDelayMs: number
+): Promise<number> {
+  const jitterMs = Math.floor(Math.random() * 200);
+  await Bun.sleep(delay + jitterMs);
+  return Math.min(maxDelayMs, Math.ceil(delay * 1.8));
+}
+
+interface RetryState {
+  attempt: number;
+  delay: number;
+}
+
+async function attemptFetch(
+  action: () => Promise<Response>,
+  state: RetryState,
+  maxRetries: number
+): Promise<Response | null> {
+  try {
+    const response = await action();
+    if (shouldReturnResponse(response.status, state.attempt, maxRetries)) {
+      return response;
+    }
+    return null;
+  } catch (error) {
+    if (state.attempt >= maxRetries) {
+      throw error;
+    }
+    return null;
+  }
+}
+
 async function fetchWithRetry(
   action: () => Promise<Response>,
   options: RetryOptions = DEFAULT_RETRY_OPTIONS
 ): Promise<Response> {
-  let attempt = 0;
-  let delay = options.delayMs;
+  const state: RetryState = { attempt: 0, delay: options.delayMs };
 
   while (true) {
-    try {
-      const response = await action();
-      if (!isRetryableStatus(response.status) || attempt >= options.retries) {
-        return response;
-      }
-    } catch (error) {
-      if (attempt >= options.retries) {
-        throw error;
-      }
+    const response = await attemptFetch(action, state, options.retries);
+    if (response) {
+      return response;
     }
-
-    const jitterMs = Math.floor(Math.random() * 200);
-    await Bun.sleep(delay + jitterMs);
-    delay = Math.min(options.maxDelayMs, Math.ceil(delay * 1.8));
-    attempt += 1;
+    state.delay = await waitBeforeRetry(state.delay, options.maxDelayMs);
+    state.attempt += 1;
   }
 }
 
