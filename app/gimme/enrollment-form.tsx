@@ -69,13 +69,11 @@ function CopyButton({ text, label }: { text: string; label: string }) {
  */
 function SuccessResult({
   email,
-  password,
-  instructions,
+  notificationSentTo,
   onReset,
 }: {
   email: string;
-  password: string;
-  instructions: string[];
+  notificationSentTo: string;
   onReset: () => void;
 }) {
   return (
@@ -86,7 +84,8 @@ function SuccessResult({
           Account Created Successfully
         </AlertTitle>
         <AlertDescription className="text-green-700 dark:text-green-300">
-          Your super admin account has been created.
+          Your super admin account has been created and credentials have been
+          sent to your email.
         </AlertDescription>
       </Alert>
 
@@ -94,7 +93,7 @@ function SuccessResult({
         <CardContent className="space-y-4 pt-6">
           <div>
             <label className="text-sm font-medium text-muted-foreground">
-              Email
+              New Admin Email
             </label>
             <div className="mt-1 flex items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2">
               <code className="text-sm">{email}</code>
@@ -104,23 +103,23 @@ function SuccessResult({
 
           <div>
             <label className="text-sm font-medium text-muted-foreground">
-              Temporary Password
+              Credentials Sent To
             </label>
-            <div className="mt-1 flex items-center justify-between gap-2 rounded-md border bg-muted/50 px-3 py-2">
-              <code className="text-sm font-mono">{password}</code>
-              <CopyButton text={password} label="password" />
+            <div className="mt-1 rounded-md border bg-muted/50 px-3 py-2">
+              <code className="text-sm">{notificationSentTo}</code>
             </div>
             <p className="mt-1 text-xs text-muted-foreground">
-              You will be required to change this on first login.
+              Check your inbox for the temporary password.
             </p>
           </div>
 
           <div className="rounded-md border bg-muted/30 p-3">
             <p className="mb-2 text-sm font-medium">Next Steps:</p>
             <ol className="list-inside list-decimal space-y-1 text-sm text-muted-foreground">
-              {instructions.map((instruction) => (
-                <li key={instruction}>{instruction}</li>
-              ))}
+              <li>Check your email for the temporary password</li>
+              <li>Go to admin.google.com</li>
+              <li>Sign in with your new admin email</li>
+              <li>Change your password when prompted</li>
             </ol>
           </div>
         </CardContent>
@@ -156,8 +155,7 @@ export function EnrollmentForm() {
     return (
       <SuccessResult
         email={state.email}
-        password={state.password}
-        instructions={state.instructions}
+        notificationSentTo={state.notificationSentTo}
         onReset={handleReset}
       />
     );
