@@ -42,6 +42,21 @@ async function getSession(
   return session;
 }
 
+async function fetchTokenFromApi(req: Request): Promise<AccessTokenResult> {
+  try {
+    const tokenResponse = await auth.api.getAccessToken({
+      body: { providerId: "google" },
+      headers: req.headers,
+    });
+    const token = tokenResponse?.accessToken;
+    return token ? { type: "success", token } : { type: "undefined" };
+  } catch {
+    return EVAL_TEST_MODE_ENABLED
+      ? { type: "test_mode_fallback" }
+      : { type: "error" };
+  }
+}
+
 async function getAccessToken(
   req: Request,
   isTestBypass: boolean
@@ -49,22 +64,8 @@ async function getAccessToken(
   if (isTestBypass) {
     return { type: "success", token: "test-token" };
   }
-  try {
-    const tokenResponse = await auth.api.getAccessToken({
-      body: { providerId: "google" },
-      headers: req.headers,
-    });
-    const token = tokenResponse?.accessToken;
-    if (token) {
-      return { type: "success", token };
-    }
-    return { type: "undefined" };
-  } catch {
-    if (EVAL_TEST_MODE_ENABLED) {
-      return { type: "test_mode_fallback" };
-    }
-    return { type: "error" };
-  }
+  const result = await fetchTokenFromApi(req);
+  return result;
 }
 
 function handleTokenResult(

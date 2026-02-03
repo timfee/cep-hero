@@ -45,40 +45,31 @@ export interface LoadFixturesOptions {
   rootDir?: string;
 }
 
-/**
- * Load fixture data for an eval case.
- * Merges base fixtures with case-specific overrides.
- */
-export function loadEvalFixtures(
-  caseId: string,
-  options: LoadFixturesOptions = {}
-): FixtureData | undefined {
-  const {
-    useBase = process.env.EVAL_USE_BASE === "1",
-    useFixtures = process.env.EVAL_USE_FIXTURES === "1",
-    rootDir = process.cwd(),
-  } = options;
-
-  if (!useBase && !useFixtures) {
-    return undefined;
+function loadBaseFixtures(
+  rootDir: string,
+  useBase: boolean
+): Record<string, unknown> {
+  if (!useBase) {
+    return {};
   }
-
-  let baseData: Record<string, unknown> = {};
-
-  if (useBase) {
-    const basePath = path.join(
-      rootDir,
-      "evals",
-      "fixtures",
-      "base",
-      "api-base.json"
-    );
-    if (existsSync(basePath)) {
-      const loaded = loadJsonFile(basePath);
-      baseData = isPlainObject(loaded) ? loaded : {};
-    }
+  const basePath = path.join(
+    rootDir,
+    "evals",
+    "fixtures",
+    "base",
+    "api-base.json"
+  );
+  if (!existsSync(basePath)) {
+    return {};
   }
+  const loaded = loadJsonFile(basePath);
+  return isPlainObject(loaded) ? loaded : {};
+}
 
+function loadCaseOverrides(
+  rootDir: string,
+  caseId: string
+): Record<string, unknown> {
   const caseOverridePath = path.join(
     rootDir,
     "evals",
@@ -86,16 +77,14 @@ export function loadEvalFixtures(
     caseId,
     "overrides.json"
   );
-  let overrideData: Record<string, unknown> = {};
-
-  if (existsSync(caseOverridePath)) {
-    const loaded = loadJsonFile(caseOverridePath);
-    overrideData = isPlainObject(loaded) ? loaded : {};
+  if (!existsSync(caseOverridePath)) {
+    return {};
   }
+  const loaded = loadJsonFile(caseOverridePath);
+  return isPlainObject(loaded) ? loaded : {};
+}
 
-  const merged = mergeJson(baseData, overrideData);
-  const mergedObject = isPlainObject(merged) ? merged : {};
-
+function buildFixtureData(mergedObject: Record<string, unknown>): FixtureData {
   return {
     orgUnits: Array.isArray(mergedObject.orgUnits)
       ? mergedObject.orgUnits
@@ -122,106 +111,159 @@ export function loadEvalFixtures(
 }
 
 /**
- * Build an eval prompt with optional fixture context attached.
+ * Load fixture data for an eval case.
+ * Merges base fixtures with case-specific overrides.
  */
-export function buildEvalPrompt(
-  basePrompt: string,
-  options: {
-    fixtures?: string[];
-    overrides?: string[];
-    caseId?: string;
-    rootDir?: string;
-    useBase?: boolean;
-    useFixtures?: boolean;
-    injectIntoPrompt?: boolean;
-  } = {}
-): string {
-  const base = `${basePrompt}\n\nPlease respond with diagnosis, evidence, hypotheses, and next steps. Keep the response under 800 characters and avoid long nested fields.`;
-
+export function loadEvalFixtures(
+  caseId: string,
+  options: LoadFixturesOptions = {}
+): FixtureData | undefined {
   const {
-    fixtures,
-    overrides,
-    caseId,
-    rootDir = process.cwd(),
     useBase = process.env.EVAL_USE_BASE === "1",
     useFixtures = process.env.EVAL_USE_FIXTURES === "1",
-    // NEW: Control whether to inject fixtures into prompt (default: false for realistic testing)
-    injectIntoPrompt = process.env.EVAL_INJECT_PROMPT === "1",
+    rootDir = process.cwd(),
   } = options;
 
-  // If not injecting into prompt, return base prompt only
-  if (!injectIntoPrompt) {
-    return base;
+  if (!useBase && !useFixtures) {
+    return undefined;
   }
 
-  if (!useFixtures && !useBase && (!overrides || overrides.length === 0)) {
-    return base;
-  }
+  const baseData = loadBaseFixtures(rootDir, useBase);
+  const overrideData = loadCaseOverrides(rootDir, caseId);
+  const merged = mergeJson(baseData, overrideData);
+  const mergedObject = isPlainObject(merged) ? merged : {};
 
-  const blocks: string[] = [];
-  const overridePaths: string[] = [];
+  return buildFixtureData(mergedObject);
+}
 
+interface PromptBuildOptions {
+  fixtures?: string[];
+  overrides?: string[];
+  caseId?: string;
+  rootDir?: string;
+  useBase?: boolean;
+  useFixtures?: boolean;
+  injectIntoPrompt?: boolean;
+}
+
+function resolvePath(filePath: string, rootDir: string): string {
+  return path.isAbsolute(filePath) ? filePath : path.join(rootDir, filePath);
+}
+
+function collectOverridePaths(
+  overrides: string[] | undefined,
+  caseId: string | undefined,
+  rootDir: string
+): string[] {
+  const paths: string[] = [];
   if (overrides) {
     for (const overridePath of overrides) {
-      overridePaths.push(
-        path.isAbsolute(overridePath)
-          ? overridePath
-          : path.join(rootDir, overridePath)
-      );
+      paths.push(resolvePath(overridePath, rootDir));
     }
   }
-
   if (isNonEmptyString(caseId)) {
-    const perCaseOverridePath = path.join(
+    const perCasePath = path.join(
       rootDir,
       "evals",
       "fixtures",
       caseId,
       "overrides.json"
     );
-    if (existsSync(perCaseOverridePath)) {
-      overridePaths.push(perCaseOverridePath);
+    if (existsSync(perCasePath)) {
+      paths.push(perCasePath);
     }
   }
+  return paths;
+}
 
-  if (useBase) {
-    const basePath = path.join(
-      rootDir,
-      "evals",
-      "fixtures",
-      "base",
-      "api-base.json"
-    );
-    let baseData: unknown = loadJsonFile(basePath);
-    if (overridePaths.length > 0) {
-      for (const overridePath of overridePaths) {
-        const overrideData = loadJsonFile(overridePath);
-        baseData = mergeJson(baseData, overrideData);
-      }
-      blocks.push(formatJsonBlock("api-base+overrides.json", baseData));
-    } else {
-      blocks.push(formatFileBlock("api-base.json", basePath));
-    }
-  } else if (overridePaths.length > 0) {
+function buildBaseBlocks(rootDir: string, overridePaths: string[]): string[] {
+  const basePath = path.join(
+    rootDir,
+    "evals",
+    "fixtures",
+    "base",
+    "api-base.json"
+  );
+  let baseData: unknown = loadJsonFile(basePath);
+  if (overridePaths.length > 0) {
     for (const overridePath of overridePaths) {
-      blocks.push(formatFileBlock(path.basename(overridePath), overridePath));
+      baseData = mergeJson(baseData, loadJsonFile(overridePath));
     }
+    return [formatJsonBlock("api-base+overrides.json", baseData)];
+  }
+  return [formatFileBlock("api-base.json", basePath)];
+}
+
+function buildOverrideBlocks(overridePaths: string[]): string[] {
+  return overridePaths.map((p) => formatFileBlock(path.basename(p), p));
+}
+
+function buildFixtureBlocks(fixtures: string[], rootDir: string): string[] {
+  return fixtures.map((fixturePath) => {
+    const fullPath = resolvePath(fixturePath, rootDir);
+    return formatFileBlock(path.basename(fixturePath), fullPath);
+  });
+}
+
+function buildPromptBlocks(
+  options: PromptBuildOptions,
+  rootDir: string
+): string[] {
+  const overridePaths = collectOverridePaths(
+    options.overrides,
+    options.caseId,
+    rootDir
+  );
+  const blocks: string[] = [];
+
+  if (options.useBase) {
+    blocks.push(...buildBaseBlocks(rootDir, overridePaths));
+  } else if (overridePaths.length > 0) {
+    blocks.push(...buildOverrideBlocks(overridePaths));
   }
 
-  if (useFixtures && fixtures && fixtures.length > 0) {
-    for (const fixturePath of fixtures) {
-      const fullPath = path.isAbsolute(fixturePath)
-        ? fixturePath
-        : path.join(rootDir, fixturePath);
-      blocks.push(formatFileBlock(path.basename(fixturePath), fullPath));
-    }
+  if (options.useFixtures && options.fixtures && options.fixtures.length > 0) {
+    blocks.push(...buildFixtureBlocks(options.fixtures, rootDir));
   }
 
-  if (blocks.length === 0) {
+  return blocks;
+}
+
+/**
+ * Build an eval prompt with optional fixture context attached.
+ */
+export function buildEvalPrompt(
+  basePrompt: string,
+  options: PromptBuildOptions = {}
+): string {
+  const base = `${basePrompt}\n\nPlease respond with diagnosis, evidence, hypotheses, and next steps. Keep the response under 800 characters and avoid long nested fields.`;
+
+  const rootDir = options.rootDir ?? process.cwd();
+  const useBase = options.useBase ?? process.env.EVAL_USE_BASE === "1";
+  const useFixtures =
+    options.useFixtures ?? process.env.EVAL_USE_FIXTURES === "1";
+  const injectIntoPrompt =
+    options.injectIntoPrompt ?? process.env.EVAL_INJECT_PROMPT === "1";
+
+  if (!injectIntoPrompt) {
     return base;
   }
 
-  return `${base}\n\nFixture context:\n${blocks.join("\n\n")}`;
+  if (
+    !useFixtures &&
+    !useBase &&
+    (!options.overrides || options.overrides.length === 0)
+  ) {
+    return base;
+  }
+
+  const blocks = buildPromptBlocks(
+    { ...options, useBase, useFixtures },
+    rootDir
+  );
+  return blocks.length === 0
+    ? base
+    : `${base}\n\nFixture context:\n${blocks.join("\n\n")}`;
 }
 
 function formatFileBlock(label: string, filePath: string): string {

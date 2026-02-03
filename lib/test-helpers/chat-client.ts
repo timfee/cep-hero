@@ -230,6 +230,19 @@ async function executeAndProcessRequest(
   return processResponseBody(bodyText);
 }
 
+function handleChatError(error: unknown): ChatResponse {
+  if (ALLOW_FAKE_ON_ERROR) {
+    return syntheticResponse();
+  }
+  throw error;
+}
+
+function clearTimeoutIfSet(timeoutId: NodeJS.Timeout | undefined): void {
+  if (timeoutId !== undefined) {
+    clearTimeout(timeoutId);
+  }
+}
+
 /**
  * Call the chat endpoint with explicit messages.
  */
@@ -247,14 +260,9 @@ export async function callChatMessages(
   try {
     return await executeAndProcessRequest(messages, options, controller);
   } catch (error) {
-    if (ALLOW_FAKE_ON_ERROR) {
-      return syntheticResponse();
-    }
-    throw error;
+    return handleChatError(error);
   } finally {
-    if (timeoutId !== undefined) {
-      clearTimeout(timeoutId);
-    }
+    clearTimeoutIfSet(timeoutId);
   }
 }
 
@@ -345,26 +353,43 @@ async function waitBeforeRetry(
   return Math.min(maxDelayMs, Math.ceil(delay * 1.8));
 }
 
+interface RetryState {
+  attempt: number;
+  delay: number;
+}
+
+async function attemptFetch(
+  action: () => Promise<Response>,
+  state: RetryState,
+  maxRetries: number
+): Promise<Response | null> {
+  try {
+    const response = await action();
+    if (shouldReturnResponse(response.status, state.attempt, maxRetries)) {
+      return response;
+    }
+    return null;
+  } catch (error) {
+    if (state.attempt >= maxRetries) {
+      throw error;
+    }
+    return null;
+  }
+}
+
 async function fetchWithRetry(
   action: () => Promise<Response>,
   options: RetryOptions = DEFAULT_RETRY_OPTIONS
 ): Promise<Response> {
-  let attempt = 0;
-  let delay = options.delayMs;
+  const state: RetryState = { attempt: 0, delay: options.delayMs };
 
   while (true) {
-    try {
-      const response = await action();
-      if (shouldReturnResponse(response.status, attempt, options.retries)) {
-        return response;
-      }
-    } catch (error) {
-      if (attempt >= options.retries) {
-        throw error;
-      }
+    const response = await attemptFetch(action, state, options.retries);
+    if (response) {
+      return response;
     }
-    delay = await waitBeforeRetry(delay, options.maxDelayMs);
-    attempt += 1;
+    state.delay = await waitBeforeRetry(state.delay, options.maxDelayMs);
+    state.attempt += 1;
   }
 }
 
