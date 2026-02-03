@@ -38,6 +38,7 @@ export class FixtureToolExecutor implements IToolExecutor {
       return {
         error: this.fixtures.errors.chromeEvents,
         suggestion: "This is a fixture error for testing.",
+        requiresReauth: false,
       };
     }
 
@@ -58,6 +59,7 @@ export class FixtureToolExecutor implements IToolExecutor {
       return {
         error: this.fixtures.errors.dlpRules,
         suggestion: "This is a fixture error for testing.",
+        requiresReauth: false,
       };
     }
 
@@ -71,6 +73,7 @@ export class FixtureToolExecutor implements IToolExecutor {
       return {
         error: this.fixtures.errors.orgUnits,
         suggestion: "This is a fixture error for testing.",
+        requiresReauth: false,
       };
     }
 
@@ -88,6 +91,7 @@ export class FixtureToolExecutor implements IToolExecutor {
         error: this.fixtures.errors.enrollBrowser,
         suggestion:
           "Ensure the caller has Chrome policy admin rights and the API is enabled.",
+        requiresReauth: false,
       };
     }
 
@@ -97,18 +101,24 @@ export class FixtureToolExecutor implements IToolExecutor {
 
       // If token has error or bad status, return error
       if (error) {
-        return { error, suggestion: "Check enrollment token configuration." };
+        return {
+          error,
+          suggestion: "Check enrollment token configuration.",
+          requiresReauth: false,
+        };
       }
       if (status === "expired") {
         return {
           error: "Enrollment token has expired",
           suggestion: "Generate a new enrollment token.",
+          requiresReauth: false,
         };
       }
       if (status === "revoked") {
         return {
           error: "Enrollment token has been revoked",
           suggestion: "Generate a new enrollment token.",
+          requiresReauth: false,
         };
       }
 
@@ -130,6 +140,7 @@ export class FixtureToolExecutor implements IToolExecutor {
       return {
         error: this.fixtures.errors.connectorConfig,
         suggestion: "This is a fixture error for testing.",
+        requiresReauth: false,
         policySchemas: [],
       };
     }
