@@ -40,8 +40,10 @@ function buildTargetResources(orgUnits: OrgUnit[]): string[] {
 
 function summarizeResolvedPolicies(
   results: Array<{
-    targetResource?: string;
-    resolvedPolicies: Array<{ targetKey?: { targetResource?: string } }>;
+    targetResource?: string | null;
+    resolvedPolicies: Array<{
+      targetKey?: { targetResource?: string | null };
+    }>;
   }>
 ) {
   return results.map((result) => {
