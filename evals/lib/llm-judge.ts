@@ -6,7 +6,11 @@ import { google } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
 import { z } from "zod";
 
+/** Maximum number of cases to evaluate in a single LLM call. */
 const BATCH_SIZE = 10;
+
+/** Maximum characters of response text to include in LLM evaluation to manage token usage. */
+const RESPONSE_TRUNCATION_LIMIT = 1500;
 
 export interface EvidenceCheckInput {
   caseId: string;
@@ -74,7 +78,7 @@ async function evaluateBatch(batch: EvidenceCheckInput[]) {
 **Required Evidence Concepts:** ${c.requiredEvidence.join(", ")}
 
 **Response to Evaluate:**
-${c.responseText.slice(0, 1500)}
+${c.responseText.slice(0, RESPONSE_TRUNCATION_LIMIT)}
 `
     )
     .join("\n---\n");

@@ -7,47 +7,12 @@ import path from "node:path";
 
 import { type FixtureData } from "@/lib/mcp/types";
 
-/**
- * Type guard for plain objects.
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
- * Type guard for non-empty strings.
- */
-function isNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-/**
- * Load and parse a JSON file from disk.
- */
-function loadJsonFile(filePath: string) {
-  const contents = readFileSync(filePath, "utf8");
-  return JSON.parse(contents) as unknown;
-}
-
-/**
- * Deep merge two JSON values, with override taking precedence.
- */
-function mergeJson(base: unknown, override: unknown): unknown {
-  if (override === undefined) {
-    return base;
-  }
-  if (base === undefined) {
-    return override;
-  }
-  if (isPlainObject(base) && isPlainObject(override)) {
-    const result: Record<string, unknown> = { ...base };
-    for (const [key, value] of Object.entries(override)) {
-      result[key] = mergeJson(result[key], value);
-    }
-    return result;
-  }
-  return override;
-}
+import {
+  deepMerge,
+  isNonEmptyString,
+  isPlainObject,
+  loadJsonFile,
+} from "./utils";
 
 export interface LoadFixturesOptions {
   useBase?: boolean;
@@ -142,7 +107,7 @@ export function loadEvalFixtures(
 
   const baseData = loadBaseFixtures(rootDir, useBase);
   const overrideData = loadCaseOverrides(rootDir, caseId);
-  const merged = mergeJson(baseData, overrideData);
+  const merged = deepMerge(baseData, overrideData);
   const mergedObject = isPlainObject(merged) ? merged : {};
 
   return buildFixtureData(mergedObject);
@@ -208,7 +173,7 @@ function buildBaseBlocks(rootDir: string, overridePaths: string[]) {
   let baseData: unknown = loadJsonFile(basePath);
   if (overridePaths.length > 0) {
     for (const overridePath of overridePaths) {
-      baseData = mergeJson(baseData, loadJsonFile(overridePath));
+      baseData = deepMerge(baseData, loadJsonFile(overridePath));
     }
     return [formatJsonBlock("api-base+overrides.json", baseData)];
   }
