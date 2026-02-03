@@ -192,13 +192,9 @@ function isIgnorableError(message: string): boolean {
   );
 }
 
-async function resolveTargetPolicy(
-  policy: ChromePolicy,
-  customerId: string,
-  policySchemaFilter: string,
-  targetResource: string,
-  pageSize: number
-): Promise<PolicyProbeResult | PolicyProbeError | null> {
+function validateTargetResource(
+  targetResource: string
+): { trimmed: string } | PolicyProbeError | null {
   const trimmed = targetResource.trim();
   if (!trimmed) {
     return {
@@ -207,37 +203,106 @@ async function resolveTargetPolicy(
         "targetResource must be a non-empty orgunits/{id} or groups/{id}",
     };
   }
-
   if (trimmed.startsWith("customers/")) {
     return null;
   }
+  return { trimmed };
+}
 
+async function fetchResolvedPolicies(
+  policy: ChromePolicy,
+  customerId: string,
+  policySchemaFilter: string,
+  trimmedTarget: string,
+  pageSize: number
+): Promise<PolicyProbeResult | PolicyProbeError | null> {
   try {
     const res = await policy.customers.policies.resolve({
       customer: `customers/${customerId}`,
       requestBody: {
         policySchemaFilter,
-        policyTargetKey: { targetResource: trimmed },
+        policyTargetKey: { targetResource: trimmedTarget },
         pageSize,
       },
     });
     return {
-      targetResource: trimmed,
+      targetResource: trimmedTarget,
       resolvedPolicies: res.data.resolvedPolicies ?? [],
     };
   } catch (error) {
     const message = getErrorMessage(error);
-    if (isIgnorableError(message)) {
-      return null;
-    }
-    return { targetResource, message };
+    return isIgnorableError(message)
+      ? null
+      : { targetResource: trimmedTarget, message };
   }
+}
+
+async function resolveTargetPolicy(
+  policy: ChromePolicy,
+  customerId: string,
+  policySchemaFilter: string,
+  targetResource: string,
+  pageSize: number
+): Promise<PolicyProbeResult | PolicyProbeError | null> {
+  const validation = validateTargetResource(targetResource);
+  if (validation === null || "message" in validation) {
+    return validation;
+  }
+
+  const result = await fetchResolvedPolicies(
+    policy,
+    customerId,
+    policySchemaFilter,
+    validation.trimmed,
+    pageSize
+  );
+  return result;
 }
 
 function isProbeError(
   result: PolicyProbeResult | PolicyProbeError | null
 ): result is PolicyProbeError {
   return result !== null && "message" in result;
+}
+
+interface ProbeAccumulator {
+  results: PolicyProbeResult[];
+  errors: PolicyProbeError[];
+}
+
+function categorizeProbeResult(
+  result: PolicyProbeResult | PolicyProbeError | null,
+  acc: ProbeAccumulator
+): void {
+  if (result === null) {
+    return;
+  }
+  if (isProbeError(result)) {
+    acc.errors.push(result);
+  } else {
+    acc.results.push(result);
+  }
+}
+
+async function resolveAllTargets(
+  policy: ChromePolicy,
+  customerId: string,
+  policySchemaFilter: string,
+  targets: string[],
+  pageSize: number
+): Promise<ProbeAccumulator> {
+  const acc: ProbeAccumulator = { results: [], errors: [] };
+  for (const target of targets) {
+    const result = await resolveTargetPolicy(
+      policy,
+      customerId,
+      policySchemaFilter,
+      target,
+      pageSize
+    );
+    categorizeProbeResult(result, acc);
+  }
+  return acc;
 }
 
 export async function probePolicyTargetResources({
@@ -250,29 +315,15 @@ export async function probePolicyTargetResources({
   pageSize?: number;
 }) {
   const { policy, customerId } = await makeGoogleClients();
-  const results: PolicyProbeResult[] = [];
-  const errors: PolicyProbeError[] = [];
   const uniqueTargets = [...new Set(targetResources)];
-
-  for (const target of uniqueTargets) {
-    const result = await resolveTargetPolicy(
-      policy,
-      customerId,
-      policySchemaFilter,
-      target,
-      pageSize
-    );
-    if (result === null) {
-      continue;
-    }
-    if (isProbeError(result)) {
-      errors.push(result);
-    } else {
-      results.push(result);
-    }
-  }
-
-  return { results, errors };
+  const acc = await resolveAllTargets(
+    policy,
+    customerId,
+    policySchemaFilter,
+    uniqueTargets,
+    pageSize
+  );
+  return acc;
 }
 
 export async function createOrgUnit({

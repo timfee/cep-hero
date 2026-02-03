@@ -4,10 +4,11 @@ import { describe, expect, it, beforeEach } from "bun:test";
 
 import AuthError from "@/app/(auth)/error";
 
-const mockReset = () => {
-  resetCalls += 1;
-};
 let resetCalls: number;
+
+function mockReset() {
+  resetCalls += 1;
+}
 
 describe("Auth error boundary component", () => {
   const mockError = new Error("Auth test error") as Error & { digest?: string };

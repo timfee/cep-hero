@@ -69,16 +69,17 @@ export async function GET(req: Request) {
   return entry.transport.handleRequest(req);
 }
 
-function handleExistingSession(
+async function handleExistingSession(
   sessionId: string,
   req: Request
-): Response | null {
+): Promise<Response | null> {
   const entry = activeTransports.get(sessionId);
   if (!entry) {
     return new Response("Session not found (or expired).", { status: 404 });
   }
   touchSession(sessionId);
-  return entry.transport.handleRequest(req) as Response;
+  const response = await entry.transport.handleRequest(req);
+  return response as Response;
 }
 
 function extractBearerToken(authHeader: string | null): string | undefined {
@@ -128,6 +129,17 @@ function createMcpTransport(sessionCreatedAt: number) {
   return transport;
 }
 
+async function initializeNewSession(
+  req: Request,
+  accessToken: string
+): Promise<Response> {
+  const transport = createMcpTransport(Date.now());
+  const mcpServer = createMcpServer(accessToken);
+  await mcpServer.connect(transport);
+  const response = await transport.handleRequest(req);
+  return response as Response;
+}
+
 /**
  * Handle MCP Streamable HTTP POST/initialize requests.
  */
@@ -143,10 +155,7 @@ export async function POST(req: Request) {
     return new Response("Missing access token", { status: 401 });
   }
 
-  const transport = createMcpTransport(Date.now());
-  const mcpServer = createMcpServer(accessToken);
-  await mcpServer.connect(transport);
-  return transport.handleRequest(req);
+  return initializeNewSession(req, accessToken);
 }
 
 /**
