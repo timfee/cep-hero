@@ -13,8 +13,15 @@
     "no-console": "off",
     "no-unused-vars": "warn",
     "no-multi-comp": "off",
+    "max-statements": ["error", 20],
     "typescript/no-import-type-side-effects": "off",
     "import/consistent-type-specifier-style": ["error", "prefer-inline"],
+    "import/no-nodejs-modules": [
+      "error",
+      { "allow": ["node:fs", "node:fs/promises", "node:path"] }
+    ],
+
+    "jest/require-hook": "off",
 
     "jsdoc/check-property-names": "error",
     "jsdoc/check-tag-names": "error",

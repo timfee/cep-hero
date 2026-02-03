@@ -33,15 +33,64 @@ function isPathWithinFixtures(filePath: string): boolean {
 }
 
 /**
+ * Check if the request is allowed based on environment.
+ */
+function isApiAllowed(): boolean {
+  const isDev = process.env.NODE_ENV === "development";
+  const isTestMode = process.env.EVAL_TEST_MODE === "1";
+  return isDev || isTestMode;
+}
+
+/**
+ * Load the fixture registry from disk.
+ */
+async function loadRegistry(): Promise<Registry | null> {
+  try {
+    const registryPath = join(process.cwd(), "evals/registry.json");
+    const registryContent = await readFile(registryPath, "utf8");
+    return JSON.parse(registryContent);
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Load and merge fixture override files for a case.
+ */
+async function loadFixtureOverrides(
+  overrides: string[]
+): Promise<{ data: FixtureData } | { error: string; status: number }> {
+  let fixtureData: FixtureData = {};
+
+  for (const overridePath of overrides) {
+    const normalizedPath = normalize(overridePath);
+    if (!isPathWithinFixtures(normalizedPath)) {
+      return { error: `Invalid fixture path: ${overridePath}`, status: 400 };
+    }
+
+    try {
+      const fullPath = join(process.cwd(), normalizedPath);
+      const content = await readFile(fullPath, "utf8");
+      const overrideData = JSON.parse(content) as FixtureData;
+      fixtureData = mergeFixtureData(fixtureData, overrideData);
+    } catch {
+      return {
+        error: `Failed to load fixture file: ${overridePath}`,
+        status: 500,
+      };
+    }
+  }
+
+  return { data: fixtureData };
+}
+
+/**
  * GET /api/fixtures/[id]
  * Returns the fixture data for a specific scenario.
  * Only available in development or when EVAL_TEST_MODE is enabled.
  */
 export async function GET(_req: Request, { params }: RouteParams) {
-  // Feature flag: only allow in development or explicit test mode
-  const isDev = process.env.NODE_ENV === "development";
-  const isTestMode = process.env.EVAL_TEST_MODE === "1";
-  if (!isDev && !isTestMode) {
+  if (!isApiAllowed()) {
     return Response.json(
       { error: "Fixture API is not available in production" },
       { status: 403 }
@@ -49,14 +98,8 @@ export async function GET(_req: Request, { params }: RouteParams) {
   }
 
   const { id } = await params;
-
-  // Load registry
-  let registry: Registry;
-  try {
-    const registryPath = join(process.cwd(), "evals/registry.json");
-    const registryContent = await readFile(registryPath, "utf8");
-    registry = JSON.parse(registryContent);
-  } catch {
+  const registry = await loadRegistry();
+  if (!registry) {
     return Response.json(
       { error: "Failed to load fixture registry" },
       { status: 500 }
@@ -78,29 +121,9 @@ export async function GET(_req: Request, { params }: RouteParams) {
     );
   }
 
-  // Load and merge all override files for this case
-  let fixtureData: FixtureData = {};
-  for (const overridePath of caseEntry.overrides) {
-    // Validate path is within fixtures directory
-    const normalizedPath = normalize(overridePath);
-    if (!isPathWithinFixtures(normalizedPath)) {
-      return Response.json(
-        { error: `Invalid fixture path: ${overridePath}` },
-        { status: 400 }
-      );
-    }
-
-    try {
-      const fullPath = join(process.cwd(), normalizedPath);
-      const content = await readFile(fullPath, "utf8");
-      const overrideData = JSON.parse(content) as FixtureData;
-      fixtureData = mergeFixtureData(fixtureData, overrideData);
-    } catch {
-      return Response.json(
-        { error: `Failed to load fixture file: ${overridePath}` },
-        { status: 500 }
-      );
-    }
+  const result = await loadFixtureOverrides(caseEntry.overrides);
+  if ("error" in result) {
+    return Response.json({ error: result.error }, { status: result.status });
   }
 
   return Response.json({
@@ -108,7 +131,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     title: caseEntry.title,
     category: caseEntry.category,
     tags: caseEntry.tags ?? [],
-    data: fixtureData,
+    data: result.data,
   });
 }
 
