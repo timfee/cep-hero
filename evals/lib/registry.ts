@@ -96,6 +96,47 @@ export function loadEvalRegistry(
   return parsed;
 }
 
+function filterById(cases: EvalCase[], ids: string | undefined): EvalCase[] {
+  if (!isNonEmptyString(ids)) {
+    return cases;
+  }
+  const idSet = new Set(ids.split(",").map((id) => id.trim()));
+  return cases.filter((c) => idSet.has(c.id));
+}
+
+function filterByCategory(
+  cases: EvalCase[],
+  categories: string | undefined
+): EvalCase[] {
+  if (!isNonEmptyString(categories)) {
+    return cases;
+  }
+  const categorySet = new Set(
+    categories.split(",").map((cat) => cat.trim().toLowerCase())
+  );
+  return cases.filter((c) => categorySet.has(c.category.toLowerCase()));
+}
+
+function filterByTags(cases: EvalCase[], tags: string | undefined): EvalCase[] {
+  if (!isNonEmptyString(tags)) {
+    return cases;
+  }
+  const tagSet = new Set(
+    tags.split(",").map((tag) => tag.trim().toLowerCase())
+  );
+  return cases.filter((c) =>
+    c.tags.some((tag) => tagSet.has(tag.toLowerCase()))
+  );
+}
+
+function applyLimit(cases: EvalCase[], limit: string | undefined): EvalCase[] {
+  if (!isNonEmptyString(limit)) {
+    return cases;
+  }
+  const parsed = Number.parseInt(limit, 10);
+  return !Number.isNaN(parsed) && parsed > 0 ? cases.slice(0, parsed) : cases;
+}
+
 /**
  * Filter eval cases based on provided options.
  */
@@ -103,39 +144,10 @@ export function filterEvalCases(
   cases: EvalCase[],
   options: FilterOptions
 ): EvalCase[] {
-  let filtered = cases;
-
-  if (isNonEmptyString(options.ids)) {
-    const idSet = new Set(options.ids.split(",").map((id) => id.trim()));
-    filtered = filtered.filter((c) => idSet.has(c.id));
-  }
-
-  if (isNonEmptyString(options.categories)) {
-    const categorySet = new Set(
-      options.categories.split(",").map((cat) => cat.trim().toLowerCase())
-    );
-    filtered = filtered.filter((c) =>
-      categorySet.has(c.category.toLowerCase())
-    );
-  }
-
-  if (isNonEmptyString(options.tags)) {
-    const tagSet = new Set(
-      options.tags.split(",").map((tag) => tag.trim().toLowerCase())
-    );
-    filtered = filtered.filter((c) =>
-      c.tags.some((tag) => tagSet.has(tag.toLowerCase()))
-    );
-  }
-
-  if (isNonEmptyString(options.limit)) {
-    const limit = Number.parseInt(options.limit, 10);
-    if (!Number.isNaN(limit) && limit > 0) {
-      filtered = filtered.slice(0, limit);
-    }
-  }
-
-  return filtered;
+  let filtered = filterById(cases, options.ids);
+  filtered = filterByCategory(filtered, options.categories);
+  filtered = filterByTags(filtered, options.tags);
+  return applyLimit(filtered, options.limit);
 }
 
 /**

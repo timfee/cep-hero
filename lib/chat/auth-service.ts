@@ -12,77 +12,139 @@ export type AuthResult =
   | { status: "unauthorized"; error: string }
   | { status: "test_mode_response" };
 
-/**
- * Authenticate an incoming request for the chat API.
- * Handles both standard session-based auth and special test-mode bypasses.
- *
- * @param {Request} req - The incoming request object.
- * @returns {Promise<AuthResult>} An AuthResult object indicating success, failure, or a test mode intercept.
- */
-export async function authenticateRequest(req: Request): Promise<AuthResult> {
+interface AuthContext {
+  isTestBypass: boolean;
+  isEvalTestMode: boolean;
+}
+
+type AccessTokenResult =
+  | { type: "success"; token: string }
+  | { type: "undefined" }
+  | { type: "error" }
+  | { type: "test_mode_fallback" };
+
+function buildAuthContext(req: Request): AuthContext {
   const isTestBypass = req.headers.get("x-test-bypass") === "1";
   const isEvalTestModeRequest = req.headers.get("x-eval-test-mode") === "1";
-
   const isEvalTestMode =
     EVAL_TEST_MODE_ENABLED && (isEvalTestModeRequest || isTestBypass);
+  return { isTestBypass, isEvalTestMode };
+}
 
-  // If in eval mode without explicit bypass, we might still return the synthetic response
-  if (isEvalTestMode && !isTestBypass) {
+async function getSession(
+  req: Request,
+  isTestBypass: boolean
+): Promise<unknown> {
+  if (isTestBypass) {
+    return { user: { id: "test" } };
+  }
+  const session = await auth.api.getSession({ headers: req.headers });
+  return session;
+}
+
+async function fetchTokenFromApi(req: Request): Promise<AccessTokenResult> {
+  try {
+    const tokenResponse = await auth.api.getAccessToken({
+      body: { providerId: "google" },
+      headers: req.headers,
+    });
+    const token = tokenResponse?.accessToken;
+    return token ? { type: "success", token } : { type: "undefined" };
+  } catch {
+    return EVAL_TEST_MODE_ENABLED
+      ? { type: "test_mode_fallback" }
+      : { type: "error" };
+  }
+}
+
+async function getAccessToken(
+  req: Request,
+  isTestBypass: boolean
+): Promise<AccessTokenResult> {
+  if (isTestBypass) {
+    return { type: "success", token: "test-token" };
+  }
+  const result = await fetchTokenFromApi(req);
+  return result;
+}
+
+function handleTokenResult(
+  tokenResult: AccessTokenResult
+): AuthResult | { token: string } {
+  if (tokenResult.type === "success") {
+    return { token: tokenResult.token };
+  }
+  if (tokenResult.type === "test_mode_fallback") {
     return { status: "test_mode_response" };
   }
+  if (tokenResult.type === "error") {
+    return {
+      status: "unauthorized",
+      error: "Failed to fetch Google access token",
+    };
+  }
+  if (EVAL_TEST_MODE_ENABLED) {
+    return { status: "test_mode_response" };
+  }
+  return {
+    status: "unauthorized",
+    error: "Missing Google access token. Please re-authenticate.",
+  };
+}
 
-  // Retrieve session (mocked if bypassing)
-  const session = isTestBypass
-    ? { user: { id: "test" } }
-    : await auth.api.getSession({ headers: req.headers });
-
-  if (!session) {
+function validateSession(session: unknown): AuthResult | null {
+  if (session === null || session === undefined) {
     return {
       status: "unauthorized",
       error: "Unauthorized. Please sign in to use CEP tools.",
     };
   }
+  return null;
+}
 
-  // Retrieve access token
-  let accessToken: string | undefined;
-
-  if (isTestBypass) {
-    accessToken = "test-token";
-  } else {
-    try {
-      const tokenResponse = await auth.api.getAccessToken({
-        body: { providerId: "google" },
-        headers: req.headers,
-      });
-
-      accessToken = tokenResponse?.accessToken;
-    } catch {
-      if (EVAL_TEST_MODE_ENABLED) {
-        return { status: "test_mode_response" };
-      }
-
-      return {
-        status: "unauthorized",
-        error: "Failed to fetch Google access token",
-      };
-    }
-  }
-
-  if (!accessToken) {
-    if (EVAL_TEST_MODE_ENABLED) {
-      return { status: "test_mode_response" };
-    }
-
-    return {
-      status: "unauthorized",
-      error: "Missing Google access token. Please re-authenticate.",
-    };
-  }
-
+function buildSuccessResult(
+  session: unknown,
+  token: string,
+  isTestMode: boolean
+): AuthResult {
   return {
     status: "success",
     session,
-    accessToken,
-    isTestMode: isEvalTestMode,
+    accessToken: token,
+    isTestMode,
   };
+}
+
+async function processTokenAndBuildResult(
+  req: Request,
+  session: unknown,
+  isTestBypass: boolean,
+  isEvalTestMode: boolean
+): Promise<AuthResult> {
+  const tokenResult = await getAccessToken(req, isTestBypass);
+  const handled = handleTokenResult(tokenResult);
+  if ("status" in handled) {
+    return handled;
+  }
+  return buildSuccessResult(session, handled.token, isEvalTestMode);
+}
+
+/**
+ * Authenticate an incoming request for the chat API.
+ * Handles both standard session-based auth and special test-mode bypasses.
+ */
+export async function authenticateRequest(req: Request): Promise<AuthResult> {
+  const { isTestBypass, isEvalTestMode } = buildAuthContext(req);
+
+  if (isEvalTestMode && !isTestBypass) {
+    return { status: "test_mode_response" };
+  }
+
+  const session = await getSession(req, isTestBypass);
+  const sessionError = validateSession(session);
+  if (sessionError) {
+    return sessionError;
+  }
+
+  return processTokenAndBuildResult(req, session, isTestBypass, isEvalTestMode);
 }

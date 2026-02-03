@@ -28,17 +28,11 @@ function extractFixtureData(body: unknown) {
   return fixtures;
 }
 
-/**
- * Handle streaming CEP chat responses.
- */
-export async function POST(req: Request) {
-  const authResult = await authenticateRequest(req);
-
-  if (authResult.status === "unauthorized") {
-    return Response.json({ error: authResult.error }, { status: 401 });
+function handleAuthError(status: string, error?: string): Response | null {
+  if (status === "unauthorized") {
+    return Response.json({ error }, { status: 401 });
   }
-
-  if (authResult.status === "test_mode_response") {
+  if (status === "test_mode_response") {
     return Response.json(
       {
         error:
@@ -47,45 +41,106 @@ export async function POST(req: Request) {
       { status: 400 }
     );
   }
+  return null;
+}
 
-  const { accessToken } = authResult;
-
-  let body: unknown;
+async function parseRequestBody(req: Request): Promise<unknown | Response> {
   try {
-    body = await req.json();
+    return await req.json();
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
+}
 
+function extractMessages(body: unknown): ChatMessage[] {
   const messagesFromBody = getMessagesFromBody(body);
-  const inlinePrompt = extractInlinePrompt(body);
-
-  let messages: ChatMessage[] = [];
   if (messagesFromBody.length > 0) {
-    messages = messagesFromBody;
-  } else if (inlinePrompt) {
-    messages = [{ role: "user", content: inlinePrompt }];
+    return messagesFromBody;
   }
+  const inlinePrompt = extractInlinePrompt(body);
+  return inlinePrompt ? [{ role: "user", content: inlinePrompt }] : [];
+}
 
-  if (messages.length === 0) {
-    console.warn("POST /api/chat: Empty messages received.", {
-      body: isRecord(body) ? body : safeJsonPreview(body),
-    });
-    return new Response("I didn't receive a message. Please try again.", {
-      status: 200,
-    });
-  }
+function handleEmptyMessages(body: unknown): Response {
+  console.warn("POST /api/chat: Empty messages received.", {
+    body: isRecord(body) ? body : safeJsonPreview(body),
+  });
+  return new Response("I didn't receive a message. Please try again.", {
+    status: 200,
+  });
+}
 
+function createExecutor(req: Request, body: unknown) {
   const isEvalTestMode = req.headers.get("x-eval-test-mode") === "1";
   const fixtureData = extractFixtureData(body);
-  const executor =
-    isEvalTestMode && fixtureData
-      ? new FixtureToolExecutor(loadFixtureData(fixtureData))
-      : undefined;
+  return isEvalTestMode && fixtureData
+    ? new FixtureToolExecutor(loadFixtureData(fixtureData))
+    : undefined;
+}
 
+interface AuthenticatedRequest {
+  accessToken: string;
+  body: unknown;
+  messages: ChatMessage[];
+}
+
+async function authenticateChat(req: Request): Promise<Response | string> {
+  const authResult = await authenticateRequest(req);
+  const authError = handleAuthError(
+    authResult.status,
+    authResult.status === "unauthorized" ? authResult.error : undefined
+  );
+  if (authError) {
+    return authError;
+  }
+  const { accessToken } = authResult as { accessToken: string };
+  return accessToken;
+}
+
+function parseBodyAndMessages(
+  body: unknown
+): Response | { body: unknown; messages: ChatMessage[] } {
+  const messages = extractMessages(body);
+  if (messages.length === 0) {
+    return handleEmptyMessages(body);
+  }
+  return { body, messages };
+}
+
+async function validateAndParseRequest(
+  req: Request
+): Promise<Response | AuthenticatedRequest> {
+  const authResult = await authenticateChat(req);
+  if (authResult instanceof Response) {
+    return authResult;
+  }
+
+  const body = await parseRequestBody(req);
+  if (body instanceof Response) {
+    return body;
+  }
+
+  const parsed = parseBodyAndMessages(body);
+  if (parsed instanceof Response) {
+    return parsed;
+  }
+
+  return { accessToken: authResult, ...parsed };
+}
+
+/**
+ * Handle streaming CEP chat responses.
+ */
+export async function POST(req: Request) {
+  const result = await validateAndParseRequest(req);
+  if (result instanceof Response) {
+    return result;
+  }
+
+  const { accessToken, body, messages } = result;
   return createChatStream({
     messages,
     accessToken,
-    executor,
+    executor: createExecutor(req, body),
   });
 }
