@@ -6,7 +6,15 @@
 "use client";
 
 import { useChat } from "@ai-sdk/react";
-import { createContext, useContext, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+} from "react";
+
+import { useFixtureContext } from "@/lib/fixtures/context";
 
 interface ChatContextValue {
   messages: ReturnType<typeof useChat>["messages"];
@@ -25,8 +33,36 @@ const ChatContext = createContext<ChatContextValue | null>(null);
  */
 export function ChatProvider({ children }: { children: React.ReactNode }) {
   const [input, setInput] = useState("");
+  const { activeFixture, isFixtureMode } = useFixtureContext();
 
-  const { messages, status, sendMessage, stop, regenerate } = useChat();
+  const {
+    messages,
+    status,
+    sendMessage: originalSendMessage,
+    stop,
+    regenerate,
+  } = useChat();
+
+  // Wrap sendMessage to include fixture headers and data when in demo mode
+  const sendMessage = useCallback<typeof originalSendMessage>(
+    (message, options) => {
+      if (isFixtureMode && activeFixture) {
+        return originalSendMessage(message, {
+          ...options,
+          headers: {
+            ...options?.headers,
+            "x-eval-test-mode": "1",
+          },
+          body: {
+            ...options?.body,
+            fixtures: activeFixture.data,
+          },
+        });
+      }
+      return originalSendMessage(message, options);
+    },
+    [originalSendMessage, isFixtureMode, activeFixture]
+  );
 
   const value = useMemo<ChatContextValue>(
     () => ({
