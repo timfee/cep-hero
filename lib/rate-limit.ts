@@ -2,6 +2,8 @@
  * Simple in-memory rate limiter for API endpoints.
  */
 
+import crypto from "node:crypto";
+
 interface RateLimitEntry {
   count: number;
   resetTime: number;
@@ -85,6 +87,7 @@ export function checkRateLimit({
 
 /**
  * Extract client IP from request headers.
+ * Falls back to a hash of request metadata to prevent DoS via missing headers.
  */
 export function getClientIp(request: Request): string {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -97,5 +100,24 @@ export function getClientIp(request: Request): string {
     return realIp;
   }
 
-  return "unknown";
+  const userAgent = request.headers.get("user-agent") ?? "";
+  const acceptLang = request.headers.get("accept-language") ?? "";
+  const fallbackData = `${userAgent}:${acceptLang}:${Date.now()}`;
+  return `anon-${crypto.createHash("sha256").update(fallbackData).digest("hex").slice(0, 16)}`;
+}
+
+/**
+ * Perform timing-safe comparison of two strings.
+ * Prevents timing attacks on sensitive comparisons like passwords.
+ */
+export function timingSafeEqual(a: string, b: string): boolean {
+  const bufA = Buffer.from(a);
+  const bufB = Buffer.from(b);
+
+  if (bufA.length !== bufB.length) {
+    crypto.timingSafeEqual(bufA, bufA);
+    return false;
+  }
+
+  return crypto.timingSafeEqual(bufA, bufB);
 }
