@@ -2,6 +2,23 @@
 
 This document tracks progress on overhauling the CEP-Hero evaluation system. Progress is tracked with status markers.
 
+## Quick Resume (for new sessions)
+
+**Current Progress:** 21/85 cases have fixtures (25%)
+
+**Categories Complete:** enrollment (7), events (2), extensions (4), endpoint (4), integration (4)
+
+**Next Up:** auth (3), browser (3), connector (8)
+
+**Key Implementations:**
+- LLM-as-judge for semantic evidence evaluation (`evals/lib/llm-judge.ts`)
+- searchKnowledge tool for dynamic RAG (`lib/chat/chat-service.ts`)
+- Text normalization for fuzzy matching (`evals/lib/assertions.ts`)
+
+**To continue:** Read Session Log at bottom, then pick up with "Next Session Should" items.
+
+---
+
 **Status Legend:**
 
 - `[ ]` Not started
