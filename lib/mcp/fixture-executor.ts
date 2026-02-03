@@ -31,6 +31,11 @@ import {
 
 export { loadFixtureData } from "./fixture-loader";
 
+async function resolveValue<T>(value: T): Promise<T> {
+  const resolved = await Promise.resolve(value);
+  return resolved;
+}
+
 /**
  * Returns fixture data instead of calling real Google APIs.
  * Used for deterministic evaluation testing.
@@ -46,106 +51,123 @@ export class FixtureToolExecutor implements IToolExecutor {
     args: z.infer<typeof GetChromeEventsSchema>
   ): Promise<ChromeEventsResult> {
     if (typeof this.fixtures.errors?.chromeEvents === "string") {
-      return await Promise.resolve({
+      const errorResult = await resolveValue({
         error: this.fixtures.errors.chromeEvents,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
       });
+      return errorResult;
     }
 
     const items = this.fixtures.auditEvents?.items ?? [];
     const maxResults = args.maxResults ?? 50;
-    return await Promise.resolve({
+    const result = await resolveValue({
       events: items.slice(0, maxResults),
       nextPageToken: this.fixtures.auditEvents?.nextPageToken ?? null,
     });
+    return result;
   }
 
   async listDLPRules(
     _args?: z.infer<typeof ListDLPRulesSchema>
   ): Promise<DLPRulesResult> {
     if (typeof this.fixtures.errors?.dlpRules === "string") {
-      return await Promise.resolve({
+      const errorResult = await resolveValue({
         error: this.fixtures.errors.dlpRules,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
       });
+      return errorResult;
     }
 
     const rules = mapDlpRules(this.fixtures);
-    return await Promise.resolve({ rules });
+    const result = await resolveValue({ rules });
+    return result;
   }
 
   async listOrgUnits(): Promise<OrgUnitsResult> {
     if (typeof this.fixtures.errors?.orgUnits === "string") {
-      return await Promise.resolve({
+      const errorResult = await resolveValue({
         error: this.fixtures.errors.orgUnits,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
       });
+      return errorResult;
     }
-    return await Promise.resolve({ orgUnits: this.fixtures.orgUnits ?? [] });
+    const result = await resolveValue({
+      orgUnits: this.fixtures.orgUnits ?? [],
+    });
+    return result;
   }
 
   async enrollBrowser(
     _args: z.infer<typeof EnrollBrowserSchema>
   ): Promise<EnrollBrowserResult> {
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
-      return await Promise.resolve({
+      const errorResult = await resolveValue({
         error: this.fixtures.errors.enrollBrowser,
         suggestion:
           "Ensure the caller has Chrome policy admin rights and the API is enabled.",
         requiresReauth: false,
       });
+      return errorResult;
     }
-    const result = resolveEnrollmentToken(this.fixtures.enrollmentToken);
-    return await Promise.resolve(result);
+    const tokenResult = resolveEnrollmentToken(this.fixtures.enrollmentToken);
+    const result = await resolveValue(tokenResult);
+    return result;
   }
 
   async getChromeConnectorConfiguration(): Promise<ConnectorConfigResult> {
     if (typeof this.fixtures.errors?.connectorConfig === "string") {
-      return await Promise.resolve({
+      const errorResult = await resolveValue({
         error: this.fixtures.errors.connectorConfig,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
         policySchemas: [],
       });
+      return errorResult;
     }
-    const result = buildConnectorConfig(this.fixtures);
-    return await Promise.resolve(result);
+    const configResult = buildConnectorConfig(this.fixtures);
+    const result = await resolveValue(configResult);
+    return result;
   }
 
   async debugAuth(): Promise<DebugAuthResult> {
-    const result = buildDebugAuthResponse();
-    return await Promise.resolve(result);
+    const authResult = buildDebugAuthResponse();
+    const result = await resolveValue(authResult);
+    return result;
   }
 
   async draftPolicyChange(
     args: z.infer<typeof DraftPolicyChangeSchema>
   ): Promise<DraftPolicyChangeResult> {
-    const result = buildDraftPolicyResponse(args, this.fixtures);
-    return await Promise.resolve(result);
+    const draftResult = buildDraftPolicyResponse(args, this.fixtures);
+    const result = await resolveValue(draftResult);
+    return result;
   }
 
   async applyPolicyChange(
     args: z.infer<typeof ApplyPolicyChangeSchema>
   ): Promise<ApplyPolicyChangeResult> {
-    const result = buildApplyPolicyResponse(args);
-    return await Promise.resolve(result);
+    const applyResult = buildApplyPolicyResponse(args);
+    const result = await resolveValue(applyResult);
+    return result;
   }
 
   async createDLPRule(
     args: z.infer<typeof CreateDLPRuleSchema>
   ): Promise<CreateDLPRuleResult> {
-    const result = buildCreateDlpResponse(args, this.fixtures);
-    return await Promise.resolve(result);
+    const dlpResult = buildCreateDlpResponse(args, this.fixtures);
+    const result = await resolveValue(dlpResult);
+    return result;
   }
 
   async getFleetOverview(
     _args: z.infer<typeof GetFleetOverviewSchema>
   ): Promise<FleetOverviewFixtureResponse> {
-    const result = buildFleetOverviewResponse(this.fixtures);
-    return await Promise.resolve(result);
+    const overviewResult = buildFleetOverviewResponse(this.fixtures);
+    const result = await resolveValue(overviewResult);
+    return result;
   }
 }
 
