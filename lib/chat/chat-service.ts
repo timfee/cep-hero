@@ -183,8 +183,9 @@ export async function createChatStream({
   if (typeof lastUserMessage === "string" && lastUserMessage.length > 0) {
     try {
       // Fast pass to check if we need to search docs
+      // Use a fast model for routing
       const intentAnalysis = await generateText({
-        model: google("gemini-2.0-flash-001"), // Use a fast model for routing
+        model: google("gemini-2.0-flash-001"),
         output: Output.object({
           schema: z.object({
             needsKnowledge: z
@@ -339,44 +340,65 @@ If you add any text, keep it to one short sentence.`,
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
         inputSchema: GetChromeEventsSchema,
-        execute: async (args) => executor.getChromeEvents(args),
+        execute: async (args) => {
+          const result = await executor.getChromeEvents(args);
+          return result;
+        },
       }),
 
       getChromeConnectorConfiguration: tool({
         description: "Fetch Chrome connector configuration policies.",
         inputSchema: GetConnectorConfigSchema,
-        execute: async () => executor.getChromeConnectorConfiguration(),
+        execute: async () => {
+          const result = await executor.getChromeConnectorConfiguration();
+          return result;
+        },
       }),
 
       listDLPRules: tool({
         description: "List DLP rules from Cloud Identity.",
         inputSchema: ListDLPRulesSchema,
-        execute: async (args) => executor.listDLPRules(args),
+        execute: async (args) => {
+          const result = await executor.listDLPRules(args);
+          return result;
+        },
       }),
 
       enrollBrowser: tool({
         description:
           "Generate a Chrome Browser Cloud Management enrollment token.",
         inputSchema: EnrollBrowserSchema,
-        execute: async (args) => executor.enrollBrowser(args),
+        execute: async (args) => {
+          const result = await executor.enrollBrowser(args);
+          return result;
+        },
       }),
 
       listOrgUnits: tool({
         description: "List all organizational units (OUs).",
         inputSchema: ListOrgUnitsSchema,
-        execute: async () => executor.listOrgUnits(),
+        execute: async () => {
+          const result = await executor.listOrgUnits();
+          return result;
+        },
       }),
 
       getFleetOverview: tool({
         description: "Summarize fleet posture from live CEP data.",
         inputSchema: GetFleetOverviewSchema,
-        execute: async (args) => executor.getFleetOverview(args),
+        execute: async (args) => {
+          const result = await executor.getFleetOverview(args);
+          return result;
+        },
       }),
 
       debugAuth: tool({
         description: "Inspect access token scopes and expiry.",
         inputSchema: debugAuthSchema,
-        execute: async () => executor.debugAuth(),
+        execute: async () => {
+          const result = await executor.debugAuth();
+          return result;
+        },
       }),
 
       suggestActions: tool({
@@ -392,21 +414,30 @@ If you add any text, keep it to one short sentence.`,
         description:
           "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
         inputSchema: DraftPolicyChangeSchema,
-        execute: async (args) => executor.draftPolicyChange(args),
+        execute: async (args) => {
+          const result = await executor.draftPolicyChange(args);
+          return result;
+        },
       }),
 
       applyPolicyChange: tool({
         description:
           "Apply a policy change after user confirmation. Use this when the user says 'Confirm' after a draftPolicyChange proposal.",
         inputSchema: ApplyPolicyChangeSchema,
-        execute: async (args) => executor.applyPolicyChange(args),
+        execute: async (args) => {
+          const result = await executor.applyPolicyChange(args);
+          return result;
+        },
       }),
 
       createDLPRule: tool({
         description:
           "Create a DLP (Data Loss Prevention) rule to monitor or block sensitive data. Use this for setting up audit rules or data protection policies.",
         inputSchema: CreateDLPRuleSchema,
-        execute: async (args) => executor.createDLPRule(args),
+        execute: async (args) => {
+          const result = await executor.createDLPRule(args);
+          return result;
+        },
       }),
 
       searchKnowledge: tool({

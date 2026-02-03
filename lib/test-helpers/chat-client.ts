@@ -183,7 +183,7 @@ function processResponseBody(bodyText: string): ChatResponse {
   }
 }
 
-function executeRequest(
+async function executeRequest(
   messages: ChatMessage[],
   options: CallChatMessagesOptions | undefined,
   controller: AbortController
@@ -196,7 +196,7 @@ function executeRequest(
     ? { retries: 2, delayMs: 300, maxDelayMs: 1000 }
     : undefined;
 
-  return fetchWithRetry(async () => {
+  const result = await fetchWithRetry(async () => {
     const response = await fetch(CHAT_URL, {
       method: "POST",
       headers,
@@ -205,6 +205,7 @@ function executeRequest(
     });
     return response;
   }, retryOptions);
+  return result;
 }
 
 function createTimeoutId(
@@ -260,17 +261,18 @@ export async function callChatMessages(
 /**
  * Call the chat endpoint with a single prompt.
  */
-export function callChat(
+export async function callChat(
   prompt: string,
   options?: CallChatMessagesOptions
 ): Promise<ChatResponse> {
-  return callChatMessages(
+  const result = await callChatMessages(
     [
       { role: "system", content: "You are CEP Hero." },
       { role: "user", content: prompt },
     ],
     options
   );
+  return result;
 }
 
 async function ensureChatReady(url: string): Promise<void> {

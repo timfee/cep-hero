@@ -519,7 +519,10 @@ async function executeCases(
 
   if (parallel) {
     const results = await Promise.allSettled(
-      cases.map(async (evalCase) => runCase(evalCase, context))
+      cases.map(async (evalCase) => {
+        const report = await runCase(evalCase, context);
+        return report;
+      })
     );
     for (const result of results) {
       if (result.status === "fulfilled") {
