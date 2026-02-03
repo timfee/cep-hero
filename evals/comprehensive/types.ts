@@ -138,3 +138,14 @@ export interface CliOptions {
   caseIds?: string;
   categories?: string;
 }
+
+export interface ResolvedCliOptions {
+  modes: RunMode[];
+  iterations: number;
+  skipLive: boolean;
+  skipAnalysis: boolean;
+  outputDir: string;
+  verbose: boolean;
+  caseIds?: string;
+  categories?: string;
+}
