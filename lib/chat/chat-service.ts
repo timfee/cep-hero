@@ -86,6 +86,13 @@ When the user asks to set up DLP monitoring or audit rules:
 
 IMPORTANT: Steps 1 must happen together in ONE response - list existing rules AND propose new rule immediately. Do NOT wait for another user message between these steps.
 
+# Org Unit Display (CRITICAL)
+Always use friendly org unit paths for user-visible output. Prefer these in order:
+1) targetResourceName from tools (if provided)
+2) orgUnitPath values (e.g., "/Engineering")
+3) "/" for root
+NEVER show raw IDs like "orgunits/03ph8a2z..." or "orgUnits/...".
+
 # Operating Principles
 - Think in steps; decide what to inspect next based on results.
 - Use tools in parallel when possible; avoid redundant calls.
@@ -258,9 +265,83 @@ export async function createChatStream({
     model: google("gemini-2.0-flash-001"),
     messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
     stopWhen: [
-      stepCountIs(15), // Safety limit (increased for multi-step workflows)
-      hasToolCall("suggestActions"), // Semantic completion signal
+      stepCountIs(15),
+      ({ steps }) => {
+        const lastStep = steps.at(-1);
+        if (!lastStep) {
+          return false;
+        }
+        const hasSuggestActions = lastStep.toolCalls.some(
+          (call) => call.toolName === "suggestActions"
+        );
+        const hasText = lastStep.text.trim().length > 0;
+        return hasSuggestActions && hasText;
+      },
     ],
+    prepareStep: ({ steps }) => {
+      const lastStep = steps.at(-1);
+      if (!lastStep) {
+        return {};
+      }
+
+      const hasToolResults = lastStep.toolResults.length > 0;
+      const hasText = lastStep.text.trim().length > 0;
+      const hasSuggestActionsCall = lastStep.toolCalls.some(
+        (call) => call.toolName === "suggestActions"
+      );
+      const hasDlpProposalCall = lastStep.toolCalls.some(
+        (call) => call.toolName === "draftPolicyChange"
+      );
+
+      const recommendsDlpProposal =
+        /dlp/i.test(lastStep.text) &&
+        /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
+        /(rule|policy)/i.test(lastStep.text);
+
+      if (recommendsDlpProposal && !hasDlpProposalCall) {
+        return {
+          system: `${enhancedSystemPrompt}
+
+# DLP Proposal Guard
+You recommended creating a DLP rule. Now:
+1) Call listDLPRules to show current rules.
+2) Call draftPolicyChange to propose the DLP rule in the SAME step.
+Use a clear display name. If a specific destination like sharefile.com was mentioned, target uploads and include that in the reasoning.
+End by calling suggestActions.`,
+          activeTools: ["listDLPRules", "draftPolicyChange", "suggestActions"],
+        };
+      }
+
+      if (hasToolResults && !hasText) {
+        return {
+          system: `${enhancedSystemPrompt}
+
+# Response Completion Guard
+You just received tool results. Provide a concise response with:
+- Diagnosis
+- Evidence (cite exact fields)
+- Hypotheses (only if uncertain)
+- Next Steps (actionable)
+If knowledge results were retrieved, summarize them clearly.
+Use friendly org unit paths only; never show raw org unit IDs.
+End by calling suggestActions with 2-4 options.`,
+          activeTools: ["suggestActions"],
+        };
+      }
+
+      if (hasToolResults && !hasSuggestActionsCall) {
+        return {
+          system: `${enhancedSystemPrompt}
+
+# Action Completion Guard
+You already provided context. Now call suggestActions with 2-4 relevant options.
+If you add any text, keep it to one short sentence.`,
+          activeTools: ["suggestActions"],
+        };
+      }
+
+      return {};
+    },
     tools: {
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
