@@ -1,3 +1,7 @@
+/**
+ * Source citation components for displaying referenced documents in AI responses.
+ * Provides a collapsible list of source links with icons.
+ */
 "use client";
 
 import type { ComponentProps } from "react";
@@ -13,6 +17,9 @@ import { cn } from "@/lib/utils";
 
 export type SourcesProps = ComponentProps<"div">;
 
+/**
+ * Collapsible container for displaying cited sources.
+ */
 export const Sources = ({ className, ...props }: SourcesProps) => (
   <Collapsible
     className={cn("not-prose mb-4 text-primary text-xs", className)}
@@ -24,6 +31,9 @@ export type SourcesTriggerProps = ComponentProps<typeof CollapsibleTrigger> & {
   count: number;
 };
 
+/**
+ * Clickable trigger showing the number of sources used.
+ */
 export const SourcesTrigger = ({
   className,
   count,
@@ -45,6 +55,9 @@ export const SourcesTrigger = ({
 
 export type SourcesContentProps = ComponentProps<typeof CollapsibleContent>;
 
+/**
+ * Animated content area containing the list of source links.
+ */
 export const SourcesContent = ({
   className,
   ...props
@@ -61,6 +74,9 @@ export const SourcesContent = ({
 
 export type SourceProps = ComponentProps<"a">;
 
+/**
+ * Individual source link with book icon and title.
+ */
 export const Source = ({ href, title, children, ...props }: SourceProps) => (
   <a
     className="flex items-center gap-2"

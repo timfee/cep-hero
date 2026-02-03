@@ -1,3 +1,7 @@
+/**
+ * Action buttons component for interactive AI responses.
+ * Renders clickable buttons with loading states and analytics tracking.
+ */
 "use client";
 
 import { track } from "@vercel/analytics";
@@ -25,6 +29,9 @@ export interface ActionButtonsProps {
   resetKey?: unknown;
 }
 
+/**
+ * Renders a row of action buttons with visual variants for confirm and cancel actions.
+ */
 export const ActionButtons = memo(function ActionButtons({
   actions,
   className,

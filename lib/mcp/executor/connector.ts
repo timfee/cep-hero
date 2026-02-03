@@ -54,6 +54,9 @@ interface ConnectorConfigError {
   detail?: string;
 }
 
+/**
+ * Result of fetching Chrome connector policy configuration.
+ */
 export type ConnectorConfigResult =
   | ConnectorConfigSuccess
   | ConnectorConfigError;

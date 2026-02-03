@@ -144,15 +144,14 @@ export const Attachments = ({
   );
 };
 
-// ============================================================================
-// Attachment - Item
-// ============================================================================
-
 export type AttachmentProps = HTMLAttributes<HTMLDivElement> & {
   data: AttachmentData;
   onRemove?: () => void;
 };
 
+/**
+ * Individual attachment item with context provider for child components.
+ */
 export const Attachment = ({
   data,
   onRemove,
@@ -194,14 +193,13 @@ export const Attachment = ({
   );
 };
 
-// ============================================================================
-// AttachmentPreview - Media preview
-// ============================================================================
-
 export type AttachmentPreviewProps = HTMLAttributes<HTMLDivElement> & {
   fallbackIcon?: ReactNode;
 };
 
+/**
+ * Renders media preview based on attachment type with appropriate icon or image.
+ */
 export const AttachmentPreview = ({
   fallbackIcon,
   className,
@@ -276,14 +274,13 @@ export const AttachmentPreview = ({
   );
 };
 
-// ============================================================================
-// AttachmentInfo - Name and type display
-// ============================================================================
-
 export type AttachmentInfoProps = HTMLAttributes<HTMLDivElement> & {
   showMediaType?: boolean;
 };
 
+/**
+ * Displays attachment name and optional media type label.
+ */
 export const AttachmentInfo = ({
   showMediaType = false,
   className,
@@ -308,14 +305,13 @@ export const AttachmentInfo = ({
   );
 };
 
-// ============================================================================
-// AttachmentRemove - Remove button
-// ============================================================================
-
 export type AttachmentRemoveProps = ComponentProps<typeof Button> & {
   label?: string;
 };
 
+/**
+ * Remove button that appears on hover to delete an attachment.
+ */
 export const AttachmentRemove = ({
   label = "Remove",
   className,
@@ -361,12 +357,11 @@ export const AttachmentRemove = ({
   );
 };
 
-// ============================================================================
-// AttachmentHoverCard - Hover preview
-// ============================================================================
-
 export type AttachmentHoverCardProps = ComponentProps<typeof HoverCard>;
 
+/**
+ * Wrapper for hover card functionality on attachments.
+ */
 export const AttachmentHoverCard = ({
   openDelay = 0,
   closeDelay = 0,
@@ -379,6 +374,9 @@ export type AttachmentHoverCardTriggerProps = ComponentProps<
   typeof HoverCardTrigger
 >;
 
+/**
+ * Trigger element that activates the hover card on mouse enter.
+ */
 export const AttachmentHoverCardTrigger = (
   props: AttachmentHoverCardTriggerProps
 ) => <HoverCardTrigger {...props} />;
@@ -387,6 +385,9 @@ export type AttachmentHoverCardContentProps = ComponentProps<
   typeof HoverCardContent
 >;
 
+/**
+ * Content panel displayed when hovering over an attachment.
+ */
 export const AttachmentHoverCardContent = ({
   align = "start",
   className,
@@ -399,12 +400,11 @@ export const AttachmentHoverCardContent = ({
   />
 );
 
-// ============================================================================
-// AttachmentEmpty - Empty state
-// ============================================================================
-
 export type AttachmentEmptyProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Placeholder displayed when no attachments are present.
+ */
 export const AttachmentEmpty = ({
   className,
   children,

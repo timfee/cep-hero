@@ -4,6 +4,9 @@
 
 import { z } from "zod";
 
+/**
+ * A single message in the chat conversation.
+ */
 export interface ChatMessage {
   role: "system" | "user" | "assistant";
   content: string;

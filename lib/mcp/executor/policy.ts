@@ -16,9 +16,19 @@ import {
 import { type OrgUnitContext } from "./context";
 import { buildOrgUnitTargetResource } from "./utils";
 
+/**
+ * Arguments for drafting a Chrome policy change proposal.
+ */
 export type DraftPolicyChangeArgs = z.infer<typeof DraftPolicyChangeSchema>;
+
+/**
+ * Arguments for applying a confirmed Chrome policy change.
+ */
 export type ApplyPolicyChangeArgs = z.infer<typeof ApplyPolicyChangeSchema>;
 
+/**
+ * Result of drafting a policy change, containing the proposal for user review.
+ */
 export interface DraftPolicyChangeResult {
   _type: "ui.confirmation";
   proposalId: string;
@@ -89,6 +99,9 @@ interface ApplyPolicyChangeError {
   targetResource: string;
 }
 
+/**
+ * Result of applying a policy change, either success or error.
+ */
 export type ApplyPolicyChangeResult =
   | ApplyPolicyChangeSuccess
   | ApplyPolicyChangeError;
