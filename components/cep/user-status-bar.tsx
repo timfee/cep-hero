@@ -1,6 +1,6 @@
 "use client";
 
-import { Clock, LogOut, RefreshCw, User, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Clock, LogIn, LogOut, RefreshCw } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -157,7 +157,7 @@ export function UserStatusBar() {
       <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
         <span className="text-sm text-muted-foreground">Not signed in</span>
         <Button size="sm" variant="outline" onClick={handleReauth}>
-          <User className="size-4" />
+          <LogIn className="size-4" />
           Sign in
         </Button>
       </div>
@@ -171,23 +171,6 @@ export function UserStatusBar() {
 
   return (
     <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
-      <div className="flex items-center gap-3">
-        <Avatar size="sm">
-          {user?.image && <AvatarImage src={user.image} alt={displayName} />}
-          <AvatarFallback>
-            {getInitials(user?.name ?? null, user?.email ?? null)}
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex flex-col">
-          <span className="text-sm font-medium leading-none">
-            {displayName}
-          </span>
-          {user?.email && user.email !== displayName && (
-            <span className="text-xs text-muted-foreground">{user.email}</span>
-          )}
-        </div>
-      </div>
-
       <div className="flex items-center gap-2">
         {tokenError ? (
           <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-xs text-destructive">
@@ -211,41 +194,56 @@ export function UserStatusBar() {
             </span>
           </div>
         ) : null}
-
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              size="icon-sm"
-              variant="ghost"
-              aria-label="Account menu"
-              title="Account menu"
-            >
-              <User className="size-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel>Account</DropdownMenuLabel>
-            <DropdownMenuSeparator />
-            {(isTokenExpired || isTokenExpiringSoon || tokenError) && (
-              <>
-                <DropdownMenuItem onClick={handleReauth}>
-                  <RefreshCw className="size-4" />
-                  Re-authenticate
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-              </>
-            )}
-            <DropdownMenuItem
-              variant="destructive"
-              onClick={handleSignOut}
-              disabled={signingOut}
-            >
-              <LogOut className="size-4" />
-              {signingOut ? "Signing out..." : "Sign out"}
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
       </div>
+
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <button
+            className="flex items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-white/[0.06]"
+            aria-label={`Account menu for ${displayName}`}
+          >
+            <div className="flex flex-col items-end">
+              <span className="text-sm font-medium leading-none">
+                {displayName}
+              </span>
+              {user?.email && user.email !== displayName && (
+                <span className="text-xs text-muted-foreground">
+                  {user.email}
+                </span>
+              )}
+            </div>
+            <Avatar size="sm">
+              {user?.image && (
+                <AvatarImage src={user.image} alt={displayName} />
+              )}
+              <AvatarFallback>
+                {getInitials(user?.name ?? null, user?.email ?? null)}
+              </AvatarFallback>
+            </Avatar>
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel>Account</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {(isTokenExpired || isTokenExpiringSoon || tokenError) && (
+            <>
+              <DropdownMenuItem onClick={handleReauth}>
+                <RefreshCw className="size-4" />
+                Re-authenticate
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+            </>
+          )}
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={handleSignOut}
+            disabled={signingOut}
+          >
+            <LogOut className="size-4" />
+            {signingOut ? "Signing out..." : "Sign out"}
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }

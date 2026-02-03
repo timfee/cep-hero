@@ -26,19 +26,8 @@ export interface FixtureListItem {
  * GET /api/fixtures
  * Returns a list of available fixture scenarios that can be used to override live data.
  * Only includes cases that have override files.
- * Only available in development or when EVAL_TEST_MODE is enabled.
  */
 export async function GET() {
-  // Feature flag: only allow in development or explicit test mode
-  const isDev = process.env.NODE_ENV === "development";
-  const isTestMode = process.env.EVAL_TEST_MODE === "1";
-  if (!isDev && !isTestMode) {
-    return Response.json(
-      { error: "Fixture API is not available in production" },
-      { status: 403 }
-    );
-  }
-
   let registry: Registry;
   try {
     const registryPath = join(process.cwd(), "evals/registry.json");

@@ -33,15 +33,6 @@ function isPathWithinFixtures(filePath: string): boolean {
 }
 
 /**
- * Check if the request is allowed based on environment.
- */
-function isApiAllowed(): boolean {
-  const isDev = process.env.NODE_ENV === "development";
-  const isTestMode = process.env.EVAL_TEST_MODE === "1";
-  return isDev || isTestMode;
-}
-
-/**
  * Load the fixture registry from disk.
  */
 async function loadRegistry(): Promise<Registry | null> {
@@ -87,16 +78,8 @@ async function loadFixtureOverrides(
 /**
  * GET /api/fixtures/[id]
  * Returns the fixture data for a specific scenario.
- * Only available in development or when EVAL_TEST_MODE is enabled.
  */
 export async function GET(_req: Request, { params }: RouteParams) {
-  if (!isApiAllowed()) {
-    return Response.json(
-      { error: "Fixture API is not available in production" },
-      { status: 403 }
-    );
-  }
-
   const { id } = await params;
   const registry = await loadRegistry();
   if (!registry) {
