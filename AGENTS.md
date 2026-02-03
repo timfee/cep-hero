@@ -172,10 +172,43 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 
 ## Testing
 
+### Quick Start
+
+```bash
+# Install dependencies (required first)
+bun install
+
+# Run all unit tests
+bun test
+
+# Run specific test directories
+bun test tests/ app/ lib/ components/
+
+# Run linting
+bun x ultracite check
+```
+
+### Test Framework
+
+- **Runtime**: Bun's built-in test runner (`bun:test`)
+- **Browser APIs**: happy-dom (configured in `tests/setup.tsx`)
+- **React Testing**: `@testing-library/react` with jest-dom matchers
+
+### Integration Tests
+
+Integration tests requiring Google Workspace Admin APIs automatically skip when:
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` is not set
+- Service account lacks required Admin API permissions
+
+### Best Practices
+
 - Write assertions inside `it()` or `test()` blocks
 - Avoid done callbacks in async tests - use async/await instead
 - Don't use `.only` or `.skip` in committed code
 - Keep test suites reasonably flat - avoid excessive `describe` nesting
+
+See `tests/AGENTS.md` for detailed testing guidance.
 
 ### Environment Variables
 

@@ -1,5 +1,12 @@
 /**
  * Integration tests for Chrome Policy API targetResource behavior with different org unit formats.
+ *
+ * These tests require:
+ * - GOOGLE_SERVICE_ACCOUNT_JSON: Service account credentials with domain-wide delegation
+ * - GOOGLE_TOKEN_EMAIL: Admin user email for impersonation
+ * - GOOGLE_CUSTOMER_ID (optional): Customer ID, defaults to auto-detection
+ *
+ * Tests are skipped if credentials are missing or lack proper Admin API permissions.
  */
 
 import { loadEnvConfig } from "@next/env";
@@ -15,6 +22,47 @@ loadEnvConfig(process.cwd());
 
 const TEST_TIMEOUT_MS = 30_000;
 const hasServiceAccount = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+
+let credentialsValidated = false;
+let hasValidPermissions = false;
+
+/**
+ * Validate that credentials have proper Admin API permissions.
+ */
+async function validateCredentials(): Promise<boolean> {
+  if (credentialsValidated) {
+    return hasValidPermissions;
+  }
+  credentialsValidated = true;
+
+  if (!hasServiceAccount) {
+    return false;
+  }
+
+  try {
+    const { directory, customerId } = await makeGoogleClients();
+    const res = await directory.orgunits.list({
+      customerId,
+      type: "all",
+    });
+    hasValidPermissions = res.status === 200;
+    return hasValidPermissions;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("403") || message.includes("Forbidden")) {
+      console.log(
+        "[connector-config-api] skipping tests - service account lacks Admin API permissions"
+      );
+    } else {
+      console.log(
+        "[connector-config-api] skipping tests - credential validation failed:",
+        message
+      );
+    }
+    return false;
+  }
+}
+
 const runIt = hasServiceAccount ? it : it.skip;
 
 type OrgUnit = {
@@ -83,17 +131,24 @@ async function requireParentOrgUnitId() {
 }
 
 describe("Chrome Policy API targetResource behavior", () => {
-  beforeAll(() => {
+  beforeAll(async () => {
     if (!hasServiceAccount) {
       console.log(
         "[connector-config-api] skipping tests - no service account configured"
       );
+      return;
     }
+    await validateCredentials();
   });
 
   runIt(
     "lists org units to understand structure",
     async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
       const orgUnits = await listOrgUnits();
       console.log(
         "[connector-config-api] org units:",
@@ -116,6 +171,11 @@ describe("Chrome Policy API targetResource behavior", () => {
   runIt(
     "probes different targetResource formats",
     async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
       const { customerId } = await makeGoogleClients();
       const orgUnits = await listOrgUnits();
 
@@ -152,6 +212,11 @@ describe("Chrome Policy API targetResource behavior", () => {
   runIt(
     "verifies empty string is rejected",
     async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
       const { results, errors } = await probePolicyTargetResources({
         policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
         targetResources: [""],
@@ -175,6 +240,11 @@ describe("Chrome Policy API targetResource behavior", () => {
   runIt(
     "verifies my_customer is rejected as org unit",
     async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
       const { results, errors } = await probePolicyTargetResources({
         policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
         targetResources: ["orgunits/my_customer"],
@@ -198,6 +268,11 @@ describe("Chrome Policy API targetResource behavior", () => {
   runIt(
     "tests parent org unit ID (root)",
     async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
       const parentId = await requireParentOrgUnitId();
 
       console.log("[connector-config-api] testing parent ID:", parentId);

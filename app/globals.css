@@ -75,8 +75,9 @@
 }
 
 @theme inline {
-  --font-sans: var(--font-inter), "Inter", system-ui, sans-serif;
-  --font-mono: "JetBrains Mono", monospace;
+  --font-sans:
+    var(--font-google-sans-text), "Google Sans Text", system-ui, sans-serif;
+  --font-mono: var(--font-google-sans-code), "Google Sans Code", monospace;
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
