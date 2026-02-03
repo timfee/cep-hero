@@ -11,7 +11,7 @@
     "evals:fast": "EVAL_MANAGE_SERVER=0 bun evals/run.ts",
     "evals:verbose": "EVAL_VERBOSE=1 bun evals/run.ts",
     "evals:comprehensive": "bun evals/comprehensive/index.ts",
-    "evals:comprehensive:full": "bun evals/comprehensive/index.ts --modes fixture,live --with-judge --iterations 2",
+    "evals:comprehensive:full": "bun evals/comprehensive/index.ts --with-judge --iterations 3",
     "fixtures:capture": "bun run scripts/capture-eval-fixtures.ts",
     "credentials:check": "bun run scripts/check-credentials.ts",
     "check": "ultracite check",
