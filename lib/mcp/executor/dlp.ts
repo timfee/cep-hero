@@ -56,8 +56,15 @@ interface CloudIdentityPolicy {
   } | null;
 }
 
+const DLP_SERVICE_UNAVAILABLE: ListDLPRulesError = {
+  error: "Cloud Identity policy client unavailable",
+  suggestion: "Confirm Cloud Identity API is enabled for this project.",
+  requiresReauth: false,
+};
+
 /**
- * List DLP policies configured in Cloud Identity.
+ * Fetches DLP policies from Cloud Identity and maps them to a structured
+ * format with org unit resolution and optional help documentation.
  */
 export async function listDLPRules(
   auth: OAuth2Client,
@@ -65,45 +72,71 @@ export async function listDLPRules(
   orgUnitContext: OrgUnitContext,
   args: ListDLPRulesArgs = {}
 ): Promise<ListDLPRulesResult> {
-  const { includeHelp = false } = args;
   const service = googleApis.cloudidentity({ version: "v1", auth });
-
   console.log("[dlp-rules] request");
 
+  if (service.policies?.list === undefined) {
+    return DLP_SERVICE_UNAVAILABLE;
+  }
+
   try {
-    if (service.policies?.list === undefined) {
-      return {
-        error: "Cloud Identity policy client unavailable",
-        suggestion: "Confirm Cloud Identity API is enabled for this project.",
-        requiresReauth: false,
-      };
-    }
-
-    const res = await service.policies.list({
-      filter: `customer == "customers/${customerId}"`,
-    });
-
-    console.log(
-      "[dlp-rules] response",
-      JSON.stringify({
-        count: res.data.policies?.length ?? 0,
-        sample: res.data.policies?.[0]?.name,
-      })
-    );
-
-    const rules = mapPoliciesToRules(res.data.policies ?? [], orgUnitContext);
-
-    if (!includeHelp || rules.length === 0) {
-      return { rules };
-    }
-
-    const help = await searchPolicies("Chrome DLP rules", 4);
-    return { rules, help };
+    return await fetchAndMapPolicies(service, customerId, orgUnitContext, args);
   } catch (error: unknown) {
-    const { code, message, errors } = getErrorDetails(error);
-    console.log("[dlp-rules] error", JSON.stringify({ code, message, errors }));
+    logDlpError(error);
     return createApiError(error, "dlp-rules");
   }
+}
+
+async function fetchAndMapPolicies(
+  service: {
+    policies?: {
+      list: (args: {
+        filter: string;
+      }) => Promise<{ data: { policies?: CloudIdentityPolicy[] } }>;
+    };
+  },
+  customerId: string,
+  orgUnitContext: OrgUnitContext,
+  args: ListDLPRulesArgs
+): Promise<ListDLPRulesSuccess> {
+  const policiesApi = service.policies;
+  if (policiesApi === undefined) {
+    return { rules: [] };
+  }
+
+  const res = await policiesApi.list({
+    filter: `customer == "customers/${customerId}"`,
+  });
+  logPolicyResponse(res.data.policies);
+
+  const rules = mapPoliciesToRules(res.data.policies ?? [], orgUnitContext);
+  return addHelpIfRequested(rules, args.includeHelp ?? false);
+}
+
+function logPolicyResponse(policies: CloudIdentityPolicy[] | undefined): void {
+  console.log(
+    "[dlp-rules] response",
+    JSON.stringify({
+      count: policies?.length ?? 0,
+      sample: policies?.[0]?.name,
+    })
+  );
+}
+
+async function addHelpIfRequested(
+  rules: DLPRule[],
+  includeHelp: boolean
+): Promise<ListDLPRulesSuccess> {
+  if (!includeHelp || rules.length === 0) {
+    return { rules };
+  }
+  const help = await searchPolicies("Chrome DLP rules", 4);
+  return { rules, help };
+}
+
+function logDlpError(error: unknown): void {
+  const { code, message, errors } = getErrorDetails(error);
+  console.log("[dlp-rules] error", JSON.stringify({ code, message, errors }));
 }
 
 function mapPoliciesToRules(
@@ -219,7 +252,7 @@ export async function createDLPRule(
   const token = await auth.getAccessToken();
   const accessToken = token?.token;
 
-  if (accessToken === undefined) {
+  if (typeof accessToken !== "string" || accessToken.length === 0) {
     return buildNoTokenError(args, targetOrgUnitDisplay);
   }
 
@@ -333,16 +366,13 @@ async function submitDLPRule(
     return buildApiError(data, args, targetOrgUnitDisplay);
   }
 
-  const responseData = data as { name?: string };
-  console.log(
-    "[create-dlp-rule] success",
-    JSON.stringify({ name: responseData.name })
-  );
+  const ruleName = extractRuleName(data);
+  console.log("[create-dlp-rule] success", JSON.stringify({ name: ruleName }));
 
   return {
     _type: "ui.success",
     message: `DLP rule "${args.displayName}" created successfully!`,
-    ruleName: responseData.name ?? args.displayName,
+    ruleName: ruleName ?? args.displayName,
     displayName: args.displayName,
     targetOrgUnit: targetOrgUnitDisplay,
     triggers: args.triggers,
@@ -351,15 +381,34 @@ async function submitDLPRule(
   };
 }
 
+function extractRuleName(data: unknown): string | null {
+  const name = getProperty(data, "name");
+  return typeof name === "string" ? name : null;
+}
+
+function extractApiErrorMessage(data: unknown): string {
+  const error = getProperty(data, "error");
+  const message = getProperty(error, "message");
+  return typeof message === "string" ? message : "Unknown API error";
+}
+
+function getProperty(obj: unknown, key: string): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return undefined;
+  }
+  if (!Object.hasOwn(obj, key)) {
+    return undefined;
+  }
+  return Reflect.get(obj, key);
+}
+
 function buildApiError(
   data: unknown,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
 ): CreateDLPRuleManualSteps {
-  const errorData = data as { error?: { message?: string } };
-  const errorMessage = errorData?.error?.message ?? "Unknown API error";
-  console.log("[create-dlp-rule] API error", JSON.stringify(errorData));
-
+  const errorMessage = extractApiErrorMessage(data);
+  console.log("[create-dlp-rule] API error", JSON.stringify(data));
   return buildManualSteps(errorMessage, args, targetOrgUnitDisplay);
 }
 
