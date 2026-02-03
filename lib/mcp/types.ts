@@ -220,11 +220,17 @@ export interface FixtureData {
     name?: string;
     displayName?: string;
     description?: string;
+    settingType?: string;
+    policyType?: string;
+    orgUnit?: string;
+    targetResource?: string | null;
+    resourceName?: string;
     condition?: unknown;
     action?: string;
     triggers?: string[];
     enabled?: boolean;
     note?: string;
+    consoleUrl?: string;
   }[];
   connectorPolicies?: {
     targetKey?: { targetResource?: string };

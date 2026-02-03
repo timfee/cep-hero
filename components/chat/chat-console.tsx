@@ -55,6 +55,7 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { useChatContext } from "@/components/chat/chat-context";
+import { normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { OrgUnitsList } from "./org-units-list";
@@ -193,6 +194,65 @@ export function ChatConsole() {
     [overviewData]
   );
 
+  const orgUnitDisplayMap = useMemo(() => {
+    const map = new Map<string, string>();
+
+    for (const message of messages) {
+      for (const part of message.parts) {
+        if (!isToolUIPart(part)) {
+          continue;
+        }
+        if (getToolName(part) !== "listOrgUnits") {
+          continue;
+        }
+        if (part.state !== "output-available") {
+          continue;
+        }
+        const output = part.output as OrgUnitsOutput;
+        const orgUnits = output?.orgUnits ?? [];
+        for (const unit of orgUnits) {
+          const id = unit.orgUnitId ?? "";
+          const path = unit.orgUnitPath ?? unit.name ?? "";
+          if (!id || !path) {
+            continue;
+          }
+          const normalized = normalizeResource(id);
+          map.set(normalized, path);
+          map.set(`orgunits/${normalized}`, path);
+          map.set(`id:${normalized}`, path);
+        }
+      }
+    }
+
+    return map;
+  }, [messages]);
+
+  const rootOrgUnitId = useMemo(() => {
+    for (const [key, value] of orgUnitDisplayMap.entries()) {
+      if (value === "/") {
+        return key.replace(/^orgunits\//, "").replace(/^id:/, "");
+      }
+    }
+    return null;
+  }, [orgUnitDisplayMap]);
+
+  const sanitizeOrgUnitsInText = useCallback(
+    (text: string) =>
+      text.replace(/orgunits\/[a-z0-9-]+/gi, (match) => {
+        const normalized = normalizeResource(match);
+        const resolved = orgUnitDisplayMap.get(normalized);
+        if (resolved) {
+          return resolved;
+        }
+        const normalizedId = normalized.replace(/^orgunits\//, "");
+        if (rootOrgUnitId && normalizedId === rootOrgUnitId) {
+          return "/";
+        }
+        return "an org unit";
+      }),
+    [orgUnitDisplayMap, rootOrgUnitId]
+  );
+
   const emptyStateActions = useMemo(() => {
     if (overviewData?.suggestions && overviewData.suggestions.length > 0) {
       return suggestionsToActions(overviewData.suggestions);
@@ -287,7 +347,9 @@ export function ChatConsole() {
             <div className="space-y-4">
               <Message from="assistant" className="bg-muted p-4 lg:p-6">
                 <MessageContent>
-                  <MessageResponse>{welcomeMessage}</MessageResponse>
+                  <MessageResponse>
+                    {sanitizeOrgUnitsInText(welcomeMessage)}
+                  </MessageResponse>
                 </MessageContent>
               </Message>
               <div className="pl-4 lg:pl-6">
@@ -338,7 +400,9 @@ export function ChatConsole() {
                         )}
                       >
                         <MessageContent>
-                          <MessageResponse>{part.text}</MessageResponse>
+                        <MessageResponse>
+                          {sanitizeOrgUnitsInText(part.text)}
+                        </MessageResponse>
                         </MessageContent>
                         {!isUser && (
                           <MessageActions>

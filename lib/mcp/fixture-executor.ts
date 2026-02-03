@@ -22,6 +22,10 @@ import {
   type IToolExecutor,
   type OrgUnitsResult,
 } from "./types";
+import {
+  buildOrgUnitNameMap,
+  resolveOrgUnitDisplay,
+} from "@/lib/mcp/org-units";
 
 /**
  * A tool executor that returns fixture data instead of calling real Google APIs.
@@ -69,16 +73,29 @@ export class FixtureToolExecutor implements IToolExecutor {
     }
 
     const fixtureRules = this.fixtures.dlpRules ?? [];
-    const rules = fixtureRules.map((rule, idx) => ({
-      id: rule.name?.split("/").pop() ?? `rule-${idx + 1}`,
-      displayName: rule.displayName ?? `DLP Rule ${idx + 1}`,
-      description: rule.description ?? "",
-      settingType: rule.triggers?.join(", ") ?? "",
-      orgUnit: "",
-      policyType: rule.action ?? "AUDIT",
-      resourceName: rule.name ?? "",
-      consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-    }));
+    const orgUnitNameMap = buildOrgUnitNameMap(this.fixtures.orgUnits ?? []);
+    const rootOrgUnitId = this.fixtures.orgUnits?.find(
+      (unit) => unit.orgUnitPath === "/"
+    )?.orgUnitId;
+    const rules = fixtureRules.map((rule, idx) => {
+      const orgUnitValue = rule.targetResource ?? rule.orgUnit ?? "";
+      return ({
+        id: rule.name?.split("/").pop() ?? `rule-${idx + 1}`,
+        displayName: rule.displayName ?? `DLP Rule ${idx + 1}`,
+        description: rule.description ?? "",
+        settingType: rule.triggers?.join(", ") ?? "",
+        orgUnit:
+          resolveOrgUnitDisplay(
+            orgUnitValue,
+            orgUnitNameMap,
+            rootOrgUnitId,
+            "/"
+          ) ?? "",
+        policyType: rule.action ?? "AUDIT",
+        resourceName: rule.name ?? "",
+        consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+      });
+    });
 
     return { rules };
   }
@@ -216,13 +233,24 @@ export class FixtureToolExecutor implements IToolExecutor {
   ): Promise<DraftPolicyChangeResult> {
     await Promise.resolve();
     const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const orgUnitNameMap = buildOrgUnitNameMap(this.fixtures.orgUnits ?? []);
+    const rootOrgUnitId = this.fixtures.orgUnits?.find(
+      (unit) => unit.orgUnitPath === "/"
+    )?.orgUnitId;
+    const targetDisplay =
+      resolveOrgUnitDisplay(
+        args.targetUnit,
+        orgUnitNameMap,
+        rootOrgUnitId,
+        "/"
+      ) ?? args.targetUnit;
     return {
       _type: "ui.confirmation",
       proposalId,
       title: `Proposed Change: ${args.policyName}`,
       description: args.reasoning,
       diff: args.proposedValue,
-      target: args.targetUnit,
+      target: targetDisplay,
       adminConsoleUrl:
         args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
       intent: "update_policy",
@@ -254,12 +282,24 @@ export class FixtureToolExecutor implements IToolExecutor {
     args: z.infer<typeof CreateDLPRuleSchema>
   ): Promise<CreateDLPRuleResult> {
     await Promise.resolve();
+    const orgUnitNameMap = buildOrgUnitNameMap(this.fixtures.orgUnits ?? []);
+    const rootOrgUnitId = this.fixtures.orgUnits?.find(
+      (unit) => unit.orgUnitPath === "/"
+    )?.orgUnitId;
+    const targetOrgUnitDisplay =
+      resolveOrgUnitDisplay(
+        args.targetOrgUnit,
+        orgUnitNameMap,
+        rootOrgUnitId,
+        "/"
+      ) ??
+      args.targetOrgUnit;
     return {
       _type: "ui.success",
       message: `DLP rule "${args.displayName}" created successfully`,
       ruleName: `policies/dlp-${Date.now()}`,
       displayName: args.displayName,
-      targetOrgUnit: args.targetOrgUnit,
+      targetOrgUnit: targetOrgUnitDisplay,
       triggers: args.triggers,
       action: args.action,
       consoleUrl: "https://admin.google.com/ac/chrome/dlp",

@@ -14,6 +14,13 @@ import {
   searchPolicies,
   type VectorSearchResult,
 } from "@/lib/upstash/search";
+import {
+  buildOrgUnitNameMap,
+  buildOrgUnitTargetResource,
+  normalizeResource,
+  resolveOrgUnitDisplay,
+  type OrgUnit,
+} from "@/lib/mcp/org-units";
 
 /**
  * Schema for fetching Chrome audit events.
@@ -209,39 +216,12 @@ type ResolvedPolicy =
     policyTargetKey?: { targetResource?: string };
   };
 
-interface OrgUnit {
-  orgUnitId?: string | null;
-  parentOrgUnitId?: string | null;
-  orgUnitPath?: string | null;
-  name?: string | null;
-}
-
-/**
- * Build a mapping from org unit ID variants to friendly paths.
- * Handles multiple ID formats: "03ph8a2z...", "id:03ph8a2z...", "orgunits/03ph8a2z..."
- */
-function buildOrgUnitNameMap(units: OrgUnit[]): Map<string, string> {
-  const map = new Map<string, string>();
-
-  for (const unit of units) {
-    const path = unit.orgUnitPath ?? unit.name ?? "";
-    if (!path) {
-      continue;
-    }
-
-    const rawId = unit.orgUnitId ?? "";
-    if (!rawId) {
-      continue;
-    }
-
-    // Store under multiple key formats for easy lookup
-    const normalizedId = normalizeResource(rawId);
-    map.set(normalizedId, path);
-    map.set(`orgunits/${normalizedId}`, path);
-    map.set(`id:${normalizedId}`, path);
-  }
-
-  return map;
+interface OrgUnitContext {
+  orgUnitList: OrgUnit[];
+  orgUnitNameMap: Map<string, string>;
+  rootOrgUnitId: string | null;
+  rootOrgUnitPath: string | null;
+  error?: string;
 }
 
 /**
@@ -331,29 +311,6 @@ function createApiError(
       : context.defaultSuggestion,
     requiresReauth,
   };
-}
-
-function normalizeResource(value: string): string {
-  const trimmed = value.trim();
-  const stripped = trimmed.replace(/^id:/, "");
-  return stripped.replaceAll(/\/{2,}/g, "/");
-}
-
-function buildOrgUnitTargetResource(value: string): string {
-  const normalized = normalizeResource(value);
-  if (!normalized || normalized === "/") {
-    return "";
-  }
-  const withoutLeading = normalized.startsWith("/")
-    ? normalized.slice(1)
-    : normalized;
-  if (
-    withoutLeading.startsWith("orgunits/") ||
-    withoutLeading.startsWith("customers/")
-  ) {
-    return normalizeResource(withoutLeading);
-  }
-  return normalizeResource(`orgunits/${withoutLeading}`);
 }
 
 /**
@@ -604,6 +561,7 @@ List the actual API sources used: "Admin SDK Reports", "Cloud Identity", "Chrome
 export class CepToolExecutor {
   private auth: OAuth2Client;
   private customerId: string;
+  private orgUnitContextPromise: Promise<OrgUnitContext> | null = null;
 
   /**
    * Initialize the executor with a signed-in user's access token.
@@ -614,6 +572,66 @@ export class CepToolExecutor {
     const client = new OAuth2Client();
     client.setCredentials({ access_token: accessToken });
     this.auth = client;
+  }
+
+  private async getOrgUnitContext(): Promise<OrgUnitContext> {
+    if (this.orgUnitContextPromise) {
+      return this.orgUnitContextPromise;
+    }
+
+    this.orgUnitContextPromise = (async () => {
+      const directory = googleApis.admin({
+        version: "directory_v1",
+        auth: this.auth,
+      });
+
+      let orgUnitList: OrgUnit[] = [];
+      let rootOrgUnitId: string | null = null;
+      let rootOrgUnitPath: string | null = null;
+      let error: string | undefined;
+
+      try {
+        if (directory.orgunits?.list) {
+          const orgUnits = await directory.orgunits.list({
+            customerId: this.customerId,
+            type: "all",
+          });
+          orgUnitList = orgUnits?.data.organizationUnits ?? [];
+        }
+      } catch (fetchError) {
+        error = getErrorMessage(fetchError);
+      }
+
+      try {
+        if (directory.orgunits?.get) {
+          const rootRes = await directory.orgunits.get({
+            customerId: this.customerId,
+            orgUnitPath: "/",
+          });
+          rootOrgUnitId = rootRes.data.orgUnitId ?? null;
+          rootOrgUnitPath = rootRes.data.orgUnitPath ?? rootRes.data.name ?? "/";
+        }
+      } catch {
+        // Root OU fetch is optional; ignore failures.
+      }
+
+      const orgUnitNameMap = buildOrgUnitNameMap(orgUnitList);
+      if (rootOrgUnitId && rootOrgUnitPath) {
+        const normalizedRoot = normalizeResource(rootOrgUnitId);
+        orgUnitNameMap.set(normalizedRoot, rootOrgUnitPath);
+        orgUnitNameMap.set(`orgunits/${normalizedRoot}`, rootOrgUnitPath);
+      }
+
+      return {
+        orgUnitList,
+        orgUnitNameMap,
+        rootOrgUnitId,
+        rootOrgUnitPath,
+        error,
+      };
+    })();
+
+    return this.orgUnitContextPromise;
   }
 
   private async getChromeEventsWindowSummary({
@@ -793,6 +811,9 @@ export class CepToolExecutor {
         };
       }
 
+      const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } =
+        await this.getOrgUnitContext();
+
       const res = await service.policies.list({
         filter: `customer == "customers/${this.customerId}"`,
       });
@@ -833,7 +854,15 @@ export class CepToolExecutor {
             ? formatSettingValue(settingValue)
             : "";
 
-          const orgUnit = policy.policyQuery?.orgUnit ?? "";
+          const orgUnitRaw = policy.policyQuery?.orgUnit ?? "";
+          const resolvedOrgUnit =
+            resolveOrgUnitDisplay(
+              orgUnitRaw,
+              orgUnitNameMap,
+              rootOrgUnitId,
+              rootOrgUnitPath
+            ) ?? orgUnitRaw;
+          const orgUnit = resolvedOrgUnit;
           const policyType = policy.type ?? "UNKNOWN";
 
           return {
@@ -1016,51 +1045,18 @@ export class CepToolExecutor {
     try {
       const resolvedPolicies: ResolvedPolicy[] = [];
 
-      const directory = googleApis.admin({
-        version: "directory_v1",
-        auth: this.auth,
-      });
-
       let ouFetchError: string | null = null;
       try {
-        if (!directory.orgunits?.list) {
-          throw new Error("Directory orgunit client unavailable");
+        const { orgUnitList, orgUnitNameMap: nameMap, rootOrgUnitId, error } =
+          await this.getOrgUnitContext();
+        if (error) {
+          ouFetchError = error;
         }
-        let rootOuId: string | null = null;
-        let rootOuPath: string | null = null;
-        try {
-          // Explicitly fetch the root OU ID to ensure we have the correct target
-          const rootRes = await directory.orgunits.get({
-            customerId: this.customerId,
-            orgUnitPath: "/",
-          });
-          rootOuId = rootRes.data.orgUnitId ?? null;
-          rootOuPath = rootRes.data.orgUnitPath ?? rootRes.data.name ?? "/";
-        } catch {
-          // Silently handle - root OU fetch is optional
-        }
-
-        const orgUnits = await directory.orgunits.list({
-          customerId: this.customerId,
-          type: "all",
-        });
-
-        const orgUnitList = orgUnits?.data.organizationUnits ?? [];
-
-        // Build name map for resolving IDs to friendly paths
-        orgUnitNameMap = buildOrgUnitNameMap(orgUnitList);
-
-        // Add root OU to the map if we fetched it
-        if (rootOuId && rootOuPath) {
-          const normalizedRoot = normalizeResource(rootOuId);
-          orgUnitNameMap.set(normalizedRoot, rootOuPath);
-          orgUnitNameMap.set(`orgunits/${normalizedRoot}`, rootOuPath);
-        }
+        orgUnitNameMap = nameMap;
 
         const orgUnitIds = resolveOrgUnitCandidates(orgUnitList);
-
-        if (rootOuId) {
-          const normalizedRoot = normalizeResource(rootOuId);
+        if (rootOrgUnitId) {
+          const normalizedRoot = normalizeResource(rootOrgUnitId);
           if (!orgUnitIds.includes(normalizedRoot)) {
             orgUnitIds.unshift(normalizedRoot);
           }
@@ -1069,6 +1065,7 @@ export class CepToolExecutor {
         targetCandidates = orgUnitIds
           .map((id) => buildOrgUnitTargetResource(id))
           .filter((t) => t !== "");
+
       } catch (error) {
         ouFetchError = getErrorMessage(error);
         console.log(
@@ -1238,9 +1235,18 @@ export class CepToolExecutor {
    * This does NOT execute changes - it returns a structured proposal
    * that the UI renders as a confirmation card for the user to approve.
    */
-  // eslint-disable-next-line class-methods-use-this
-  draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
+  async draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
     const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } =
+      await this.getOrgUnitContext();
+    const targetDisplay =
+      resolveOrgUnitDisplay(
+        args.targetUnit,
+        orgUnitNameMap,
+        rootOrgUnitId,
+        rootOrgUnitPath
+      ) ??
+      args.targetUnit;
 
     return {
       _type: "ui.confirmation" as const,
@@ -1248,7 +1254,7 @@ export class CepToolExecutor {
       title: `Proposed Change: ${args.policyName}`,
       description: args.reasoning,
       diff: args.proposedValue,
-      target: args.targetUnit,
+      target: targetDisplay,
       adminConsoleUrl:
         args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
       intent: "update_policy",
@@ -1343,21 +1349,32 @@ export class CepToolExecutor {
       action: args.action,
     });
 
+    const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } =
+      await this.getOrgUnitContext();
+    const targetOrgUnitDisplay =
+      resolveOrgUnitDisplay(
+        args.targetOrgUnit,
+        orgUnitNameMap,
+        rootOrgUnitId,
+        rootOrgUnitPath
+      ) ??
+      args.targetOrgUnit;
+
     const token = await this.auth.getAccessToken();
     const accessToken = token?.token;
 
     if (!accessToken) {
-      return {
-        _type: "ui.error" as const,
-        message: "No access token available",
-        error: "Authentication required",
-        displayName: args.displayName,
-        targetOrgUnit: args.targetOrgUnit,
-        triggers: args.triggers,
-        action: args.action,
-        consoleUrl: "https://admin.google.com/ac/chrome/dlp",
-      };
-    }
+        return {
+          _type: "ui.error" as const,
+          message: "No access token available",
+          error: "Authentication required",
+          displayName: args.displayName,
+          targetOrgUnit: targetOrgUnitDisplay,
+          triggers: args.triggers,
+          action: args.action,
+          consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+        };
+      }
 
     const triggerConditions = args.triggers.map((trigger) => {
       switch (trigger) {
@@ -1435,7 +1452,7 @@ export class CepToolExecutor {
           message: `API call failed: ${errorMessage}. Please create the rule manually.`,
           error: errorMessage,
           displayName: args.displayName,
-          targetOrgUnit: args.targetOrgUnit,
+          targetOrgUnit: targetOrgUnitDisplay,
           triggers: args.triggers,
           action: args.action,
           consoleUrl: "https://admin.google.com/ac/chrome/dlp",
@@ -1443,7 +1460,7 @@ export class CepToolExecutor {
             "1. Go to Admin Console > Security > Access and data control > Data protection",
             "2. Click 'Manage Rules' then 'Add rule' > 'New rule'",
             `3. Name the rule: ${args.displayName}`,
-            `4. Set scope to org unit: ${args.targetOrgUnit}`,
+            `4. Set scope to org unit: ${targetOrgUnitDisplay}`,
             `5. Add Chrome triggers: ${args.triggers.join(", ")}`,
             `6. Set action to: ${args.action}`,
             "7. Save and enable the rule",
@@ -1462,7 +1479,7 @@ export class CepToolExecutor {
         message: `DLP rule "${args.displayName}" created successfully!`,
         ruleName: responseData.name ?? args.displayName,
         displayName: args.displayName,
-        targetOrgUnit: args.targetOrgUnit,
+        targetOrgUnit: targetOrgUnitDisplay,
         triggers: args.triggers,
         action: args.action,
         consoleUrl: "https://admin.google.com/ac/chrome/dlp",
@@ -1476,7 +1493,7 @@ export class CepToolExecutor {
         message: `Unable to create DLP rule: ${message}. Please create it manually.`,
         error: message,
         displayName: args.displayName,
-        targetOrgUnit: args.targetOrgUnit,
+        targetOrgUnit: targetOrgUnitDisplay,
         triggers: args.triggers,
         action: args.action,
         consoleUrl: "https://admin.google.com/ac/chrome/dlp",
@@ -1484,7 +1501,7 @@ export class CepToolExecutor {
           "1. Go to Admin Console > Security > Access and data control > Data protection",
           "2. Click 'Manage Rules' then 'Add rule' > 'New rule'",
           `3. Name the rule: ${args.displayName}`,
-          `4. Set scope to org unit: ${args.targetOrgUnit}`,
+          `4. Set scope to org unit: ${targetOrgUnitDisplay}`,
           `5. Add Chrome triggers: ${args.triggers.join(", ")}`,
           `6. Set action to: ${args.action}`,
           "7. Save and enable the rule",

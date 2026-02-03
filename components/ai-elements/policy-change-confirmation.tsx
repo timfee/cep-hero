@@ -85,6 +85,7 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
     proposal.applyParams?.policySchemaId ?? "Unknown Policy";
   const targetResource =
     proposal.applyParams?.targetResource ?? proposal.target;
+  const targetDisplay = proposal.target || targetResource;
   const proposedValue = proposal.applyParams?.value ?? proposal.diff;
 
   const policyName = extractPolicyName(policySchemaId);
@@ -135,7 +136,7 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
           <p className="text-xs text-foreground">{ruleName}</p>
           {!dlpData && (
             <p className="text-[10px] text-muted-foreground font-mono">
-              {targetResource}
+              {targetDisplay}
             </p>
           )}
         </div>
