@@ -1,12 +1,5 @@
 import { google } from "@ai-sdk/google";
-import {
-  generateText,
-  hasToolCall,
-  Output,
-  stepCountIs,
-  streamText,
-  tool,
-} from "ai";
+import { generateText, Output, stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 
 import {
