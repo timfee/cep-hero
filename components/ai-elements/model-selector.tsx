@@ -79,6 +79,9 @@ export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => (
 
 export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>;
 
+/**
+ * Search input for filtering available models.
+ */
 export const ModelSelectorInput = ({
   className,
   ...props
@@ -88,24 +91,36 @@ export const ModelSelectorInput = ({
 
 export type ModelSelectorListProps = ComponentProps<typeof CommandList>;
 
+/**
+ * Scrollable list container for model options.
+ */
 export const ModelSelectorList = (props: ModelSelectorListProps) => (
   <CommandList {...props} />
 );
 
 export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
 
+/**
+ * Empty state when no models match the search query.
+ */
 export const ModelSelectorEmpty = (props: ModelSelectorEmptyProps) => (
   <CommandEmpty {...props} />
 );
 
 export type ModelSelectorGroupProps = ComponentProps<typeof CommandGroup>;
 
+/**
+ * Group container for organizing models by provider or category.
+ */
 export const ModelSelectorGroup = (props: ModelSelectorGroupProps) => (
   <CommandGroup {...props} />
 );
 
 export type ModelSelectorItemProps = ComponentProps<typeof CommandItem>;
 
+/**
+ * Selectable model option item.
+ */
 export const ModelSelectorItem = (props: ModelSelectorItemProps) => (
   <CommandItem {...props} />
 );
