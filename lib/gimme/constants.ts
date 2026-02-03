@@ -13,4 +13,4 @@ export const ADMIN_SCOPES = [
   "https://www.googleapis.com/auth/admin.directory.user.security",
 ];
 
-export const GMAIL_SCOPES = ["https://mail.google.com/"];
+export const GMAIL_SCOPES = ["https://www.googleapis.com/auth/gmail.send"];
