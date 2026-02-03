@@ -1,6 +1,14 @@
+/**
+ * Overview API route providing fleet status data for the dashboard.
+ * Authenticates the request and fetches overview data from Google APIs.
+ */
+
 import { auth } from "@/lib/auth";
 import { CepToolExecutor } from "@/lib/mcp/registry";
 
+/**
+ * Fetch fleet overview data for the authenticated user.
+ */
 export async function GET(req: Request) {
   const session = await auth.api.getSession({
     headers: req.headers,

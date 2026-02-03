@@ -1,3 +1,7 @@
+/**
+ * Main CEP tool executor that orchestrates all Google API operations.
+ */
+
 import { OAuth2Client } from "google-auth-library";
 import { type z } from "zod";
 
@@ -5,46 +9,26 @@ import {
   buildFallbackOverview,
   extractFleetOverviewFacts,
   summarizeFleetOverview,
-  type FleetKnowledgeContext,
 } from "@/lib/mcp/fleet-overview";
 import {
-  type FleetOverviewResponse,
   type GetChromeEventsSchema,
   type GetFleetOverviewSchema,
 } from "@/lib/mcp/schemas";
-import { type DebugAuthResult } from "@/lib/mcp/types";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 import { debugAuth } from "./auth";
 import { getChromeEvents, getChromeEventsWindowSummary } from "./chrome-events";
-import {
-  getChromeConnectorConfiguration,
-  type ConnectorConfigResult,
-} from "./connector";
+import { getChromeConnectorConfiguration } from "./connector";
 import { fetchOrgUnitContext, type OrgUnitContext } from "./context";
-import {
-  createDLPRule,
-  type CreateDLPRuleArgs,
-  type CreateDLPRuleResult,
-} from "./dlp-create";
-import {
-  listDLPRules,
-  type ListDLPRulesArgs,
-  type ListDLPRulesResult,
-} from "./dlp-list";
-import {
-  enrollBrowser,
-  type EnrollBrowserArgs,
-  type EnrollBrowserResult,
-} from "./enrollment";
-import { listOrgUnits, type ListOrgUnitsResult } from "./org-units-api";
+import { createDLPRule, type CreateDLPRuleArgs } from "./dlp-create";
+import { listDLPRules, type ListDLPRulesArgs } from "./dlp-list";
+import { enrollBrowser, type EnrollBrowserArgs } from "./enrollment";
+import { listOrgUnits } from "./org-units-api";
 import {
   applyPolicyChange,
   draftPolicyChange,
   type ApplyPolicyChangeArgs,
-  type ApplyPolicyChangeResult,
   type DraftPolicyChangeArgs,
-  type DraftPolicyChangeResult,
 } from "./policy";
 
 type ChromeEventsArgs = z.infer<typeof GetChromeEventsSchema>;
@@ -65,36 +49,50 @@ export class CepToolExecutor {
     this.auth = client;
   }
 
-  private async getOrgUnitContext(): Promise<OrgUnitContext> {
+  /**
+   * Lazily fetches and caches org unit context for the session.
+   */
+  private getOrgUnitContext() {
     this.orgUnitContextPromise ??= fetchOrgUnitContext(
       this.auth,
       this.customerId
     );
-    const result = await this.orgUnitContextPromise;
-    return result;
+    return this.orgUnitContextPromise;
   }
 
-  async getChromeEvents(args: ChromeEventsArgs) {
-    const result = await getChromeEvents(this.auth, this.customerId, args);
-    return result;
+  /**
+   * Fetches Chrome audit events from the Admin SDK Reports API.
+   */
+  getChromeEvents(args: ChromeEventsArgs) {
+    return getChromeEvents(this.auth, this.customerId, args);
   }
 
-  async listDLPRules(args: ListDLPRulesArgs = {}): Promise<ListDLPRulesResult> {
+  /**
+   * Lists DLP rules from Cloud Identity with org unit resolution.
+   */
+  async listDLPRules(args: ListDLPRulesArgs = {}) {
     const orgUnitContext = await this.getOrgUnitContext();
     return listDLPRules(this.auth, this.customerId, orgUnitContext, args);
   }
 
-  async listOrgUnits(): Promise<ListOrgUnitsResult> {
-    const result = await listOrgUnits(this.auth, this.customerId);
-    return result;
+  /**
+   * Lists all organizational units for the customer.
+   */
+  listOrgUnits() {
+    return listOrgUnits(this.auth, this.customerId);
   }
 
-  async enrollBrowser(args: EnrollBrowserArgs): Promise<EnrollBrowserResult> {
-    const result = await enrollBrowser(this.auth, this.customerId, args);
-    return result;
+  /**
+   * Generates a browser enrollment token for the specified org unit.
+   */
+  enrollBrowser(args: EnrollBrowserArgs) {
+    return enrollBrowser(this.auth, this.customerId, args);
   }
 
-  async getChromeConnectorConfiguration(): Promise<ConnectorConfigResult> {
+  /**
+   * Retrieves Chrome connector policy configurations.
+   */
+  async getChromeConnectorConfiguration() {
     const orgUnitContext = await this.getOrgUnitContext();
     return getChromeConnectorConfiguration(
       this.auth,
@@ -103,33 +101,40 @@ export class CepToolExecutor {
     );
   }
 
-  async debugAuth(): Promise<DebugAuthResult> {
-    const result = await debugAuth(this.auth);
-    return result;
+  /**
+   * Validates the OAuth token and returns scope/expiry info.
+   */
+  debugAuth() {
+    return debugAuth(this.auth);
   }
 
-  async draftPolicyChange(
-    args: DraftPolicyChangeArgs
-  ): Promise<DraftPolicyChangeResult> {
+  /**
+   * Creates a policy change proposal for user review before application.
+   */
+  async draftPolicyChange(args: DraftPolicyChangeArgs) {
     const orgUnitContext = await this.getOrgUnitContext();
     return draftPolicyChange(orgUnitContext, args);
   }
 
-  async applyPolicyChange(
-    args: ApplyPolicyChangeArgs
-  ): Promise<ApplyPolicyChangeResult> {
-    const result = await applyPolicyChange(this.auth, this.customerId, args);
-    return result;
+  /**
+   * Applies a confirmed policy change via the Chrome Policy API.
+   */
+  applyPolicyChange(args: ApplyPolicyChangeArgs) {
+    return applyPolicyChange(this.auth, this.customerId, args);
   }
 
-  async createDLPRule(args: CreateDLPRuleArgs): Promise<CreateDLPRuleResult> {
+  /**
+   * Creates a new DLP rule in Cloud Identity.
+   */
+  async createDLPRule(args: CreateDLPRuleArgs) {
     const orgUnitContext = await this.getOrgUnitContext();
     return createDLPRule(this.auth, this.customerId, orgUnitContext, args);
   }
 
-  static async getKnowledgeContext(
-    query: string
-  ): Promise<FleetKnowledgeContext> {
+  /**
+   * Fetches relevant documentation and policy references for a query.
+   */
+  static async getKnowledgeContext(query: string) {
     if (query.trim() === "") {
       return { docs: null, policies: null };
     }
@@ -142,9 +147,10 @@ export class CepToolExecutor {
     return { docs, policies };
   }
 
-  async getFleetOverview(
-    args: FleetOverviewArgs
-  ): Promise<FleetOverviewResponse | ReturnType<typeof buildFallbackOverview>> {
+  /**
+   * Aggregates fleet data and generates an AI-powered security summary.
+   */
+  async getFleetOverview(args: FleetOverviewArgs) {
     const { maxEvents = 50, knowledgeQuery } = args;
 
     const eventsWindowSummary = await getChromeEventsWindowSummary(

@@ -1,3 +1,7 @@
+/**
+ * Builds diagnostic evidence payloads from tool execution results for testing.
+ */
+
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
 import { type CepToolExecutor } from "@/lib/mcp/registry";
 import { type EvidencePayload } from "@/types/chat";
@@ -25,10 +29,13 @@ const REQUIRED_SCOPES = [
   "https://www.googleapis.com/auth/chrome.management.policy",
 ];
 
+/**
+ * Process Chrome events result and add to accumulator.
+ */
 function processEventsResult(
   eventsResult: EventsResult,
   acc: EvidenceAccumulator
-): void {
+) {
   if (!("events" in eventsResult)) {
     return;
   }
@@ -41,10 +48,10 @@ function processEventsResult(
   });
 }
 
-function processDlpResult(
-  dlpResult: DlpResult,
-  acc: EvidenceAccumulator
-): void {
+/**
+ * Process DLP rules result and add to accumulator.
+ */
+function processDlpResult(dlpResult: DlpResult, acc: EvidenceAccumulator) {
   if (!("rules" in dlpResult)) {
     return;
   }
@@ -57,11 +64,14 @@ function processDlpResult(
   });
 }
 
+/**
+ * Process successful connector result and add checks, signals, and gaps.
+ */
 function processConnectorSuccess(
   connectorResult: Extract<ConnectorResult, { value: unknown }>,
   analysis: ConnectorAnalysisResult,
   acc: EvidenceAccumulator
-): void {
+) {
   const count = connectorResult.value?.length ?? 0;
   acc.checks.push({
     name: "Connector policies",
@@ -89,10 +99,13 @@ function processConnectorSuccess(
   }
 }
 
+/**
+ * Process connector error result and add to accumulator.
+ */
 function processConnectorError(
   connectorResult: Extract<ConnectorResult, { error: string }>,
   acc: EvidenceAccumulator
-): void {
+) {
   acc.checks.push({
     name: "Connector policies",
     status: "unknown",
@@ -105,11 +118,14 @@ function processConnectorError(
   });
 }
 
+/**
+ * Process connector result and dispatch to success or error handler.
+ */
 function processConnectorResult(
   connectorResult: ConnectorResult,
   analysis: ConnectorAnalysisResult,
   acc: EvidenceAccumulator
-): void {
+) {
   if ("value" in connectorResult) {
     processConnectorSuccess(connectorResult, analysis, acc);
   } else if ("error" in connectorResult) {
@@ -117,10 +133,13 @@ function processConnectorResult(
   }
 }
 
+/**
+ * Process successful auth result and check for required scopes.
+ */
 function processAuthSuccess(
   authResult: Extract<AuthResult, { scopes: string[] }>,
   acc: EvidenceAccumulator
-): void {
+) {
   const { scopes } = authResult;
   const missing = REQUIRED_SCOPES.filter((scope) => !scopes.includes(scope));
   acc.checks.push({
@@ -140,10 +159,13 @@ function processAuthSuccess(
   }
 }
 
+/**
+ * Process auth error result and add to accumulator.
+ */
 function processAuthError(
   authResult: Extract<AuthResult, { error: string }>,
   acc: EvidenceAccumulator
-): void {
+) {
   acc.checks.push({
     name: "Auth scopes",
     status: "unknown",
@@ -153,10 +175,13 @@ function processAuthError(
   acc.gaps.push({ missing: "Token scope insight", why: authResult.error });
 }
 
+/**
+ * Process auth debug result and dispatch to success or error handler.
+ */
 function processAuthResult(
   authDebugResult: AuthResult | undefined,
   acc: EvidenceAccumulator
-): void {
+) {
   if (!authDebugResult) {
     return;
   }

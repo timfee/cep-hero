@@ -1,10 +1,14 @@
+/**
+ * MCP transport adapter for Next.js SSE streams.
+ */
+
 import { type Transport } from "@modelcontextprotocol/sdk/shared/transport.js";
 import { type JSONRPCMessage } from "@modelcontextprotocol/sdk/types.js";
 
 import { writeDebugLog } from "@/lib/debug-log";
 
 /**
- * Transport adapter for MCP over Next.js SSE streams.
+ * Transport adapter that bridges MCP protocol over Next.js SSE streams.
  */
 export class NextJsSseTransport implements Transport {
   private _sessionId: string;
@@ -15,7 +19,7 @@ export class NextJsSseTransport implements Transport {
   public onerror?: (error: Error) => void;
 
   /**
-   * Create a transport for a single SSE session.
+   * Creates a transport for a single SSE session.
    */
   constructor(sessionId: string) {
     this._sessionId = sessionId;
@@ -30,19 +34,22 @@ export class NextJsSseTransport implements Transport {
   }
 
   /**
-   * Forward a JSON-RPC message from the POST handler to the SDK.
+   * Forwards a JSON-RPC message from the POST handler to the SDK.
    */
-  handlePostMessage(message: JSONRPCMessage): void {
+  handlePostMessage(message: JSONRPCMessage) {
     this._messageHandler?.(message);
   }
 
   /**
-   * Register the SDK message handler.
+   * Registers the SDK message handler.
    */
   set onmessage(handler: (message: JSONRPCMessage) => void) {
     this._messageHandler = handler;
   }
 
+  /**
+   * Returns the registered message handler.
+   */
   get onmessage() {
     if (!this._messageHandler) {
       throw new Error("MCP transport message handler is not set.");
@@ -51,9 +58,9 @@ export class NextJsSseTransport implements Transport {
   }
 
   /**
-   * Send a JSON-RPC message over the SSE stream.
+   * Sends a JSON-RPC message over the SSE stream.
    */
-  async send(message: JSONRPCMessage): Promise<void> {
+  async send(message: JSONRPCMessage) {
     if (!this._controller) {
       console.error(
         `[Transport ${this._sessionId}] Error: No stream controller attached. Message dropped.`
@@ -70,9 +77,9 @@ export class NextJsSseTransport implements Transport {
   }
 
   /**
-   * Close the transport and underlying stream.
+   * Closes the transport and underlying stream.
    */
-  async close(): Promise<void> {
+  async close() {
     if (this._controller) {
       try {
         this._controller.close();
@@ -88,7 +95,7 @@ export class NextJsSseTransport implements Transport {
   }
 
   /**
-   * Attach the stream controller from the SSE response.
+   * Attaches the stream controller from the SSE response.
    */
   attachController(controller: ReadableStreamDefaultController) {
     this._controller = controller;

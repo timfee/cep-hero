@@ -1,6 +1,5 @@
 /**
- * Eval category definitions.
- * Categories are organized by failure domain rather than source document.
+ * Eval category definitions organized by failure domain rather than source document.
  */
 
 export interface EvalCategory {
@@ -10,7 +9,7 @@ export interface EvalCategory {
 }
 
 /**
- * Category definitions organized by failure domain.
+ * Category definitions for organizing eval cases by failure domain.
  */
 export const CATEGORIES: EvalCategory[] = [
   {
@@ -92,12 +91,9 @@ export const CATEGORIES: EvalCategory[] = [
 ];
 
 /**
- * Mapping of case IDs to their new category.
- * This replaces the old document-based categories (common_challenges, diagnostics, test_plan)
- * with failure-domain categories.
+ * Mapping of case IDs to their failure-domain category.
  */
 export const CASE_CATEGORY_MAP: Record<string, string> = {
-  // Enrollment
   "EC-001": "enrollment",
   "EC-002": "enrollment",
   "EC-004": "enrollment",
@@ -106,7 +102,6 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-069": "enrollment",
   "EC-070": "enrollment",
 
-  // Network
   "EC-019": "network",
   "EC-021": "network",
   "EC-029": "network",
@@ -114,7 +109,6 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-050": "network",
   "EC-055": "network",
 
-  // Policy
   "EC-005": "policy",
   "EC-006": "policy",
   "EC-022": "policy",
@@ -131,7 +125,6 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-073": "policy",
   "EC-081": "policy",
 
-  // Connector
   "EC-051": "connector",
   "EC-057": "connector",
   "EC-064": "connector",
@@ -141,7 +134,6 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-080": "connector",
   "EC-082": "connector",
 
-  // DLP
   "EC-033": "dlp",
   "EC-034": "dlp",
   "EC-035": "dlp",
@@ -152,19 +144,16 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-079": "dlp",
   "EC-084": "dlp",
 
-  // Extensions
   "EC-043": "extensions",
   "EC-044": "extensions",
   "EC-045": "extensions",
   "EC-053": "extensions",
 
-  // Endpoint Verification
   "EC-009": "endpoint",
   "EC-010": "endpoint",
   "EC-011": "endpoint",
   "EC-012": "endpoint",
 
-  // Devices
   "EC-013": "devices",
   "EC-016": "devices",
   "EC-031": "devices",
@@ -172,12 +161,10 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-054": "devices",
   "EC-083": "devices",
 
-  // Browser
   "EC-007": "browser",
   "EC-008": "browser",
   "EC-023": "browser",
 
-  // Security (CAA, access levels, safe browsing)
   "EC-027": "security",
   "EC-028": "security",
   "EC-030": "security",
@@ -185,25 +172,20 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
   "EC-063": "security",
   "EC-085": "security",
 
-  // Updates
   "EC-003": "updates",
 
-  // Integration (Citrix, third-party)
   "EC-017": "integration",
   "EC-024": "integration",
   "EC-025": "integration",
   "EC-026": "integration",
 
-  // Auth
   "EC-014": "auth",
   "EC-048": "auth",
   "EC-075": "auth",
 
-  // Events & Telemetry
   "EC-052": "events",
   "EC-062": "events",
 
-  // System (quotas, rate limits, grounding, misc)
   "EC-015": "system",
   "EC-020": "system",
   "EC-056": "system",
@@ -214,9 +196,8 @@ export const CASE_CATEGORY_MAP: Record<string, string> = {
 };
 
 /**
- * Get the new category for a case ID.
- * Falls back to "system" if not mapped.
+ * Get the category for a case ID, defaulting to "system" if not mapped.
  */
-export function getCategoryForCase(caseId: string): string {
+export function getCategoryForCase(caseId: string) {
   return CASE_CATEGORY_MAP[caseId] ?? "system";
 }

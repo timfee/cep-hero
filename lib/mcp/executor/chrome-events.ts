@@ -1,3 +1,7 @@
+/**
+ * Chrome audit event fetching from Admin SDK Reports API with windowed summary support.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type admin_reports_v1 } from "googleapis";
 import { type z } from "zod";
@@ -132,7 +136,10 @@ interface DayBucket {
   dayEnd: Date;
 }
 
-function buildDayBuckets(windowEnd: Date, windowDays: number): DayBucket[] {
+/**
+ * Creates day-by-day time buckets for parallel event fetching.
+ */
+function buildDayBuckets(windowEnd: Date, windowDays: number) {
   return Array.from({ length: windowDays }, (_, index) => {
     const dayEnd = new Date(windowEnd.getTime() - index * 86_400_000);
     const dayStart = new Date(dayEnd.getTime() - 86_400_000);
@@ -147,13 +154,16 @@ interface DayResult {
   daySampled: boolean;
 }
 
+/**
+ * Fetches all events for a single day bucket with pagination.
+ */
 async function fetchDayEvents(
   auth: OAuth2Client,
   customerId: string,
   bucket: DayBucket,
   pageSize: number,
   maxPages: number
-): Promise<DayResult> {
+) {
   const state = { pageToken: undefined as string | undefined, dayCount: 0 };
   const events: Activity[] = [];
 
@@ -181,13 +191,16 @@ async function fetchDayEvents(
   };
 }
 
+/**
+ * Fetches a single page of events from the Reports API.
+ */
 async function fetchSinglePage(
   auth: OAuth2Client,
   customerId: string,
   bucket: DayBucket,
   pageSize: number,
   pageToken: string | undefined
-): Promise<ChromeEventsResult> {
+) {
   const result = await getChromeEvents(auth, customerId, {
     maxResults: pageSize,
     pageToken,
@@ -197,11 +210,14 @@ async function fetchSinglePage(
   return result;
 }
 
+/**
+ * Accumulates page results and updates pagination state.
+ */
 function processPageResult(
   result: ChromeEventsSuccess,
   events: Activity[],
   state: { pageToken: string | undefined; dayCount: number }
-): { done: boolean } {
+) {
   const items = result.events ?? [];
   state.dayCount += items.length;
   events.push(...items);
@@ -215,12 +231,15 @@ interface AggregationState {
   allEvents: Activity[];
 }
 
+/**
+ * Combines results from all day buckets into a single summary.
+ */
 function aggregateDayResults(
   dayResults: DayResult[],
   sampleSize: number,
   windowStart: Date,
   windowEnd: Date
-): WindowSummaryResult {
+) {
   const state: AggregationState = {
     totalCount: 0,
     sampled: false,
@@ -238,11 +257,10 @@ function aggregateDayResults(
   return buildSuccessResult(state, sampleSize, windowStart, windowEnd);
 }
 
-function checkForError(
-  result: DayResult,
-  windowStart: Date,
-  windowEnd: Date
-): WindowSummaryResult | null {
+/**
+ * Returns an error result if the day fetch failed.
+ */
+function checkForError(result: DayResult, windowStart: Date, windowEnd: Date) {
   if (result.error === undefined) {
     return null;
   }
@@ -255,7 +273,10 @@ function checkForError(
   };
 }
 
-function accumulateResult(result: DayResult, state: AggregationState): void {
+/**
+ * Adds a day's events to the aggregation state.
+ */
+function accumulateResult(result: DayResult, state: AggregationState) {
   state.totalCount += result.dayCount;
   state.sampled = state.sampled || result.daySampled;
   if (result.events !== undefined) {
@@ -263,12 +284,15 @@ function accumulateResult(result: DayResult, state: AggregationState): void {
   }
 }
 
+/**
+ * Builds the final success result with sampled events.
+ */
 function buildSuccessResult(
   state: AggregationState,
   sampleSize: number,
   windowStart: Date,
   windowEnd: Date
-): WindowSummaryResult {
+) {
   return {
     events: {
       events: state.allEvents.slice(0, sampleSize),

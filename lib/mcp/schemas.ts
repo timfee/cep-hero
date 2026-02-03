@@ -1,3 +1,7 @@
+/**
+ * Zod schemas for MCP tool input validation.
+ */
+
 import { z } from "zod";
 
 /**
@@ -52,14 +56,13 @@ export const EnrollBrowserSchema = z.object({
 export const GetConnectorConfigSchema = z.object({});
 
 /**
- * Schema for listing Org Units.
+ * Schema for listing organizational units.
  */
 export const ListOrgUnitsSchema = z.object({});
 
 /**
- * Schema for drafting a policy change for user review.
- * This tool does NOT execute changes - it returns a structured proposal
- * that the UI renders as a confirmation card.
+ * Schema for drafting a policy change for user review. This tool does NOT
+ * execute changes - it returns a structured proposal for UI confirmation.
  */
 export const DraftPolicyChangeSchema = z.object({
   policyName: z.string().describe("The human-readable name of the policy"),
@@ -75,8 +78,7 @@ export const DraftPolicyChangeSchema = z.object({
 });
 
 /**
- * Schema for applying a policy change (after user confirmation).
- * This tool executes the actual policy modification via Chrome Policy API.
+ * Schema for applying a policy change after user confirmation.
  */
 export const ApplyPolicyChangeSchema = z.object({
   policySchemaId: z
@@ -91,8 +93,7 @@ export const ApplyPolicyChangeSchema = z.object({
 });
 
 /**
- * Schema for creating a DLP rule.
- * Uses Cloud Identity API to create data protection rules.
+ * Schema for creating a DLP rule via Cloud Identity API.
  */
 export const CreateDLPRuleSchema = z.object({
   displayName: z.string().describe("Human-readable name for the rule"),
@@ -107,7 +108,7 @@ export const CreateDLPRuleSchema = z.object({
 });
 
 /**
- * Inputs for the fleet overview tool.
+ * Schema for fetching fleet overview data.
  */
 export const GetFleetOverviewSchema = z.object({
   maxEvents: z
@@ -121,7 +122,7 @@ export const GetFleetOverviewSchema = z.object({
 });
 
 /**
- * Structured AI output for the fleet overview.
+ * Schema for structured AI output from fleet overview summarization.
  */
 export const FleetOverviewResponseSchema = z.object({
   headline: z.string(),

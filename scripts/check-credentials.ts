@@ -1,3 +1,7 @@
+/**
+ * Validates Google service account credentials and API access with actionable guidance.
+ */
+
 /* eslint-disable import/no-nodejs-modules */
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
@@ -23,7 +27,9 @@ const REQUIRED_SCOPES = [
   "https://www.googleapis.com/auth/chrome.management.reports.readonly",
 ];
 
-/** Load dotenv from .env.local when present. */
+/**
+ * Load environment from .env.local if present.
+ */
 function loadEnv() {
   const localPath = ".env.local";
   if (existsSync(localPath)) {
@@ -32,16 +38,17 @@ function loadEnv() {
   dotenv.config();
 }
 
-/** Parse and validate service account JSON from env. */
+/**
+ * Type guard for plain objects.
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
-function parseServiceAccountJson(): {
-  client_email?: string;
-  private_key?: string;
-  error?: string;
-} {
+/**
+ * Parse and validate service account JSON from environment.
+ */
+function parseServiceAccountJson() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (raw === undefined || raw === "") {
     return { error: "Missing GOOGLE_SERVICE_ACCOUNT_JSON." };
@@ -63,7 +70,9 @@ function parseServiceAccountJson(): {
   }
 }
 
-/** Check credentials and report actionable guidance. */
+/**
+ * Check credentials and report issues with actionable guidance.
+ */
 async function checkCredentials(): Promise<CheckResult> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -148,6 +157,9 @@ async function checkCredentials(): Promise<CheckResult> {
   return { ok: errors.length === 0, warnings, errors };
 }
 
+/**
+ * Main check routine with output formatting.
+ */
 async function run() {
   loadEnv();
   const result = await checkCredentials();

@@ -1,3 +1,8 @@
+/**
+ * MCP (Model Context Protocol) API route for tool execution.
+ * Manages session lifecycle and handles streamable HTTP transport.
+ */
+
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
 import { auth } from "@/lib/auth";
@@ -13,10 +18,16 @@ interface SessionEntry {
 
 const activeTransports = new Map<string, SessionEntry>();
 
+/**
+ * Extract session ID from request headers.
+ */
 function getSessionId(req: Request) {
   return req.headers.get("mcp-session-id");
 }
 
+/**
+ * Close and remove sessions that have exceeded the TTL.
+ */
 async function sweepExpiredSessions(now = Date.now()) {
   const expired: string[] = [];
   for (const [sessionId, entry] of activeTransports.entries()) {
@@ -42,6 +53,9 @@ async function sweepExpiredSessions(now = Date.now()) {
   );
 }
 
+/**
+ * Update the last-seen timestamp for a session.
+ */
 function touchSession(sessionId: string) {
   const entry = activeTransports.get(sessionId);
   if (!entry) {
@@ -51,7 +65,7 @@ function touchSession(sessionId: string) {
 }
 
 /**
- * Handle MCP Streamable HTTP requests.
+ * Handle MCP Streamable HTTP requests for existing sessions.
  */
 export async function GET(req: Request) {
   await sweepExpiredSessions();
@@ -69,6 +83,9 @@ export async function GET(req: Request) {
   return entry.transport.handleRequest(req);
 }
 
+/**
+ * Handle requests for existing MCP sessions.
+ */
 async function handleExistingSession(
   sessionId: string,
   req: Request
@@ -82,6 +99,9 @@ async function handleExistingSession(
   return response as Response;
 }
 
+/**
+ * Extract bearer token from Authorization header.
+ */
 function extractBearerToken(authHeader: string | null): string | undefined {
   if (typeof authHeader !== "string") {
     return undefined;
@@ -90,6 +110,9 @@ function extractBearerToken(authHeader: string | null): string | undefined {
   return token.length > 0 ? token : undefined;
 }
 
+/**
+ * Resolve Google access token from the user's session.
+ */
 async function resolveAccessTokenFromSession(
   req: Request
 ): Promise<string | undefined> {
@@ -105,11 +128,17 @@ async function resolveAccessTokenFromSession(
   return typeof token === "string" && token.length > 0 ? token : undefined;
 }
 
+/**
+ * Resolve access token from bearer header or session.
+ */
 async function resolveAccessToken(req: Request): Promise<string | undefined> {
   const bearerToken = extractBearerToken(req.headers.get("Authorization"));
   return bearerToken ?? (await resolveAccessTokenFromSession(req));
 }
 
+/**
+ * Create a new MCP transport with session tracking callbacks.
+ */
 function createMcpTransport(sessionCreatedAt: number) {
   const transport = new WebStandardStreamableHTTPServerTransport({
     sessionIdGenerator: () => crypto.randomUUID(),
@@ -129,6 +158,9 @@ function createMcpTransport(sessionCreatedAt: number) {
   return transport;
 }
 
+/**
+ * Initialize a new MCP session with the given access token.
+ */
 async function initializeNewSession(
   req: Request,
   accessToken: string

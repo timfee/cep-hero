@@ -1,3 +1,7 @@
+/**
+ * Manages the eval dev server lifecycle for integration tests.
+ */
+
 /* eslint-disable import/no-nodejs-modules */
 import {
   closeSync,
@@ -23,6 +27,9 @@ interface EnsureEvalServerOptions {
 const GLOBAL_KEY = "__cepEvalServer";
 const LOCK_PATH = `${Bun.env.TMPDIR ?? "/tmp"}/cep-eval-server.lock`;
 
+/**
+ * Get or initialize the global server state.
+ */
 function getState(): EvalServerState {
   const global = globalThis as typeof globalThis & {
     [GLOBAL_KEY]?: EvalServerState;
@@ -35,11 +42,13 @@ function getState(): EvalServerState {
   return global[GLOBAL_KEY];
 }
 
-/** Ensure a single eval dev server is running. */
+/**
+ * Ensure a single eval dev server is running.
+ */
 export async function ensureEvalServer({
   chatUrl,
   manageServer,
-}: EnsureEvalServerOptions): Promise<void> {
+}: EnsureEvalServerOptions) {
   if (shouldSkipServerManagement(chatUrl, manageServer)) {
     return;
   }
@@ -55,27 +64,30 @@ export async function ensureEvalServer({
   await state.startPromise;
 }
 
-function shouldSkipServerManagement(
-  chatUrl: string,
-  manageServer: boolean
-): boolean {
+/**
+ * Check if server management should be skipped.
+ */
+function shouldSkipServerManagement(chatUrl: string, manageServer: boolean) {
   if (process.env.EVAL_TEST_MODE === "1") {
     return true;
   }
   return !manageServer || !chatUrl.includes("localhost");
 }
 
-function incrementRefCount(state: EvalServerState): void {
+/**
+ * Increment reference count and acquire lock if needed.
+ */
+function incrementRefCount(state: EvalServerState) {
   state.refCount += 1;
   if (!state.ownsLock) {
     state.ownsLock = acquireLock();
   }
 }
 
-async function startServerIfNeeded(
-  state: EvalServerState,
-  chatUrl: string
-): Promise<void> {
+/**
+ * Start the server if we own the lock, otherwise wait for it.
+ */
+async function startServerIfNeeded(state: EvalServerState, chatUrl: string) {
   try {
     if (await isServerUp(chatUrl)) {
       return;
@@ -91,7 +103,10 @@ async function startServerIfNeeded(
   }
 }
 
-function spawnDevServer(state: EvalServerState): void {
+/**
+ * Spawn the dev server process.
+ */
+function spawnDevServer(state: EvalServerState) {
   state.server = Bun.spawn({
     cmd: ["bun", "run", "dev"],
     stdout: "inherit",
@@ -101,8 +116,10 @@ function spawnDevServer(state: EvalServerState): void {
   state.ownsServer = true;
 }
 
-/** Release the eval dev server when all suites are done. */
-export function releaseEvalServer(): void {
+/**
+ * Release the eval dev server when all suites are done.
+ */
+export function releaseEvalServer() {
   const state = getState();
   state.refCount = Math.max(0, state.refCount - 1);
   if (state.refCount > 0) {
@@ -112,7 +129,10 @@ export function releaseEvalServer(): void {
   cleanupLock(state);
 }
 
-function cleanupServer(state: EvalServerState): void {
+/**
+ * Kill the server process if we own it.
+ */
+function cleanupServer(state: EvalServerState) {
   if (state.server && state.ownsServer) {
     try {
       state.server.kill();
@@ -124,7 +144,10 @@ function cleanupServer(state: EvalServerState): void {
   state.ownsServer = false;
 }
 
-function cleanupLock(state: EvalServerState): void {
+/**
+ * Remove the lock file if we own it.
+ */
+function cleanupLock(state: EvalServerState) {
   if (state.ownsLock && existsSync(LOCK_PATH)) {
     try {
       unlinkSync(LOCK_PATH);
@@ -135,7 +158,10 @@ function cleanupLock(state: EvalServerState): void {
   state.ownsLock = false;
 }
 
-async function isServerUp(url: string): Promise<boolean> {
+/**
+ * Check if the server is responding to requests.
+ */
+async function isServerUp(url: string) {
   try {
     const res = await fetch(url, { method: "HEAD" });
     return res.ok || res.status >= 400;
@@ -144,11 +170,10 @@ async function isServerUp(url: string): Promise<boolean> {
   }
 }
 
-async function waitForServer(
-  url: string,
-  attempts: number,
-  delayMs: number
-): Promise<void> {
+/**
+ * Poll until the server responds or max attempts reached.
+ */
+async function waitForServer(url: string, attempts: number, delayMs: number) {
   for (let i = 0; i < attempts; i += 1) {
     if (await isServerUp(url)) {
       return;
@@ -157,7 +182,10 @@ async function waitForServer(
   }
 }
 
-function acquireLock(): boolean {
+/**
+ * Attempt to acquire an exclusive file lock.
+ */
+function acquireLock() {
   if (existsSync(LOCK_PATH)) {
     return false;
   }

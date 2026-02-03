@@ -1,3 +1,7 @@
+/**
+ * Utilities for parsing and normalizing chat API request bodies.
+ */
+
 import { z } from "zod";
 
 export interface ChatMessage {
@@ -23,8 +27,10 @@ const BodySchema = z.object({
   content: z.string().optional(),
 });
 
-// Returns the most recent user message content (or empty string).
-export function getLastUserMessage(messages: ChatMessage[]): string {
+/**
+ * Returns the most recent user message content.
+ */
+export function getLastUserMessage(messages: ChatMessage[]) {
   const lastUser = [...messages]
     .toReversed()
     .find((message) => message.role === "user");
@@ -32,6 +38,9 @@ export function getLastUserMessage(messages: ChatMessage[]): string {
   return lastUser?.content ?? "";
 }
 
+/**
+ * Parse and validate messages array from request body.
+ */
 export function getMessagesFromBody(body: unknown): ChatMessage[] {
   const parsed = BodySchema.safeParse(body);
 
@@ -56,8 +65,10 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
     .filter((msg): msg is ChatMessage => msg !== null);
 }
 
-// Extracts a prompt string from `input` or `content` when messages are missing.
-export function extractInlinePrompt(body: unknown): string {
+/**
+ * Extracts a prompt string from input or content fields when messages are missing.
+ */
+export function extractInlinePrompt(body: unknown) {
   const parsed = BodySchema.safeParse(body);
 
   if (!parsed.success) {
@@ -77,8 +88,10 @@ export function extractInlinePrompt(body: unknown): string {
   return "";
 }
 
-// Stringifies a value for logs with a size limit.
-export function safeJsonPreview(value: unknown, limit = 500): string {
+/**
+ * Safely stringify a value for logs with a size limit.
+ */
+export function safeJsonPreview(value: unknown, limit = 500) {
   try {
     const str = JSON.stringify(value);
     return str.length > limit ? `${str.slice(0, limit)}…` : str;
@@ -87,6 +100,9 @@ export function safeJsonPreview(value: unknown, limit = 500): string {
   }
 }
 
+/**
+ * Normalize a parsed message into a ChatMessage or null if invalid.
+ */
 function normalizeMessage(
   value: z.infer<typeof MessageSchema>
 ): ChatMessage | null {
@@ -110,7 +126,10 @@ function normalizeMessage(
   };
 }
 
-function stringifyContent(raw: unknown): string {
+/**
+ * Convert raw content (string or parts array) into a plain string.
+ */
+function stringifyContent(raw: unknown) {
   if (typeof raw === "string") {
     return raw;
   }
@@ -131,7 +150,6 @@ function stringifyContent(raw: unknown): string {
           return part.reasoning;
         }
 
-        // Fallback: if no type is specified but text exists
         if (typeof part.text === "string") {
           return part.text;
         }

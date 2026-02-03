@@ -1,3 +1,7 @@
+/**
+ * Avatar components for displaying user profile images and initials.
+ */
+
 "use client";
 
 import * as AvatarPrimitive from "@radix-ui/react-avatar";
@@ -5,6 +9,9 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Container for avatar image with size variants.
+ */
 function Avatar({
   className,
   size = "default",
@@ -25,6 +32,9 @@ function Avatar({
   );
 }
 
+/**
+ * Image element within the avatar that displays the user's photo.
+ */
 function AvatarImage({
   className,
   ...props
@@ -38,6 +48,9 @@ function AvatarImage({
   );
 }
 
+/**
+ * Fallback content shown when the avatar image fails to load.
+ */
 function AvatarFallback({
   className,
   ...props
@@ -54,6 +67,9 @@ function AvatarFallback({
   );
 }
 
+/**
+ * Small badge indicator positioned at the corner of an avatar.
+ */
 function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
@@ -70,6 +86,9 @@ function AvatarBadge({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
+/**
+ * Container for displaying multiple overlapping avatars.
+ */
 function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -83,6 +102,9 @@ function AvatarGroup({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Count indicator showing the number of additional avatars not displayed.
+ */
 function AvatarGroupCount({
   className,
   ...props

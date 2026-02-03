@@ -1,3 +1,7 @@
+/**
+ * Status badge component for displaying status indicators with icons and labels.
+ */
+
 import type { VariantProps } from "class-variance-authority";
 
 import { cva } from "class-variance-authority";
@@ -28,20 +32,15 @@ interface StatusBadgeProps
   extends
     React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof statusBadgeVariants> {
-  /**
-   * Icon component to display before the label
-   */
   icon?: React.ComponentType<{ className?: string }>;
-  /**
-   * Primary label text
-   */
   label: string;
-  /**
-   * Optional value to display after the label
-   */
   value?: string;
 }
 
+/**
+ * Badge component that displays a status with an optional icon, label, and value.
+ * Supports positive, warning, info, and neutral status variants.
+ */
 function StatusBadge({
   className,
   status,

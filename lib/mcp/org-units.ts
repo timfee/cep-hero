@@ -1,3 +1,10 @@
+/**
+ * Utilities for normalizing and resolving organizational unit identifiers.
+ */
+
+/**
+ * Minimal org unit representation for lookups.
+ */
 export interface OrgUnit {
   orgUnitId?: string | null;
   parentOrgUnitId?: string | null;
@@ -9,7 +16,7 @@ export interface OrgUnit {
  * Normalizes org unit resource identifiers for consistent lookups. Strips
  * "id:" prefixes, collapses duplicate slashes, and lowercases prefixes.
  */
-export function normalizeResource(value: string): string {
+export function normalizeResource(value: string) {
   return value
     .trim()
     .replace(/^id:/, "")
@@ -18,6 +25,9 @@ export function normalizeResource(value: string): string {
     .replace(/^customers\//i, "customers/");
 }
 
+/**
+ * Type guard for non-empty strings.
+ */
 function hasContent(value: string | null | undefined): value is string {
   return typeof value === "string" && value.length > 0;
 }
@@ -26,7 +36,7 @@ function hasContent(value: string | null | undefined): value is string {
  * Builds a lookup map from org unit IDs to their display paths. Indexes each
  * unit under multiple key formats for flexible resolution.
  */
-export function buildOrgUnitNameMap(units: OrgUnit[]): Map<string, string> {
+export function buildOrgUnitNameMap(units: OrgUnit[]) {
   const map = new Map<string, string>();
 
   for (const unit of units) {
@@ -36,7 +46,10 @@ export function buildOrgUnitNameMap(units: OrgUnit[]): Map<string, string> {
   return map;
 }
 
-function addUnitToMap(map: Map<string, string>, unit: OrgUnit): void {
+/**
+ * Adds an org unit to the lookup map under multiple key formats.
+ */
+function addUnitToMap(map: Map<string, string>, unit: OrgUnit) {
   const path = unit.orgUnitPath ?? unit.name;
   const rawId = unit.orgUnitId;
 
@@ -59,7 +72,7 @@ export function resolveOrgUnitDisplay(
   map: Map<string, string>,
   rootOrgUnitId?: string | null,
   rootOrgUnitPath?: string | null
-): string | null {
+) {
   if (!hasContent(value)) {
     return null;
   }
@@ -76,12 +89,15 @@ export function resolveOrgUnitDisplay(
   return lookupOrgUnit(trimmed, map, rootOrgUnitId, rootOrgUnitPath);
 }
 
+/**
+ * Looks up an org unit by normalized ID, with special handling for the root.
+ */
 function lookupOrgUnit(
   value: string,
   map: Map<string, string>,
   rootOrgUnitId: string | null | undefined,
   rootOrgUnitPath: string | null | undefined
-): string | null {
+) {
   const normalized = normalizeResource(value);
 
   if (hasContent(rootOrgUnitId) && hasContent(rootOrgUnitPath)) {
@@ -97,7 +113,10 @@ function lookupOrgUnit(
   return map.get(normalized) ?? null;
 }
 
-export function buildOrgUnitTargetResource(value: string): string {
+/**
+ * Builds a policy target resource string from an org unit identifier.
+ */
+export function buildOrgUnitTargetResource(value: string) {
   const normalized = normalizeResource(value);
   if (!normalized || normalized === "/") {
     return "";

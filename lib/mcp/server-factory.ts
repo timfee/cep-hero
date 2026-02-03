@@ -1,3 +1,7 @@
+/**
+ * Factory for creating MCP servers with CEP tool registrations.
+ */
+
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
@@ -13,7 +17,7 @@ import {
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 /**
- * Create an MCP server with CEP tool registrations.
+ * Creates an MCP server with all CEP tool registrations.
  */
 export function createMcpServer(accessToken: string) {
   const server = new McpServer({

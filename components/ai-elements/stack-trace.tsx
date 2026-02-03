@@ -1,3 +1,7 @@
+/**
+ * Stack trace viewer component for displaying and parsing error stack traces.
+ * Parses stack frames to show function names, file paths, and line numbers with clickable navigation.
+ */
 "use client";
 
 import type { ComponentProps } from "react";
@@ -51,6 +55,9 @@ interface StackTraceContextValue {
 
 const StackTraceContext = createContext<StackTraceContextValue | null>(null);
 
+/**
+ * Hook to access the stack trace context for parsed trace data and UI state.
+ */
 const useStackTrace = () => {
   const context = useContext(StackTraceContext);
   if (!context) {
@@ -59,6 +66,9 @@ const useStackTrace = () => {
   return context;
 };
 
+/**
+ * Parses a single line of a stack trace into a structured frame object.
+ */
 const parseStackFrame = (line: string): StackFrame => {
   const trimmed = line.trim();
 
@@ -109,6 +119,9 @@ const parseStackFrame = (line: string): StackFrame => {
   };
 };
 
+/**
+ * Parses a complete stack trace string into error type, message, and frames.
+ */
 const parseStackTrace = (trace: string): ParsedStackTrace => {
   const lines = trace.split("\n").filter((line) => line.trim());
 
@@ -154,6 +167,9 @@ export type StackTraceProps = ComponentProps<"div"> & {
   onFilePathClick?: (filePath: string, line?: number, column?: number) => void;
 };
 
+/**
+ * Root container that parses and provides stack trace context.
+ */
 export const StackTrace = memo(
   ({
     trace,
@@ -202,6 +218,9 @@ export const StackTrace = memo(
 
 export type StackTraceHeaderProps = ComponentProps<typeof CollapsibleTrigger>;
 
+/**
+ * Clickable header that toggles stack trace visibility.
+ */
 export const StackTraceHeader = memo(
   ({ className, children, ...props }: StackTraceHeaderProps) => {
     const { isOpen, setIsOpen } = useStackTrace();
@@ -225,6 +244,9 @@ export const StackTraceHeader = memo(
 
 export type StackTraceErrorProps = ComponentProps<"div">;
 
+/**
+ * Error display container with warning icon.
+ */
 export const StackTraceError = memo(
   ({ className, children, ...props }: StackTraceErrorProps) => (
     <div
@@ -242,6 +264,9 @@ export const StackTraceError = memo(
 
 export type StackTraceErrorTypeProps = ComponentProps<"span">;
 
+/**
+ * Displays the error type extracted from the stack trace.
+ */
 export const StackTraceErrorType = memo(
   ({ className, children, ...props }: StackTraceErrorTypeProps) => {
     const { trace } = useStackTrace();
@@ -259,6 +284,9 @@ export const StackTraceErrorType = memo(
 
 export type StackTraceErrorMessageProps = ComponentProps<"span">;
 
+/**
+ * Displays the error message with text truncation.
+ */
 export const StackTraceErrorMessage = memo(
   ({ className, children, ...props }: StackTraceErrorMessageProps) => {
     const { trace } = useStackTrace();
@@ -273,6 +301,9 @@ export const StackTraceErrorMessage = memo(
 
 export type StackTraceActionsProps = ComponentProps<"div">;
 
+/**
+ * Container for action buttons that stops click propagation.
+ */
 export const StackTraceActions = memo(
   ({ className, children, ...props }: StackTraceActionsProps) => (
     // biome-ignore lint/a11y/noNoninteractiveElementInteractions: stopPropagation required for nested interactions
@@ -299,6 +330,9 @@ export type StackTraceCopyButtonProps = ComponentProps<typeof Button> & {
   timeout?: number;
 };
 
+/**
+ * Button that copies the raw stack trace to clipboard with success feedback.
+ */
 export const StackTraceCopyButton = memo(
   ({
     onCopy,

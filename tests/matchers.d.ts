@@ -1,3 +1,7 @@
+/**
+ * Type declarations for extending Bun test matchers with Testing Library matchers.
+ */
+
 import { type TestingLibraryMatchers } from "@testing-library/jest-dom/matchers";
 
 /* oxlint-disable typescript-eslint/no-empty-interface, typescript-eslint/no-empty-object-type -- Declaration merging for jest-dom */

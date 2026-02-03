@@ -1,3 +1,7 @@
+/**
+ * Fetches Chrome Enterprise policy templates and indexes them to Upstash Vector.
+ */
+
 import { Index } from "@upstash/vector";
 
 import {
@@ -11,7 +15,10 @@ import {
   type PolicyDocument,
 } from "./vector-types";
 
-function generatePolicyMarkdown(policy: PolicyDefinition): string {
+/**
+ * Generate markdown documentation for a policy.
+ */
+function generatePolicyMarkdown(policy: PolicyDefinition) {
   const sections: string[] = [`# ${policy.caption || policy.name}`, ""];
 
   const metadata: string[] = [];
@@ -119,7 +126,10 @@ function generatePolicyMarkdown(policy: PolicyDefinition): string {
   return sections.join("\n");
 }
 
-async function processPolicyDocs(documents: PolicyDocument[]): Promise<void> {
+/**
+ * Process and upsert policy documents to Upstash Vector.
+ */
+async function processPolicyDocs(documents: PolicyDocument[]) {
   if (documents.length === 0) {
     console.log("No policy documents to process.");
     return;
@@ -185,6 +195,9 @@ async function processPolicyDocs(documents: PolicyDocument[]): Promise<void> {
 const API_URL =
   "https://chromeenterprise.google/static/json/policy_templates_en-US.json";
 
+/**
+ * Main entry point for policy indexing.
+ */
 async function main() {
   console.log("Fetching Chrome Enterprise policy templates...");
 
@@ -235,6 +248,9 @@ async function main() {
   await processPolicyDocs(documents);
 }
 
+/**
+ * Type guard for policy templates structure.
+ */
 function isPolicyTemplates(value: unknown): value is PolicyTemplates {
   if (typeof value !== "object" || value === null) {
     return false;

@@ -1,3 +1,7 @@
+/**
+ * Select components for dropdown selection inputs.
+ */
+
 "use client";
 
 import * as SelectPrimitive from "@radix-ui/react-select";
@@ -6,24 +10,36 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Root component that manages the select's open state and value.
+ */
 function Select({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Root>) {
   return <SelectPrimitive.Root data-slot="select" {...props} />;
 }
 
+/**
+ * Container for grouping related select items.
+ */
 function SelectGroup({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Group>) {
   return <SelectPrimitive.Group data-slot="select-group" {...props} />;
 }
 
+/**
+ * Displays the currently selected value or placeholder text.
+ */
 function SelectValue({
   ...props
 }: React.ComponentProps<typeof SelectPrimitive.Value>) {
   return <SelectPrimitive.Value data-slot="select-value" {...props} />;
 }
 
+/**
+ * Button that triggers the select dropdown to open.
+ */
 function SelectTrigger({
   className,
   size = "default",
@@ -50,6 +66,9 @@ function SelectTrigger({
   );
 }
 
+/**
+ * Container for the select dropdown content with scroll buttons.
+ */
 function SelectContent({
   className,
   children,
@@ -87,6 +106,9 @@ function SelectContent({
   );
 }
 
+/**
+ * Non-interactive label for a group of select items.
+ */
 function SelectLabel({
   className,
   ...props
@@ -100,6 +122,9 @@ function SelectLabel({
   );
 }
 
+/**
+ * Individual selectable option within the select dropdown.
+ */
 function SelectItem({
   className,
   children,
@@ -127,6 +152,9 @@ function SelectItem({
   );
 }
 
+/**
+ * Visual divider between select items or groups.
+ */
 function SelectSeparator({
   className,
   ...props
@@ -140,6 +168,9 @@ function SelectSeparator({
   );
 }
 
+/**
+ * Button to scroll up within the select content when overflowing.
+ */
 function SelectScrollUpButton({
   className,
   ...props
@@ -158,6 +189,9 @@ function SelectScrollUpButton({
   );
 }
 
+/**
+ * Button to scroll down within the select content when overflowing.
+ */
 function SelectScrollDownButton({
   className,
   ...props

@@ -1,3 +1,7 @@
+/**
+ * Audio player component built on media-chrome for playing speech synthesis results.
+ * Provides playback controls, seeking, volume control, and time display.
+ */
 "use client";
 
 import type { Experimental_SpeechResult as SpeechResult } from "ai";
@@ -25,6 +29,9 @@ export type AudioPlayerProps = Omit<
   "audio"
 >;
 
+/**
+ * Root audio player container with custom CSS variables for styling.
+ */
 export const AudioPlayer = ({
   className: _className,
   children,
@@ -75,6 +82,9 @@ export type AudioPlayerElementProps = Omit<ComponentProps<"audio">, "src"> &
       }
   );
 
+/**
+ * Audio element that accepts either a URL or base64-encoded speech data.
+ */
 export const AudioPlayerElement = ({ ...props }: AudioPlayerElementProps) => (
   <audio
     data-slot="audio-player-element"
@@ -90,6 +100,9 @@ export const AudioPlayerElement = ({ ...props }: AudioPlayerElementProps) => (
 
 export type AudioPlayerControlBarProps = ComponentProps<typeof MediaControlBar>;
 
+/**
+ * Control bar container that groups playback controls horizontally.
+ */
 export const AudioPlayerControlBar = ({
   children,
   ...props
@@ -101,6 +114,9 @@ export const AudioPlayerControlBar = ({
 
 export type AudioPlayerPlayButtonProps = ComponentProps<typeof MediaPlayButton>;
 
+/**
+ * Play/pause toggle button for audio playback.
+ */
 export const AudioPlayerPlayButton = ({
   className,
   ...props
@@ -118,6 +134,9 @@ export type AudioPlayerSeekBackwardButtonProps = ComponentProps<
   typeof MediaSeekBackwardButton
 >;
 
+/**
+ * Button to skip backward by a configurable number of seconds.
+ */
 export const AudioPlayerSeekBackwardButton = ({
   seekOffset = 10,
   ...props
@@ -135,6 +154,9 @@ export type AudioPlayerSeekForwardButtonProps = ComponentProps<
   typeof MediaSeekForwardButton
 >;
 
+/**
+ * Button to skip forward by a configurable number of seconds.
+ */
 export const AudioPlayerSeekForwardButton = ({
   seekOffset = 10,
   ...props
@@ -152,6 +174,9 @@ export type AudioPlayerTimeDisplayProps = ComponentProps<
   typeof MediaTimeDisplay
 >;
 
+/**
+ * Displays current playback position in tabular numeric format.
+ */
 export const AudioPlayerTimeDisplay = ({
   className,
   ...props
@@ -167,6 +192,9 @@ export const AudioPlayerTimeDisplay = ({
 
 export type AudioPlayerTimeRangeProps = ComponentProps<typeof MediaTimeRange>;
 
+/**
+ * Seekable progress bar for navigating through the audio.
+ */
 export const AudioPlayerTimeRange = ({
   className,
   ...props
@@ -184,6 +212,9 @@ export type AudioPlayerDurationDisplayProps = ComponentProps<
   typeof MediaDurationDisplay
 >;
 
+/**
+ * Displays total audio duration in tabular numeric format.
+ */
 export const AudioPlayerDurationDisplay = ({
   className,
   ...props
@@ -199,6 +230,9 @@ export const AudioPlayerDurationDisplay = ({
 
 export type AudioPlayerMuteButtonProps = ComponentProps<typeof MediaMuteButton>;
 
+/**
+ * Toggle button for muting and unmuting audio.
+ */
 export const AudioPlayerMuteButton = ({
   className,
   ...props
@@ -216,6 +250,9 @@ export type AudioPlayerVolumeRangeProps = ComponentProps<
   typeof MediaVolumeRange
 >;
 
+/**
+ * Volume slider for adjusting audio playback volume.
+ */
 export const AudioPlayerVolumeRange = ({
   className,
   ...props
