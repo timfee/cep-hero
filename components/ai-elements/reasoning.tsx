@@ -203,6 +203,9 @@ export type ReasoningContentProps = ComponentProps<
   children: string;
 };
 
+/**
+ * Collapsible content that renders markdown reasoning with streamdown plugins.
+ */
 export const ReasoningContent = memo(
   ({ className, children, ...props }: ReasoningContentProps) => {
     useReasoning();
