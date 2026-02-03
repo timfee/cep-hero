@@ -1,27 +1,17 @@
 "use client";
 
 import {
-  AlertTriangle,
-  CheckCircle2,
-  XCircle,
-  Shield,
-  Building2,
-  ArrowRight,
-  FileWarning,
+  Upload,
+  Download,
+  Printer,
+  ClipboardCopy,
+  ExternalLink,
 } from "lucide-react";
 import { motion } from "motion/react";
 import { useState, memo } from "react";
 
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardFooter,
-  CardHeader,
-} from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 
 export interface PolicyChangeProposal {
@@ -49,23 +39,37 @@ export interface PolicyChangeConfirmationProps {
   className?: string;
 }
 
-function formatPolicyValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "Not set";
-  }
-  if (typeof value === "boolean") {
-    return value ? "Enabled" : "Disabled";
-  }
-  if (typeof value === "object") {
-    return JSON.stringify(value, null, 2);
-  }
-  return String(value);
-}
+const triggerConfig = {
+  UPLOAD: { icon: Upload, label: "Upload" },
+  DOWNLOAD: { icon: Download, label: "Download" },
+  PRINT: { icon: Printer, label: "Print" },
+  CLIPBOARD: { icon: ClipboardCopy, label: "Clipboard" },
+} as const;
+
+type TriggerKey = keyof typeof triggerConfig;
 
 function extractPolicyName(schemaId: string): string {
   const parts = schemaId.split(".");
   const name = parts.at(-1) ?? schemaId;
   return name.replaceAll(/([A-Z])/g, " $1").trim();
+}
+
+function isDLPRule(value: unknown): value is {
+  displayName?: string;
+  triggers?: string[];
+  action?: string;
+} {
+  return (
+    typeof value === "object" &&
+    value !== null &&
+    ("triggers" in value || "action" in value)
+  );
+}
+
+function formatPolicyValue(value: unknown): string {
+  if (value === null || value === undefined) return "Not set";
+  if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
+  return String(value);
 }
 
 export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
@@ -75,7 +79,7 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
   isApplying = false,
   className,
 }: PolicyChangeConfirmationProps) {
-  const [hasAcknowledged, setHasAcknowledged] = useState(false);
+  const [confirmed, setConfirmed] = useState(false);
 
   const policySchemaId =
     proposal.applyParams?.policySchemaId ?? "Unknown Policy";
@@ -84,8 +88,16 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
   const proposedValue = proposal.applyParams?.value ?? proposal.diff;
 
   const policyName = extractPolicyName(policySchemaId);
+  const dlpData = isDLPRule(proposedValue) ? proposedValue : null;
+
+  const triggers = (dlpData?.triggers ?? []).filter(
+    (t): t is TriggerKey => t in triggerConfig
+  );
+  const action = dlpData?.action ?? null;
+  const ruleName = dlpData?.displayName ?? policyName;
+
   const valueEntries =
-    typeof proposedValue === "object" && proposedValue !== null
+    !dlpData && typeof proposedValue === "object" && proposedValue !== null
       ? Object.entries(proposedValue as Record<string, unknown>)
       : [];
 
@@ -93,190 +105,147 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      className={cn("w-full", className)}
+      className={cn(
+        "w-full max-w-sm rounded-lg border border-border bg-card overflow-hidden",
+        className
+      )}
     >
-      <Card className="border-2 border-amber-500/50 bg-amber-50/10 dark:bg-amber-950/10">
-        <CardHeader className="pb-3">
-          <div className="flex items-start gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-500/20">
-              <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-            </div>
-            <div className="flex-1 space-y-1">
-              <AlertTitle className="text-lg font-semibold text-foreground">
-                Policy Change Requires Approval
-              </AlertTitle>
-              <AlertDescription className="text-sm text-muted-foreground">
-                Review the proposed changes carefully before confirming.
-              </AlertDescription>
-            </div>
-          </div>
-        </CardHeader>
-
-        <CardContent className="space-y-4">
-          {/* Policy Info */}
-          <div className="rounded-lg border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">Policy</span>
-            </div>
-            <div className="pl-6 space-y-1">
-              <p className="text-sm font-semibold text-foreground">
-                {policyName}
-              </p>
-              <p className="text-xs font-mono text-muted-foreground break-all">
-                {policySchemaId}
-              </p>
-            </div>
-          </div>
-
-          {/* Target Org Unit */}
-          <div className="rounded-lg border bg-card p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <Building2 className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">Target Organization</span>
-            </div>
-            <div className="pl-6">
-              <p className="text-sm font-mono text-foreground break-all">
-                {targetResource}
-              </p>
-            </div>
-          </div>
-
-          {/* Proposed Values - THE DIFF */}
-          <div className="rounded-lg border-2 border-dashed border-primary/30 bg-primary/5 p-4 space-y-3">
-            <div className="flex items-center gap-2">
-              <ArrowRight className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm text-primary">
-                Proposed Configuration
-              </span>
-              <Badge variant="outline" className="ml-auto text-xs">
-                NEW VALUES
-              </Badge>
-            </div>
-            <div className="pl-6 space-y-2">
-              {valueEntries.length > 0 ? (
-                valueEntries.map(([key, val]) => (
-                  <div
-                    key={key}
-                    className="flex items-start gap-2 rounded bg-background/50 p-2"
-                  >
-                    <code className="text-xs font-medium text-muted-foreground min-w-[120px]">
-                      {key}:
-                    </code>
-                    <code className="text-xs text-foreground font-semibold break-all">
-                      {formatPolicyValue(val)}
-                    </code>
-                  </div>
-                ))
-              ) : (
-                <pre className="text-xs bg-background/50 p-2 rounded overflow-x-auto">
-                  {JSON.stringify(proposedValue, null, 2)}
-                </pre>
-              )}
-            </div>
-          </div>
-
-          {/* Reasoning */}
-          {proposal.description && (
-            <div className="rounded-lg border bg-muted/30 p-4">
-              <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Reason: </span>
-                {proposal.description}
-              </p>
-            </div>
+      {/* Header */}
+      <div className="px-4 py-3 border-b border-border flex items-center gap-3">
+        <div
+          className={cn(
+            "w-2 h-2 rounded-full",
+            dlpData ? "bg-cyan-500" : "bg-amber-500"
           )}
+        />
+        <span className="text-sm font-medium text-foreground">
+          {dlpData ? "New DLP Rule" : "Policy Change"}
+        </span>
+        <span className="ml-auto text-xs text-muted-foreground font-mono">
+          pending
+        </span>
+      </div>
 
-          <Separator />
+      {/* Content */}
+      <div className="px-4 py-4 space-y-4">
+        <div className="space-y-1">
+          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+            {dlpData ? "Rule Name" : "Policy"}
+          </span>
+          <p className="text-xs text-foreground">{ruleName}</p>
+          {!dlpData && (
+            <p className="text-[10px] text-muted-foreground font-mono">
+              {targetResource}
+            </p>
+          )}
+        </div>
 
-          {/* Warning Alert */}
-          <Alert
-            variant="destructive"
-            className="border-red-500/50 bg-red-50/50 dark:bg-red-950/20"
-          >
-            <FileWarning className="h-4 w-4" />
-            <AlertTitle className="text-sm font-semibold">
-              This action will modify your Google Workspace configuration
-            </AlertTitle>
-            <AlertDescription className="text-xs mt-1">
-              Changes will take effect immediately and apply to all users in the
-              target organization unit. Ensure you have reviewed the proposed
-              values above.
-            </AlertDescription>
-          </Alert>
+        {dlpData && (
+          <div className="flex gap-8">
+            {action && (
+              <div className="space-y-1">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  Action
+                </span>
+                <p
+                  className={cn(
+                    "text-xs font-medium",
+                    action === "BLOCK" && "text-red-400",
+                    action === "WARN" && "text-orange-400",
+                    action === "AUDIT" && "text-cyan-400"
+                  )}
+                >
+                  {action}
+                </p>
+              </div>
+            )}
+            {triggers.length > 0 && (
+              <div className="space-y-1">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+                  Triggers
+                </span>
+                <div className="flex gap-3">
+                  {triggers.map((t) => {
+                    const { icon: Icon, label } = triggerConfig[t];
+                    return (
+                      <div
+                        key={t}
+                        className="flex flex-col items-center gap-1 text-muted-foreground"
+                      >
+                        <Icon className="w-3.5 h-3.5" />
+                        <span className="text-[10px]">{label}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
-          {/* Acknowledgment Checkbox */}
-          <label className="flex items-start gap-3 cursor-pointer rounded-lg border p-3 hover:bg-muted/50 transition-colors">
-            <input
-              type="checkbox"
-              checked={hasAcknowledged}
-              onChange={(e) => setHasAcknowledged(e.target.checked)}
-              className="mt-1 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-            />
-            <span className="text-sm text-foreground">
-              I have reviewed the proposed changes and understand that this will
-              modify the Chrome Enterprise configuration for my organization.
-            </span>
-          </label>
-        </CardContent>
+        {!dlpData && valueEntries.length > 0 && (
+          <div className="space-y-2">
+            {valueEntries.map(([key, val]) => (
+              <div key={key} className="flex items-baseline gap-2">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide min-w-[80px]">
+                  {key}
+                </span>
+                <span className="text-xs text-foreground font-medium">
+                  {formatPolicyValue(val)}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
 
-        <CardFooter className="flex justify-between gap-3 pt-4">
+        {proposal.description && (
+          <p className="text-xs text-muted-foreground">
+            {proposal.description}
+          </p>
+        )}
+
+        <label className="flex items-center gap-2 cursor-pointer pt-2">
+          <Checkbox
+            checked={confirmed}
+            onCheckedChange={(c) => setConfirmed(c as boolean)}
+            className="w-4 h-4 rounded border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+          />
+          <span className="text-xs text-muted-foreground">
+            I understand this modifies Chrome Enterprise config
+          </span>
+        </label>
+      </div>
+
+      {/* Footer */}
+      <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+        <a
+          href={proposal.adminConsoleUrl || "https://admin.google.com"}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+        >
+          Admin Console <ExternalLink className="w-3 h-3" />
+        </a>
+        <div className="flex items-center gap-2">
           <Button
-            variant="outline"
+            variant="ghost"
+            size="sm"
             onClick={onCancel}
             disabled={isApplying}
-            className="flex-1"
+            className="h-8 px-3 text-sm"
           >
-            <XCircle className="mr-2 h-4 w-4" />
             Cancel
           </Button>
           <Button
-            variant="default"
+            size="sm"
+            disabled={!confirmed || isApplying}
             onClick={onConfirm}
-            disabled={!hasAcknowledged || isApplying}
-            className={cn(
-              "flex-1",
-              hasAcknowledged
-                ? "bg-green-600 hover:bg-green-700 text-white"
-                : "bg-muted text-muted-foreground"
-            )}
+            className="h-8 px-4 text-sm"
           >
-            {isApplying ? (
-              <>
-                <motion.div
-                  animate={{ rotate: 360 }}
-                  transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                  className="mr-2"
-                >
-                  <Shield className="h-4 w-4" />
-                </motion.div>
-                Applying...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="mr-2 h-4 w-4" />
-                Confirm & Apply
-              </>
-            )}
+            {isApplying ? "Applying..." : "Apply"}
           </Button>
-        </CardFooter>
-
-        {/* Admin Console Link */}
-        {proposal.adminConsoleUrl && (
-          <div className="px-6 pb-4">
-            <p className="text-xs text-muted-foreground text-center">
-              Or configure manually in the{" "}
-              <a
-                href={proposal.adminConsoleUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-primary underline hover:text-primary/80"
-              >
-                Google Admin Console
-              </a>
-            </p>
-          </div>
-        )}
-      </Card>
+        </div>
+      </div>
     </motion.div>
   );
 });
