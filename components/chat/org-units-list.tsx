@@ -1,3 +1,8 @@
+/**
+ * Organizational units list component for displaying Google Workspace org unit data.
+ * Renders a grid of cards showing org unit names, paths, and descriptions.
+ */
+
 "use client";
 
 import { Building2 } from "lucide-react";
@@ -18,6 +23,10 @@ interface OrgUnitsListProps {
   };
 }
 
+/**
+ * Displays a grid of organizational unit cards.
+ * Shows an empty state message when no org units are provided.
+ */
 export function OrgUnitsList({ data }: OrgUnitsListProps) {
   const orgUnits = data?.orgUnits || [];
 

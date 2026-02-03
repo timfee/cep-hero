@@ -1,3 +1,8 @@
+/**
+ * Root layout component providing global configuration and styling.
+ * Sets up fonts, metadata, and analytics for the entire application.
+ */
+
 import { Analytics } from "@vercel/analytics/next";
 import { type Metadata } from "next";
 import { Inter, Geist_Mono } from "next/font/google";
@@ -16,8 +21,7 @@ const geistMono = Geist_Mono({
 
 /**
  * Generate metadata dynamically for the application.
- * This enables better SEO and can be extended to include
- * dynamic values based on environment or configuration.
+ * Configures SEO, Open Graph, and Twitter card settings.
  */
 export function generateMetadata(): Metadata {
   const baseUrl =
@@ -65,6 +69,9 @@ export function generateMetadata(): Metadata {
   };
 }
 
+/**
+ * Root layout wrapping all pages with fonts, theme, and analytics.
+ */
 export default function RootLayout({
   children,
 }: Readonly<{

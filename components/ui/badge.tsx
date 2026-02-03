@@ -1,3 +1,7 @@
+/**
+ * Badge component for displaying labels, tags, and status indicators.
+ */
+
 import type { VariantProps } from "class-variance-authority";
 
 import { Slot } from "@radix-ui/react-slot";
@@ -28,6 +32,10 @@ const badgeVariants = cva(
   }
 );
 
+/**
+ * Small label component for categorization and status indication.
+ * Supports multiple visual variants and can render as different elements.
+ */
 function Badge({
   className,
   variant = "default",

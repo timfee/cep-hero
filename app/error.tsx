@@ -1,3 +1,8 @@
+/**
+ * Global error boundary component for the application.
+ * Catches and displays unexpected errors with a retry option.
+ */
+
 "use client";
 
 import { AlertCircle, RefreshCw } from "lucide-react";
@@ -5,6 +10,10 @@ import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 
+/**
+ * Error boundary component displaying a user-friendly error message.
+ * Logs the error and provides a retry button.
+ */
 export default function Error({
   error,
   reset,
@@ -13,7 +22,6 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service
     console.error("Application error:", error);
   }, [error]);
 

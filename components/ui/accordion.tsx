@@ -1,3 +1,7 @@
+/**
+ * Accordion components for vertically stacked expandable sections.
+ */
+
 "use client";
 
 import * as AccordionPrimitive from "@radix-ui/react-accordion";
@@ -6,12 +10,18 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Root component that manages which accordion items are expanded.
+ */
 function Accordion({
   ...props
 }: React.ComponentProps<typeof AccordionPrimitive.Root>) {
   return <AccordionPrimitive.Root data-slot="accordion" {...props} />;
 }
 
+/**
+ * Individual collapsible section within the accordion.
+ */
 function AccordionItem({
   className,
   ...props
@@ -25,6 +35,9 @@ function AccordionItem({
   );
 }
 
+/**
+ * Clickable header that expands or collapses the accordion item.
+ */
 function AccordionTrigger({
   className,
   children,
@@ -47,6 +60,9 @@ function AccordionTrigger({
   );
 }
 
+/**
+ * Content area that is revealed when the accordion item is expanded.
+ */
 function AccordionContent({
   className,
   children,

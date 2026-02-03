@@ -1,3 +1,7 @@
+/**
+ * Voice selector component for choosing text-to-speech voices.
+ * Displays voice options with attributes like gender, accent, and age in a searchable dialog.
+ */
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
@@ -48,6 +52,9 @@ const VoiceSelectorContext = createContext<VoiceSelectorContextValue | null>(
   null
 );
 
+/**
+ * Hook to access the voice selector context for value and open state management.
+ */
 export const useVoiceSelector = () => {
   const context = useContext(VoiceSelectorContext);
   if (!context) {
@@ -64,6 +71,9 @@ export type VoiceSelectorProps = ComponentProps<typeof Dialog> & {
   onValueChange?: (value: string | undefined) => void;
 };
 
+/**
+ * Root component that provides voice selection state and wraps a dialog.
+ */
 export const VoiceSelector = ({
   value: valueProp,
   defaultValue,
@@ -102,6 +112,9 @@ export const VoiceSelector = ({
 
 export type VoiceSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
 
+/**
+ * Trigger button that opens the voice selector dialog.
+ */
 export const VoiceSelectorTrigger = (props: VoiceSelectorTriggerProps) => (
   <DialogTrigger {...props} />
 );
@@ -110,6 +123,9 @@ export type VoiceSelectorContentProps = ComponentProps<typeof DialogContent> & {
   title?: ReactNode;
 };
 
+/**
+ * Dialog content wrapper with a searchable command interface for voice selection.
+ */
 export const VoiceSelectorContent = ({
   className,
   children,
@@ -126,12 +142,18 @@ export const VoiceSelectorContent = ({
 
 export type VoiceSelectorDialogProps = ComponentProps<typeof CommandDialog>;
 
+/**
+ * Alternative dialog wrapper using the command dialog pattern.
+ */
 export const VoiceSelectorDialog = (props: VoiceSelectorDialogProps) => (
   <CommandDialog {...props} />
 );
 
 export type VoiceSelectorInputProps = ComponentProps<typeof CommandInput>;
 
+/**
+ * Search input for filtering voice options.
+ */
 export const VoiceSelectorInput = ({
   className,
   ...props
@@ -141,24 +163,36 @@ export const VoiceSelectorInput = ({
 
 export type VoiceSelectorListProps = ComponentProps<typeof CommandList>;
 
+/**
+ * Scrollable list container for voice options.
+ */
 export const VoiceSelectorList = (props: VoiceSelectorListProps) => (
   <CommandList {...props} />
 );
 
 export type VoiceSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
 
+/**
+ * Empty state display when no voices match the search query.
+ */
 export const VoiceSelectorEmpty = (props: VoiceSelectorEmptyProps) => (
   <CommandEmpty {...props} />
 );
 
 export type VoiceSelectorGroupProps = ComponentProps<typeof CommandGroup>;
 
+/**
+ * Group container for organizing related voice options.
+ */
 export const VoiceSelectorGroup = (props: VoiceSelectorGroupProps) => (
   <CommandGroup {...props} />
 );
 
 export type VoiceSelectorItemProps = ComponentProps<typeof CommandItem>;
 
+/**
+ * Selectable voice option item within the list.
+ */
 export const VoiceSelectorItem = ({
   className,
   ...props
@@ -168,6 +202,9 @@ export const VoiceSelectorItem = ({
 
 export type VoiceSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
 
+/**
+ * Keyboard shortcut hint display for voice selection items.
+ */
 export const VoiceSelectorShortcut = (props: VoiceSelectorShortcutProps) => (
   <CommandShortcut {...props} />
 );
@@ -176,6 +213,9 @@ export type VoiceSelectorSeparatorProps = ComponentProps<
   typeof CommandSeparator
 >;
 
+/**
+ * Visual separator between voice groups.
+ */
 export const VoiceSelectorSeparator = (props: VoiceSelectorSeparatorProps) => (
   <CommandSeparator {...props} />
 );
@@ -190,6 +230,9 @@ export type VoiceSelectorGenderProps = ComponentProps<"span"> & {
     | "intersex";
 };
 
+/**
+ * Gender indicator icon based on voice characteristics.
+ */
 export const VoiceSelectorGender = ({
   className,
   value,
@@ -270,6 +313,9 @@ export type VoiceSelectorAccentProps = ComponentProps<"span"> & {
     | string;
 };
 
+/**
+ * Accent label that displays a two-letter country code for the voice accent.
+ */
 export const VoiceSelectorAccent = ({
   className,
   value,
@@ -413,6 +459,9 @@ export const VoiceSelectorAccent = ({
 
 export type VoiceSelectorAgeProps = ComponentProps<"span">;
 
+/**
+ * Age display component for voice characteristics.
+ */
 export const VoiceSelectorAge = ({
   className,
   ...props
@@ -425,6 +474,9 @@ export const VoiceSelectorAge = ({
 
 export type VoiceSelectorNameProps = ComponentProps<"span">;
 
+/**
+ * Voice name display with truncation for long names.
+ */
 export const VoiceSelectorName = ({
   className,
   ...props
@@ -437,6 +489,9 @@ export const VoiceSelectorName = ({
 
 export type VoiceSelectorDescriptionProps = ComponentProps<"span">;
 
+/**
+ * Description text for additional voice details.
+ */
 export const VoiceSelectorDescription = ({
   className,
   ...props
@@ -446,6 +501,9 @@ export const VoiceSelectorDescription = ({
 
 export type VoiceSelectorAttributesProps = ComponentProps<"div">;
 
+/**
+ * Container for grouping voice attribute indicators.
+ */
 export const VoiceSelectorAttributes = ({
   className,
   children,
@@ -458,6 +516,9 @@ export const VoiceSelectorAttributes = ({
 
 export type VoiceSelectorBulletProps = ComponentProps<"span">;
 
+/**
+ * Bullet separator for use between voice attributes.
+ */
 export const VoiceSelectorBullet = ({
   className,
   ...props
@@ -480,6 +541,9 @@ export type VoiceSelectorPreviewProps = Omit<
   onPlay?: () => void;
 };
 
+/**
+ * Play/pause button for previewing voice samples.
+ */
 export const VoiceSelectorPreview = ({
   className,
   playing,

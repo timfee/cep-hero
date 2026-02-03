@@ -41,22 +41,35 @@ const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
 const DOMAIN_RE =
   /\b(?!(?:localhost|local|example|example\.com)\b)(?:[a-z0-9-]+\.)+[a-z]{2,}\b/gi;
 const URL_RE = /\b(?:https?:\/\/|www\.)[^\s)]+/gi;
-function redactSensitive(text: string): string {
+
+/**
+ * Redact sensitive patterns like URLs, emails, and domains from text.
+ */
+function redactSensitive(text: string) {
   return text
     .replace(URL_RE, "[redacted]")
     .replace(EMAIL_RE, "[redacted]")
     .replace(DOMAIN_RE, "[redacted]");
 }
 
-function sanitizeOverviewText(text: string): string {
+/**
+ * Sanitize overview text by redacting sensitive data and trimming whitespace.
+ */
+function sanitizeOverviewText(text: string) {
   return redactSensitive(text).trim();
 }
 
-function sanitizeHeadline(text: string): string {
+/**
+ * Sanitize a headline string.
+ */
+function sanitizeHeadline(text: string) {
   const redacted = redactSensitive(text);
   return redacted.trim();
 }
 
+/**
+ * Sanitize a suggestion object by redacting sensitive fields.
+ */
 function sanitizeSuggestion(suggestion: Suggestion): Suggestion {
   return {
     ...suggestion,
@@ -65,6 +78,9 @@ function sanitizeSuggestion(suggestion: Suggestion): Suggestion {
   };
 }
 
+/**
+ * Sanitize a posture card object by redacting all text fields.
+ */
 function sanitizePostureCard(card: OverviewCard): OverviewCard {
   return {
     ...card,
@@ -76,6 +92,9 @@ function sanitizePostureCard(card: OverviewCard): OverviewCard {
   };
 }
 
+/**
+ * Sanitize an entire overview data object.
+ */
 export function sanitizeOverview(data: OverviewData): OverviewData {
   return {
     ...data,
@@ -201,6 +220,9 @@ function isValidSuggestion(suggestion: unknown): suggestion is Suggestion {
   );
 }
 
+/**
+ * Type guard for plain objects.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }

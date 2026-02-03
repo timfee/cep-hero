@@ -1,3 +1,7 @@
+/**
+ * Visual separator component for dividing content sections.
+ */
+
 "use client";
 
 import * as SeparatorPrimitive from "@radix-ui/react-separator";
@@ -5,6 +9,9 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A visual divider that separates content either horizontally or vertically.
+ */
 function Separator({
   className,
   orientation = "horizontal",

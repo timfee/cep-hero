@@ -1,3 +1,7 @@
+/**
+ * Plan component for displaying AI-generated action plans in a collapsible card format.
+ * Shows plan title, description, and expandable content with streaming support.
+ */
 "use client";
 
 import type { ComponentProps } from "react";
@@ -30,6 +34,9 @@ interface PlanContextValue {
 
 const PlanContext = createContext<PlanContextValue | null>(null);
 
+/**
+ * Hook to access plan streaming state from context.
+ */
 const usePlan = () => {
   const context = useContext(PlanContext);
   if (!context) {
@@ -42,6 +49,9 @@ export type PlanProps = ComponentProps<typeof Collapsible> & {
   isStreaming?: boolean;
 };
 
+/**
+ * Root plan container that wraps a collapsible card with streaming context.
+ */
 export const Plan = ({
   className,
   isStreaming = false,
@@ -57,6 +67,9 @@ export const Plan = ({
 
 export type PlanHeaderProps = ComponentProps<typeof CardHeader>;
 
+/**
+ * Plan card header with flex layout for title and actions.
+ */
 export const PlanHeader = ({ className, ...props }: PlanHeaderProps) => (
   <CardHeader
     className={cn("flex items-start justify-between", className)}
@@ -72,6 +85,9 @@ export type PlanTitleProps = Omit<
   children: string;
 };
 
+/**
+ * Plan title with shimmer effect during streaming.
+ */
 export const PlanTitle = ({ children, ...props }: PlanTitleProps) => {
   const { isStreaming } = usePlan();
 
@@ -89,6 +105,9 @@ export type PlanDescriptionProps = Omit<
   children: string;
 };
 
+/**
+ * Plan description with balanced text and shimmer effect during streaming.
+ */
 export const PlanDescription = ({
   className,
   children,
@@ -109,12 +128,18 @@ export const PlanDescription = ({
 
 export type PlanActionProps = ComponentProps<typeof CardAction>;
 
+/**
+ * Action slot in the plan card header.
+ */
 export const PlanAction = (props: PlanActionProps) => (
   <CardAction data-slot="plan-action" {...props} />
 );
 
 export type PlanContentProps = ComponentProps<typeof CardContent>;
 
+/**
+ * Collapsible content area for plan details.
+ */
 export const PlanContent = (props: PlanContentProps) => (
   <CollapsibleContent asChild>
     <CardContent data-slot="plan-content" {...props} />
@@ -123,12 +148,18 @@ export const PlanContent = (props: PlanContentProps) => (
 
 export type PlanFooterProps = ComponentProps<"div">;
 
+/**
+ * Footer section of the plan card.
+ */
 export const PlanFooter = (props: PlanFooterProps) => (
   <CardFooter data-slot="plan-footer" {...props} />
 );
 
 export type PlanTriggerProps = ComponentProps<typeof CollapsibleTrigger>;
 
+/**
+ * Toggle button for expanding or collapsing the plan content.
+ */
 export const PlanTrigger = ({ className, ...props }: PlanTriggerProps) => (
   <CollapsibleTrigger asChild>
     <Button

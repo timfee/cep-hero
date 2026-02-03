@@ -1,3 +1,7 @@
+/**
+ * Cloud Identity DLP policy listing and formatting for Chrome Enterprise.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
@@ -66,7 +70,7 @@ export async function listDLPRules(
   customerId: string,
   orgUnitContext: OrgUnitContext,
   args: ListDLPRulesArgs = {}
-): Promise<ListDLPRulesResult> {
+) {
   const service = googleApis.cloudidentity({ version: "v1", auth });
   console.log("[dlp-rules] request");
 
@@ -88,6 +92,9 @@ export async function listDLPRules(
   }
 }
 
+/**
+ * Fetches policies and transforms them to the output format.
+ */
 async function fetchAndMapPolicies(
   service: {
     policies?: {
@@ -99,7 +106,7 @@ async function fetchAndMapPolicies(
   customerId: string,
   orgUnitContext: OrgUnitContext,
   args: ListDLPRulesArgs
-): Promise<ListDLPRulesSuccess> {
+) {
   const policiesApi = service.policies;
   if (policiesApi === undefined) {
     return { rules: [] };
@@ -115,7 +122,10 @@ async function fetchAndMapPolicies(
   return result;
 }
 
-function logPolicyResponse(policies: CloudIdentityPolicy[] | undefined): void {
+/**
+ * Logs the API response summary for debugging.
+ */
+function logPolicyResponse(policies: CloudIdentityPolicy[] | undefined) {
   console.log(
     "[dlp-rules] response",
     JSON.stringify({
@@ -125,10 +135,10 @@ function logPolicyResponse(policies: CloudIdentityPolicy[] | undefined): void {
   );
 }
 
-async function addHelpIfRequested(
-  rules: DLPRule[],
-  includeHelp: boolean
-): Promise<ListDLPRulesSuccess> {
+/**
+ * Attaches relevant help documentation if requested.
+ */
+async function addHelpIfRequested(rules: DLPRule[], includeHelp: boolean) {
   if (!includeHelp || rules.length === 0) {
     return { rules };
   }
@@ -136,25 +146,34 @@ async function addHelpIfRequested(
   return { rules, help };
 }
 
-function logDlpError(error: unknown): void {
+/**
+ * Logs structured error details for debugging.
+ */
+function logDlpError(error: unknown) {
   const { code, message, errors } = getErrorDetails(error);
   console.log("[dlp-rules] error", JSON.stringify({ code, message, errors }));
 }
 
+/**
+ * Transforms Cloud Identity policies to the output rule format.
+ */
 function mapPoliciesToRules(
   policies: CloudIdentityPolicy[],
   orgUnitContext: OrgUnitContext
-): DLPRule[] {
+) {
   return policies.map((policy, idx) =>
     mapPolicyToRule(policy, idx, orgUnitContext)
   );
 }
 
+/**
+ * Converts a single policy to the output rule format.
+ */
 function mapPolicyToRule(
   policy: CloudIdentityPolicy,
   idx: number,
   orgUnitContext: OrgUnitContext
-): DLPRule {
+) {
   const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } = orgUnitContext;
   const resourceName = policy.name ?? "";
   const id = resourceName.split("/").pop() ?? `rule-${idx + 1}`;
@@ -183,9 +202,12 @@ function mapPolicyToRule(
   };
 }
 
+/**
+ * Formats the setting value into a human-readable description.
+ */
 function formatSettingDescription(
   value: Record<string, unknown> | null | undefined
-): string {
+) {
   if (value === null || value === undefined) {
     return "";
   }

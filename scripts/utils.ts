@@ -1,3 +1,7 @@
+/**
+ * Shared utilities for vector database scripts including HTML conversion and batch processing.
+ */
+
 import { Index } from "@upstash/vector";
 import TurndownService from "turndown";
 
@@ -13,7 +17,10 @@ export const turndown = new TurndownService({
   bulletListMarker: "-",
 });
 
-export function getStandardId(url: string): string {
+/**
+ * Normalize a URL to a standard ID format without query parameters or hash.
+ */
+export function getStandardId(url: string) {
   try {
     const urlObj = new URL(url);
     return urlObj.origin + urlObj.pathname;
@@ -22,7 +29,10 @@ export function getStandardId(url: string): string {
   }
 }
 
-export async function processDocs(documents: Document[]): Promise<void> {
+/**
+ * Process and upsert documents to Upstash Vector in batches.
+ */
+export async function processDocs(documents: Document[]) {
   if (documents.length === 0) {
     console.log("No documents to process.");
     return;

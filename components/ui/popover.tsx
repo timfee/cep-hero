@@ -1,3 +1,7 @@
+/**
+ * Popover components for displaying floating content triggered by a click.
+ */
+
 "use client";
 
 import * as PopoverPrimitive from "@radix-ui/react-popover";
@@ -5,18 +9,27 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Root component that manages the popover's open state.
+ */
 function Popover({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Root>) {
   return <PopoverPrimitive.Root data-slot="popover" {...props} />;
 }
 
+/**
+ * Element that triggers the popover to open when clicked.
+ */
 function PopoverTrigger({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Trigger>) {
   return <PopoverPrimitive.Trigger data-slot="popover-trigger" {...props} />;
 }
 
+/**
+ * Container for the popover's floating content panel.
+ */
 function PopoverContent({
   className,
   align = "center",
@@ -39,12 +52,18 @@ function PopoverContent({
   );
 }
 
+/**
+ * Element used to position the popover relative to a specific location.
+ */
 function PopoverAnchor({
   ...props
 }: React.ComponentProps<typeof PopoverPrimitive.Anchor>) {
   return <PopoverPrimitive.Anchor data-slot="popover-anchor" {...props} />;
 }
 
+/**
+ * Container for title and description within the popover.
+ */
 function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -55,6 +74,9 @@ function PopoverHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Title text within the popover header.
+ */
 function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
   return (
     <div
@@ -65,6 +87,9 @@ function PopoverTitle({ className, ...props }: React.ComponentProps<"h2">) {
   );
 }
 
+/**
+ * Description text within the popover header.
+ */
 function PopoverDescription({
   className,
   ...props

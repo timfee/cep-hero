@@ -1,3 +1,7 @@
+/**
+ * Standardized error handling and formatting for API operations.
+ */
+
 import { StatusCodes } from "http-status-codes";
 
 /**
@@ -54,9 +58,9 @@ const SESSION_EXPIRED_SUGGESTION =
   "Your session has expired. Please sign in again to continue.";
 
 /**
- * Check if an error requires re-authentication based on HTTP status code.
+ * Checks if an error requires re-authentication based on HTTP status code.
  */
-function requiresReauthentication(code: number | string | undefined): boolean {
+function requiresReauthentication(code: number | string | undefined) {
   const numericCode =
     typeof code === "string" ? Number.parseInt(code, 10) : code;
   return (
@@ -65,43 +69,41 @@ function requiresReauthentication(code: number | string | undefined): boolean {
   );
 }
 
+/**
+ * Type guard for checking if a value is an error-like object.
+ */
 function isErrorObject(error: unknown): error is Record<string, unknown> {
   return error !== null && typeof error === "object";
 }
 
 /**
- * Extract error code from an error object.
+ * Extracts the error code from an error object.
  */
-function extractErrorCode(error: unknown): number | string | undefined {
+function extractErrorCode(error: unknown) {
   if (!isErrorObject(error)) {
-    return undefined;
+    return;
   }
   const { code } = error;
   if (typeof code === "number" || typeof code === "string") {
     return code;
   }
-  return undefined;
 }
 
 /**
- * Extract error message from an error object.
+ * Extracts the error message from an error object.
  */
-function extractErrorMessage(error: unknown): string | undefined {
+function extractErrorMessage(error: unknown) {
   if (!isErrorObject(error)) {
-    return undefined;
+    return;
   }
   const { message } = error;
   return typeof message === "string" ? message : undefined;
 }
 
 /**
- * Normalize error details from API exceptions.
+ * Normalizes error details from API exceptions.
  */
-export function getErrorDetails(error: unknown): {
-  code?: number | string;
-  message?: string;
-  errors?: unknown;
-} {
+export function getErrorDetails(error: unknown) {
   if (!isErrorObject(error)) {
     return {};
   }
@@ -114,9 +116,9 @@ export function getErrorDetails(error: unknown): {
 }
 
 /**
- * Extract a readable message from unknown errors.
+ * Extracts a readable message from unknown errors.
  */
-export function getErrorMessage(error: unknown): string {
+export function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
   }
@@ -125,12 +127,9 @@ export function getErrorMessage(error: unknown): string {
 }
 
 /**
- * Create a standardized API error response.
+ * Creates a standardized API error response with reauth detection.
  */
-export function createApiError(
-  error: unknown,
-  contextKey: ApiContextKey
-): ApiErrorResult {
+export function createApiError(error: unknown, contextKey: ApiContextKey) {
   const { code, message } = getErrorDetails(error);
   const context = API_CONTEXTS[contextKey];
   const requiresReauth = requiresReauthentication(code);

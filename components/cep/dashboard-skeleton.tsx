@@ -1,16 +1,18 @@
-"use client";
+/**
+ * Dashboard loading skeleton for use with Suspense boundaries.
+ * Matches the visual structure of DashboardOverview for seamless loading transitions.
+ */
 
 "use client";
 
 /**
- * Dashboard loading skeleton for use with Suspense boundaries.
- * Matches the visual structure of DashboardOverview for seamless loading.
+ * Skeleton placeholder matching the DashboardOverview layout.
+ * Displays animated pulse effects while content loads.
  */
 export function DashboardSkeleton() {
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-8 py-16">
-        {/* Header skeleton */}
         <header className="mb-16">
           <div className="flex items-start justify-between gap-4">
             <div className="h-10 w-3/4 animate-pulse rounded-lg bg-muted" />
@@ -22,7 +24,6 @@ export function DashboardSkeleton() {
           </div>
         </header>
 
-        {/* Section skeleton */}
         <section>
           <div className="mb-6 h-4 w-24 animate-pulse rounded bg-muted" />
           <div className="space-y-3">

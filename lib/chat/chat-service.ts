@@ -1,3 +1,7 @@
+/**
+ * AI chat service that orchestrates CEP diagnostic tools with Gemini.
+ */
+
 import { google } from "@ai-sdk/google";
 import { generateText, Output, stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
@@ -164,7 +168,10 @@ interface SearchHit {
   content?: string;
 }
 
-function formatHits(hits: SearchHit[] | undefined, prefix: string): string {
+/**
+ * Format search hits into a readable string for context injection.
+ */
+function formatHits(hits: SearchHit[] | undefined, prefix: string) {
   if (!Array.isArray(hits)) {
     return "";
   }
@@ -183,6 +190,9 @@ function formatHits(hits: SearchHit[] | undefined, prefix: string): string {
     .join("\n\n");
 }
 
+/**
+ * Use a fast model to determine if the user query needs knowledge retrieval.
+ */
 async function analyzeIntent(userMessage: string) {
   const result = await generateText({
     model: google("gemini-2.0-flash-001"),
@@ -203,7 +213,10 @@ async function analyzeIntent(userMessage: string) {
   return result;
 }
 
-async function fetchKnowledgeSnippets(query: string): Promise<string> {
+/**
+ * Fetch and format knowledge snippets from vector search.
+ */
+async function fetchKnowledgeSnippets(query: string) {
   const [docs, policies] = await Promise.all([
     searchDocs(query),
     searchPolicies(query),
@@ -216,7 +229,10 @@ async function fetchKnowledgeSnippets(query: string): Promise<string> {
   return `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
 }
 
-async function retrieveKnowledge(userMessage: string): Promise<string> {
+/**
+ * Retrieve relevant knowledge context based on user message intent.
+ */
+async function retrieveKnowledge(userMessage: string) {
   if (typeof userMessage !== "string" || userMessage.length === 0) {
     return "";
   }
@@ -245,6 +261,9 @@ interface LastStep {
   toolCalls: { toolName: string }[];
 }
 
+/**
+ * Analyze the last step to determine what guards should be applied.
+ */
 function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   const hasToolResults = lastStep.toolResults.length > 0;
   const hasText = lastStep.text.trim().length > 0;
@@ -268,6 +287,9 @@ function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   };
 }
 
+/**
+ * Build guard instructions for DLP rule proposals.
+ */
 function buildDlpGuardResponse(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
@@ -282,6 +304,9 @@ End by calling suggestActions.`,
   };
 }
 
+/**
+ * Build guard instructions for completing responses after tool results.
+ */
 function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
@@ -299,6 +324,9 @@ End by calling suggestActions with 2-4 options.`,
   };
 }
 
+/**
+ * Build guard instructions for adding suggested actions.
+ */
 function buildActionCompletionGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
@@ -310,6 +338,9 @@ If you add any text, keep it to one short sentence.`,
   };
 }
 
+/**
+ * Compute the step response configuration based on analysis.
+ */
 function computeStepResponse(
   analysis: StepAnalysis,
   enhancedSystemPrompt: string

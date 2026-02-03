@@ -1,3 +1,7 @@
+/**
+ * Chrome connector policy resolution for Safe Browsing, reporting, and DLP settings.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type chromepolicy_v1 } from "googleapis";
 
@@ -55,13 +59,13 @@ export type ConnectorConfigResult =
   | ConnectorConfigError;
 
 /**
- * Retrieve Chrome Connector configuration policies.
+ * Retrieves Chrome connector policies for the org unit hierarchy.
  */
 export async function getChromeConnectorConfiguration(
   auth: OAuth2Client,
   customerId: string,
   orgUnitContext: OrgUnitContext
-): Promise<ConnectorConfigResult> {
+) {
   const service = googleApis.chromepolicy({ version: "v1", auth });
   const { orgUnitNameMap, rootOrgUnitId } = orgUnitContext;
 
@@ -86,7 +90,10 @@ export async function getChromeConnectorConfiguration(
   }
 }
 
-function buildTargetCandidates(ctx: OrgUnitContext): string[] {
+/**
+ * Builds the list of org unit targets to try for policy resolution.
+ */
+function buildTargetCandidates(ctx: OrgUnitContext) {
   const orgUnitIds = resolveOrgUnitCandidates(ctx.orgUnitList);
 
   if (ctx.rootOrgUnitId !== null) {
@@ -101,7 +108,10 @@ function buildTargetCandidates(ctx: OrgUnitContext): string[] {
     .filter((t) => t !== "");
 }
 
-function buildNoTargetsError(contextError?: string): ConnectorConfigError {
+/**
+ * Builds an error response when no valid targets are available.
+ */
+function buildNoTargetsError(contextError?: string) {
   return {
     error: "Could not determine policy target (root org unit).",
     detail:
@@ -114,6 +124,9 @@ function buildNoTargetsError(contextError?: string): ConnectorConfigError {
   };
 }
 
+/**
+ * Iterates through targets to resolve connector policies.
+ */
 async function resolveConnectorPolicies(
   service: ReturnType<typeof googleApis.chromepolicy>,
   customerId: string,
@@ -121,7 +134,7 @@ async function resolveConnectorPolicies(
   attemptedTargets: string[],
   orgUnitNameMap: Map<string, string>,
   _rootOrgUnitId: string | null
-): Promise<ConnectorConfigResult> {
+) {
   const resolvedPolicies: ResolvedPolicy[] = [];
   const resolveErrors: { targetResource: string; message: string }[] = [];
 
@@ -154,6 +167,9 @@ async function resolveConnectorPolicies(
   );
 }
 
+/**
+ * Attempts to resolve policies for a single target.
+ */
 async function tryResolveTarget(
   service: ReturnType<typeof googleApis.chromepolicy>,
   customerId: string,
@@ -161,7 +177,7 @@ async function tryResolveTarget(
   resolvedPolicies: ResolvedPolicy[],
   orgUnitNameMap: Map<string, string>,
   attemptedTargets: string[]
-): Promise<ConnectorConfigResult | null> {
+) {
   try {
     const res = await service.customers.policies.resolve({
       customer: `customers/${customerId}`,
@@ -196,10 +212,13 @@ async function tryResolveTarget(
   }
 }
 
+/**
+ * Logs the policy resolution response for debugging.
+ */
 function logResolveResponse(
   targetResource: string,
   policies: ResolvedPolicy[] | undefined
-): void {
+) {
   const sampleTarget = policies?.[0]?.policyTargetKey?.targetResource;
   console.log(
     "[connector-config] response",
@@ -211,19 +230,25 @@ function logResolveResponse(
   );
 }
 
-function isIgnorableError(message: string): boolean {
+/**
+ * Checks if an error can be safely ignored during resolution.
+ */
+function isIgnorableError(message: string) {
   return (
     message.includes("Requested entity was not found") ||
     message.includes("must be of type 'orgunits' or 'groups'")
   );
 }
 
+/**
+ * Builds the success result after all targets are attempted.
+ */
 function buildFinalResult(
   resolvedPolicies: ResolvedPolicy[],
   resolveErrors: { targetResource: string; message: string }[],
   attemptedTargets: string[],
   orgUnitNameMap: Map<string, string>
-): ConnectorConfigSuccess {
+) {
   const [fallbackTarget] = attemptedTargets;
   const targetResourceName = fallbackTarget
     ? (orgUnitNameMap.get(fallbackTarget) ?? null)
@@ -254,11 +279,14 @@ function buildFinalResult(
   };
 }
 
+/**
+ * Builds an error response from a caught exception.
+ */
 function buildCatchError(
   error: unknown,
   attemptedTargets: string[],
   orgUnitNameMap: Map<string, string>
-): ConnectorConfigError {
+) {
   const { code, message, errors } = getErrorDetails(error);
   console.log(
     "[connector-config] error",

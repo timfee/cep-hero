@@ -1,9 +1,16 @@
+/**
+ * Crawls Google Cloud Chrome Enterprise Premium documentation and indexes to Upstash Vector.
+ */
+
 /* eslint-disable @typescript-eslint/unbound-method */
 import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
 import { getStandardId, processDocs, turndown } from "./utils";
 import { MAX_CONCURRENCY, MAX_REQUESTS, type Document } from "./vector-types";
 
+/**
+ * Main crawler entry point.
+ */
 async function main() {
   const documents: Document[] = [];
 
@@ -22,16 +29,13 @@ async function main() {
       const articleHtml = $("div.devsite-article-body").html() ?? "";
       const articleId = getStandardId(request.url);
 
-      // Better title extraction for Google Cloud docs
       let title = "";
 
-      // Try h1.devsite-page-title first and get only direct text nodes
       const h1Element = $("h1.devsite-page-title").first();
       if (h1Element.length) {
         title = h1Element.text().trim();
       }
 
-      // Fallback to regular h1 if no devsite-page-title
       if (!title) {
         const h1 = $("h1").first();
         if (h1.length) {
@@ -39,12 +43,10 @@ async function main() {
         }
       }
 
-      // Fallback to page title
       if (!title) {
         title = $("title").first().text().split(" | ")[0].trim();
       }
 
-      // Final URL-based fallback
       if (!title) {
         const urlPath = new URL(request.url).pathname;
         const pathSegments = urlPath.split("/").filter(Boolean);
@@ -76,7 +78,6 @@ async function main() {
           try {
             const url = new URL(req.url);
 
-            // Skip non-content URLs
             const path = url.pathname;
             if (
               path.includes("/reference/") ||
@@ -88,7 +89,6 @@ async function main() {
               return false;
             }
 
-            // Clean the URL
             url.search = "";
             url.hash = "";
             req.url = url.toString();

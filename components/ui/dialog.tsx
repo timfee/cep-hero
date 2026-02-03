@@ -1,3 +1,7 @@
+/**
+ * Modal dialog components for displaying content that requires user attention.
+ */
+
 "use client";
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
@@ -7,30 +11,45 @@ import * as React from "react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
+/**
+ * Root component that manages the dialog's open state.
+ */
 function Dialog({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Root>) {
   return <DialogPrimitive.Root data-slot="dialog" {...props} />;
 }
 
+/**
+ * Button or element that triggers the dialog to open when clicked.
+ */
 function DialogTrigger({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Trigger>) {
   return <DialogPrimitive.Trigger data-slot="dialog-trigger" {...props} />;
 }
 
+/**
+ * Portal that renders the dialog outside the DOM hierarchy.
+ */
 function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
   return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />;
 }
 
+/**
+ * Button or element that closes the dialog when clicked.
+ */
 function DialogClose({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Close>) {
   return <DialogPrimitive.Close data-slot="dialog-close" {...props} />;
 }
 
+/**
+ * Semi-transparent overlay behind the dialog that dims the background.
+ */
 function DialogOverlay({
   className,
   ...props
@@ -47,6 +66,9 @@ function DialogOverlay({
   );
 }
 
+/**
+ * Container for the dialog's main content with optional close button.
+ */
 function DialogContent({
   className,
   children,
@@ -81,6 +103,9 @@ function DialogContent({
   );
 }
 
+/**
+ * Container for the dialog's title and description at the top.
+ */
 function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -91,6 +116,9 @@ function DialogHeader({ className, ...props }: React.ComponentProps<"div">) {
   );
 }
 
+/**
+ * Container for action buttons at the bottom of the dialog.
+ */
 function DialogFooter({
   className,
   showCloseButton = false,
@@ -118,6 +146,9 @@ function DialogFooter({
   );
 }
 
+/**
+ * Main heading text for the dialog.
+ */
 function DialogTitle({
   className,
   ...props
@@ -131,6 +162,9 @@ function DialogTitle({
   );
 }
 
+/**
+ * Secondary descriptive text below the dialog title.
+ */
 function DialogDescription({
   className,
   ...props

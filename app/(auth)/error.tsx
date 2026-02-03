@@ -1,3 +1,8 @@
+/**
+ * Authentication error boundary for the auth route group.
+ * Displays a user-friendly error message with recovery options specific to sign-in failures.
+ */
+
 "use client";
 
 import { AlertCircle, RefreshCw, ArrowLeft } from "lucide-react";
@@ -6,6 +11,10 @@ import { useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 
+/**
+ * Error boundary component for authentication failures.
+ * Provides retry and home navigation options.
+ */
 export default function AuthError({
   error,
   reset,

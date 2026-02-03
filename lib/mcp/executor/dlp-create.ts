@@ -1,3 +1,7 @@
+/**
+ * Cloud Identity DLP rule creation with fallback to manual steps.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { z } from "zod";
 
@@ -9,12 +13,16 @@ import { buildOrgUnitTargetResource } from "./utils";
 
 export type CreateDLPRuleArgs = z.infer<typeof CreateDLPRuleSchema>;
 
-/** Schema for successful API responses containing a rule name. */
+/**
+ * Schema for successful API responses containing a rule name.
+ */
 const ApiSuccessSchema = z.object({
   name: z.string().optional(),
 });
 
-/** Schema for API error responses with nested error message. */
+/**
+ * Schema for API error responses with nested error message.
+ */
 const ApiErrorSchema = z.object({
   error: z
     .object({
@@ -63,14 +71,14 @@ export type CreateDLPRuleResult =
   | CreateDLPRuleError;
 
 /**
- * Create a DLP rule using the Cloud Identity Policy API.
+ * Creates a DLP rule using the Cloud Identity Policy API.
  */
 export async function createDLPRule(
   auth: OAuth2Client,
   customerId: string,
   orgUnitContext: OrgUnitContext,
   args: CreateDLPRuleArgs
-): Promise<CreateDLPRuleResult> {
+) {
   logCreateRequest(args);
   const targetOrgUnitDisplay = resolveTargetDisplay(
     args.targetOrgUnit,
@@ -91,7 +99,10 @@ export async function createDLPRule(
   return result;
 }
 
-function logCreateRequest(args: CreateDLPRuleArgs): void {
+/**
+ * Logs the DLP rule creation request for debugging.
+ */
+function logCreateRequest(args: CreateDLPRuleArgs) {
   console.log("[create-dlp-rule] request", {
     displayName: args.displayName,
     targetOrgUnit: args.targetOrgUnit,
@@ -100,7 +111,10 @@ function logCreateRequest(args: CreateDLPRuleArgs): void {
   });
 }
 
-async function getAccessToken(auth: OAuth2Client): Promise<string | null> {
+/**
+ * Extracts the access token from the OAuth client.
+ */
+async function getAccessToken(auth: OAuth2Client) {
   const token = await auth.getAccessToken();
   const accessToken = token?.token;
   if (typeof accessToken !== "string" || accessToken.length === 0) {
@@ -109,12 +123,15 @@ async function getAccessToken(auth: OAuth2Client): Promise<string | null> {
   return accessToken;
 }
 
+/**
+ * Builds the payload and submits the DLP rule creation request.
+ */
 async function executeCreateRule(
   accessToken: string,
   customerId: string,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): Promise<CreateDLPRuleResult> {
+) {
   const policyPayload = buildPolicyPayload(customerId, args);
   try {
     const result = await submitDLPRule(
@@ -129,10 +146,10 @@ async function executeCreateRule(
   }
 }
 
-function resolveTargetDisplay(
-  targetOrgUnit: string,
-  ctx: OrgUnitContext
-): string {
+/**
+ * Resolves the org unit to a human-readable display name.
+ */
+function resolveTargetDisplay(targetOrgUnit: string, ctx: OrgUnitContext) {
   return (
     resolveOrgUnitDisplay(
       targetOrgUnit,
@@ -143,10 +160,13 @@ function resolveTargetDisplay(
   );
 }
 
+/**
+ * Builds an error response when no access token is available.
+ */
 function buildNoTokenError(
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): CreateDLPRuleError {
+) {
   return {
     _type: "ui.error",
     message: "No access token available",
@@ -159,6 +179,9 @@ function buildNoTokenError(
   };
 }
 
+/**
+ * Builds the Cloud Identity API request payload.
+ */
 function buildPolicyPayload(customerId: string, args: CreateDLPRuleArgs) {
   const triggerConditions = args.triggers.map(mapTrigger);
   const actionMapping: Record<string, string> = {
@@ -187,7 +210,10 @@ function buildPolicyPayload(customerId: string, args: CreateDLPRuleArgs) {
   };
 }
 
-function mapTrigger(trigger: string): string {
+/**
+ * Maps user-friendly trigger names to API trigger identifiers.
+ */
+function mapTrigger(trigger: string) {
   const mapping: Record<string, string> = {
     UPLOAD: "chrome.file_upload",
     DOWNLOAD: "chrome.file_download",
@@ -201,12 +227,15 @@ function mapTrigger(trigger: string): string {
   return mapped;
 }
 
+/**
+ * Submits the DLP rule to the Cloud Identity API.
+ */
 async function submitDLPRule(
   accessToken: string,
   payload: ReturnType<typeof buildPolicyPayload>,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): Promise<CreateDLPRuleSuccess | CreateDLPRuleManualSteps> {
+) {
   const res = await fetch(
     "https://cloudidentity.googleapis.com/v1beta1/policies",
     {
@@ -240,7 +269,10 @@ async function submitDLPRule(
   };
 }
 
-function extractRuleName(data: unknown): string | null {
+/**
+ * Extracts the rule name from a successful API response.
+ */
+function extractRuleName(data: unknown) {
   const result = ApiSuccessSchema.safeParse(data);
   if (!result.success) {
     return null;
@@ -248,7 +280,10 @@ function extractRuleName(data: unknown): string | null {
   return result.data.name ?? null;
 }
 
-function extractApiErrorMessage(data: unknown): string {
+/**
+ * Extracts the error message from an API error response.
+ */
+function extractApiErrorMessage(data: unknown) {
   const result = ApiErrorSchema.safeParse(data);
   if (!result.success) {
     return "Unknown API error";
@@ -256,32 +291,41 @@ function extractApiErrorMessage(data: unknown): string {
   return result.data.error?.message ?? "Unknown API error";
 }
 
+/**
+ * Builds a manual steps response from an API error.
+ */
 function buildApiError(
   data: unknown,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): CreateDLPRuleManualSteps {
+) {
   const errorMessage = extractApiErrorMessage(data);
   console.log("[create-dlp-rule] API error", JSON.stringify(data));
   return buildManualSteps(errorMessage, args, targetOrgUnitDisplay);
 }
 
+/**
+ * Builds a manual steps response from a caught exception.
+ */
 function buildCatchError(
   error: unknown,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): CreateDLPRuleManualSteps {
+) {
   const message = error instanceof Error ? error.message : "Unknown error";
   console.log("[create-dlp-rule] error", JSON.stringify({ message }));
 
   return buildManualSteps(message, args, targetOrgUnitDisplay);
 }
 
+/**
+ * Builds a response with manual steps when API creation fails.
+ */
 function buildManualSteps(
   errorMessage: string,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): CreateDLPRuleManualSteps {
+) {
   return {
     _type: "ui.manual_steps",
     message: `Unable to create DLP rule: ${errorMessage}. Please create it manually.`,

@@ -1,12 +1,6 @@
 #!/usr/bin/env bun
 /**
- * Eval runner entry point.
- *
- * Usage:
- *   bun evals/run.ts                    # Run all evals
- *   EVAL_IDS=EC-001,EC-002 bun evals/run.ts  # Run specific cases
- *   EVAL_CATEGORY=connector bun evals/run.ts  # Run by category
- *   EVAL_TAGS=enrollment bun evals/run.ts  # Run by tag
+ * Eval runner entry point that supports filtering by case ID, category, or tag.
  *
  * Environment variables:
  *   EVAL_IDS          - Comma-separated case IDs to run

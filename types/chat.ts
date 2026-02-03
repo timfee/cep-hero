@@ -1,3 +1,10 @@
+/**
+ * Chat-related type definitions for tool outputs and diagnosis results.
+ */
+
+/**
+ * Error response from diagnosis operations.
+ */
 export interface DiagnosisError {
   error: string;
 }
@@ -25,6 +32,9 @@ export interface SuggestedActionsOutput {
   actions: string[];
 }
 
+/**
+ * Output shape for Chrome events API responses.
+ */
 export interface ChromeEventsOutput {
   events?: {
     id?: { time?: string | null; uniqueQualifier?: string | null };
@@ -36,6 +46,9 @@ export interface ChromeEventsOutput {
   suggestion?: string;
 }
 
+/**
+ * Output shape for DLP rules API responses.
+ */
 export interface DlpRulesOutput {
   rules?: {
     id?: string;
@@ -47,6 +60,9 @@ export interface DlpRulesOutput {
   suggestion?: string;
 }
 
+/**
+ * Output shape for connector configuration API responses.
+ */
 export interface ConnectorConfigOutput {
   value?: { policyTargetKey?: { targetResource?: string | null } }[];
   targetResource?: string | null;
@@ -57,6 +73,9 @@ export interface ConnectorConfigOutput {
   suggestion?: string;
 }
 
+/**
+ * UI confirmation response for policy change proposals.
+ */
 export interface PolicyChangeConfirmationOutput {
   _type: "ui.confirmation";
   proposalId: string;
@@ -74,6 +93,9 @@ export interface PolicyChangeConfirmationOutput {
   };
 }
 
+/**
+ * Success response after applying a policy change.
+ */
 export interface PolicyApplySuccessOutput {
   _type: "ui.success";
   message: string;
@@ -82,6 +104,9 @@ export interface PolicyApplySuccessOutput {
   appliedValue?: unknown;
 }
 
+/**
+ * Error response when policy application fails.
+ */
 export interface PolicyApplyErrorOutput {
   _type: "ui.error";
   message: string;
@@ -91,23 +116,35 @@ export interface PolicyApplyErrorOutput {
   suggestion?: string;
 }
 
+/**
+ * A diagnostic hypothesis with confidence and supporting evidence.
+ */
 export interface Hypothesis {
   cause: string;
   confidence: number;
   evidence?: string[];
 }
 
+/**
+ * Documentation reference link.
+ */
 export interface Reference {
   title: string;
   url: string;
 }
 
+/**
+ * A question needed to complete the diagnosis.
+ */
 export interface MissingQuestion {
   question: string;
   why?: string;
   example?: string;
 }
 
+/**
+ * Analysis of connector policy targeting and potential mis-scoping.
+ */
 export interface ConnectorAnalysis {
   total: number;
   byTarget: {
@@ -122,6 +159,9 @@ export interface ConnectorAnalysis {
   sampleTarget?: string;
 }
 
+/**
+ * Evidence collected during diagnostic analysis.
+ */
 export interface EvidencePayload {
   checks?: {
     name: string;
@@ -140,6 +180,9 @@ export interface EvidencePayload {
   connectorAnalysis?: ConnectorAnalysis;
 }
 
+/**
+ * Complete diagnostic output with hypotheses, steps, and evidence.
+ */
 export interface DiagnosisPayload {
   diagnosis?: string;
   hypotheses?: Hypothesis[];
@@ -151,4 +194,7 @@ export interface DiagnosisPayload {
   reference?: Reference | null;
 }
 
+/**
+ * Union type for diagnosis results - either success payload or error.
+ */
 export type DiagnosisResult = DiagnosisError | DiagnosisPayload;

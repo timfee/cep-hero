@@ -1,3 +1,7 @@
+/**
+ * Google Admin SDK client utilities for integration tests.
+ */
+
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
@@ -25,9 +29,10 @@ export interface GoogleClients {
   customerId: string;
 }
 
-async function resolveCustomerIdFromPolicySchemas(
-  policy: ChromePolicy
-): Promise<string | null> {
+/**
+ * Attempt to resolve customer ID from policy schemas API response.
+ */
+async function resolveCustomerIdFromPolicySchemas(policy: ChromePolicy) {
   try {
     const res = await policy.customers.policySchemas.list({
       parent: "customers/my_customer",
@@ -53,7 +58,10 @@ const GOOGLE_API_SCOPES = [
   "https://www.googleapis.com/auth/chrome.management.policy.readonly",
 ];
 
-async function createAuthClient(tokenEmail?: string): Promise<OAuth2Client> {
+/**
+ * Create an authenticated OAuth2 client using service account credentials.
+ */
+async function createAuthClient(tokenEmail?: string) {
   const accessToken = await getServiceAccountAccessToken(
     GOOGLE_API_SCOPES,
     tokenEmail
@@ -63,6 +71,9 @@ async function createAuthClient(tokenEmail?: string): Promise<OAuth2Client> {
   return auth;
 }
 
+/**
+ * Create Google API client instances.
+ */
 function createGoogleApiClients(auth: OAuth2Client) {
   return {
     directory: google.admin({ version: "directory_v1", auth }),
@@ -71,6 +82,9 @@ function createGoogleApiClients(auth: OAuth2Client) {
   };
 }
 
+/**
+ * Create and configure all Google Admin SDK clients.
+ */
 export async function makeGoogleClients(): Promise<GoogleClients> {
   const envCustomerId = process.env.GOOGLE_CUSTOMER_ID;
   const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
@@ -86,12 +100,18 @@ export async function makeGoogleClients(): Promise<GoogleClients> {
   return { directory, policy, management, tokenEmail, customerId };
 }
 
+/**
+ * List all domains for the customer.
+ */
 export async function listDomains() {
   const { directory, customerId } = await makeGoogleClients();
   const res = await directory.domains.list({ customer: customerId });
   return res.data.domains ?? [];
 }
 
+/**
+ * Detect the primary domain for the customer.
+ */
 export async function detectPrimaryDomain() {
   const domains = await listDomains();
   const primary = domains.find((domain) => domain.isPrimary) ?? domains[0];
@@ -101,7 +121,7 @@ export async function detectPrimaryDomain() {
 /**
  * Normalize error values to a message string.
  */
-function getErrorMessage(error: unknown): string {
+function getErrorMessage(error: unknown) {
   if (error instanceof Error) {
     return error.message;
   }
@@ -114,6 +134,9 @@ function getErrorMessage(error: unknown): string {
   return typeof message === "string" ? message : "Unknown error";
 }
 
+/**
+ * List users in the directory.
+ */
 export async function listUsers({
   maxResults = 25,
 }: { maxResults?: number } = {}) {
@@ -122,6 +145,9 @@ export async function listUsers({
   return res.data.users ?? [];
 }
 
+/**
+ * Detect domain from user email addresses.
+ */
 export async function detectDomainFromUsers() {
   const users = await listUsers({ maxResults: 50 });
   const domain = users
@@ -130,6 +156,9 @@ export async function detectDomainFromUsers() {
   return domain ?? null;
 }
 
+/**
+ * Get the root organizational unit.
+ */
 export async function getRootOrgUnit() {
   const { directory, customerId } = await makeGoogleClients();
   const res = await directory.orgunits.list({
@@ -141,6 +170,9 @@ export async function getRootOrgUnit() {
   return list[0] ?? null;
 }
 
+/**
+ * List all organizational units.
+ */
 export async function listOrgUnits() {
   const { directory, customerId } = await makeGoogleClients();
   const res = await directory.orgunits.list({
@@ -158,6 +190,9 @@ export async function listOrgUnits() {
   return list;
 }
 
+/**
+ * List policy schemas with optional filter.
+ */
 export async function listPolicySchemas({
   filter,
   pageSize = 200,
@@ -185,13 +220,19 @@ interface PolicyProbeError {
   message: string;
 }
 
-function isIgnorableError(message: string): boolean {
+/**
+ * Check if an error message indicates a non-fatal condition.
+ */
+function isIgnorableError(message: string) {
   return (
     message.includes("Requested entity was not found") ||
     message.includes("must be of type 'orgunits' or 'groups'")
   );
 }
 
+/**
+ * Validate target resource format.
+ */
 function validateTargetResource(
   targetResource: string
 ): { trimmed: string } | PolicyProbeError | null {
@@ -209,6 +250,9 @@ function validateTargetResource(
   return { trimmed };
 }
 
+/**
+ * Fetch resolved policies for a target resource.
+ */
 async function fetchResolvedPolicies(
   policy: ChromePolicy,
   customerId: string,
@@ -237,6 +281,9 @@ async function fetchResolvedPolicies(
   }
 }
 
+/**
+ * Resolve policies for a single target resource.
+ */
 async function resolveTargetPolicy(
   policy: ChromePolicy,
   customerId: string,
@@ -259,6 +306,9 @@ async function resolveTargetPolicy(
   return result;
 }
 
+/**
+ * Type guard for policy probe errors.
+ */
 function isProbeError(
   result: PolicyProbeResult | PolicyProbeError | null
 ): result is PolicyProbeError {
@@ -270,10 +320,13 @@ interface ProbeAccumulator {
   errors: PolicyProbeError[];
 }
 
+/**
+ * Categorize a probe result into success or error.
+ */
 function categorizeProbeResult(
   result: PolicyProbeResult | PolicyProbeError | null,
   acc: ProbeAccumulator
-): void {
+) {
   if (result === null) {
     return;
   }
@@ -284,6 +337,9 @@ function categorizeProbeResult(
   }
 }
 
+/**
+ * Resolve policies for multiple target resources.
+ */
 async function resolveAllTargets(
   policy: ChromePolicy,
   customerId: string,
@@ -305,6 +361,9 @@ async function resolveAllTargets(
   return acc;
 }
 
+/**
+ * Probe multiple target resources for policy resolution.
+ */
 export async function probePolicyTargetResources({
   policySchemaFilter,
   targetResources,
@@ -326,6 +385,9 @@ export async function probePolicyTargetResources({
   return acc;
 }
 
+/**
+ * Create a new organizational unit.
+ */
 export async function createOrgUnit({
   name,
   parentOrgUnitPath = "/",
@@ -350,6 +412,9 @@ export async function createOrgUnit({
   };
 }
 
+/**
+ * Delete an organizational unit.
+ */
 export async function deleteOrgUnit(orgUnitPath: string) {
   const { directory, customerId } = await makeGoogleClients();
   await directory.orgunits.delete({
@@ -358,6 +423,9 @@ export async function deleteOrgUnit(orgUnitPath: string) {
   });
 }
 
+/**
+ * Create a new user in the directory.
+ */
 export async function createUser({
   primaryEmail,
   password,
@@ -384,11 +452,17 @@ export async function createUser({
   return res.data.id;
 }
 
+/**
+ * Delete a user from the directory.
+ */
 export async function deleteUser(primaryEmail: string) {
   const { directory } = await makeGoogleClients();
   await directory.users.delete({ userKey: primaryEmail });
 }
 
+/**
+ * Create a new group.
+ */
 export async function createGroup({
   name,
   email,
@@ -406,11 +480,17 @@ export async function createGroup({
   return res.data.id;
 }
 
+/**
+ * Delete a group.
+ */
 export async function deleteGroup(groupKey: string) {
   const { directory } = await makeGoogleClients();
   await directory.groups.delete({ groupKey });
 }
 
+/**
+ * Add a user to a group.
+ */
 export async function addUserToGroup({
   groupKey,
   email,
@@ -430,6 +510,9 @@ export async function addUserToGroup({
   });
 }
 
+/**
+ * Remove a user from a group.
+ */
 export async function removeUserFromGroup({
   groupKey,
   email,
@@ -441,6 +524,9 @@ export async function removeUserFromGroup({
   await directory.members.delete({ groupKey, memberKey: email });
 }
 
+/**
+ * Resolve policies for a single target resource.
+ */
 export async function resolvePolicies({
   policySchemaFilter,
   targetResource,
@@ -462,11 +548,17 @@ export async function resolvePolicies({
   return res.data.resolvedPolicies ?? [];
 }
 
+/**
+ * Build update mask from value object keys.
+ */
 function buildUpdateMask(value: Record<string, unknown>) {
   const keys = Object.keys(value);
   return keys.length > 0 ? keys.join(",") : "";
 }
 
+/**
+ * Apply a policy to an organizational unit.
+ */
 export async function applyOrgUnitPolicy({
   policySchemaId,
   targetResource,
@@ -495,6 +587,9 @@ export async function applyOrgUnitPolicy({
   });
 }
 
+/**
+ * Inherit a policy from parent for an organizational unit.
+ */
 export async function inheritOrgUnitPolicy({
   policySchemaId,
   targetResource,
@@ -516,6 +611,9 @@ export async function inheritOrgUnitPolicy({
   });
 }
 
+/**
+ * Apply a policy to a group.
+ */
 export async function applyGroupPolicy({
   policySchemaId,
   targetResource,
@@ -544,6 +642,9 @@ export async function applyGroupPolicy({
   });
 }
 
+/**
+ * Delete a policy from a group.
+ */
 export async function deleteGroupPolicy({
   policySchemaId,
   targetResource,
@@ -565,6 +666,9 @@ export async function deleteGroupPolicy({
   });
 }
 
+/**
+ * Create a Chrome browser enrollment token.
+ */
 export async function createEnrollmentToken(targetResource: string) {
   const { management, customerId } = await makeGoogleClients();
   const createEnrollment = getEnrollmentCreate(management);
@@ -596,6 +700,9 @@ type EnrollmentCreateFn = (args: {
   data: { name?: string | null; expirationTime?: string | null };
 }>;
 
+/**
+ * Safely get a nested property from an object.
+ */
 function getNestedProperty(obj: unknown, key: string): unknown {
   if (!obj || typeof obj !== "object") {
     return null;
@@ -603,6 +710,9 @@ function getNestedProperty(obj: unknown, key: string): unknown {
   return Reflect.get(obj, key);
 }
 
+/**
+ * Traverse an object path to get a deeply nested value.
+ */
 function traversePath(root: unknown, path: string[]): unknown {
   let current = root;
   for (const key of path) {

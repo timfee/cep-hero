@@ -1,3 +1,7 @@
+/**
+ * Model selector components for choosing AI models from various providers.
+ * Built on command dialog pattern with provider logos and keyboard shortcuts.
+ */
 import type { ComponentProps, ReactNode } from "react";
 
 import {
@@ -21,12 +25,18 @@ import { cn } from "@/lib/utils";
 
 export type ModelSelectorProps = ComponentProps<typeof Dialog>;
 
+/**
+ * Root dialog wrapper for the model selector.
+ */
 export const ModelSelector = (props: ModelSelectorProps) => (
   <Dialog {...props} />
 );
 
 export type ModelSelectorTriggerProps = ComponentProps<typeof DialogTrigger>;
 
+/**
+ * Trigger element that opens the model selector dialog.
+ */
 export const ModelSelectorTrigger = (props: ModelSelectorTriggerProps) => (
   <DialogTrigger {...props} />
 );
@@ -35,6 +45,9 @@ export type ModelSelectorContentProps = ComponentProps<typeof DialogContent> & {
   title?: ReactNode;
 };
 
+/**
+ * Dialog content with embedded command interface for model selection.
+ */
 export const ModelSelectorContent = ({
   className,
   children,
@@ -57,12 +70,18 @@ export const ModelSelectorContent = ({
 
 export type ModelSelectorDialogProps = ComponentProps<typeof CommandDialog>;
 
+/**
+ * Alternative dialog using the command dialog pattern.
+ */
 export const ModelSelectorDialog = (props: ModelSelectorDialogProps) => (
   <CommandDialog {...props} />
 );
 
 export type ModelSelectorInputProps = ComponentProps<typeof CommandInput>;
 
+/**
+ * Search input for filtering available models.
+ */
 export const ModelSelectorInput = ({
   className,
   ...props
@@ -72,30 +91,45 @@ export const ModelSelectorInput = ({
 
 export type ModelSelectorListProps = ComponentProps<typeof CommandList>;
 
+/**
+ * Scrollable list container for model options.
+ */
 export const ModelSelectorList = (props: ModelSelectorListProps) => (
   <CommandList {...props} />
 );
 
 export type ModelSelectorEmptyProps = ComponentProps<typeof CommandEmpty>;
 
+/**
+ * Empty state when no models match the search query.
+ */
 export const ModelSelectorEmpty = (props: ModelSelectorEmptyProps) => (
   <CommandEmpty {...props} />
 );
 
 export type ModelSelectorGroupProps = ComponentProps<typeof CommandGroup>;
 
+/**
+ * Group container for organizing models by provider or category.
+ */
 export const ModelSelectorGroup = (props: ModelSelectorGroupProps) => (
   <CommandGroup {...props} />
 );
 
 export type ModelSelectorItemProps = ComponentProps<typeof CommandItem>;
 
+/**
+ * Selectable model option item.
+ */
 export const ModelSelectorItem = (props: ModelSelectorItemProps) => (
   <CommandItem {...props} />
 );
 
 export type ModelSelectorShortcutProps = ComponentProps<typeof CommandShortcut>;
 
+/**
+ * Keyboard shortcut hint for model items.
+ */
 export const ModelSelectorShortcut = (props: ModelSelectorShortcutProps) => (
   <CommandShortcut {...props} />
 );
@@ -104,6 +138,9 @@ export type ModelSelectorSeparatorProps = ComponentProps<
   typeof CommandSeparator
 >;
 
+/**
+ * Visual separator between model groups.
+ */
 export const ModelSelectorSeparator = (props: ModelSelectorSeparatorProps) => (
   <CommandSeparator {...props} />
 );
@@ -172,6 +209,9 @@ export type ModelSelectorLogoProps = Omit<
     | (string & {});
 };
 
+/**
+ * Provider logo image fetched from models.dev CDN.
+ */
 export const ModelSelectorLogo = ({
   provider,
   className,
@@ -189,6 +229,9 @@ export const ModelSelectorLogo = ({
 
 export type ModelSelectorLogoGroupProps = ComponentProps<"div">;
 
+/**
+ * Overlapping logo group for displaying multiple provider logos.
+ */
 export const ModelSelectorLogoGroup = ({
   className,
   ...props
@@ -204,6 +247,9 @@ export const ModelSelectorLogoGroup = ({
 
 export type ModelSelectorNameProps = ComponentProps<"span">;
 
+/**
+ * Model name display with text truncation.
+ */
 export const ModelSelectorName = ({
   className,
   ...props

@@ -1,3 +1,8 @@
+/**
+ * Chat API route handling streaming responses from the AI assistant.
+ * Supports both production mode with real Google APIs and eval mode with fixture injection.
+ */
+
 import { authenticateRequest } from "@/lib/chat/auth-service";
 import { createChatStream } from "@/lib/chat/chat-service";
 import {
@@ -13,10 +18,16 @@ import {
 
 export const maxDuration = 30;
 
+/**
+ * Type guard for checking if a value is a record object.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * Extract fixture data from the request body for eval mode.
+ */
 function extractFixtureData(body: unknown) {
   if (!isRecord(body)) {
     return null;
@@ -28,6 +39,9 @@ function extractFixtureData(body: unknown) {
   return fixtures;
 }
 
+/**
+ * Convert auth status to an error response if authentication failed.
+ */
 function handleAuthError(status: string, error?: string): Response | null {
   if (status === "unauthorized") {
     return Response.json({ error }, { status: 401 });
@@ -44,6 +58,9 @@ function handleAuthError(status: string, error?: string): Response | null {
   return null;
 }
 
+/**
+ * Parse JSON from the request body with error handling.
+ */
 async function parseRequestBody(req: Request): Promise<unknown | Response> {
   try {
     return await req.json();
@@ -52,6 +69,9 @@ async function parseRequestBody(req: Request): Promise<unknown | Response> {
   }
 }
 
+/**
+ * Extract chat messages from the request body.
+ */
 function extractMessages(body: unknown): ChatMessage[] {
   const messagesFromBody = getMessagesFromBody(body);
   if (messagesFromBody.length > 0) {
@@ -61,6 +81,9 @@ function extractMessages(body: unknown): ChatMessage[] {
   return inlinePrompt ? [{ role: "user", content: inlinePrompt }] : [];
 }
 
+/**
+ * Create an error response for empty message requests.
+ */
 function handleEmptyMessages(body: unknown): Response {
   console.warn("POST /api/chat: Empty messages received.", {
     body: isRecord(body) ? body : safeJsonPreview(body),
@@ -70,6 +93,9 @@ function handleEmptyMessages(body: unknown): Response {
   });
 }
 
+/**
+ * Create a tool executor based on request mode (eval vs production).
+ */
 function createExecutor(req: Request, body: unknown) {
   const isEvalTestMode = req.headers.get("x-eval-test-mode") === "1";
   const fixtureData = extractFixtureData(body);
@@ -84,6 +110,9 @@ interface AuthenticatedRequest {
   messages: ChatMessage[];
 }
 
+/**
+ * Authenticate the chat request and return access token or error response.
+ */
 async function authenticateChat(req: Request): Promise<Response | string> {
   const authResult = await authenticateRequest(req);
   const authError = handleAuthError(
@@ -97,6 +126,9 @@ async function authenticateChat(req: Request): Promise<Response | string> {
   return accessToken;
 }
 
+/**
+ * Parse request body and extract messages with validation.
+ */
 function parseBodyAndMessages(
   body: unknown
 ): Response | { body: unknown; messages: ChatMessage[] } {
@@ -107,6 +139,9 @@ function parseBodyAndMessages(
   return { body, messages };
 }
 
+/**
+ * Validate authentication and parse the request body.
+ */
 async function validateAndParseRequest(
   req: Request
 ): Promise<Response | AuthenticatedRequest> {

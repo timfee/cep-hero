@@ -1,3 +1,7 @@
+/**
+ * Command palette components for searchable command interfaces.
+ */
+
 "use client";
 
 import { Command as CommandPrimitive } from "cmdk";
@@ -13,6 +17,9 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 
+/**
+ * Root container for the command palette with keyboard navigation support.
+ */
 function Command({
   className,
   ...props
@@ -29,6 +36,9 @@ function Command({
   );
 }
 
+/**
+ * Command palette wrapped in a modal dialog for quick access.
+ */
 function CommandDialog({
   title = "Command Palette",
   description = "Search for a command to run...",
@@ -60,6 +70,9 @@ function CommandDialog({
   );
 }
 
+/**
+ * Search input field with icon for filtering command items.
+ */
 function CommandInput({
   className,
   ...props
@@ -82,6 +95,9 @@ function CommandInput({
   );
 }
 
+/**
+ * Scrollable container for command items and groups.
+ */
 function CommandList({
   className,
   ...props
@@ -98,6 +114,9 @@ function CommandList({
   );
 }
 
+/**
+ * Message displayed when no command items match the search query.
+ */
 function CommandEmpty({
   ...props
 }: React.ComponentProps<typeof CommandPrimitive.Empty>) {
@@ -110,6 +129,9 @@ function CommandEmpty({
   );
 }
 
+/**
+ * Container for organizing related command items with an optional heading.
+ */
 function CommandGroup({
   className,
   ...props
@@ -126,6 +148,9 @@ function CommandGroup({
   );
 }
 
+/**
+ * Visual divider between command groups.
+ */
 function CommandSeparator({
   className,
   ...props
@@ -139,6 +164,9 @@ function CommandSeparator({
   );
 }
 
+/**
+ * Individual selectable command option within the list.
+ */
 function CommandItem({
   className,
   ...props
@@ -155,6 +183,9 @@ function CommandItem({
   );
 }
 
+/**
+ * Keyboard shortcut hint displayed alongside a command item.
+ */
 function CommandShortcut({
   className,
   ...props

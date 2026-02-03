@@ -1,3 +1,7 @@
+/**
+ * Google service account authentication utilities for domain-wide delegation.
+ */
+
 import { JWT } from "google-auth-library";
 
 interface ServiceAccountCredentials {
@@ -5,13 +9,19 @@ interface ServiceAccountCredentials {
   private_key: string;
 }
 
-function loadServiceAccount(): ServiceAccountCredentials {
+/**
+ * Load and validate service account credentials from environment.
+ */
+function loadServiceAccount() {
   const json = getServiceAccountJson();
   const parsed = parseServiceAccountJson(json);
   return normalizeCredentials(parsed);
 }
 
-function getServiceAccountJson(): string {
+/**
+ * Retrieve raw service account JSON from environment variable.
+ */
+function getServiceAccountJson() {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
   if (inline === undefined || inline === "") {
     throw new Error(
@@ -21,7 +31,10 @@ function getServiceAccountJson(): string {
   return inline.replaceAll(/^['"]|['"]$/g, "");
 }
 
-function parseServiceAccountJson(json: string): Record<string, unknown> {
+/**
+ * Parse and validate JSON structure as an object.
+ */
+function parseServiceAccountJson(json: string) {
   const parsed: unknown = JSON.parse(json);
   if (!isPlainObject(parsed)) {
     throw new Error("Service account JSON must be an object");
@@ -29,6 +42,9 @@ function parseServiceAccountJson(json: string): Record<string, unknown> {
   return parsed;
 }
 
+/**
+ * Normalize credentials and fix escaped newlines in private key.
+ */
 function normalizeCredentials(
   parsed: Record<string, unknown>
 ): ServiceAccountCredentials {
@@ -43,6 +59,9 @@ function normalizeCredentials(
   return { client_email: parsed.client_email, private_key: key };
 }
 
+/**
+ * Type guard for valid service account credential structure.
+ */
 function hasValidCredentials(
   parsed: Record<string, unknown>
 ): parsed is { client_email: string; private_key: string } {
@@ -54,6 +73,9 @@ function hasValidCredentials(
   );
 }
 
+/**
+ * Obtain an access token for the service account with domain-wide delegation.
+ */
 export async function getServiceAccountAccessToken(
   scopes: string[],
   subject?: string
@@ -72,11 +94,17 @@ export async function getServiceAccountAccessToken(
   return result.access_token;
 }
 
+/**
+ * Get the subject email for impersonation, falling back to the provided default.
+ */
 export function getServiceAccountSubject(defaultEmail: string) {
   const envEmail = process.env.GOOGLE_TOKEN_EMAIL;
   return envEmail === undefined || envEmail === "" ? defaultEmail : envEmail;
 }
 
+/**
+ * Type guard for plain objects.
+ */
 function isPlainObject(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }

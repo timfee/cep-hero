@@ -1,3 +1,7 @@
+/**
+ * Checkbox component for boolean selection inputs.
+ */
+
 "use client";
 
 import { CheckIcon } from "lucide-react";
@@ -6,6 +10,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A checkbox input that allows users to select or deselect an option.
+ * Displays a check icon when selected.
+ */
 function Checkbox({
   className,
   ...props

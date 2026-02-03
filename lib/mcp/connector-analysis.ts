@@ -1,5 +1,12 @@
+/**
+ * Analyzer for Chrome connector policy targets to detect mis-scoping.
+ */
+
 import { type chromepolicy_v1 } from "googleapis";
 
+/**
+ * Analysis result for connector policy targets.
+ */
 export interface ConnectorAnalysis {
   total: number;
   byTarget: {
@@ -20,7 +27,7 @@ type ResolvedPolicy =
   };
 
 /**
- * Classify a policy target resource into a known scope type.
+ * Classifies a policy target resource into a known scope type.
  */
 function classifyTarget(
   targetResource?: string
@@ -45,7 +52,7 @@ function classifyTarget(
 }
 
 /**
- * Analyze connector policy targets to detect mis-scoping.
+ * Analyzes connector policy targets to detect mis-scoping.
  */
 export function analyzeConnectorPolicies(
   policies: ResolvedPolicy[]
@@ -82,9 +89,9 @@ export function analyzeConnectorPolicies(
 }
 
 /**
- * Safely read the policy target resource from a resolved policy.
+ * Safely extracts the policy target resource from a resolved policy.
  */
-function getTargetResource(policy: ResolvedPolicy): string | undefined {
+function getTargetResource(policy: ResolvedPolicy) {
   const targetResource = policy.policyTargetKey?.targetResource;
   return typeof targetResource === "string" ? targetResource : undefined;
 }

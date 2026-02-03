@@ -1,3 +1,7 @@
+/**
+ * Test results display component for showing test suite outcomes.
+ * Renders test passes, failures, and skips with visual indicators and expandable details.
+ */
 "use client";
 
 import type { ComponentProps, HTMLAttributes } from "react";
@@ -39,6 +43,9 @@ export type TestResultsProps = HTMLAttributes<HTMLDivElement> & {
   summary?: TestResultsSummary;
 };
 
+/**
+ * Root container that provides test summary context and renders results.
+ */
 export const TestResults = ({
   summary,
   className,
@@ -63,6 +70,9 @@ export const TestResults = ({
 
 export type TestResultsHeaderProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Header section with flex layout for summary and duration.
+ */
 export const TestResultsHeader = ({
   className,
   children,
@@ -81,6 +91,9 @@ export const TestResultsHeader = ({
 
 export type TestResultsSummaryProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Summary badges showing passed, failed, and skipped test counts.
+ */
 export const TestResultsSummary = ({
   className,
   children,
@@ -129,6 +142,9 @@ export const TestResultsSummary = ({
 
 export type TestResultsDurationProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Displays total test run duration formatted as milliseconds or seconds.
+ */
 export const TestResultsDuration = ({
   className,
   children,
@@ -156,6 +172,9 @@ export const TestResultsDuration = ({
 
 export type TestResultsProgressProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Progress bar visualization showing pass/fail ratio.
+ */
 export const TestResultsProgress = ({
   className,
   children,
@@ -198,6 +217,9 @@ export const TestResultsProgress = ({
 
 export type TestResultsContentProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Content area for displaying test suites and individual tests.
+ */
 export const TestResultsContent = ({
   className,
   children,
@@ -223,6 +245,9 @@ export type TestSuiteProps = ComponentProps<typeof Collapsible> & {
   status: TestStatus;
 };
 
+/**
+ * Collapsible test suite container that provides name and status context.
+ */
 export const TestSuite = ({
   name,
   status,
@@ -239,6 +264,9 @@ export const TestSuite = ({
 
 export type TestSuiteNameProps = ComponentProps<typeof CollapsibleTrigger>;
 
+/**
+ * Clickable suite name header with status icon and expand/collapse behavior.
+ */
 export const TestSuiteName = ({
   className,
   children,
@@ -267,6 +295,9 @@ export type TestSuiteStatsProps = HTMLAttributes<HTMLDivElement> & {
   skipped?: number;
 };
 
+/**
+ * Inline statistics display for test suite pass/fail/skip counts.
+ */
 export const TestSuiteStats = ({
   passed = 0,
   failed = 0,
@@ -303,6 +334,9 @@ export const TestSuiteStats = ({
 
 export type TestSuiteContentProps = ComponentProps<typeof CollapsibleContent>;
 
+/**
+ * Expandable content area containing individual tests within a suite.
+ */
 export const TestSuiteContent = ({
   className,
   children,
@@ -330,6 +364,9 @@ export type TestProps = HTMLAttributes<HTMLDivElement> & {
   duration?: number;
 };
 
+/**
+ * Individual test result display with status icon, name, and optional duration.
+ */
 export const Test = ({
   name,
   status,
@@ -368,6 +405,9 @@ const statusIcons: Record<TestStatus, React.ReactNode> = {
   running: <CircleDotIcon className="size-4 animate-pulse" />,
 };
 
+/**
+ * Icon indicator for test status with appropriate color styling.
+ */
 const TestStatusIcon = ({ status }: { status: TestStatus }) => (
   <span className={cn("shrink-0", statusStyles[status])}>
     {statusIcons[status]}
@@ -376,6 +416,9 @@ const TestStatusIcon = ({ status }: { status: TestStatus }) => (
 
 export type TestStatusProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Test status indicator that displays the appropriate icon from context.
+ */
 export const TestStatus = ({
   className,
   children,
@@ -395,6 +438,9 @@ export const TestStatus = ({
 
 export type TestNameProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Test name display that reads from the test context.
+ */
 export const TestName = ({ className, children, ...props }: TestNameProps) => {
   const { name } = useContext(TestContext);
 
@@ -407,6 +453,9 @@ export const TestName = ({ className, children, ...props }: TestNameProps) => {
 
 export type TestDurationProps = HTMLAttributes<HTMLSpanElement>;
 
+/**
+ * Duration display for individual test execution time in milliseconds.
+ */
 export const TestDuration = ({
   className,
   children,
@@ -430,6 +479,9 @@ export const TestDuration = ({
 
 export type TestErrorProps = HTMLAttributes<HTMLDivElement>;
 
+/**
+ * Error container with red background for displaying test failure details.
+ */
 export const TestError = ({
   className,
   children,
@@ -448,6 +500,9 @@ export const TestError = ({
 
 export type TestErrorMessageProps = HTMLAttributes<HTMLParagraphElement>;
 
+/**
+ * Error message text display with red styling.
+ */
 export const TestErrorMessage = ({
   className,
   children,
@@ -466,6 +521,9 @@ export const TestErrorMessage = ({
 
 export type TestErrorStackProps = HTMLAttributes<HTMLPreElement>;
 
+/**
+ * Preformatted stack trace display for test error debugging.
+ */
 export const TestErrorStack = ({
   className,
   children,

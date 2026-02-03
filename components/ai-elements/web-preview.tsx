@@ -1,3 +1,7 @@
+/**
+ * Web preview component for displaying embedded web content with navigation controls.
+ * Provides an iframe-based preview with URL bar, navigation buttons, and console output.
+ */
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";
@@ -29,6 +33,9 @@ export interface WebPreviewContextValue {
 
 const WebPreviewContext = createContext<WebPreviewContextValue | null>(null);
 
+/**
+ * Hook to access the web preview context for URL state and console visibility.
+ */
 const useWebPreview = () => {
   const context = useContext(WebPreviewContext);
   if (!context) {
@@ -42,6 +49,9 @@ export type WebPreviewProps = ComponentProps<"div"> & {
   onUrlChange?: (url: string) => void;
 };
 
+/**
+ * Root container for the web preview that provides URL state context.
+ */
 export const WebPreview = ({
   className,
   children,
@@ -81,6 +91,9 @@ export const WebPreview = ({
 
 export type WebPreviewNavigationProps = ComponentProps<"div">;
 
+/**
+ * Navigation bar container for browser-like controls.
+ */
 export const WebPreviewNavigation = ({
   className,
   children,
@@ -98,6 +111,9 @@ export type WebPreviewNavigationButtonProps = ComponentProps<typeof Button> & {
   tooltip?: string;
 };
 
+/**
+ * Navigation button with tooltip support for browser controls like back, forward, and refresh.
+ */
 export const WebPreviewNavigationButton = ({
   onClick,
   disabled,
@@ -128,6 +144,9 @@ export const WebPreviewNavigationButton = ({
 
 export type WebPreviewUrlProps = ComponentProps<typeof Input>;
 
+/**
+ * URL input field that syncs with the preview context and navigates on Enter.
+ */
 export const WebPreviewUrl = ({
   value,
   onChange,
@@ -171,6 +190,9 @@ export type WebPreviewBodyProps = ComponentProps<"iframe"> & {
   loading?: ReactNode;
 };
 
+/**
+ * Iframe container that renders the web page at the current URL.
+ */
 export const WebPreviewBody = ({
   className,
   loading,
@@ -201,6 +223,9 @@ export type WebPreviewConsoleProps = ComponentProps<"div"> & {
   }[];
 };
 
+/**
+ * Collapsible console panel that displays log messages with timestamps and severity levels.
+ */
 export const WebPreviewConsole = ({
   className,
   logs = [],
