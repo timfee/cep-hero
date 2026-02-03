@@ -1,3 +1,7 @@
+/**
+ * Tool invocation display component for AI chat interfaces.
+ * Shows tool calls with their status, input parameters, and output results in a collapsible format.
+ */
 "use client";
 
 import type { DynamicToolUIPart, ToolUIPart } from "ai";
@@ -24,6 +28,9 @@ import { CodeBlock } from "./code-block";
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
+/**
+ * Root container for displaying a tool invocation with collapsible content.
+ */
 export const Tool = ({ className, ...props }: ToolProps) => (
   <Collapsible
     className={cn("group not-prose mb-4 w-full rounded-md border", className)}
@@ -31,6 +38,9 @@ export const Tool = ({ className, ...props }: ToolProps) => (
   />
 );
 
+/**
+ * Union type representing either a static or dynamic tool UI part.
+ */
 export type ToolPart = ToolUIPart | DynamicToolUIPart;
 
 export type ToolHeaderProps = {
@@ -45,6 +55,9 @@ export type ToolHeaderProps = {
     }
 );
 
+/**
+ * Returns an animated status badge with icon based on the tool execution state.
+ */
 export const getStatusBadge = (status: ToolPart["state"]) => {
   const labels: Record<ToolPart["state"], string> = {
     "input-streaming": "Pending",
@@ -120,6 +133,9 @@ export const getStatusBadge = (status: ToolPart["state"]) => {
   );
 };
 
+/**
+ * Clickable header that displays tool name, status badge, and toggle chevron.
+ */
 export const ToolHeader = ({
   className,
   title,
@@ -155,6 +171,9 @@ export const ToolHeader = ({
 
 export type ToolContentProps = ComponentProps<typeof CollapsibleContent>;
 
+/**
+ * Animated collapsible content area for tool details.
+ */
 export const ToolContent = ({
   className,
   children,
@@ -175,6 +194,9 @@ export type ToolInputProps = ComponentProps<"div"> & {
   input: ToolPart["input"];
 };
 
+/**
+ * Displays tool input parameters as formatted JSON in a code block.
+ */
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
   <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
     <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
@@ -191,6 +213,9 @@ export type ToolOutputProps = ComponentProps<"div"> & {
   errorText: ToolPart["errorText"];
 };
 
+/**
+ * Displays tool execution results or error messages with appropriate styling.
+ */
 export const ToolOutput = ({
   className,
   output,

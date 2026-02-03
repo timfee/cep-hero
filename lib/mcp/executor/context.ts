@@ -1,3 +1,7 @@
+/**
+ * Organizational unit context fetching for policy resolution and display.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type admin_directory_v1 } from "googleapis";
 
@@ -24,7 +28,7 @@ export interface OrgUnitContext {
 export async function fetchOrgUnitContext(
   auth: OAuth2Client,
   customerId: string
-): Promise<OrgUnitContext> {
+) {
   const directory = googleApis.admin({
     version: "directory_v1",
     auth,
@@ -50,10 +54,13 @@ export async function fetchOrgUnitContext(
   };
 }
 
+/**
+ * Lists all org units for the customer.
+ */
 async function fetchOrgUnitList(
   directory: DirectoryService,
   customerId: string
-): Promise<OrgUnit[]> {
+) {
   try {
     if (directory.orgunits?.list === undefined) {
       return [];
@@ -68,14 +75,13 @@ async function fetchOrgUnitList(
   }
 }
 
+/**
+ * Fetches the root org unit details.
+ */
 async function fetchRootOrgUnit(
   directory: DirectoryService,
   customerId: string
-): Promise<{
-  rootOrgUnitId: string | null;
-  rootOrgUnitPath: string | null;
-  error?: string;
-}> {
+) {
   try {
     if (directory.orgunits?.get === undefined) {
       return { rootOrgUnitId: null, rootOrgUnitPath: null };
@@ -97,11 +103,14 @@ async function fetchRootOrgUnit(
   }
 }
 
+/**
+ * Registers the root org unit in the lookup map.
+ */
 function addRootToNameMap(
   nameMap: Map<string, string>,
   rootOrgUnitId: string,
   rootOrgUnitPath: string
-): void {
+) {
   const normalizedRoot = normalizeResource(rootOrgUnitId);
   nameMap.set(normalizedRoot, rootOrgUnitPath);
   nameMap.set(`orgunits/${normalizedRoot}`, rootOrgUnitPath);

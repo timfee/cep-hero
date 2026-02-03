@@ -1,3 +1,7 @@
+/**
+ * Suggestion components for displaying clickable prompt suggestions in a horizontal scroll area.
+ * Used to provide quick-action buttons for common user queries.
+ */
 "use client";
 
 import type { ComponentProps } from "react";

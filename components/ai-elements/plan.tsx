@@ -1,3 +1,7 @@
+/**
+ * Plan component for displaying AI-generated action plans in a collapsible card format.
+ * Shows plan title, description, and expandable content with streaming support.
+ */
 "use client";
 
 import type { ComponentProps } from "react";

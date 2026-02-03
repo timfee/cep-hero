@@ -1,3 +1,7 @@
+/**
+ * Chrome Policy API operations for drafting and applying policy changes.
+ */
+
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
@@ -33,12 +37,12 @@ export interface DraftPolicyChangeResult {
 }
 
 /**
- * Draft a policy change for user review.
+ * Creates a policy change proposal for user review before application.
  */
 export function draftPolicyChange(
   orgUnitContext: OrgUnitContext,
   args: DraftPolicyChangeArgs
-): DraftPolicyChangeResult {
+) {
   const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } = orgUnitContext;
 
@@ -90,13 +94,13 @@ export type ApplyPolicyChangeResult =
   | ApplyPolicyChangeError;
 
 /**
- * Apply a policy change after user confirmation.
+ * Applies a confirmed policy change via the Chrome Policy API.
  */
 export async function applyPolicyChange(
   auth: OAuth2Client,
   customerId: string,
   args: ApplyPolicyChangeArgs
-): Promise<ApplyPolicyChangeResult> {
+) {
   const service = googleApis.chromepolicy({
     version: "v1",
     auth,

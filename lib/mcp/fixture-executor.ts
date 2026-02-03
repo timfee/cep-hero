@@ -1,3 +1,7 @@
+/**
+ * Fixture-based tool executor for deterministic evaluation testing.
+ */
+
 import { type z } from "zod";
 
 import { resolveEnrollmentToken } from "@/lib/mcp/fixture-enrollment";
@@ -17,21 +21,20 @@ import {
 } from "./registry";
 import {
   type ApplyPolicyChangeResult,
-  type ChromeEventsResult,
   type ConnectorConfigResult,
   type CreateDLPRuleResult,
   type DebugAuthResult,
-  type DLPRulesResult,
   type DraftPolicyChangeResult,
-  type EnrollBrowserResult,
   type FixtureData,
   type IToolExecutor,
-  type OrgUnitsResult,
 } from "./types";
 
 export { loadFixtureData } from "./fixture-loader";
 
-function resolveValue<T>(value: T): Promise<T> {
+/**
+ * Wraps a value in a resolved promise for async interface compliance.
+ */
+function resolveValue<T>(value: T) {
   return Promise.resolve(value);
 }
 
@@ -46,9 +49,10 @@ export class FixtureToolExecutor implements IToolExecutor {
     this.fixtures = fixtures;
   }
 
-  async getChromeEvents(
-    args: z.infer<typeof GetChromeEventsSchema>
-  ): Promise<ChromeEventsResult> {
+  /**
+   * Returns Chrome events from fixture data.
+   */
+  async getChromeEvents(args: z.infer<typeof GetChromeEventsSchema>) {
     if (typeof this.fixtures.errors?.chromeEvents === "string") {
       const errorResult = await resolveValue({
         error: this.fixtures.errors.chromeEvents,
@@ -67,9 +71,10 @@ export class FixtureToolExecutor implements IToolExecutor {
     return result;
   }
 
-  async listDLPRules(
-    _args?: z.infer<typeof ListDLPRulesSchema>
-  ): Promise<DLPRulesResult> {
+  /**
+   * Returns DLP rules from fixture data.
+   */
+  async listDLPRules(_args?: z.infer<typeof ListDLPRulesSchema>) {
     if (typeof this.fixtures.errors?.dlpRules === "string") {
       const errorResult = await resolveValue({
         error: this.fixtures.errors.dlpRules,
@@ -84,7 +89,10 @@ export class FixtureToolExecutor implements IToolExecutor {
     return result;
   }
 
-  async listOrgUnits(): Promise<OrgUnitsResult> {
+  /**
+   * Returns org units from fixture data.
+   */
+  async listOrgUnits() {
     if (typeof this.fixtures.errors?.orgUnits === "string") {
       const errorResult = await resolveValue({
         error: this.fixtures.errors.orgUnits,
@@ -99,9 +107,10 @@ export class FixtureToolExecutor implements IToolExecutor {
     return result;
   }
 
-  async enrollBrowser(
-    _args: z.infer<typeof EnrollBrowserSchema>
-  ): Promise<EnrollBrowserResult> {
+  /**
+   * Returns enrollment token from fixture data.
+   */
+  async enrollBrowser(_args: z.infer<typeof EnrollBrowserSchema>) {
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
       const errorResult = await resolveValue({
         error: this.fixtures.errors.enrollBrowser,
@@ -116,7 +125,10 @@ export class FixtureToolExecutor implements IToolExecutor {
     return result;
   }
 
-  async getChromeConnectorConfiguration(): Promise<ConnectorConfigResult> {
+  /**
+   * Returns connector configuration from fixture data.
+   */
+  async getChromeConnectorConfiguration() {
     if (typeof this.fixtures.errors?.connectorConfig === "string") {
       const errorResult = await resolveValue({
         error: this.fixtures.errors.connectorConfig,
@@ -131,45 +143,55 @@ export class FixtureToolExecutor implements IToolExecutor {
     return result;
   }
 
-  async debugAuth(): Promise<DebugAuthResult> {
+  /**
+   * Returns mock auth debug info.
+   */
+  async debugAuth() {
     const authResult = buildDebugAuthResponse(this.fixtures);
     const result = await resolveValue(authResult);
     return result;
   }
 
-  async draftPolicyChange(
-    args: z.infer<typeof DraftPolicyChangeSchema>
-  ): Promise<DraftPolicyChangeResult> {
+  /**
+   * Returns a draft policy change proposal.
+   */
+  async draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
     const draftResult = buildDraftPolicyResponse(args, this.fixtures);
     const result = await resolveValue(draftResult);
     return result;
   }
 
-  async applyPolicyChange(
-    args: z.infer<typeof ApplyPolicyChangeSchema>
-  ): Promise<ApplyPolicyChangeResult> {
+  /**
+   * Returns a successful policy application result.
+   */
+  async applyPolicyChange(args: z.infer<typeof ApplyPolicyChangeSchema>) {
     const applyResult = buildApplyPolicyResponse(args, this.fixtures);
     const result = await resolveValue(applyResult);
     return result;
   }
 
-  async createDLPRule(
-    args: z.infer<typeof CreateDLPRuleSchema>
-  ): Promise<CreateDLPRuleResult> {
+  /**
+   * Returns a successful DLP rule creation result.
+   */
+  async createDLPRule(args: z.infer<typeof CreateDLPRuleSchema>) {
     const dlpResult = buildCreateDlpResponse(args, this.fixtures);
     const result = await resolveValue(dlpResult);
     return result;
   }
 
-  async getFleetOverview(
-    _args: z.infer<typeof GetFleetOverviewSchema>
-  ): Promise<FleetOverviewFixtureResponse> {
+  /**
+   * Returns a fleet overview summary from fixture data.
+   */
+  async getFleetOverview(_args: z.infer<typeof GetFleetOverviewSchema>) {
     const overviewResult = buildFleetOverviewResponse(this.fixtures);
     const result = await resolveValue(overviewResult);
     return result;
   }
 }
 
+/**
+ * Shape of the fixture-based fleet overview response.
+ */
 interface FleetOverviewFixtureResponse {
   headline: string;
   summary: string;
@@ -185,6 +207,9 @@ interface FleetOverviewFixtureResponse {
   sources: string[];
 }
 
+/**
+ * Builds mock auth debug response.
+ */
 function buildDebugAuthResponse(_fixtures: FixtureData): DebugAuthResult {
   return {
     scopes: [
@@ -199,6 +224,9 @@ function buildDebugAuthResponse(_fixtures: FixtureData): DebugAuthResult {
   };
 }
 
+/**
+ * Builds a successful policy application response.
+ */
 function buildApplyPolicyResponse(
   args: z.infer<typeof ApplyPolicyChangeSchema>,
   _fixtures: FixtureData
@@ -212,6 +240,9 @@ function buildApplyPolicyResponse(
   };
 }
 
+/**
+ * Maps fixture DLP rules to the expected output format.
+ */
 function mapDlpRules(fixtures: FixtureData) {
   const fixtureRules = fixtures.dlpRules ?? [];
   const orgUnitNameMap = buildOrgUnitNameMap(fixtures.orgUnits ?? []);
@@ -238,13 +269,17 @@ function mapDlpRules(fixtures: FixtureData) {
   });
 }
 
-function findRootOrgUnitId(
-  orgUnits: FixtureData["orgUnits"]
-): string | undefined {
+/**
+ * Finds the root org unit ID from a list of org units.
+ */
+function findRootOrgUnitId(orgUnits: FixtureData["orgUnits"]) {
   const id = orgUnits?.find((unit) => unit.orgUnitPath === "/")?.orgUnitId;
   return id ?? undefined;
 }
 
+/**
+ * Policy schemas relevant to Chrome connector configuration.
+ */
 const CONNECTOR_POLICY_SCHEMAS = [
   "chrome.users.SafeBrowsingProtectionLevel",
   "chrome.users.SafeBrowsingExtendedReporting",
@@ -258,6 +293,9 @@ const CONNECTOR_POLICY_SCHEMAS = [
   "chrome.users.DataLeakPreventionReportingEnabled",
 ];
 
+/**
+ * Builds connector configuration from fixture data.
+ */
 function buildConnectorConfig(fixtures: FixtureData): ConnectorConfigResult {
   const firstOrgUnit = fixtures.orgUnits?.[0];
   const targetResource = firstOrgUnit?.orgUnitId ?? "orgunits/root";
@@ -277,6 +315,9 @@ function buildConnectorConfig(fixtures: FixtureData): ConnectorConfigResult {
   };
 }
 
+/**
+ * Builds a draft policy change response.
+ */
 function buildDraftPolicyResponse(
   args: z.infer<typeof DraftPolicyChangeSchema>,
   fixtures: FixtureData
@@ -311,6 +352,9 @@ function buildDraftPolicyResponse(
   };
 }
 
+/**
+ * Builds a DLP rule creation response.
+ */
 function buildCreateDlpResponse(
   args: z.infer<typeof CreateDLPRuleSchema>,
   fixtures: FixtureData
@@ -337,6 +381,9 @@ function buildCreateDlpResponse(
   };
 }
 
+/**
+ * Builds a fleet overview response from fixture data.
+ */
 function buildFleetOverviewResponse(
   fixtures: FixtureData
 ): FleetOverviewFixtureResponse {
@@ -383,6 +430,9 @@ function buildFleetOverviewResponse(
   };
 }
 
+/**
+ * Builds a single posture card for the fleet overview.
+ */
 function buildPostureCard(
   label: string,
   value: number,

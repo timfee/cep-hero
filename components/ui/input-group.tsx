@@ -1,3 +1,7 @@
+/**
+ * Input group components for combining inputs with addons, buttons, and text.
+ */
+
 "use client";
 
 import type { VariantProps } from "class-variance-authority";
@@ -10,6 +14,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
+/**
+ * Container that groups an input with addon elements like icons or buttons.
+ */
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
@@ -18,19 +25,12 @@ function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
       className={cn(
         "group/input-group border-input dark:bg-input/30 relative flex w-full items-center rounded-md border shadow-xs transition-[color,box-shadow] outline-none",
         "h-9 min-w-0 has-[>textarea]:h-auto",
-
-        // Variants based on alignment.
         "has-[>[data-align=inline-start]]:[&>input]:pl-2",
         "has-[>[data-align=inline-end]]:[&>input]:pr-2",
         "has-[>[data-align=block-start]]:h-auto has-[>[data-align=block-start]]:flex-col has-[>[data-align=block-start]]:[&>input]:pb-3",
         "has-[>[data-align=block-end]]:h-auto has-[>[data-align=block-end]]:flex-col has-[>[data-align=block-end]]:[&>input]:pt-3",
-
-        // Focus state.
         "has-[[data-slot=input-group-control]:focus-visible]:border-ring has-[[data-slot=input-group-control]:focus-visible]:ring-ring/50 has-[[data-slot=input-group-control]:focus-visible]:ring-[3px]",
-
-        // Error state.
         "has-[[data-slot][aria-invalid=true]]:ring-destructive/20 has-[[data-slot][aria-invalid=true]]:border-destructive dark:has-[[data-slot][aria-invalid=true]]:ring-destructive/40",
-
         className
       )}
       {...props}
@@ -59,6 +59,9 @@ const inputGroupAddonVariants = cva(
   }
 );
 
+/**
+ * Addon element positioned at the start or end of the input group.
+ */
 function InputGroupAddon({
   className,
   align = "inline-start",
@@ -99,6 +102,9 @@ const inputGroupButtonVariants = cva(
   }
 );
 
+/**
+ * Button styled for use within the input group addon.
+ */
 function InputGroupButton({
   className,
   type = "button",
@@ -118,6 +124,9 @@ function InputGroupButton({
   );
 }
 
+/**
+ * Text element for displaying labels or information within the addon.
+ */
 function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   return (
     <span
@@ -130,6 +139,9 @@ function InputGroupText({ className, ...props }: React.ComponentProps<"span">) {
   );
 }
 
+/**
+ * Text input styled to work within the input group container.
+ */
 function InputGroupInput({
   className,
   ...props
@@ -146,6 +158,9 @@ function InputGroupInput({
   );
 }
 
+/**
+ * Textarea styled to work within the input group container.
+ */
 function InputGroupTextarea({
   className,
   ...props

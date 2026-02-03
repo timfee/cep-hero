@@ -1,15 +1,11 @@
 /**
- * LLM-as-judge for semantic evidence evaluation.
- * Batches multiple cases for token efficiency using structured outputs.
+ * LLM-as-judge for semantic evidence evaluation that batches multiple cases for token efficiency.
  */
 
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
 import { z } from "zod";
 
-/**
- * Process up to 10 cases per LLM call
- */
 const BATCH_SIZE = 10;
 
 export interface EvidenceCheckInput {
@@ -47,15 +43,11 @@ const EvidenceResultSchema = z.object({
 });
 
 /**
- * Evaluate evidence presence using LLM-as-judge.
- * Batches cases for token efficiency.
+ * Evaluate evidence presence using LLM-as-judge with batching for efficiency.
  */
-export async function batchEvaluateEvidence(
-  inputs: EvidenceCheckInput[]
-): Promise<Map<string, EvidenceCheckResult>> {
+export async function batchEvaluateEvidence(inputs: EvidenceCheckInput[]) {
   const results = new Map<string, EvidenceCheckResult>();
 
-  // Process in batches
   for (let i = 0; i < inputs.length; i += BATCH_SIZE) {
     const batch = inputs.slice(i, i + BATCH_SIZE);
     const batchResults = await evaluateBatch(batch);
@@ -67,9 +59,10 @@ export async function batchEvaluateEvidence(
   return results;
 }
 
-async function evaluateBatch(
-  batch: EvidenceCheckInput[]
-): Promise<EvidenceCheckResult[]> {
+/**
+ * Evaluate a single batch of cases using the LLM judge.
+ */
+async function evaluateBatch(batch: EvidenceCheckInput[]) {
   if (batch.length === 0) {
     return [];
   }
@@ -113,7 +106,6 @@ Evaluate each case and return structured results.`;
     return response.object.results;
   } catch (error) {
     console.error("LLM judge batch evaluation failed:", error);
-    // Return failures for all cases in batch on error
     return batch.map((c) => ({
       caseId: c.caseId,
       passed: false,
@@ -125,11 +117,9 @@ Evaluate each case and return structured results.`;
 }
 
 /**
- * Evaluate a single case (convenience wrapper).
+ * Evaluate a single case for convenience.
  */
-export async function evaluateEvidence(
-  input: EvidenceCheckInput
-): Promise<EvidenceCheckResult> {
+export async function evaluateEvidence(input: EvidenceCheckInput) {
   const results = await batchEvaluateEvidence([input]);
   return (
     results.get(input.caseId) ?? {

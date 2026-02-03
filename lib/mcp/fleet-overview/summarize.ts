@@ -1,3 +1,7 @@
+/**
+ * AI-powered summarization and fallback builders for fleet overview.
+ */
+
 import { google as googleModel } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
 
@@ -12,11 +16,14 @@ import {
 
 const FLEET_OVERVIEW_SYSTEM_PROMPT = `You are the Chrome Enterprise Premium assistant (CEP assistant) - a knowledgeable Chrome Enterprise Premium expert who helps IT admins secure and manage their browser fleet. You're direct, helpful, and focused on actionable insights. Write like a human in a chat: smooth, conversational, and concise. Never be generic, robotic, or listy.`;
 
+/**
+ * Builds the prompt for fleet overview AI summarization.
+ */
 function buildFleetOverviewPrompt(
   facts: FleetOverviewFacts,
   context: Record<string, unknown>,
   knowledge: FleetKnowledgeContext
-): string {
+) {
   return `Analyze this Chrome Enterprise fleet data and generate a compelling overview.
 
 ## Fleet Facts
@@ -80,13 +87,13 @@ List the actual API sources used: "Admin SDK Reports", "Cloud Identity", "Chrome
 }
 
 /**
- * Use the AI model to synthesize a narrative summary from structured facts.
+ * Uses the AI model to synthesize a narrative summary from structured facts.
  */
 export async function summarizeFleetOverview(
   facts: FleetOverviewFacts,
   context: Record<string, unknown>,
   knowledge: FleetKnowledgeContext
-): Promise<ReturnType<typeof FleetOverviewResponseSchema.parse>> {
+) {
   const result = await generateText({
     model: googleModel("gemini-2.0-flash-001"),
     output: Output.object({ schema: FleetOverviewResponseSchema }),
@@ -98,7 +105,7 @@ export async function summarizeFleetOverview(
 }
 
 /**
- * Build a fallback overview when AI summarization fails.
+ * Builds a fallback overview when AI summarization fails.
  */
 export function buildFallbackOverview(
   facts: FleetOverviewFacts
@@ -128,6 +135,9 @@ export function buildFallbackOverview(
   };
 }
 
+/**
+ * Builds fallback suggestions based on detected gaps.
+ */
 function buildFallbackSuggestions(
   hasDlpRules: boolean,
   hasConnectors: boolean,
@@ -174,10 +184,10 @@ function buildFallbackSuggestions(
   return suggestions;
 }
 
-function buildFallbackHeadline(
-  hasDlpRules: boolean,
-  hasConnectors: boolean
-): string {
+/**
+ * Builds a fallback headline based on detected gaps.
+ */
+function buildFallbackHeadline(hasDlpRules: boolean, hasConnectors: boolean) {
   const missingItems = [
     !hasDlpRules && "DLP rules",
     !hasConnectors && "connector policies",
@@ -192,6 +202,9 @@ function buildFallbackHeadline(
   return `Welcome back — ${missingItems[0]} still need attention.`;
 }
 
+/**
+ * Builds fallback posture cards from fleet facts.
+ */
 function buildFallbackCards(
   facts: FleetOverviewFacts,
   hasDlpRules: boolean,
@@ -210,6 +223,9 @@ function buildFallbackCards(
   ];
 }
 
+/**
+ * Builds the DLP rules posture card.
+ */
 function buildDlpCard(facts: FleetOverviewFacts, hasDlpRules: boolean) {
   return {
     label: "Data Protection Rules",
@@ -225,6 +241,9 @@ function buildDlpCard(facts: FleetOverviewFacts, hasDlpRules: boolean) {
   };
 }
 
+/**
+ * Builds the security events posture card.
+ */
 function buildEventsCard(
   facts: FleetOverviewFacts,
   hasEvents: boolean,
@@ -249,6 +268,9 @@ function buildEventsCard(
   };
 }
 
+/**
+ * Builds the connector policies posture card.
+ */
 function buildConnectorCard(facts: FleetOverviewFacts, hasConnectors: boolean) {
   return {
     label: "Connector Policies",

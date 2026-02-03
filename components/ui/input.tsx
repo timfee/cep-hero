@@ -1,7 +1,15 @@
+/**
+ * Text input component with consistent styling and accessibility support.
+ */
+
 import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A styled text input field with support for various states including
+ * focus, disabled, and validation error states.
+ */
 function Input({ className, type, ...props }: React.ComponentProps<"input">) {
   return (
     <input

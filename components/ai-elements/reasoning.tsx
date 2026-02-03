@@ -1,3 +1,7 @@
+/**
+ * Reasoning component for displaying AI chain-of-thought reasoning in a collapsible panel.
+ * Auto-collapses after streaming completes and tracks reasoning duration.
+ */
 "use client";
 
 import type { ComponentProps, ReactNode } from "react";

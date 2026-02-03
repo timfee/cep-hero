@@ -1,3 +1,8 @@
+/**
+ * Application shell providing the main two-panel layout with dashboard and chat.
+ * Wraps content in a ChatProvider for shared state management across panels.
+ */
+
 "use client";
 
 import { Suspense } from "react";
@@ -21,14 +26,12 @@ function AppShellContent() {
 
   return (
     <div className="flex h-screen overflow-hidden">
-      {/* Dashboard panel - hidden on mobile, visible on lg screens */}
       <main className="hidden flex-1 lg:block">
         <Suspense fallback={<DashboardSkeleton />}>
           <DashboardOverview onAction={handleAction} />
         </Suspense>
       </main>
 
-      {/* Chat panel - full width on mobile, fixed width on lg screens */}
       <aside className="flex w-full flex-col border-l border-white/[0.06] lg:w-[560px]">
         <ChatConsole />
       </aside>

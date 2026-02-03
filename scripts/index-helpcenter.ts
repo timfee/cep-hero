@@ -1,3 +1,7 @@
+/**
+ * Crawls Google Support help center articles for Chrome Enterprise documentation and indexes to Upstash Vector.
+ */
+
 /* eslint-disable @typescript-eslint/unbound-method */
 import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
@@ -14,9 +18,9 @@ interface CrawleeError extends Error {
 }
 
 /**
- * Extract a title string from a Cheerio element.
+ * Extract a clean title from a Cheerio element or URL.
  */
-function extractCleanTitle(element: unknown, url: string): string {
+function extractCleanTitle(element: unknown, url: string) {
   const title = getElementText(element);
   if (title && title.length > 0) {
     return title.replaceAll(/\s+/g, " ").trim();
@@ -42,7 +46,7 @@ function extractHelpcenterMetadata(url: string) {
 }
 
 /**
- * Parse article type from a string segment.
+ * Parse article type from a URL segment.
  */
 function parseArticleType(value: string | undefined): ArticleType | undefined {
   if (value === "answer" || value === "topic") {
@@ -53,14 +57,13 @@ function parseArticleType(value: string | undefined): ArticleType | undefined {
 }
 
 /**
- * Read text content from an element-like object.
+ * Read text content from a Cheerio-like element.
  */
-function getElementText(element: unknown): string | null {
+function getElementText(element: unknown) {
   if (element === null || typeof element !== "object") {
     return null;
   }
 
-  // Safe check for 'text' method common in Cheerio elements
   if (isRecord(element)) {
     const textFn = element.text;
     if (typeof textFn === "function") {
@@ -76,14 +79,17 @@ function getElementText(element: unknown): string | null {
   return null;
 }
 
-function cleanHtml(html: string): string {
+/**
+ * Remove "Was this helpful?" section from HTML.
+ */
+function cleanHtml(html: string) {
   return html.split(/Was this helpful\?/i)[0] || html;
 }
 
 /**
- * Helper to allow pasting full fetch options object or just the headers.
+ * Resolve headers from a fetch options object or headers directly.
  */
-function resolveHeaders(input: unknown): Record<string, string> {
+function resolveHeaders(input: unknown) {
   if (isRecord(input) && isRecord(input.headers)) {
     return coerceHeaders(input.headers);
   }
@@ -93,7 +99,10 @@ function resolveHeaders(input: unknown): Record<string, string> {
   return {};
 }
 
-function coerceHeaders(value: Record<string, unknown>): Record<string, string> {
+/**
+ * Coerce header values to strings.
+ */
+function coerceHeaders(value: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(value).filter((entry): entry is [string, string] => {
       const [, headerValue] = entry;
@@ -102,7 +111,6 @@ function coerceHeaders(value: Record<string, unknown>): Record<string, string> {
   );
 }
 
-// Header refresh instructions live in scripts/AGENTS.md.
 const headers = resolveHeaders({
   accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -122,6 +130,9 @@ const headers = resolveHeaders({
   Referer: "https://support.google.com/",
 }) satisfies Record<string, string>;
 
+/**
+ * Main crawler entry point.
+ */
 async function main() {
   const documents: Document[] = [];
   const INSTRUCTION_MESSAGE = `
@@ -152,7 +163,6 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
 
     failedRequestHandler({ request, error: rawError }) {
       const error = isCrawleeError(rawError) ? rawError : undefined;
-      // Check for 429 in both standard error object and Crawlee/got response
       const statusCode = error?.response?.statusCode ?? error?.statusCode;
 
       if (statusCode === 429) {
@@ -168,9 +178,7 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
         return;
       }
 
-      // Validate URL structure before processing
       const url = new URL(request.url);
-      // Allow: /chrome/a, /chrome/a/answer/123, /chrome/a/topic/123, /a/answer/123, /a/topic/123
       const validPattern = /^\/(chrome\/)?a(\/((answer|topic)\/\d+)?)?$/;
 
       if (!validPattern.test(url.pathname)) {
@@ -181,12 +189,10 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
       const articleHtml = $("article").html() ?? "";
       const cleaned = cleanHtml(articleHtml);
 
-      // Only process pages with actual numeric IDs for content extraction
       if (!/\/(answer|topic)\/(\d+)/.test(request.url)) {
         console.log(
           `Topic/category page (no content extraction): ${request.url}`
         );
-        // Still enqueue links from topic pages but don't extract content
         await enqueueLinks({
           globs: [
             "https://support.google.com/chrome/a",
@@ -200,12 +206,10 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
             try {
               const url = new URL(req.url);
 
-              // Validate it's a Google Support URL
               if (!url.hostname.includes("support.google.com")) {
                 return false;
               }
 
-              // Validate the URL path structure to prevent malformed URLs
               const path = url.pathname;
               const validPattern =
                 /^\/(chrome\/)?a(\/((answer|topic)\/\d+)?)?$/;
@@ -214,7 +218,6 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
                 return false;
               }
 
-              // Clean the URL
               url.search = "";
               url.hash = "";
               req.url = url.toString();
@@ -243,7 +246,6 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
       });
       console.log(`Crawled: ${title}`);
 
-      // Enqueue links from content pages
       await enqueueLinks({
         globs: [
           "https://support.google.com/chrome/a",
@@ -257,12 +259,10 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
           try {
             const url = new URL(req.url);
 
-            // Validate it's a Google Support URL
             if (!url.hostname.includes("support.google.com")) {
               return false;
             }
 
-            // Validate the URL path structure to prevent malformed URLs
             const path = url.pathname;
             const validPattern = /^\/(chrome\/)?a(\/((answer|topic)\/\d+)?)?$/;
 
@@ -270,7 +270,6 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
               return false;
             }
 
-            // Clean the URL
             url.search = "";
             url.hash = "";
             req.url = url.toString();
@@ -324,16 +323,22 @@ Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi
   await crawler.teardown();
 }
 
-try {
-  await main();
-} catch (error) {
-  console.error(error);
-}
-
+/**
+ * Type guard for plain objects.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
+/**
+ * Type guard for Crawlee error objects.
+ */
 function isCrawleeError(error: unknown): error is CrawleeError {
   return isRecord(error);
+}
+
+try {
+  await main();
+} catch (error) {
+  console.error(error);
 }

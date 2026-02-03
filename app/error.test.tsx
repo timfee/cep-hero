@@ -1,3 +1,8 @@
+/**
+ * Tests for the global error boundary component.
+ * Verifies error display, user interactions, and logging behavior.
+ */
+
 import { render, fireEvent } from "@testing-library/react";
 import { describe, expect, it, mock, spyOn, beforeEach } from "bun:test";
 
@@ -73,7 +78,6 @@ describe("Error boundary component", () => {
       <ErrorBoundary error={mockError} reset={mockReset} />
     );
 
-    // The icon container should be present
     const iconContainer = container.querySelector(String.raw`.bg-red-500\/20`);
     expect(iconContainer).toBeInTheDocument();
   });

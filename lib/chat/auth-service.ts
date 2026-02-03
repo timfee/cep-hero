@@ -1,3 +1,7 @@
+/**
+ * Authentication service for validating chat API requests.
+ */
+
 import { auth } from "@/lib/auth";
 
 const EVAL_TEST_MODE_ENABLED = process.env.EVAL_TEST_MODE === "1";
@@ -23,6 +27,9 @@ type AccessTokenResult =
   | { type: "error" }
   | { type: "test_mode_fallback" };
 
+/**
+ * Extract authentication context flags from request headers.
+ */
 function buildAuthContext(req: Request): AuthContext {
   const isTestBypass = req.headers.get("x-test-bypass") === "1";
   const isEvalTestModeRequest = req.headers.get("x-eval-test-mode") === "1";
@@ -31,10 +38,10 @@ function buildAuthContext(req: Request): AuthContext {
   return { isTestBypass, isEvalTestMode };
 }
 
-async function getSession(
-  req: Request,
-  isTestBypass: boolean
-): Promise<unknown> {
+/**
+ * Retrieve the session from Better Auth or return a test stub.
+ */
+async function getSession(req: Request, isTestBypass: boolean) {
   if (isTestBypass) {
     return { user: { id: "test" } };
   }
@@ -42,6 +49,9 @@ async function getSession(
   return session;
 }
 
+/**
+ * Fetch Google OAuth access token from Better Auth API.
+ */
 async function fetchTokenFromApi(req: Request): Promise<AccessTokenResult> {
   try {
     const tokenResponse = await auth.api.getAccessToken({
@@ -57,6 +67,9 @@ async function fetchTokenFromApi(req: Request): Promise<AccessTokenResult> {
   }
 }
 
+/**
+ * Get access token, returning test token in bypass mode.
+ */
 async function getAccessToken(
   req: Request,
   isTestBypass: boolean
@@ -68,6 +81,9 @@ async function getAccessToken(
   return result;
 }
 
+/**
+ * Convert token result to appropriate auth response or extract token.
+ */
 function handleTokenResult(
   tokenResult: AccessTokenResult
 ): AuthResult | { token: string } {
@@ -92,6 +108,9 @@ function handleTokenResult(
   };
 }
 
+/**
+ * Validate that a session exists and return error if missing.
+ */
 function validateSession(session: unknown): AuthResult | null {
   if (session === null || session === undefined) {
     return {
@@ -102,6 +121,9 @@ function validateSession(session: unknown): AuthResult | null {
   return null;
 }
 
+/**
+ * Build a successful auth result with session and token.
+ */
 function buildSuccessResult(
   session: unknown,
   token: string,
@@ -115,6 +137,9 @@ function buildSuccessResult(
   };
 }
 
+/**
+ * Process token retrieval and build final auth result.
+ */
 async function processTokenAndBuildResult(
   req: Request,
   session: unknown,

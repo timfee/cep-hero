@@ -1,3 +1,7 @@
+/**
+ * Button component with multiple style variants and sizes.
+ */
+
 import type { VariantProps } from "class-variance-authority";
 
 import { Slot } from "@radix-ui/react-slot";
@@ -40,6 +44,10 @@ const buttonVariants = cva(
   }
 );
 
+/**
+ * Interactive button element with support for multiple variants, sizes,
+ * and the ability to render as a different element using asChild.
+ */
 function Button({
   className,
   variant = "default",

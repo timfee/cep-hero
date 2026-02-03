@@ -1,3 +1,8 @@
+/**
+ * Tests for the authentication loading component.
+ * Verifies skeleton structure and animations match the sign-in page layout.
+ */
+
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "bun:test";
@@ -15,7 +20,6 @@ describe("AuthLoading component", () => {
   it("renders logo placeholder skeleton", () => {
     const { container } = render(<AuthLoading />);
 
-    // Logo icon placeholder (14x14 square)
     const logoPlaceholder = container.querySelector(".h-14.w-14.animate-pulse");
     expect(logoPlaceholder).toBeInTheDocument();
   });
@@ -30,7 +34,6 @@ describe("AuthLoading component", () => {
   it("renders button placeholder", () => {
     const { container } = render(<AuthLoading />);
 
-    // Button placeholder (h-11 full width)
     const buttonPlaceholder = container.querySelector(".h-11.w-full");
     expect(buttonPlaceholder).toBeInTheDocument();
   });
@@ -46,7 +49,6 @@ describe("AuthLoading component", () => {
     const { container } = render(<AuthLoading />);
 
     const animatedElements = container.querySelectorAll(".animate-pulse");
-    // Should have logo, title, subtitle, form label, 2 text lines, and button
     expect(animatedElements.length).toBeGreaterThanOrEqual(6);
   });
 });

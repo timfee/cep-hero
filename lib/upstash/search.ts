@@ -1,3 +1,7 @@
+/**
+ * Vector search utilities for retrieving documentation and policy context.
+ */
+
 import { Index } from "@upstash/vector";
 
 const DOCS_NAMESPACE = "docs";

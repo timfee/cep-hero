@@ -1,3 +1,8 @@
+/**
+ * Dashboard overview component displaying fleet posture cards and suggested actions.
+ * Fetches overview data from the API and renders interactive cards that trigger chat actions.
+ */
+
 "use client";
 
 import { track } from "@vercel/analytics";
@@ -23,6 +28,9 @@ import { cn } from "@/lib/utils";
 
 const SKELETON_STAGGER_DELAY_MS = 100;
 
+/**
+ * Fetch JSON data from a URL, throwing on non-OK responses.
+ */
 const fetcher = async (url: string) => {
   const res = await fetch(url);
   if (!res.ok) {
@@ -68,6 +76,10 @@ interface DashboardOverviewProps {
   onAction: (command: string) => void;
 }
 
+/**
+ * Dashboard overview displaying fleet posture and recommended actions.
+ * Cards are clickable and trigger chat commands via the onAction callback.
+ */
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -82,6 +94,9 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
     }
   );
 
+  /**
+   * Manually refresh dashboard data with analytics tracking.
+   */
   const handleRefresh = useCallback(async () => {
     await track("Dashboard Refreshed");
     setIsRefreshing(true);

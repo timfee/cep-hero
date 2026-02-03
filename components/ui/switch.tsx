@@ -1,3 +1,7 @@
+/**
+ * Toggle switch component for binary on/off controls.
+ */
+
 "use client";
 
 import * as SwitchPrimitive from "@radix-ui/react-switch";
@@ -5,6 +9,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A toggle switch control that allows users to turn an option on or off.
+ * Supports two sizes: default and small.
+ */
 function Switch({
   className,
   size = "default",

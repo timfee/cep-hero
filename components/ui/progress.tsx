@@ -1,3 +1,7 @@
+/**
+ * Progress bar component for displaying completion status.
+ */
+
 "use client";
 
 import * as ProgressPrimitive from "@radix-ui/react-progress";
@@ -5,6 +9,10 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * A progress indicator that shows the completion percentage of a task
+ * using a horizontal bar.
+ */
 function Progress({
   className,
   value,

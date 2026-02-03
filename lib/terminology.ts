@@ -1,9 +1,11 @@
 /**
- * Maps technical API terms to admin-friendly language.
- * Use these consistently across all UI components.
+ * Maps technical API terms to admin-friendly language for UI display.
+ */
+
+/**
+ * Lookup table mapping technical terms to human-readable labels.
  */
 export const TERMINOLOGY: Record<string, string> = {
-  // Headers and titles
   "Cloud Identity DLP rules": "Data Protection Rules",
   "Connector policy targets": "Policy Scope",
   "Recent Chrome events": "Recent Activity",
@@ -13,13 +15,11 @@ export const TERMINOLOGY: Record<string, string> = {
   "Org units": "Organizational Units",
   "Attempted targets": "Checked Locations",
 
-  // Status and states
   "output-available": "Complete",
   "input-streaming": "Starting",
   "input-available": "Running",
   "output-error": "Failed",
 
-  // Tool names (for display)
   getChromeEvents: "Checking browser activity",
   listDLPRules: "Loading data protection rules",
   getChromeConnectorConfiguration: "Checking security policies",
@@ -30,7 +30,10 @@ export const TERMINOLOGY: Record<string, string> = {
   suggestActions: "Preparing suggestions",
 };
 
-export function humanize(term: string): string {
+/**
+ * Convert a technical term to its human-friendly equivalent.
+ */
+export function humanize(term: string) {
   return TERMINOLOGY[term] ?? term;
 }
 
@@ -53,9 +56,9 @@ export const TOOLTIPS: Record<string, string> = {
 };
 
 /**
- * Convert camelCase to Title Case (e.g., "getChromeEvents" -> "Get Chrome Events")
+ * Convert camelCase to Title Case for display.
  */
-function camelCaseToTitle(name: string): string {
+function camelCaseToTitle(name: string) {
   const withSpaces = name
     .replaceAll(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replaceAll(/[_-]+/g, " ")
@@ -77,6 +80,6 @@ function camelCaseToTitle(name: string): string {
 /**
  * Format a tool name for display in the UI.
  */
-export function humanizeToolName(toolName: string): string {
+export function humanizeToolName(toolName: string) {
   return TERMINOLOGY[toolName] ?? camelCaseToTitle(toolName);
 }

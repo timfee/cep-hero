@@ -1,6 +1,5 @@
 /**
- * Main eval runner - standalone execution without test framework.
- * This is the core eval execution engine that runs cases and collects results.
+ * Core eval execution engine that runs cases and collects results without test framework dependency.
  */
 
 import { type FixtureData } from "@/lib/mcp/types";
@@ -86,6 +85,9 @@ interface CaseRunContext {
   verbose: boolean;
 }
 
+/**
+ * Process assertions for a single conversation turn.
+ */
 function processTurnAssertion(
   turnIndex: number,
   turnToolCalls: string[],
@@ -120,11 +122,12 @@ function processTurnAssertion(
   };
 }
 
-function buildMultiTurnErrorMessage(
-  failedTurns: TurnResult[]
-): string | undefined {
+/**
+ * Build an error message from failed turns.
+ */
+function buildMultiTurnErrorMessage(failedTurns: TurnResult[]) {
   if (failedTurns.length === 0) {
-    return undefined;
+    return;
   }
   return failedTurns
     .map((t) => {
@@ -152,6 +155,9 @@ interface MultiTurnState {
   turnResults: TurnResult[];
 }
 
+/**
+ * Create initial state for multi-turn conversation.
+ */
 function createMultiTurnState(): MultiTurnState {
   return {
     messages: [{ role: "system", content: "You are CEP Hero." }],
@@ -161,6 +167,9 @@ function createMultiTurnState(): MultiTurnState {
   };
 }
 
+/**
+ * Build the final result from multi-turn state.
+ */
 function buildMultiTurnResult(
   state: MultiTurnState,
   conversationScript: ConversationTurn[],
@@ -176,13 +185,16 @@ function buildMultiTurnResult(
   };
 }
 
+/**
+ * Process a single turn in a multi-turn conversation.
+ */
 async function processTurn(
   state: MultiTurnState,
   turn: ConversationTurn,
   turnIndex: number,
   turnAssertions: TurnAssertion[],
   fixtures: FixtureData | undefined
-): Promise<void> {
+) {
   state.messages.push({ role: "user", content: turn.content });
   const resp = await callChatMessages(state.messages, { fixtures });
   const assistantText = resp.text;
@@ -242,11 +254,14 @@ interface AssertionResultSimple {
   message: string;
 }
 
+/**
+ * Collect failure messages from assertion results.
+ */
 function collectFailureMessages(
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple
-): string[] {
+) {
   const messages: string[] = [];
   if (!schemaResult.passed) {
     messages.push(schemaResult.message);
@@ -260,12 +275,15 @@ function collectFailureMessages(
   return messages;
 }
 
+/**
+ * Check if any assertions failed and return failure info.
+ */
 function checkAssertionFailures(
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple,
   error: string | undefined
-): { status: "fail"; error: string | undefined } | null {
+) {
   if (schemaResult.passed && evidenceResult.passed && toolCallsResult.passed) {
     return null;
   }
@@ -274,18 +292,21 @@ function checkAssertionFailures(
     evidenceResult,
     toolCallsResult
   );
-  return { status: "fail", error: error ?? messages[0] };
+  return { status: "fail" as const, error: error ?? messages[0] };
 }
 
+/**
+ * Determine the final report status based on all checks.
+ */
 function determineReportStatus(
   error: string | undefined,
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple,
   rubricResult: EvalReport["rubricResult"]
-): { status: EvalReport["status"]; error: string | undefined } {
+) {
   if (typeof error === "string" && error.length > 0) {
-    return { status: "error", error };
+    return { status: "error" as const, error };
   }
 
   const assertionFail = checkAssertionFailures(
@@ -300,27 +321,24 @@ function determineReportStatus(
 
   if (rubricResult && !rubricResult.passed) {
     return {
-      status: "fail",
+      status: "fail" as const,
       error:
         error ??
         `Rubric score ${rubricResult.score} below minimum ${rubricResult.minScore}`,
     };
   }
 
-  return { status: "pass", error: undefined };
+  return { status: "pass" as const, error: undefined };
 }
 
+/**
+ * Run a single-turn eval case.
+ */
 async function runSingleTurnCase(
   evalCase: EvalCase,
   promptMap: Map<string, string>,
   fixtures: FixtureData | undefined
-): Promise<{
-  responseText: string;
-  responseMetadata: unknown;
-  toolCalls: string[] | undefined;
-  prompt: string;
-  error: string | undefined;
-}> {
+) {
   const basePrompt =
     promptMap.get(evalCase.id) ?? `Help me troubleshoot: ${evalCase.title}`;
   const prompt = buildEvalPrompt(basePrompt, {
@@ -359,6 +377,9 @@ interface CaseResponse {
   error: string | undefined;
 }
 
+/**
+ * Execute the conversation for an eval case.
+ */
 async function executeCaseConversation(
   evalCase: EvalCase,
   context: CaseRunContext,
@@ -393,6 +414,9 @@ interface AssertionResults {
   rubricResult: EvalReport["rubricResult"];
 }
 
+/**
+ * Run all assertions for a case response.
+ */
 function runAssertions(
   evalCase: EvalCase,
   response: CaseResponse
@@ -419,6 +443,9 @@ function runAssertions(
   return { schemaResult, evidenceResult, toolCallsResult, rubricResult };
 }
 
+/**
+ * Compute rubric result if rubric is defined.
+ */
 function computeRubricResult(
   evalCase: EvalCase,
   response: CaseResponse
@@ -445,6 +472,9 @@ function computeRubricResult(
   };
 }
 
+/**
+ * Build the final eval report from all results.
+ */
 function buildEvalReport(
   evalCase: EvalCase,
   context: CaseRunContext,
@@ -484,7 +514,10 @@ function buildEvalReport(
   };
 }
 
-function logCaseResult(report: EvalReport, verbose: boolean): void {
+/**
+ * Log case result to console.
+ */
+function logCaseResult(report: EvalReport, verbose: boolean) {
   if (verbose) {
     console.log(formatCaseResult(report));
   } else {
@@ -494,6 +527,9 @@ function logCaseResult(report: EvalReport, verbose: boolean): void {
   }
 }
 
+/**
+ * Run a single eval case end-to-end.
+ */
 async function runCase(
   evalCase: EvalCase,
   context: CaseRunContext
@@ -517,9 +553,10 @@ async function runCase(
   return report;
 }
 
-function getRequiredEvidenceFromDetails(
-  result: EvalReport["evidenceResult"]
-): string[] {
+/**
+ * Extract required evidence from assertion details.
+ */
+function getRequiredEvidenceFromDetails(result: EvalReport["evidenceResult"]) {
   const details = result?.details;
   if (!isRecord(details)) {
     return [];
@@ -530,11 +567,17 @@ function getRequiredEvidenceFromDetails(
     : [];
 }
 
+/**
+ * Type guard for plain objects.
+ */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-function isEligibleForLlmJudge(report: EvalReport): boolean {
+/**
+ * Check if a report is eligible for LLM judge re-evaluation.
+ */
+function isEligibleForLlmJudge(report: EvalReport) {
   const hasEvidenceFailure =
     report.status === "fail" &&
     report.evidenceResult !== undefined &&
@@ -550,6 +593,9 @@ interface LlmJudgeResult {
   missingEvidence: string[];
 }
 
+/**
+ * Build evidence result from LLM judge output.
+ */
 function buildLlmEvidenceResult(
   llmResult: LlmJudgeResult
 ): EvalReport["evidenceResult"] {
@@ -567,10 +613,13 @@ function buildLlmEvidenceResult(
   };
 }
 
+/**
+ * Update a report with LLM judge results.
+ */
 function updateReportWithLlmResult(
   report: EvalReport,
   llmResult: LlmJudgeResult
-): void {
+) {
   report.evidenceResult = buildLlmEvidenceResult(llmResult);
   if (llmResult.passed && report.status === "fail") {
     report.status = "pass";
@@ -579,6 +628,9 @@ function updateReportWithLlmResult(
   }
 }
 
+/**
+ * Build evidence check inputs for LLM judge.
+ */
 function buildEvidenceInputs(failures: EvalReport[]): EvidenceCheckInput[] {
   return failures.map((r) => ({
     caseId: r.caseId,
@@ -587,10 +639,13 @@ function buildEvidenceInputs(failures: EvalReport[]): EvidenceCheckInput[] {
   }));
 }
 
+/**
+ * Apply LLM judge results to reports.
+ */
 function applyLlmResultsToReports(
   reports: EvalReport[],
   llmResults: Map<string, LlmJudgeResult>
-): void {
+) {
   for (const report of reports) {
     const llmResult = llmResults.get(report.caseId);
     if (llmResult) {
@@ -599,9 +654,10 @@ function applyLlmResultsToReports(
   }
 }
 
-async function processEvidenceFailures(
-  evidenceFailures: EvalReport[]
-): Promise<Map<string, LlmJudgeResult>> {
+/**
+ * Process evidence failures through LLM judge.
+ */
+async function processEvidenceFailures(evidenceFailures: EvalReport[]) {
   console.log(
     `[eval] Running LLM judge on ${evidenceFailures.length} evidence failures...`
   );
@@ -610,7 +666,10 @@ async function processEvidenceFailures(
   return llmResults;
 }
 
-async function applyLlmJudgePhase(reports: EvalReport[]): Promise<void> {
+/**
+ * Apply LLM judge phase to re-evaluate evidence failures.
+ */
+async function applyLlmJudgePhase(reports: EvalReport[]) {
   const useLlmJudge = process.env.EVAL_LLM_JUDGE !== "0";
   if (!useLlmJudge) {
     return;
@@ -625,7 +684,10 @@ async function applyLlmJudgePhase(reports: EvalReport[]): Promise<void> {
   applyLlmResultsToReports(reports, llmResults);
 }
 
-function parsePauseMs(raw: string | undefined): number {
+/**
+ * Parse pause milliseconds from string.
+ */
+function parsePauseMs(raw: string | undefined) {
   if (raw === undefined || raw === "") {
     return DEFAULT_CASE_PAUSE_MS;
   }
@@ -633,6 +695,9 @@ function parsePauseMs(raw: string | undefined): number {
   return Number.isNaN(parsed) ? DEFAULT_CASE_PAUSE_MS : parsed;
 }
 
+/**
+ * Build an empty summary for when no cases are selected.
+ */
 function buildEmptySummary(runId: string): EvalSummary {
   return {
     runId,
@@ -647,10 +712,10 @@ function buildEmptySummary(runId: string): EvalSummary {
   };
 }
 
-async function runCasesParallel(
-  cases: EvalCase[],
-  context: CaseRunContext
-): Promise<EvalReport[]> {
+/**
+ * Run cases in parallel.
+ */
+async function runCasesParallel(cases: EvalCase[], context: CaseRunContext) {
   const results = await Promise.allSettled(
     cases.map(async (evalCase) => {
       const report = await runCase(evalCase, context);
@@ -665,11 +730,14 @@ async function runCasesParallel(
     .map((result) => result.value);
 }
 
+/**
+ * Run cases serially with optional pause between cases.
+ */
 async function runCasesSerial(
   cases: EvalCase[],
   context: CaseRunContext,
   pauseMs: number
-): Promise<EvalReport[]> {
+) {
   const reports: EvalReport[] = [];
   for (const evalCase of cases) {
     if (pauseMs > 0) {
@@ -681,12 +749,15 @@ async function runCasesSerial(
   return reports;
 }
 
+/**
+ * Execute all cases with the specified concurrency mode.
+ */
 async function executeCases(
   cases: EvalCase[],
   context: CaseRunContext,
   parallel: boolean,
   pauseMs: number
-): Promise<EvalReport[]> {
+) {
   if (parallel) {
     const reports = await runCasesParallel(cases, context);
     return reports;
@@ -707,6 +778,9 @@ interface ResolvedOptions {
   verbose: boolean;
 }
 
+/**
+ * Resolve runner options from explicit values or environment variables.
+ */
 function resolveOptions(options: RunnerOptions): ResolvedOptions {
   return {
     ids: options.ids ?? process.env.EVAL_IDS,
@@ -722,21 +796,23 @@ function resolveOptions(options: RunnerOptions): ResolvedOptions {
   };
 }
 
-function logRunStart(
-  runId: string,
-  caseCount: number,
-  parallel: boolean
-): void {
+/**
+ * Log the start of an eval run.
+ */
+function logRunStart(runId: string, caseCount: number, parallel: boolean) {
   console.log(`[eval] Starting run ${runId}`);
   console.log(`[eval] Cases: ${caseCount}`);
   console.log(`[eval] Mode: ${parallel ? "parallel" : "serial"}`);
 }
 
+/**
+ * Finalize the eval run with LLM judge and summary.
+ */
 async function finalizeRun(
   runId: string,
   reports: EvalReport[],
   startTime: number
-): Promise<EvalSummary> {
+) {
   await applyLlmJudgePhase(reports);
   const summary = buildSummary(runId, reports, startTime);
   await writeSummaryReport(summary);
@@ -751,6 +827,9 @@ interface EvalRunSetup {
   startTime: number;
 }
 
+/**
+ * Initialize an eval run.
+ */
 function initializeEvalRun(options: RunnerOptions): EvalRunSetup {
   const resolved = resolveOptions(options);
   const registry = loadEvalRegistry();
@@ -760,7 +839,10 @@ function initializeEvalRun(options: RunnerOptions): EvalRunSetup {
   return { resolved, runId, promptMap, startTime };
 }
 
-function selectCases(resolved: ResolvedOptions): EvalCase[] {
+/**
+ * Select cases to run based on filters.
+ */
+function selectCases(resolved: ResolvedOptions) {
   const registry = loadEvalRegistry();
   return filterEvalCases(registry.cases, {
     ids: resolved.ids,
@@ -770,6 +852,9 @@ function selectCases(resolved: ResolvedOptions): EvalCase[] {
   });
 }
 
+/**
+ * Execute the main eval run.
+ */
 async function executeEvalRun(
   setup: EvalRunSetup,
   cases: EvalCase[]
@@ -826,7 +911,7 @@ export async function runEvals(
 /**
  * CLI entry point.
  */
-export async function main(): Promise<void> {
+export async function main() {
   try {
     const { summary } = await runEvals();
     process.exit(summary.failed + summary.errors > 0 ? 1 : 0);

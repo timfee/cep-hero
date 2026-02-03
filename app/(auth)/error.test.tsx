@@ -1,3 +1,8 @@
+/**
+ * Tests for the authentication error boundary component.
+ * Verifies error display, user interactions, and recovery options.
+ */
+
 /* oxlint-disable typescript/no-unsafe-call */
 import { render, fireEvent } from "@testing-library/react";
 import { describe, expect, it, beforeEach } from "bun:test";
@@ -6,6 +11,9 @@ import AuthError from "@/app/(auth)/error";
 
 let resetCalls: number;
 
+/**
+ * Mock reset function to track invocations.
+ */
 function mockReset() {
   resetCalls += 1;
 }

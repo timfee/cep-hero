@@ -1,3 +1,7 @@
+/**
+ * Hover card component for displaying additional content on hover.
+ */
+
 "use client";
 
 import * as HoverCardPrimitive from "@radix-ui/react-hover-card";
@@ -5,12 +9,18 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Root component that manages the hover card's visibility state.
+ */
 function HoverCard({
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Root>) {
   return <HoverCardPrimitive.Root data-slot="hover-card" {...props} />;
 }
 
+/**
+ * Element that triggers the hover card to show when hovered.
+ */
 function HoverCardTrigger({
   ...props
 }: React.ComponentProps<typeof HoverCardPrimitive.Trigger>) {
@@ -19,6 +29,9 @@ function HoverCardTrigger({
   );
 }
 
+/**
+ * Container for the hover card's content that appears on hover.
+ */
 function HoverCardContent({
   className,
   align = "center",

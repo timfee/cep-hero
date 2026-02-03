@@ -1,3 +1,7 @@
+/**
+ * Captures base fixture data from Google APIs for eval testing with PII redaction.
+ */
+
 /* eslint-disable import/no-nodejs-modules */
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
@@ -28,7 +32,9 @@ interface BaseFixture {
 
 const OUTPUT_DIR = path.join(process.cwd(), "evals", "fixtures", "base");
 
-/** Write JSON with light redaction for fixture usage. */
+/**
+ * Write JSON fixture with redaction for PII.
+ */
 async function writeFixture(name: string, payload: unknown) {
   await mkdir(OUTPUT_DIR, { recursive: true });
   const sanitized = sanitizeFixture(payload);
@@ -41,8 +47,10 @@ async function writeFixture(name: string, payload: unknown) {
   console.log(`[fixtures] wrote ${outputPath}`);
 }
 
-/** Remove emails and customer IDs to avoid leaking PII. */
-function sanitizeFixture(payload: unknown): unknown {
+/**
+ * Redact emails, customer IDs, paths, IPs, and hashes from fixture data.
+ */
+function sanitizeFixture(payload: unknown) {
   const raw = JSON.stringify(payload);
   const redactedEmails = raw.replaceAll(
     /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi,
@@ -83,7 +91,9 @@ function sanitizeFixture(payload: unknown): unknown {
   return JSON.parse(redactedUrls);
 }
 
-/** Capture Chrome Management reports sample for fixture base. */
+/**
+ * Capture Chrome Management reports sample.
+ */
 async function captureChromeReports() {
   const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
   try {
@@ -105,7 +115,9 @@ async function captureChromeReports() {
   }
 }
 
-/** Capture Admin Reports audit sample for fixture base. */
+/**
+ * Capture Admin Reports audit sample.
+ */
 async function captureAuditEvents() {
   const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
   if (tokenEmail === undefined || tokenEmail === "") {
@@ -130,6 +142,9 @@ async function captureAuditEvents() {
   }
 }
 
+/**
+ * Main fixture capture routine.
+ */
 async function run() {
   const orgUnitsResponse = await listOrgUnits();
   const orgUnits = orgUnitsResponse.slice(0, 10).map((unit) => ({
