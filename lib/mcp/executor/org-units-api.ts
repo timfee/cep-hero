@@ -25,6 +25,9 @@ interface ListOrgUnitsError {
   requiresReauth: boolean;
 }
 
+/**
+ * Result of listing organizational units, either a list of units or an error.
+ */
 export type ListOrgUnitsResult = ListOrgUnitsSuccess | ListOrgUnitsError;
 
 const SERVICE_UNAVAILABLE: ListOrgUnitsError = {

@@ -21,6 +21,9 @@ const USE_EVAL_FIXTURE_MODE =
 let chatReady = false;
 let chatReadyPromise: Promise<void> | undefined;
 
+/**
+ * Response from the chat API including text and optional metadata.
+ */
 export interface ChatResponse {
   text: string;
   metadata?: unknown;
@@ -32,6 +35,9 @@ interface ChatMessage {
   content: string;
 }
 
+/**
+ * Options for calling the chat API with fixture data.
+ */
 export interface CallChatMessagesOptions {
   fixtures?: FixtureData;
 }

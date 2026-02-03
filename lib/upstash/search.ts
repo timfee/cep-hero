@@ -7,6 +7,9 @@ import { Index } from "@upstash/vector";
 const DOCS_NAMESPACE = "docs";
 const POLICY_NAMESPACE = "policies";
 
+/**
+ * A single hit from a vector similarity search.
+ */
 export interface VectorSearchHit {
   id: string | number;
   score: number;
@@ -14,6 +17,9 @@ export interface VectorSearchHit {
   metadata?: Record<string, unknown>;
 }
 
+/**
+ * Result from a vector search including namespace and matched hits.
+ */
 export interface VectorSearchResult {
   namespace: "docs" | "policies";
   hits: VectorSearchHit[];
