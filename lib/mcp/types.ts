@@ -34,7 +34,7 @@ export type ChromeEventsResult =
       }>;
       nextPageToken: string | null;
     }
-  | { error: string; suggestion?: string };
+  | { error: string; suggestion: string; requiresReauth: boolean };
 
 export type DLPRulesResult =
   | {
@@ -47,7 +47,7 @@ export type DLPRulesResult =
       }>;
       help?: unknown;
     }
-  | { error: string; suggestion?: string };
+  | { error: string; suggestion: string; requiresReauth: boolean };
 
 export type OrgUnitsResult =
   | {
@@ -59,11 +59,11 @@ export type OrgUnitsResult =
         description?: string | null;
       }>;
     }
-  | { error: string; suggestion?: string };
+  | { error: string; suggestion: string; requiresReauth: boolean };
 
 export type EnrollBrowserResult =
   | { enrollmentToken: string; expiresAt: string | null }
-  | { error: string; suggestion?: string };
+  | { error: string; suggestion: string; requiresReauth: boolean };
 
 export type ConnectorConfigResult =
   | {
@@ -80,7 +80,8 @@ export type ConnectorConfigResult =
     }
   | {
       error: string;
-      suggestion?: string;
+      suggestion: string;
+      requiresReauth: boolean;
       policySchemas?: string[];
       targetResource?: string;
       attemptedTargets?: string[];
