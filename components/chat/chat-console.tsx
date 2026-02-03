@@ -400,9 +400,9 @@ export function ChatConsole() {
                         )}
                       >
                         <MessageContent>
-                        <MessageResponse>
-                          {sanitizeOrgUnitsInText(part.text)}
-                        </MessageResponse>
+                          <MessageResponse>
+                            {sanitizeOrgUnitsInText(part.text)}
+                          </MessageResponse>
                         </MessageContent>
                         {!isUser && (
                           <MessageActions>
