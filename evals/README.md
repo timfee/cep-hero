@@ -254,22 +254,27 @@ Add a case when you:
 # EC-086: Your scenario title
 
 ## Summary
+
 Brief description of the troubleshooting scenario.
 
 ## Reproduction
+
 1. Steps to reproduce the issue
 2. What conditions trigger it
 3. What the user observes
 
 ## Conversation
+
 User: "The exact prompt the user would ask"
 
 ## Expected result
+
 - What the diagnosis should identify
 - What evidence should be referenced
 - What next steps should be recommended
 
 ## Cleanup
+
 - Any cleanup steps if using live data
 ```
 

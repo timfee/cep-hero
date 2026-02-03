@@ -16,8 +16,14 @@
               { "name": "DEVICE_NAME", "value": "LAPTOP-USER-05" },
               { "name": "OS_TYPE", "value": "Windows" },
               { "name": "OS_VERSION", "value": "11.0.22631" },
-              { "name": "ERROR_CODE", "value": "DATA_PROTECTION_KEY_UNRECOVERABLE" },
-              { "name": "ERROR_MESSAGE", "value": "Cannot recover data protection key. DPAPI master key is inaccessible or corrupted." },
+              {
+                "name": "ERROR_CODE",
+                "value": "DATA_PROTECTION_KEY_UNRECOVERABLE"
+              },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Cannot recover data protection key. DPAPI master key is inaccessible or corrupted."
+              },
               { "name": "USER_EMAIL", "value": "user@example.com" }
             ]
           }
@@ -38,9 +44,15 @@
               { "name": "DEVICE_NAME", "value": "LAPTOP-USER-05" },
               { "name": "OS_TYPE", "value": "Windows" },
               { "name": "ERROR_CODE", "value": "DPAPI_KEY_RECOVERY_FAILED" },
-              { "name": "ERROR_MESSAGE", "value": "Endpoint Verification sync failed. Unable to recover encryption key for Safe Storage." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Endpoint Verification sync failed. Unable to recover encryption key for Safe Storage."
+              },
               { "name": "RECOVERY_ATTEMPTS", "value": "3" },
-              { "name": "LAST_SUCCESSFUL_SYNC", "value": "2026-01-15T10:00:00.000Z" },
+              {
+                "name": "LAST_SUCCESSFUL_SYNC",
+                "value": "2026-01-15T10:00:00.000Z"
+              },
               { "name": "USER_EMAIL", "value": "user@example.com" }
             ]
           }
@@ -61,7 +73,10 @@
               { "name": "DEVICE_NAME", "value": "LAPTOP-USER-05" },
               { "name": "OS_TYPE", "value": "Windows" },
               { "name": "ERROR_CODE", "value": "SAFE_STORAGE_RESET_NEEDED" },
-              { "name": "ERROR_MESSAGE", "value": "Safe Storage data is unrecoverable. Reset Safe Storage and update Chrome to restore Endpoint Verification." },
+              {
+                "name": "ERROR_MESSAGE",
+                "value": "Safe Storage data is unrecoverable. Reset Safe Storage and update Chrome to restore Endpoint Verification."
+              },
               { "name": "RECOMMENDED_ACTION", "value": "RESET_SAFE_STORAGE" },
               { "name": "USER_EMAIL", "value": "user@example.com" }
             ]
