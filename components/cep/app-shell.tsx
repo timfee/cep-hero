@@ -15,6 +15,7 @@ import { FixtureProvider } from "@/lib/fixtures/context";
 
 import { DashboardOverview } from "./dashboard-overview";
 import { DashboardSkeleton } from "./dashboard-skeleton";
+import { UserStatusBar } from "./user-status-bar";
 
 /**
  * Main content area with dashboard and chat panels.
@@ -29,7 +30,7 @@ function AppShellContent() {
 
   return (
     <div className="flex h-screen flex-col overflow-hidden">
-      {/* Demo mode banner - shown when fixture is active */}
+      <UserStatusBar />
       <DemoModeBanner />
 
       <div className="flex flex-1 overflow-hidden">
