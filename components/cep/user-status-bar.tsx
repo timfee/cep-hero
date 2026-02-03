@@ -200,7 +200,7 @@ export function UserStatusBar() {
         <DropdownMenuTrigger asChild>
           <button
             className="flex items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-white/[0.06]"
-            aria-label="Account menu"
+            aria-label={`Account menu for ${displayName}`}
           >
             <div className="flex flex-col items-end">
               <span className="text-sm font-medium leading-none">
