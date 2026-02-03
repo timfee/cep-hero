@@ -1,3 +1,7 @@
+/**
+ * Agent display components for showing AI agent configurations.
+ * Displays agent name, model, instructions, available tools, and output schema.
+ */
 "use client";
 
 import type { Tool } from "ai";
@@ -19,6 +23,9 @@ import { CodeBlock } from "./code-block";
 
 export type AgentProps = ComponentProps<"div">;
 
+/**
+ * Root container for agent display with border styling.
+ */
 export const Agent = memo(({ className, ...props }: AgentProps) => (
   <div
     className={cn("not-prose w-full rounded-md border", className)}
@@ -31,6 +38,9 @@ export type AgentHeaderProps = ComponentProps<"div"> & {
   model?: string;
 };
 
+/**
+ * Agent header displaying name and optional model badge.
+ */
 export const AgentHeader = memo(
   ({ className, name, model, ...props }: AgentHeaderProps) => (
     <div
@@ -55,6 +65,9 @@ export const AgentHeader = memo(
 
 export type AgentContentProps = ComponentProps<"div">;
 
+/**
+ * Content area for agent configuration details.
+ */
 export const AgentContent = memo(
   ({ className, ...props }: AgentContentProps) => (
     <div className={cn("space-y-4 p-4 pt-0", className)} {...props} />
@@ -65,6 +78,9 @@ export type AgentInstructionsProps = ComponentProps<"div"> & {
   children: string;
 };
 
+/**
+ * Display section for agent system instructions.
+ */
 export const AgentInstructions = memo(
   ({ className, children, ...props }: AgentInstructionsProps) => (
     <div className={cn("space-y-2", className)} {...props}>
@@ -80,6 +96,9 @@ export const AgentInstructions = memo(
 
 export type AgentToolsProps = ComponentProps<typeof Accordion>;
 
+/**
+ * Accordion container for listing available agent tools.
+ */
 export const AgentTools = memo(({ className, ...props }: AgentToolsProps) => (
   <div className={cn("space-y-2", className)}>
     <span className="font-medium text-muted-foreground text-sm">Tools</span>
