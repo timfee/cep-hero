@@ -1,0 +1,67 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T14:00:22.802Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CITRIX_SPA_INTEGRATION",
+            "name": "SPA_TOKEN_EXPIRED",
+            "parameters": [
+              { "name": "INTEGRATION_ID", "value": "citrix-spa-003" },
+              { "name": "ERROR_CODE", "value": "CEP_TOKEN_EXPIRED" },
+              { "name": "ERROR_MESSAGE", "value": "CEP authentication token has expired. Re-authentication required." },
+              { "name": "TOKEN_EXPIRED_AT", "value": "2026-01-20T12:00:00.000Z" },
+              { "name": "TOKEN_LIFETIME_HOURS", "value": "24" },
+              { "name": "USER_EMAIL", "value": "user@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T14:05:35.123Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CITRIX_SPA_INTEGRATION",
+            "name": "SPA_PROXY_PROMPT",
+            "parameters": [
+              { "name": "INTEGRATION_ID", "value": "citrix-spa-003" },
+              { "name": "EVENT_CODE", "value": "PROXY_AUTH_REQUIRED" },
+              { "name": "EVENT_MESSAGE", "value": "Proxy authentication pop-up triggered due to expired CEP credentials." },
+              { "name": "PROXY_URL", "value": "https://proxy.citrix.example.com" },
+              { "name": "USER_EMAIL", "value": "user@example.com" }
+            ]
+          }
+        ]
+      },
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T14:10:00.456Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "CITRIX_SPA_INTEGRATION",
+            "name": "SPA_SESSION_INVALID",
+            "parameters": [
+              { "name": "INTEGRATION_ID", "value": "citrix-spa-003" },
+              { "name": "ERROR_CODE", "value": "SESSION_REQUIRES_REAUTH" },
+              { "name": "ERROR_MESSAGE", "value": "Session is invalid. User must re-authenticate and restart the browser to restore connectivity." },
+              { "name": "RECOMMENDED_ACTION", "value": "REAUTH_AND_RESTART" },
+              { "name": "USER_EMAIL", "value": "user@example.com" }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
