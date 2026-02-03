@@ -28,7 +28,6 @@ export class NextJsSseTransport implements Transport {
   /**
    * Start hook required by the MCP transport interface.
    */
-  // eslint-disable-next-line class-methods-use-this
   async start(): Promise<void> {
     await Promise.resolve();
   }

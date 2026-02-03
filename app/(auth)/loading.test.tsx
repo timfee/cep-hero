@@ -1,4 +1,8 @@
-/* oxlint-disable typescript/no-unsafe-call */
+/**
+ * Tests for the authentication loading component.
+ * Verifies skeleton structure and animations match the sign-in page layout.
+ */
+
 import { render } from "@testing-library/react";
 import { describe, expect, it } from "bun:test";
 
