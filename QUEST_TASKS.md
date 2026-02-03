@@ -9,7 +9,7 @@ This document tracks progress on overhauling the CEP-Hero evaluation system. Pro
 - `[x]` Completed
 - `[!]` Blocked (needs user input)
 
-**Last Updated:** 2026-02-02
+**Last Updated:** 2026-02-03
 
 ---
 
@@ -344,3 +344,42 @@ Created fixtures for extensions category (4 cases):
 1. Run evals against live server to establish true baseline
 2. Review endpoint category (4 cases)
 3. Continue with remaining categories
+
+### Session 3: 2026-02-03
+
+**Major Feature: LLM-as-Judge for Evidence Evaluation**
+
+Implemented semantic evidence evaluation to solve the "whack-a-mole" problem of constantly adjusting evidence requirements.
+
+**Problem:** Exact string matching was too brittle:
+- "Wi-Fi" didn't match "wifi" due to hyphen
+- "4-way handshake timeout" didn't match "deauth" (paraphrase)
+- Evidence requirements needed constant adjustment
+
+**Solution:** Two-tier evaluation system:
+1. **Text normalization** - First pass removes hyphens, normalizes case
+2. **LLM-as-judge** - Failures get batched and sent to Gemini for semantic evaluation
+
+**Implementation:**
+- Created `evals/lib/llm-judge.ts` with batched evaluation (up to 10 cases per LLM call)
+- Uses structured outputs for reliable parsing
+- Modified runner to upgrade failures based on LLM judgment
+
+**Results:** Enrollment evals: 7/7 (100%) with LLM judge
+
+**Other Changes:**
+- Added `searchKnowledge` tool for dynamic RAG during AI reasoning
+- Updated system prompt with guidance on when to search knowledge base
+- Updated QUEST_INSTRUCTIONS.md and MANUAL_TESTING.md with new features
+
+**Key Files Changed:**
+- `evals/lib/llm-judge.ts` - New LLM-as-judge module
+- `evals/lib/runner.ts` - Integration with LLM judge
+- `evals/lib/assertions.ts` - Text normalization
+- `lib/chat/chat-service.ts` - searchKnowledge tool
+
+**Next Session Should:**
+
+1. Continue creating fixtures for remaining categories
+2. Run full eval suite to validate LLM judge across all cases
+3. Review endpoint category (4 cases)

@@ -64,6 +64,7 @@ EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
 - `EVAL_MANAGE_SERVER=0` - Skip server lifecycle management
 - `EVAL_VERBOSE=1` - Enable verbose output
 - `EVAL_TEST_MODE=1` - Return synthetic responses (avoids quota/latency)
+- `EVAL_LLM_JUDGE=0` - Disable LLM-as-judge for evidence evaluation
 - `CHAT_URL` - Override chat API URL (default: `http://localhost:3100/api/chat`)
 
 ## Base snapshot + overrides
@@ -152,6 +153,23 @@ Example (trimmed):
   "status": "pass"
 }
 ```
+
+## LLM-as-Judge
+
+By default, evidence evaluation uses an LLM to evaluate responses semantically. This solves the "whack-a-mole" problem of constantly adjusting evidence requirements.
+
+**How it works:**
+1. String matching with text normalization runs first (handles wifi/Wi-Fi variations)
+2. Cases that fail string matching are batched and sent to Gemini
+3. LLM evaluates if the response semantically addresses each evidence concept
+4. Failures are upgraded to passes if the LLM determines evidence is present
+
+**Why this matters:**
+- "Wi-Fi" matches "wifi" (hyphen normalization)
+- "4-way handshake timeout" matches "deauth" (semantic equivalence)
+- No need to constantly tweak evidence requirements
+
+**Disable with:** `EVAL_LLM_JUDGE=0`
 
 ## What to do when a result is wrong
 
