@@ -16,6 +16,9 @@ export interface ConnectorStatusProps {
   className?: string;
 }
 
+/**
+ * Displays connector policy health with icon, message, and optional sample target.
+ */
 export const ConnectorStatus = memo(function ConnectorStatus({
   analysis,
   className,

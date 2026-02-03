@@ -1,3 +1,7 @@
+/**
+ * Diagnosis card component for displaying AI diagnostic conclusions.
+ * Shows diagnosis text with optional reference link to documentation.
+ */
 "use client";
 
 import { Stethoscope, BookOpen } from "lucide-react";
@@ -14,6 +18,9 @@ export interface DiagnosisCardProps {
   className?: string;
 }
 
+/**
+ * Animated card displaying a diagnosis with stethoscope icon and optional documentation link.
+ */
 export const DiagnosisCard = memo(function DiagnosisCard({
   diagnosis,
   reference,
