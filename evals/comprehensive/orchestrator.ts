@@ -114,6 +114,7 @@ export async function orchestrateRuns(
   console.log(`${"=".repeat(70)}\n`);
 
   const allResults: SingleRunResult[] = [];
+  const failedRuns: { mode: RunMode; iteration: number; error: string }[] = [];
 
   for (const mode of options.modes) {
     for (let i = 0; i < options.iterations; i++) {
@@ -121,10 +122,13 @@ export async function orchestrateRuns(
         const result = await executeSingleRun(mode, i, options);
         allResults.push(result);
       } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : String(error);
         console.error(
           `[comprehensive] Error in ${mode} iteration ${i + 1}:`,
           error
         );
+        failedRuns.push({ mode, iteration: i + 1, error: errorMessage });
       }
     }
   }
@@ -135,6 +139,14 @@ export async function orchestrateRuns(
   console.log("ORCHESTRATION COMPLETE");
   console.log(`${"=".repeat(70)}`);
   console.log(`Total runs completed: ${allResults.length}`);
+  if (failedRuns.length > 0) {
+    console.log(`Failed runs: ${failedRuns.length}`);
+    for (const failed of failedRuns) {
+      console.log(
+        `  - ${failed.mode} iteration ${failed.iteration}: ${failed.error}`
+      );
+    }
+  }
 
   return allResults;
 }

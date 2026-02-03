@@ -22,26 +22,6 @@ function escapeHtml(text: string): string {
 }
 
 /**
- * Get status badge color.
- */
-function getStatusColor(status: "pass" | "fail" | "error"): string {
-  switch (status) {
-    case "pass": {
-      return "#22c55e";
-    }
-    case "fail": {
-      return "#ef4444";
-    }
-    case "error": {
-      return "#f97316";
-    }
-    default: {
-      return "#6b7280";
-    }
-  }
-}
-
-/**
  * Get priority badge color.
  */
 function getPriorityColor(
@@ -496,7 +476,6 @@ function generateModeComparison(report: ComprehensiveReport): string {
 
   const rows = Object.entries(byMode)
     .map(([mode, stats]) => {
-      const total = stats.passed + stats.failed + stats.errors;
       const passRate = (stats.passRate * 100).toFixed(1);
       return `
         <tr>
