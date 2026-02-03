@@ -22,61 +22,101 @@ interface EnrollBrowserError {
 
 export type EnrollBrowserResult = EnrollBrowserSuccess | EnrollBrowserError;
 
-type EnrollmentCreate = (args: {
+interface EnrollmentResponse {
+  data: { name?: string | null; expirationTime?: string | null };
+}
+
+type EnrollmentCreateFn = (args: {
   parent: string;
   requestBody: {
     policySchemaId: string;
     policyTargetKey: { targetResource: string };
   };
-}) => Promise<{
-  data: { name?: string | null; expirationTime?: string | null };
-}>;
+}) => Promise<EnrollmentResponse>;
 
-interface CustomersApi {
-  policies?: {
-    networks?: {
-      enrollments?: {
-        create?: EnrollmentCreate;
-      };
-    };
-  };
-}
+const DEFAULT_TARGET = "customers/my_customer";
+const POLICY_SCHEMA_ID = "chrome.users.EnrollmentToken";
+
+const SERVICE_UNAVAILABLE: EnrollBrowserError = {
+  error: "Chrome Management enrollment client unavailable",
+  suggestion:
+    "Confirm Chrome Management API is enabled and the account has enrollment permissions.",
+  requiresReauth: false,
+};
 
 /**
- * Generate a new enrollment token for Chrome Browser Cloud Management.
+ * Generates a Chrome Browser Cloud Management enrollment token. Tokens allow
+ * browsers to self-register with the organization's management policies.
  */
 export async function enrollBrowser(
   auth: OAuth2Client,
   customerId: string,
   args: EnrollBrowserArgs
 ): Promise<EnrollBrowserResult> {
-  const service = googleApis.chromemanagement({
-    version: "v1",
-    auth,
-  });
+  const service = googleApis.chromemanagement({ version: "v1", auth });
+  const createFn = getEnrollmentCreateFn(service.customers);
 
-  const customers = service.customers as unknown as CustomersApi;
-  const targetResource = buildTargetResource(args.orgUnitId);
+  if (createFn === null) {
+    return SERVICE_UNAVAILABLE;
+  }
 
+  const targetResource = resolveTargetResource(args.orgUnitId);
   console.log("[enroll-browser] request", {
     orgUnitId: args.orgUnitId,
     targetResource,
   });
 
-  try {
-    if (customers.policies?.networks?.enrollments?.create === undefined) {
-      return {
-        error: "Chrome Management enrollment client unavailable",
-        suggestion:
-          "Confirm Chrome Management API is enabled and the account has enrollment permissions.",
-        requiresReauth: false,
-      };
-    }
+  const result = await executeEnrollment(createFn, customerId, targetResource);
+  return result;
+}
 
-    const res = await customers.policies.networks.enrollments.create({
+function getEnrollmentCreateFn(customers: unknown): EnrollmentCreateFn | null {
+  if (!hasEnrollmentCreate(customers)) {
+    return null;
+  }
+  return customers.policies.networks.enrollments.create;
+}
+
+interface EnrollmentCapable {
+  policies: {
+    networks: {
+      enrollments: {
+        create: EnrollmentCreateFn;
+      };
+    };
+  };
+}
+
+function hasEnrollmentCreate(value: unknown): value is EnrollmentCapable {
+  if (typeof value !== "object" || value === null) {
+    return false;
+  }
+  const policies = getNestedProperty(value, "policies");
+  const networks = getNestedProperty(policies, "networks");
+  const enrollments = getNestedProperty(networks, "enrollments");
+  return typeof getNestedProperty(enrollments, "create") === "function";
+}
+
+function getNestedProperty(obj: unknown, key: string): unknown {
+  if (typeof obj !== "object" || obj === null) {
+    return undefined;
+  }
+  if (!Object.hasOwn(obj, key)) {
+    return undefined;
+  }
+  return Reflect.get(obj, key);
+}
+
+async function executeEnrollment(
+  createFn: EnrollmentCreateFn,
+  customerId: string,
+  targetResource: string
+): Promise<EnrollBrowserResult> {
+  try {
+    const res = await createFn({
       parent: `customers/${customerId}`,
       requestBody: {
-        policySchemaId: "chrome.users.EnrollmentToken",
+        policySchemaId: POLICY_SCHEMA_ID,
         policyTargetKey: { targetResource },
       },
     });
@@ -94,19 +134,26 @@ export async function enrollBrowser(
       expiresAt: res.data.expirationTime ?? null,
     };
   } catch (error: unknown) {
-    const { code, message, errors } = getErrorDetails(error);
-    console.log(
-      "[enroll-browser] error",
-      JSON.stringify({ code, message, errors })
-    );
+    logEnrollmentError(error);
     return createApiError(error, "enroll-browser");
   }
 }
 
-function buildTargetResource(orgUnitId: string | undefined): string {
+function logEnrollmentError(error: unknown): void {
+  const { code, message, errors } = getErrorDetails(error);
+  console.log(
+    "[enroll-browser] error",
+    JSON.stringify({ code, message, errors })
+  );
+}
+
+function resolveTargetResource(orgUnitId: string | undefined): string {
   if (orgUnitId === undefined) {
-    return "customers/my_customer";
+    return DEFAULT_TARGET;
   }
   const normalized = buildOrgUnitTargetResource(orgUnitId);
-  return normalized !== "" ? normalized : "customers/my_customer";
+  if (normalized.length === 0) {
+    return DEFAULT_TARGET;
+  }
+  return normalized;
 }

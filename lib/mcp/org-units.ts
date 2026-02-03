@@ -6,57 +6,66 @@ export interface OrgUnit {
 }
 
 /**
- * Normalize org unit and policy resources for consistent lookups.
+ * Normalizes org unit resource identifiers for consistent lookups. Strips
+ * "id:" prefixes, collapses duplicate slashes, and lowercases prefixes.
  */
 export function normalizeResource(value: string): string {
-  const trimmed = value.trim();
-  const stripped = trimmed.replace(/^id:/, "");
-  const collapsed = stripped.replaceAll(/\/{2,}/g, "/");
-  return collapsed
+  return value
+    .trim()
+    .replace(/^id:/, "")
+    .replaceAll(/\/{2,}/g, "/")
     .replace(/^orgunits\//i, "orgunits/")
     .replace(/^customers\//i, "customers/");
 }
 
+function hasContent(value: string | null | undefined): value is string {
+  return typeof value === "string" && value.length > 0;
+}
+
 /**
- * Build a mapping from org unit ID variants to friendly paths.
- * Handles multiple ID formats: "03ph8a2z...", "id:03ph8a2z...", "orgunits/03ph8a2z..."
+ * Builds a lookup map from org unit IDs to their display paths. Indexes each
+ * unit under multiple key formats for flexible resolution.
  */
 export function buildOrgUnitNameMap(units: OrgUnit[]): Map<string, string> {
   const map = new Map<string, string>();
 
   for (const unit of units) {
-    const path = unit.orgUnitPath ?? unit.name ?? "";
-    if (!path) {
-      continue;
-    }
-
-    const rawId = unit.orgUnitId ?? "";
-    if (!rawId) {
-      continue;
-    }
-
-    // Store under multiple key formats for easy lookup
-    const normalizedId = normalizeResource(rawId);
-    map.set(normalizedId, path);
-    map.set(`orgunits/${normalizedId}`, path);
-    map.set(`id:${normalizedId}`, path);
+    addUnitToMap(map, unit);
   }
 
   return map;
 }
 
+function addUnitToMap(map: Map<string, string>, unit: OrgUnit): void {
+  const path = unit.orgUnitPath ?? unit.name;
+  const rawId = unit.orgUnitId;
+
+  if (!hasContent(path) || !hasContent(rawId)) {
+    return;
+  }
+
+  const normalizedId = normalizeResource(rawId);
+  map.set(normalizedId, path);
+  map.set(`orgunits/${normalizedId}`, path);
+  map.set(`id:${normalizedId}`, path);
+}
+
+/**
+ * Resolves an org unit identifier to its human-readable path. Handles direct
+ * paths (starting with "/"), root org unit special cases, and ID lookups.
+ */
 export function resolveOrgUnitDisplay(
   value: string | null | undefined,
   map: Map<string, string>,
   rootOrgUnitId?: string | null,
   rootOrgUnitPath?: string | null
 ): string | null {
-  if (!value) {
+  if (!hasContent(value)) {
     return null;
   }
 
   const trimmed = value.trim();
-  if (!trimmed) {
+  if (trimmed.length === 0) {
     return null;
   }
 
@@ -64,16 +73,27 @@ export function resolveOrgUnitDisplay(
     return trimmed;
   }
 
-  const normalized = normalizeResource(trimmed);
-  if (rootOrgUnitId && rootOrgUnitPath) {
+  return lookupOrgUnit(trimmed, map, rootOrgUnitId, rootOrgUnitPath);
+}
+
+function lookupOrgUnit(
+  value: string,
+  map: Map<string, string>,
+  rootOrgUnitId: string | null | undefined,
+  rootOrgUnitPath: string | null | undefined
+): string | null {
+  const normalized = normalizeResource(value);
+
+  if (hasContent(rootOrgUnitId) && hasContent(rootOrgUnitPath)) {
     const normalizedRoot = normalizeResource(rootOrgUnitId);
-    if (
+    const isRoot =
       normalized === normalizedRoot ||
-      normalized === `orgunits/${normalizedRoot}`
-    ) {
+      normalized === `orgunits/${normalizedRoot}`;
+    if (isRoot) {
       return rootOrgUnitPath;
     }
   }
+
   return map.get(normalized) ?? null;
 }
 

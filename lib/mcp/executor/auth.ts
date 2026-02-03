@@ -22,24 +22,36 @@ interface TokenInfo {
   error?: string;
 }
 
+function isValidTokenInfo(data: unknown): data is TokenInfo {
+  return typeof data === "object" && data !== null;
+}
+
 /**
- * Debug the current access token scopes and expiry.
+ * Validates the current OAuth access token by querying Google's tokeninfo
+ * endpoint. Returns scope, expiry, and issuer on success.
  */
 export async function debugAuth(auth: OAuth2Client): Promise<DebugAuthResult> {
   const token = await auth.getAccessToken();
   const accessToken = token?.token;
 
-  if (accessToken === undefined) {
+  if (typeof accessToken !== "string" || accessToken.length === 0) {
     return { error: "No access token available in client" };
   }
 
-  try {
-    const res = await fetch(
-      `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${encodeURIComponent(accessToken)}`
-    );
-    const data = (await res.json()) as TokenInfo;
+  return fetchTokenInfo(accessToken);
+}
 
-    if (!res.ok || data.error !== undefined) {
+async function fetchTokenInfo(accessToken: string): Promise<DebugAuthResult> {
+  try {
+    const url = `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${encodeURIComponent(accessToken)}`;
+    const res = await fetch(url);
+    const data: unknown = await res.json();
+
+    if (!isValidTokenInfo(data)) {
+      return { error: "Invalid tokeninfo response" };
+    }
+
+    if (!res.ok || typeof data.error === "string") {
       return { error: data.error ?? `tokeninfo ${res.status}` };
     }
 
