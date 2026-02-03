@@ -1,5 +1,5 @@
 import { type OAuth2Client } from "google-auth-library";
-import { type z } from "zod";
+import { z } from "zod";
 
 import { resolveOrgUnitDisplay } from "@/lib/mcp/org-units";
 import { type CreateDLPRuleSchema } from "@/lib/mcp/schemas";
@@ -8,6 +8,20 @@ import { type OrgUnitContext } from "./context";
 import { buildOrgUnitTargetResource } from "./utils";
 
 export type CreateDLPRuleArgs = z.infer<typeof CreateDLPRuleSchema>;
+
+/** Schema for successful API responses containing a rule name. */
+const ApiSuccessSchema = z.object({
+  name: z.string().optional(),
+});
+
+/** Schema for API error responses with nested error message. */
+const ApiErrorSchema = z.object({
+  error: z
+    .object({
+      message: z.string(),
+    })
+    .optional(),
+});
 
 interface CreateDLPRuleSuccess {
   _type: "ui.success";
@@ -227,24 +241,19 @@ async function submitDLPRule(
 }
 
 function extractRuleName(data: unknown): string | null {
-  const name = getProperty(data, "name");
-  return typeof name === "string" ? name : null;
+  const result = ApiSuccessSchema.safeParse(data);
+  if (!result.success) {
+    return null;
+  }
+  return result.data.name ?? null;
 }
 
 function extractApiErrorMessage(data: unknown): string {
-  const error = getProperty(data, "error");
-  const message = getProperty(error, "message");
-  return typeof message === "string" ? message : "Unknown API error";
-}
-
-function getProperty(obj: unknown, key: string): unknown {
-  if (typeof obj !== "object" || obj === null) {
-    return undefined;
+  const result = ApiErrorSchema.safeParse(data);
+  if (!result.success) {
+    return "Unknown API error";
   }
-  if (!Object.hasOwn(obj, key)) {
-    return undefined;
-  }
-  return Reflect.get(obj, key);
+  return result.data.error?.message ?? "Unknown API error";
 }
 
 function buildApiError(

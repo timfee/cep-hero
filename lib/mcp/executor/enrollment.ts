@@ -1,6 +1,6 @@
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
-import { type z } from "zod";
+import { z } from "zod";
 
 import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
 import { type EnrollBrowserSchema } from "@/lib/mcp/schemas";
@@ -8,6 +8,17 @@ import { type EnrollBrowserSchema } from "@/lib/mcp/schemas";
 import { buildOrgUnitTargetResource } from "./utils";
 
 export type EnrollBrowserArgs = z.infer<typeof EnrollBrowserSchema>;
+
+/** Validates the nested structure of the Chrome Management API client. */
+const EnrollmentClientSchema = z.object({
+  policies: z.object({
+    networks: z.object({
+      enrollments: z.object({
+        create: z.unknown(),
+      }),
+    }),
+  }),
+});
 
 interface EnrollBrowserSuccess {
   enrollmentToken: string;
@@ -88,23 +99,11 @@ interface EnrollmentCapable {
 }
 
 function hasEnrollmentCreate(value: unknown): value is EnrollmentCapable {
-  if (typeof value !== "object" || value === null) {
+  const result = EnrollmentClientSchema.safeParse(value);
+  if (!result.success) {
     return false;
   }
-  const policies = getNestedProperty(value, "policies");
-  const networks = getNestedProperty(policies, "networks");
-  const enrollments = getNestedProperty(networks, "enrollments");
-  return typeof getNestedProperty(enrollments, "create") === "function";
-}
-
-function getNestedProperty(obj: unknown, key: string): unknown {
-  if (typeof obj !== "object" || obj === null) {
-    return undefined;
-  }
-  if (!Object.hasOwn(obj, key)) {
-    return undefined;
-  }
-  return Reflect.get(obj, key);
+  return typeof result.data.policies.networks.enrollments.create === "function";
 }
 
 async function executeEnrollment(
