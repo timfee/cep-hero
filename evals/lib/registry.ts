@@ -2,7 +2,6 @@
  * Eval registry loading and filtering without test framework dependencies.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 

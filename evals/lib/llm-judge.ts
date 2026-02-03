@@ -3,7 +3,7 @@
  */
 
 import { google } from "@ai-sdk/google";
-import { generateObject } from "ai";
+import { generateText, Output } from "ai";
 import { z } from "zod";
 
 const BATCH_SIZE = 10;
@@ -96,14 +96,13 @@ ${casesDescription}
 Evaluate each case and return structured results.`;
 
   try {
-    // eslint-disable-next-line @typescript-eslint/no-deprecated
-    const response = await generateObject({
+    const response = await generateText({
       model: google("gemini-2.0-flash-001"),
-      schema: EvidenceResultSchema,
+      output: Output.object({ schema: EvidenceResultSchema }),
       prompt,
     });
 
-    return response.object.results;
+    return response.output?.results ?? [];
   } catch (error) {
     console.error("LLM judge batch evaluation failed:", error);
     return batch.map((c) => ({

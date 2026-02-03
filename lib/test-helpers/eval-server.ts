@@ -2,7 +2,6 @@
  * Manages the eval dev server lifecycle for integration tests.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import {
   closeSync,
   existsSync,
