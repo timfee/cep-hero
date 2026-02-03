@@ -2,7 +2,6 @@
  * Test client for making chat API requests with retry and timeout handling.
  */
 
-/* eslint-disable jest/require-hook */
 import { expect } from "bun:test";
 import { z } from "zod";
 

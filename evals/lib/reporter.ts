@@ -2,7 +2,6 @@
  * Eval report generation and output for writing results to disk and formatting console output.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 

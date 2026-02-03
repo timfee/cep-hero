@@ -2,7 +2,6 @@
  * Validates Google service account credentials and API access with actionable guidance.
  */
 
-/* eslint-disable import/no-nodejs-modules */
 import dotenv from "dotenv";
 import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
