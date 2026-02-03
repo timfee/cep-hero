@@ -1,5 +1,7 @@
 "use client";
 
+"use client";
+
 /**
  * Dashboard loading skeleton for use with Suspense boundaries.
  * Matches the visual structure of DashboardOverview for seamless loading.
