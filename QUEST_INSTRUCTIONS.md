@@ -333,9 +333,9 @@ CEP-Hero uses the Vercel AI SDK. When improving the system, apply these patterns
 
 ```typescript
 const hasDiagnosis: StopCondition = ({ steps }) =>
-  steps.some(step =>
-    step.text?.includes("Diagnosis:") &&
-    step.text?.includes("Next Steps:")
+  steps.some(
+    (step) =>
+      step.text?.includes("Diagnosis:") && step.text?.includes("Next Steps:")
   ) ?? false;
 ```
 
@@ -344,18 +344,24 @@ const hasDiagnosis: StopCondition = ({ steps }) =>
 ```typescript
 // Add a 'provideDiagnosis' tool with no execute function
 // Combine with toolChoice: 'required' to force structured output
-stopWhen: hasToolCall('provideDiagnosis')
+stopWhen: hasToolCall("provideDiagnosis");
 ```
 
 **3. Budget-Aware Stopping** - Track token usage and stop when cost threshold is reached:
 
 ```typescript
 const budgetExceeded: StopCondition = ({ steps }) => {
-  const totalUsage = steps.reduce((acc, step) => ({
-    inputTokens: acc.inputTokens + (step.usage?.inputTokens ?? 0),
-    outputTokens: acc.outputTokens + (step.usage?.outputTokens ?? 0),
-  }), { inputTokens: 0, outputTokens: 0 });
-  return (totalUsage.inputTokens * 0.01 + totalUsage.outputTokens * 0.03) / 1000 > 0.5;
+  const totalUsage = steps.reduce(
+    (acc, step) => ({
+      inputTokens: acc.inputTokens + (step.usage?.inputTokens ?? 0),
+      outputTokens: acc.outputTokens + (step.usage?.outputTokens ?? 0),
+    }),
+    { inputTokens: 0, outputTokens: 0 }
+  );
+  return (
+    (totalUsage.inputTokens * 0.01 + totalUsage.outputTokens * 0.03) / 1000 >
+    0.5
+  );
 };
 ```
 
@@ -363,10 +369,10 @@ const budgetExceeded: StopCondition = ({ steps }) => {
 
 ```typescript
 stopWhen: [
-  stepCountIs(15),                    // Safety limit
-  hasToolCall('provideDiagnosis'),    // Normal completion
-  budgetExceeded,                     // Cost control
-]
+  stepCountIs(15), // Safety limit
+  hasToolCall("provideDiagnosis"), // Normal completion
+  budgetExceeded, // Cost control
+];
 ```
 
 #### Dynamic Execution with prepareStep
@@ -382,9 +388,9 @@ prepareStep: async ({ stepNumber, messages }) => {
 
   // Phase-based tool availability
   if (stepNumber < 3) {
-    return { tools: { ...dataCollectionTools } };  // Steps 0-2: Gather data
+    return { tools: { ...dataCollectionTools } }; // Steps 0-2: Gather data
   } else {
-    return { tools: { ...analysisTools } };        // Steps 3+: Analyze
+    return { tools: { ...analysisTools } }; // Steps 3+: Analyze
   }
 };
 ```
@@ -393,11 +399,11 @@ prepareStep: async ({ stepNumber, messages }) => {
 
 For troubleshooting workflows, implement phased execution:
 
-| Phase | Steps | Tools Available | Goal |
-|-------|-------|-----------------|------|
-| Discovery | 0-2 | Data collection (getOrgUnits, getPolicies, getEvents) | Gather context |
-| Analysis | 3-5 | All tools + RAG/web search | Analyze and correlate |
-| Diagnosis | 6+ | provideDiagnosis (no execute) | Force structured output |
+| Phase     | Steps | Tools Available                                       | Goal                    |
+| --------- | ----- | ----------------------------------------------------- | ----------------------- |
+| Discovery | 0-2   | Data collection (getOrgUnits, getPolicies, getEvents) | Gather context          |
+| Analysis  | 3-5   | All tools + RAG/web search                            | Analyze and correlate   |
+| Diagnosis | 6+    | provideDiagnosis (no execute)                         | Force structured output |
 
 ### Workflow Patterns
 
@@ -474,13 +480,13 @@ Generate initial diagnosis
 
 When selecting patterns, consider:
 
-| Factor | Question |
-|--------|----------|
-| Flexibility vs Control | How constrained should the AI be? |
-| Error Tolerance | What's the cost of a wrong diagnosis? |
-| Latency | How long can users wait? |
-| Cost | How many LLM calls can we afford? |
-| Maintainability | Can we debug and improve this? |
+| Factor                 | Question                              |
+| ---------------------- | ------------------------------------- |
+| Flexibility vs Control | How constrained should the AI be?     |
+| Error Tolerance        | What's the cost of a wrong diagnosis? |
+| Latency                | How long can users wait?              |
+| Cost                   | How many LLM calls can we afford?     |
+| Maintainability        | Can we debug and improve this?        |
 
 **Strategy**: Start with the simplest sufficient approach (Sequential), add complexity only when evals demonstrate the need.
 
@@ -494,12 +500,14 @@ Don't add ad-hoc system instructions to fix individual eval failures. Instead:
 4. **Document the reasoning** - why did we add this instruction? What pattern was it addressing?
 
 **Example of what NOT to do**:
+
 ```
 # Bad: Ad-hoc fix for EC-057
 "When analyzing connector policies, always check the policyTargetKey scope."
 ```
 
 **Example of what TO do**:
+
 ```
 # Good: General pattern addressing multiple cases
 "When diagnosing policy issues, always identify:

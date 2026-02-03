@@ -102,48 +102,48 @@ For each eval case, assess:
 
 ### endpoint (4 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                       | Reviewed | Fixtures | Notes |
-| ------ | ------------------------------------------- | -------- | -------- | ----- |
+| Case   | Title                                       | Reviewed | Fixtures | Notes                                                         |
+| ------ | ------------------------------------------- | -------- | -------- | ------------------------------------------------------------- |
 | EC-009 | Endpoint Verification sync (macOS Keychain) | [x]      | Yes      | Keychain access denied, Safe Storage locked, heartbeat missed |
 | EC-010 | Endpoint Verification sync (Windows DPAPI)  | [x]      | Yes      | DPAPI decryption failed, S4U task error, registry key invalid |
-| EC-011 | Endpoint Verification cannot recover key    | [x]      | Yes      | Key recovery failure, Safe Storage reset needed |
-| EC-012 | Endpoint Verification service worker bug    | [x]      | Yes      | SW registration status code 2, known EV bug |
+| EC-011 | Endpoint Verification cannot recover key    | [x]      | Yes      | Key recovery failure, Safe Storage reset needed               |
+| EC-012 | Endpoint Verification service worker bug    | [x]      | Yes      | SW registration status code 2, known EV bug                   |
 
 ### enrollment (7 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                         | Reviewed | Fixtures | Notes |
-| ------ | --------------------------------------------- | -------- | -------- | ----- |
+| Case   | Title                                         | Reviewed | Fixtures | Notes                                                                    |
+| ------ | --------------------------------------------- | -------- | -------- | ------------------------------------------------------------------------ |
 | EC-001 | Network connectivity during enrollment        | [x]      | Yes      | Created net-fail.log and eventlog-wifi-fail.txt with connection failures |
-| EC-002 | Enrollment error codes                        | [x]      | Yes      | Uses EC-003/update_engine.log with 402 error. Good match. |
-| EC-004 | Duplicate machine identifier after VM cloning | [x]      | Yes      | Added audit events showing duplicate DEVICE_ID and browsers array |
-| EC-018 | CEP enrollment/connectors not registering     | [x]      | Yes      | Empty browsers/events list with valid token not applied |
-| EC-046 | Enrollment token issues                       | [x]      | Yes      | enrollmentToken with status: "expired" |
-| EC-069 | Enrollment token wrong OU                     | [x]      | Yes      | Token targeting customers/C00000000 instead of Enroll-Eng OU |
-| EC-070 | Enrollment permission denied                  | [x]      | Yes      | errors.enrollBrowser: "PERMISSION_DENIED" |
+| EC-002 | Enrollment error codes                        | [x]      | Yes      | Uses EC-003/update_engine.log with 402 error. Good match.                |
+| EC-004 | Duplicate machine identifier after VM cloning | [x]      | Yes      | Added audit events showing duplicate DEVICE_ID and browsers array        |
+| EC-018 | CEP enrollment/connectors not registering     | [x]      | Yes      | Empty browsers/events list with valid token not applied                  |
+| EC-046 | Enrollment token issues                       | [x]      | Yes      | enrollmentToken with status: "expired"                                   |
+| EC-069 | Enrollment token wrong OU                     | [x]      | Yes      | Token targeting customers/C00000000 instead of Enroll-Eng OU             |
+| EC-070 | Enrollment permission denied                  | [x]      | Yes      | errors.enrollBrowser: "PERMISSION_DENIED"                                |
 
 ### events (2 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                             | Reviewed | Fixtures | Notes |
-| ------ | --------------------------------- | -------- | -------- | ----- |
+| Case   | Title                             | Reviewed | Fixtures | Notes                                                                            |
+| ------ | --------------------------------- | -------- | -------- | -------------------------------------------------------------------------------- |
 | EC-052 | Performance degradation telemetry | [x]      | Yes      | chromeReports with CPU/memory metrics showing "Legacy Ad Blocker Pro" at 45% CPU |
-| EC-062 | Event reporting off               | [x]      | Yes      | CloudReporting disabled in connectorPolicies for Events-Off OU |
+| EC-062 | Event reporting off               | [x]      | Yes      | CloudReporting disabled in connectorPolicies for Events-Off OU                   |
 
 ### extensions (4 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                            | Reviewed | Fixtures | Notes |
-| ------ | -------------------------------- | -------- | -------- | ----- |
+| Case   | Title                            | Reviewed | Fixtures | Notes                                                                      |
+| ------ | -------------------------------- | -------- | -------- | -------------------------------------------------------------------------- |
 | EC-043 | Force-install extension failures | [x]      | Yes      | EXTENSION_INSTALL_FAILED with CRX_FETCH_FAILED and MANIFEST_INVALID errors |
-| EC-044 | Permission increase blocking     | [x]      | Yes      | EXTENSION_DISABLED with PERMISSIONS_INCREASE reason |
-| EC-045 | Malicious extension removal      | [x]      | Yes      | Extension installed on 2 devices, needs blocklisting |
-| EC-053 | Corrupt extension state          | [x]      | Yes      | EXTENSION_CRASH events leading to CORRUPTED state |
+| EC-044 | Permission increase blocking     | [x]      | Yes      | EXTENSION_DISABLED with PERMISSIONS_INCREASE reason                        |
+| EC-045 | Malicious extension removal      | [x]      | Yes      | Extension installed on 2 devices, needs blocklisting                       |
+| EC-053 | Corrupt extension state          | [x]      | Yes      | EXTENSION_CRASH events leading to CORRUPTED state                          |
 
 ### integration (4 cases) ✅ FIXTURES COMPLETE
 
-| Case   | Title                                    | Reviewed | Fixtures | Notes |
-| ------ | ---------------------------------------- | -------- | -------- | ----- |
+| Case   | Title                                    | Reviewed | Fixtures | Notes                                                        |
+| ------ | ---------------------------------------- | -------- | -------- | ------------------------------------------------------------ |
 | EC-017 | Citrix SPA integration issues (overview) | [x]      | Yes      | Policy limit exceeded (8 groups max), complex policy timeout |
 | EC-024 | Citrix SPA group membership sync         | [x]      | Yes      | Group visibility restricted, Directory API permission denied |
-| EC-025 | Citrix SPA expired token proxy pop-up    | [x]      | Yes      | CEP token expired, proxy auth required, re-auth needed |
+| EC-025 | Citrix SPA expired token proxy pop-up    | [x]      | Yes      | CEP token expired, proxy auth required, re-auth needed       |
 | EC-026 | Citrix SPA service unavailable           | [x]      | Yes      | 503 Service Unavailable, backend outage, support logs needed |
 
 ### network (6 cases)
@@ -305,17 +305,18 @@ EVAL_USE_BASE=1 bun run evals:verbose
 
 Reviewed and created fixtures for all 7 enrollment category cases:
 
-| Case | Status | Fixture Created |
-|------|--------|-----------------|
+| Case   | Status      | Fixture Created                                                           |
+| ------ | ----------- | ------------------------------------------------------------------------- |
 | EC-001 | ✅ Complete | Created net-fail.log with ERR_NAME_NOT_RESOLVED, ERR_CONNECTION_TIMED_OUT |
-| EC-002 | ✅ Good | Already has 402 error in update_engine.log |
-| EC-004 | ✅ Complete | Audit events + browsers array showing duplicate DEVICE_ID |
-| EC-018 | ✅ Complete | Empty browsers/events with valid but unapplied token |
-| EC-046 | ✅ Complete | enrollmentToken with status: "expired" |
-| EC-069 | ✅ Complete | Token targeting root (customers/C00000000) instead of OU |
-| EC-070 | ✅ Complete | errors.enrollBrowser: "PERMISSION_DENIED" |
+| EC-002 | ✅ Good     | Already has 402 error in update_engine.log                                |
+| EC-004 | ✅ Complete | Audit events + browsers array showing duplicate DEVICE_ID                 |
+| EC-018 | ✅ Complete | Empty browsers/events with valid but unapplied token                      |
+| EC-046 | ✅ Complete | enrollmentToken with status: "expired"                                    |
+| EC-069 | ✅ Complete | Token targeting root (customers/C00000000) instead of OU                  |
+| EC-070 | ✅ Complete | errors.enrollBrowser: "PERMISSION_DENIED"                                 |
 
 **Infrastructure extended:**
+
 - Added `enrollmentToken` and `browsers` fields to FixtureData type
 - Extended fixture-executor to read enrollmentToken with status/error injection
 - Extended loadFixtureData to handle new fields
@@ -325,16 +326,19 @@ Reviewed and created fixtures for all 7 enrollment category cases:
 **Continued in same session - Events & Extensions:**
 
 Created fixtures for events category (2 cases):
+
 - EC-052: chromeReports with appUsageMetrics showing "Legacy Ad Blocker Pro" at 45% CPU
 - EC-062: CloudReporting disabled in connectorPolicies for Events-Off OU
 
 Created fixtures for extensions category (4 cases):
+
 - EC-043: EXTENSION_INSTALL_FAILED with CRX_FETCH_FAILED and MANIFEST_INVALID
 - EC-044: EXTENSION_DISABLED with PERMISSIONS_INCREASE reason
 - EC-045: Malicious extension on 2 devices, needs blocklisting
 - EC-053: EXTENSION_CRASH events leading to CORRUPTED state
 
 **Total Progress:** 13/85 cases now have fixtures
+
 - enrollment: 7 ✅
 - events: 2 ✅
 - extensions: 4 ✅
@@ -365,6 +369,7 @@ Created fixtures for extensions category (4 cases):
 - Updated registry.json with fixture overrides and required_evidence for all 8 cases
 
 **Total Progress:** 21/85 cases now have fixtures
+
 - enrollment: 7 ✅
 - events: 2 ✅
 - extensions: 4 ✅

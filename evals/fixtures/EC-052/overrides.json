@@ -46,7 +46,10 @@
             "type": "EXTENSION_PERFORMANCE_TYPE",
             "name": "EXTENSION_HIGH_CPU",
             "parameters": [
-              { "name": "EXTENSION_ID", "value": "nmmhkkegccagdldgiimedpiccmgmieda" },
+              {
+                "name": "EXTENSION_ID",
+                "value": "nmmhkkegccagdldgiimedpiccmgmieda"
+              },
               { "name": "EXTENSION_NAME", "value": "Legacy Ad Blocker Pro" },
               { "name": "CPU_PERCENT", "value": "45.2" },
               { "name": "MEMORY_MB", "value": "890" }
