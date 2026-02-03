@@ -2,10 +2,12 @@
  * Manages the eval dev server lifecycle for integration tests.
  */
 
+/* eslint-disable import/no-nodejs-modules */
 import {
   closeSync,
   existsSync,
   openSync,
+  readFileSync,
   unlinkSync,
   writeFileSync,
 } from "node:fs";
@@ -182,9 +184,40 @@ async function waitForServer(url: string, attempts: number, delayMs: number) {
 }
 
 /**
+ * Check if a process with the given PID is still running.
+ */
+function isProcessRunning(pid: number): boolean {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Remove stale lock file if the owning process is no longer running.
+ */
+function cleanupStaleLock(): void {
+  if (!existsSync(LOCK_PATH)) {
+    return;
+  }
+  try {
+    const pidStr = readFileSync(LOCK_PATH, "utf8").trim();
+    const pid = Number.parseInt(pidStr, 10);
+    if (!Number.isNaN(pid) && !isProcessRunning(pid)) {
+      unlinkSync(LOCK_PATH);
+    }
+  } catch {
+    // Ignore errors reading/removing stale lock
+  }
+}
+
+/**
  * Attempt to acquire an exclusive file lock.
  */
 function acquireLock() {
+  cleanupStaleLock();
   if (existsSync(LOCK_PATH)) {
     return false;
   }
