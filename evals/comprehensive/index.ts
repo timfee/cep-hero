@@ -1,360 +1,246 @@
 #!/usr/bin/env bun
 /**
- * Comprehensive eval CLI for running thorough evaluations across all configurations.
+ * Comprehensive eval runner - spawns eval runs with different configurations
+ * and aggregates results for analysis.
  *
  * Usage:
  *   bun evals/comprehensive/index.ts [options]
  *
  * Options:
- *   --modes <modes>      Comma-separated modes (fixture-with-judge,fixture-without-judge,live-with-judge,live-without-judge)
- *   --iterations <n>     Number of iterations per mode (default: 1)
- *   --skip-live          Skip live mode configurations
+ *   --modes <modes>      Comma-separated modes (fixture,live)
+ *   --with-judge         Enable LLM judge (default: off)
+ *   --iterations <n>     Iterations per mode (default: 1)
  *   --skip-analysis      Skip Gemini analysis
- *   --output <dir>       Output directory (default: evals/comprehensive/reports)
- *   --verbose            Enable verbose output
- *   --cases <ids>        Comma-separated case IDs to run
- *   --categories <cats>  Comma-separated categories to run
- *   --help               Show this help message
- *
- * Environment variables:
- *   GOOGLE_GENERATIVE_AI_API_KEY - Required for Gemini analysis
- *   COMPREHENSIVE_SKIP_LIVE      - Set to "1" to skip live modes
- *   COMPREHENSIVE_ITERATIONS     - Number of iterations per mode
+ *   --cases <ids>        Filter to specific case IDs
+ *   --help               Show help
  */
 
-import { aggregateResults, formatAggregationSummary } from "./aggregator";
-import { analyzeWithGemini, formatGeminiAnalysis } from "./analyzer";
-import {
-  DEFAULT_ITERATIONS,
-  DEFAULT_OUTPUT_DIR,
-  getAllModes,
-  getDefaultModes,
-} from "./config";
-import { writeComprehensiveReport } from "./html-reporter";
-import { orchestrateRuns } from "./orchestrator";
-import {
-  type CliOptions,
-  type ComprehensiveReport,
-  type ResolvedCliOptions,
-  type RunMode,
-} from "./types";
+import { google } from "@ai-sdk/google";
+import { generateObject } from "ai";
+/* eslint-disable import/no-nodejs-modules */
+import { readdir, readFile, mkdir } from "node:fs/promises";
+import path from "node:path";
+import { z } from "zod";
 
-/**
- * Parse command line arguments.
- */
+interface RunConfig {
+  name: string;
+  env: Record<string, string>;
+}
+
+interface CliOptions {
+  modes: string[];
+  withJudge: boolean;
+  iterations: number;
+  skipAnalysis: boolean;
+  cases?: string;
+}
+
+const REPORTS_DIR = "evals/reports";
+const OUTPUT_DIR = "evals/comprehensive/reports";
+
 function parseArgs(): CliOptions {
   const args = process.argv.slice(2);
-  const options: CliOptions = {};
+  const options: CliOptions = {
+    modes: ["fixture"],
+    withJudge: false,
+    iterations: 1,
+    skipAnalysis: false,
+  };
 
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-
     if (arg === "--help" || arg === "-h") {
-      printHelp();
+      console.log(`
+Comprehensive Eval Runner
+-------------------------
+Runs evals with different configurations and aggregates results.
+
+Options:
+  --modes <modes>    Comma-separated: fixture, live (default: fixture)
+  --with-judge       Enable LLM judge for semantic matching
+  --iterations <n>   Runs per mode (default: 1)
+  --skip-analysis    Skip Gemini 2.5 Pro analysis
+  --cases <ids>      Filter to specific case IDs
+  --help             Show this help
+`);
       process.exit(0);
     }
-
     if (arg === "--modes" && args[i + 1]) {
-      i += 1;
-      const inputModes = args[i].split(",");
-      const validModes = getAllModes();
-      const invalidModes = inputModes.filter(
-        (m) => !validModes.includes(m as RunMode)
-      );
-      if (invalidModes.length > 0) {
-        console.error(`Error: Invalid mode(s): ${invalidModes.join(", ")}`);
-        console.error(`Valid modes: ${validModes.join(", ")}`);
-        process.exit(1);
-      }
-      options.modes = inputModes as RunMode[];
+      options.modes = args[++i].split(",");
     }
-
+    if (arg === "--with-judge") {
+      options.withJudge = true;
+    }
     if (arg === "--iterations" && args[i + 1]) {
-      i += 1;
-      const parsed = Number.parseInt(args[i], 10);
-      if (Number.isNaN(parsed) || parsed < 1) {
-        console.error(
-          `Error: --iterations must be a positive integer, got: ${args[i]}`
-        );
-        process.exit(1);
-      }
-      options.iterations = parsed;
+      options.iterations = Number.parseInt(args[++i], 10) || 1;
     }
-
-    if (arg === "--skip-live") {
-      options.skipLive = true;
-    }
-
     if (arg === "--skip-analysis") {
       options.skipAnalysis = true;
     }
-
-    if (arg === "--output" && args[i + 1]) {
-      i += 1;
-      options.outputDir = args[i];
-    }
-
-    if (arg === "--verbose" || arg === "-v") {
-      options.verbose = true;
-    }
-
     if (arg === "--cases" && args[i + 1]) {
-      i += 1;
-      options.caseIds = args[i];
-    }
-
-    if (arg === "--categories" && args[i + 1]) {
-      i += 1;
-      options.categories = args[i];
+      options.cases = args[++i];
     }
   }
-
   return options;
 }
 
-/**
- * Print help message.
- */
-function printHelp(): void {
-  console.log(`
-CEP Hero Comprehensive Eval System
-===================================
+function buildConfigs(options: CliOptions): RunConfig[] {
+  const configs: RunConfig[] = [];
 
-Runs evaluations across multiple configurations, aggregates results,
-and generates AI-powered insights using Gemini 2.5 Pro.
-
-Usage:
-  bun evals/comprehensive/index.ts [options]
-
-Options:
-  --modes <modes>      Comma-separated run modes:
-                       - fixture-with-judge    (uses fixtures + LLM judge)
-                       - fixture-without-judge (uses fixtures, string matching)
-                       - live-with-judge       (uses live APIs + LLM judge)
-                       - live-without-judge    (uses live APIs, string matching)
-                       Default: fixture-with-judge,fixture-without-judge
-
-  --iterations <n>     Number of iterations per mode (default: 1)
-                       Higher values help identify flaky tests
-
-  --skip-live          Skip live mode configurations (same as only fixture modes)
-
-  --skip-analysis      Skip Gemini 2.5 Pro analysis phase
-
-  --output <dir>       Output directory for reports
-                       Default: evals/comprehensive/reports
-
-  --verbose, -v        Enable verbose output during eval runs
-
-  --cases <ids>        Comma-separated case IDs to run (e.g., "EC-001,EC-002")
-
-  --categories <cats>  Comma-separated categories to run (e.g., "enrollment,network")
-
-  --help, -h           Show this help message
-
-Environment Variables:
-  GOOGLE_GENERATIVE_AI_API_KEY    Required for Gemini analysis
-  COMPREHENSIVE_SKIP_LIVE         Set to "1" to skip live modes
-  COMPREHENSIVE_ITERATIONS        Number of iterations per mode
-
-Examples:
-  # Run default fixture modes
-  bun evals/comprehensive/index.ts
-
-  # Run all modes with 2 iterations each
-  bun evals/comprehensive/index.ts --modes fixture-with-judge,fixture-without-judge,live-with-judge,live-without-judge --iterations 2
-
-  # Run only fixture modes for specific categories
-  bun evals/comprehensive/index.ts --skip-live --categories enrollment,network
-
-  # Quick run with verbose output
-  bun evals/comprehensive/index.ts --cases EC-001,EC-002 --verbose
-
-  # Cron-friendly: run with all modes, skip interactive output
-  COMPREHENSIVE_ITERATIONS=2 bun evals/comprehensive/index.ts --modes fixture-with-judge,live-with-judge
-`);
+  for (const mode of options.modes) {
+    const isFixture = mode === "fixture";
+    configs.push({
+      name: `${mode}${options.withJudge ? "+judge" : ""}`,
+      env: {
+        EVAL_USE_BASE: isFixture ? "1" : "0",
+        EVAL_LLM_JUDGE: options.withJudge ? "1" : "0",
+        EVAL_SERIAL: "1",
+        ...(options.cases ? { EVAL_IDS: options.cases } : {}),
+      },
+    });
+  }
+  return configs;
 }
 
-/**
- * Resolve options from CLI args and environment variables.
- */
-function resolveOptions(cliOptions: CliOptions): ResolvedCliOptions {
-  const skipLive =
-    cliOptions.skipLive || process.env.COMPREHENSIVE_SKIP_LIVE === "1";
+async function runEvalProcess(config: RunConfig): Promise<string | null> {
+  console.log(`[comprehensive] Running: ${config.name}`);
 
-  let { modes } = cliOptions;
-  if (!modes) {
-    modes = getDefaultModes();
-  } else if (skipLive) {
-    modes = modes.filter((m) => !m.startsWith("live"));
-  }
-
-  const iterations =
-    cliOptions.iterations ??
-    (process.env.COMPREHENSIVE_ITERATIONS
-      ? Number.parseInt(process.env.COMPREHENSIVE_ITERATIONS, 10)
-      : DEFAULT_ITERATIONS);
-
-  return {
-    modes,
-    iterations,
-    skipLive,
-    skipAnalysis: cliOptions.skipAnalysis ?? false,
-    outputDir: cliOptions.outputDir ?? DEFAULT_OUTPUT_DIR,
-    verbose: cliOptions.verbose ?? false,
-    caseIds: cliOptions.caseIds,
-    categories: cliOptions.categories,
-  };
-}
-
-/**
- * Main entry point.
- */
-async function main(): Promise<void> {
-  const cliOptions = parseArgs();
-  const options = resolveOptions(cliOptions);
-
-  console.log("\n");
-  console.log(
-    "╔════════════════════════════════════════════════════════════════════╗"
-  );
-  console.log(
-    "║         CEP HERO COMPREHENSIVE EVAL SYSTEM                         ║"
-  );
-  console.log(
-    "╚════════════════════════════════════════════════════════════════════╝"
-  );
-  console.log("");
-  console.log(`Modes:        ${options.modes.join(", ")}`);
-  console.log(`Iterations:   ${options.iterations}`);
-  console.log(`Output:       ${options.outputDir}`);
-  console.log(
-    `Analysis:     ${options.skipAnalysis ? "Disabled" : "Enabled (Gemini 2.5 Pro)"}`
-  );
-  if (options.caseIds) {
-    console.log(`Cases:        ${options.caseIds}`);
-  }
-  if (options.categories) {
-    console.log(`Categories:   ${options.categories}`);
-  }
-  console.log("");
-
-  // Step 1: Orchestrate all runs
-  const runs = await orchestrateRuns({
-    modes: options.modes,
-    iterations: options.iterations,
-    caseIds: options.caseIds,
-    categories: options.categories,
-    verbose: options.verbose,
+  const proc = Bun.spawn(["bun", "run", "evals"], {
+    env: { ...process.env, ...config.env },
+    stdout: "inherit",
+    stderr: "inherit",
   });
 
-  if (runs.length === 0) {
-    console.log("[comprehensive] No runs completed");
+  const exitCode = await proc.exited;
+
+  if (exitCode !== 0 && exitCode !== 1) {
+    console.error(
+      `[comprehensive] ${config.name} failed with code ${exitCode}`
+    );
+    return null;
+  }
+
+  // Find the latest summary report
+  const files = await readdir(REPORTS_DIR);
+  const summaries = files
+    .filter((f) => f.startsWith("summary-"))
+    .toSorted()
+    .toReversed();
+
+  return summaries[0] ? path.join(REPORTS_DIR, summaries[0]) : null;
+}
+
+async function collectResults(reportPaths: string[]): Promise<{
+  passed: number;
+  failed: number;
+  total: number;
+  details: unknown[];
+}> {
+  let passed = 0;
+  let failed = 0;
+  let total = 0;
+  const details: unknown[] = [];
+
+  for (const p of reportPaths) {
+    try {
+      const content = await readFile(p, "utf8");
+      const data = JSON.parse(content);
+      passed += data.passed ?? 0;
+      failed += data.failed ?? 0;
+      total += data.totalCases ?? 0;
+      details.push(data);
+    } catch {
+      console.error(`[comprehensive] Failed to read ${p}`);
+    }
+  }
+
+  return { passed, failed, total, details };
+}
+
+const AnalysisSchema = z.object({
+  summary: z.string(),
+  findings: z.array(z.string()),
+  recommendations: z.array(z.string()),
+});
+
+async function analyzeWithGemini(
+  results: unknown
+): Promise<z.infer<typeof AnalysisSchema> | null> {
+  try {
+    const response = await generateObject({
+      model: google("gemini-2.5-pro-preview-05-06"),
+      schema: AnalysisSchema,
+      prompt: `Analyze these eval results and provide insights:\n${JSON.stringify(results, null, 2)}`,
+    });
+    return response.object;
+  } catch (error) {
+    console.error("[comprehensive] Gemini analysis failed:", error);
+    return null;
+  }
+}
+
+async function main() {
+  const options = parseArgs();
+  const configs = buildConfigs(options);
+
+  console.log("\n=== COMPREHENSIVE EVAL ===");
+  console.log(`Modes: ${options.modes.join(", ")}`);
+  console.log(`Judge: ${options.withJudge ? "enabled" : "disabled"}`);
+  console.log(`Iterations: ${options.iterations}`);
+  console.log("");
+
+  const reportPaths: string[] = [];
+
+  for (const config of configs) {
+    for (let i = 0; i < options.iterations; i++) {
+      const reportPath = await runEvalProcess(config);
+      if (reportPath) {
+        reportPaths.push(reportPath);
+      }
+    }
+  }
+
+  if (reportPaths.length === 0) {
+    console.error("[comprehensive] No reports collected");
     process.exit(1);
   }
 
-  // Step 2: Aggregate results
-  console.log("\n[comprehensive] Aggregating results...");
-  const aggregated = aggregateResults(runs);
-  console.log(formatAggregationSummary(aggregated));
+  const results = await collectResults(reportPaths);
 
-  // Step 3: Gemini analysis (unless skipped)
-  let geminiAnalysis;
-  if (options.skipAnalysis) {
-    console.log("[comprehensive] Skipping Gemini analysis (--skip-analysis)");
-    geminiAnalysis = createDefaultAnalysis(aggregated);
-  } else {
-    geminiAnalysis = await analyzeWithGemini(aggregated);
-    console.log(formatGeminiAnalysis(geminiAnalysis));
+  console.log("\n=== RESULTS ===");
+  console.log(`Total: ${results.total}`);
+  console.log(`Passed: ${results.passed}`);
+  console.log(`Failed: ${results.failed}`);
+  console.log(
+    `Pass rate: ${results.total > 0 ? ((results.passed / results.total) * 100).toFixed(1) : 0}%`
+  );
+
+  if (!options.skipAnalysis) {
+    console.log("\n[comprehensive] Running Gemini analysis...");
+    const analysis = await analyzeWithGemini(results);
+    if (analysis) {
+      console.log("\n=== ANALYSIS ===");
+      console.log(analysis.summary);
+      console.log("\nFindings:");
+      for (const f of analysis.findings) {
+        console.log(`  - ${f}`);
+      }
+      console.log("\nRecommendations:");
+      for (const r of analysis.recommendations) {
+        console.log(`  - ${r}`);
+      }
+    }
   }
 
-  // Step 4: Build comprehensive report
-  const report: ComprehensiveReport = {
-    runId: aggregated.runId,
-    timestamp: aggregated.timestamp,
-    aggregatedResults: aggregated,
-    geminiAnalysis,
-  };
-
-  // Step 5: Write reports
-  const { htmlPath, jsonPath } = await writeComprehensiveReport(
-    report,
-    options.outputDir
-  );
-
-  report.htmlReportPath = htmlPath;
-  report.jsonReportPath = jsonPath;
-
-  // Final summary
-  console.log("\n");
-  console.log(
-    "╔════════════════════════════════════════════════════════════════════╗"
-  );
-  console.log(
-    "║         COMPREHENSIVE EVAL COMPLETE                                ║"
-  );
-  console.log(
-    "╚════════════════════════════════════════════════════════════════════╝"
-  );
-  console.log("");
-  console.log(`Run ID:       ${report.runId}`);
-  console.log(
-    `Pass Rate:    ${(aggregated.aggregateStats.overallPassRate * 100).toFixed(1)}%`
-  );
-  console.log(`HTML Report:  ${htmlPath}`);
-  console.log(`JSON Report:  ${jsonPath}`);
-  console.log("");
-
-  // Exit with appropriate code
-  const hasFailures = aggregated.caseAnalysis.some(
-    (c) => c.consistency === "stable-fail"
-  );
-  process.exit(hasFailures ? 1 : 0);
+  // Save report
+  await mkdir(OUTPUT_DIR, { recursive: true });
+  const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
+  const reportPath = path.join(OUTPUT_DIR, `report-${timestamp}.json`);
+  await Bun.write(reportPath, JSON.stringify(results, null, 2));
+  console.log(`\nReport saved: ${reportPath}`);
 }
 
-/**
- * Create a default analysis when Gemini is skipped.
- */
-function createDefaultAnalysis(
-  aggregated: ReturnType<typeof aggregateResults>
-) {
-  return {
-    executiveSummary: `Comprehensive eval completed with ${(aggregated.aggregateStats.overallPassRate * 100).toFixed(1)}% overall pass rate across ${aggregated.totalRuns} runs. Gemini analysis was skipped.`,
-    keyFindings: [
-      `Overall pass rate: ${(aggregated.aggregateStats.overallPassRate * 100).toFixed(1)}%`,
-      `Total cases: ${aggregated.aggregateStats.totalCases}`,
-      `Configurations tested: ${aggregated.configurations.join(", ")}`,
-      `Flaky cases: ${aggregated.caseAnalysis.filter((c) => c.consistency === "flaky").length}`,
-      `Failing cases: ${aggregated.caseAnalysis.filter((c) => c.consistency === "stable-fail").length}`,
-    ],
-    categoryInsights: aggregated.categoryAnalysis.map((cat) => ({
-      category: cat.category,
-      summary: `${cat.totalCases} cases, ${(cat.avgPassRate * 100).toFixed(1)}% avg pass rate`,
-      strengths: [],
-      weaknesses:
-        cat.problematicCases.length > 0
-          ? [
-              `${cat.problematicCases.length} problematic cases: ${cat.problematicCases.slice(0, 5).join(", ")}`,
-            ]
-          : [],
-      suggestions: [],
-    })),
-    recommendations: [],
-    riskAssessment: {
-      overallRisk:
-        aggregated.aggregateStats.overallPassRate >= 0.9
-          ? ("low" as const)
-          : (aggregated.aggregateStats.overallPassRate >= 0.7
-            ? ("medium" as const)
-            : ("high" as const)),
-      riskFactors: [],
-    },
-    actionItems: [],
-  };
-}
-
-// Run main
 main().catch((error) => {
-  console.error("[comprehensive] Fatal error:", error);
+  console.error(error);
   process.exit(1);
 });
