@@ -42,18 +42,28 @@ async function revokeTokenIfPresent(req: Request): Promise<void> {
 }
 
 export async function POST(req: Request): Promise<Response> {
+  let revocationError: Error | null = null;
+
   try {
     await revokeTokenIfPresent(req);
+  } catch (error) {
+    revocationError =
+      error instanceof Error ? error : new Error("Token revocation failed");
+    console.log("[sign-out] Revocation error:", revocationError.message);
+  }
+
+  try {
     await clearAuthCookies();
-    return Response.json({ success: true, message: "Signed out successfully" });
   } catch (error) {
     console.log(
-      "[sign-out] Error:",
+      "[sign-out] Cookie clear error:",
       error instanceof Error ? error.message : "Unknown error"
     );
     return Response.json(
-      { success: false, error: "Failed to sign out" },
+      { success: false, error: "Failed to clear session" },
       { status: 500 }
     );
   }
+
+  return Response.json({ success: true, message: "Signed out successfully" });
 }

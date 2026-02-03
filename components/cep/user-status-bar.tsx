@@ -2,7 +2,7 @@
 
 import { Clock, LogOut, RefreshCw, User, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -78,6 +78,7 @@ export function UserStatusBar() {
   });
   const [localExpiresIn, setLocalExpiresIn] = useState<number | null>(null);
   const [signingOut, setSigningOut] = useState(false);
+  const expiresAtRef = useRef<number | null>(null);
 
   const fetchStatus = useCallback(async () => {
     try {
@@ -85,6 +86,7 @@ export function UserStatusBar() {
       const data = (await response.json()) as SignInStatusResponse;
       setStatus({ loading: false, data, error: null });
       if (data.token?.expiresIn !== undefined) {
+        expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
         setLocalExpiresIn(data.token.expiresIn);
       }
     } catch (err) {
@@ -105,21 +107,23 @@ export function UserStatusBar() {
   }, [fetchStatus]);
 
   useEffect(() => {
-    if (localExpiresIn === null || localExpiresIn <= 0) {
+    if (expiresAtRef.current === null) {
       return undefined;
     }
 
     const timer = setInterval(() => {
-      setLocalExpiresIn((prev) => {
-        if (prev === null || prev <= 0) {
-          return 0;
-        }
-        return prev - 1;
-      });
+      if (expiresAtRef.current === null) {
+        return;
+      }
+      const remaining = Math.max(
+        0,
+        Math.floor((expiresAtRef.current - Date.now()) / 1000)
+      );
+      setLocalExpiresIn(remaining);
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [localExpiresIn]);
+  }, [status.data?.token?.expiresIn]);
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
@@ -210,7 +214,12 @@ export function UserStatusBar() {
 
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button size="icon-sm" variant="ghost">
+            <Button
+              size="icon-sm"
+              variant="ghost"
+              aria-label="Account menu"
+              title="Account menu"
+            >
               <User className="size-4" />
             </Button>
           </DropdownMenuTrigger>
