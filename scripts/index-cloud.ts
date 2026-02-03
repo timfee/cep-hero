@@ -48,9 +48,9 @@ async function main() {
       if (!title) {
         const urlPath = new URL(request.url).pathname;
         const pathSegments = urlPath.split("/").filter(Boolean);
+        const lastSegment = pathSegments.at(-1) ?? "";
         title =
-          pathSegments
-            .at(-1)
+          lastSegment
             .replaceAll("-", " ")
             .replaceAll(/\b\w/g, (l) => l.toUpperCase()) || "Untitled";
       }
@@ -65,11 +65,9 @@ async function main() {
           url: articleId,
           title,
         });
-        console.log(`✓ Crawled: ${title}`);
+        console.log(`Crawled: ${title}`);
       } else {
-        console.log(
-          `⚠️ Skipping page with insufficient content: ${request.url}`
-        );
+        console.log(`Skipping page with insufficient content: ${request.url}`);
       }
 
       await enqueueLinks({

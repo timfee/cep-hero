@@ -18,7 +18,7 @@ import type {
   OverviewData,
 } from "@/lib/overview";
 
-import { PulseShimmer } from "@/components/ai-elements/shimmer";
+import { PulseShimmer, Shimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
 
 const SKELETON_STAGGER_DELAY_MS = 100;
@@ -71,12 +71,13 @@ interface DashboardOverviewProps {
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const { data, error, isLoading, mutate } = useSWR<OverviewData>(
+  const { data, error, isLoading, isValidating, mutate } = useSWR<OverviewData>(
     "/api/overview",
     fetcher,
     {
       revalidateOnFocus: false,
       revalidateOnReconnect: false,
+      revalidateIfStale: false,
       keepPreviousData: true,
     }
   );
@@ -135,15 +136,24 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
 
   const hasContent =
     data.postureCards.length > 0 || data.suggestions.length > 0;
+  const showShimmer = isRefreshing || isValidating;
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-8 py-16">
         <header className="mb-16">
           <div className="flex items-start justify-between gap-4">
-            <h1 className="text-4xl font-semibold tracking-tight text-foreground">
-              {data.headline}
-            </h1>
+            {showShimmer ? (
+              <div className="max-w-2xl">
+                <Shimmer className="text-4xl font-semibold tracking-tight">
+                  Refreshing overview
+                </Shimmer>
+              </div>
+            ) : (
+              <h1 className="max-w-2xl text-4xl font-semibold tracking-tight text-foreground">
+                {data.headline}
+              </h1>
+            )}
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
@@ -156,9 +166,17 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
               {isRefreshing ? "Refreshing..." : "Refresh"}
             </button>
           </div>
-          <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
-            {data.summary}
-          </p>
+          {showShimmer ? (
+            <div className="mt-5 space-y-3">
+              <PulseShimmer height={20} width="100%" className="rounded" />
+              <PulseShimmer height={20} width="92%" className="rounded" />
+              <PulseShimmer height={20} width="80%" className="rounded" />
+            </div>
+          ) : (
+            <p className="mt-5 text-lg leading-relaxed text-muted-foreground">
+              {data.summary}
+            </p>
+          )}
         </header>
 
         {hasContent ? (

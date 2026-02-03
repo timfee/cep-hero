@@ -63,5 +63,5 @@ export async function processDocs(documents: Document[]): Promise<void> {
     );
   }
 
-  console.log("\n✅ All documents processed successfully!");
+  console.log("\nAll documents processed successfully.");
 }

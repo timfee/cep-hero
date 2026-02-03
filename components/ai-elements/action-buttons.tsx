@@ -95,7 +95,7 @@ export const ActionButtons = memo(function ActionButtons({
             aria-disabled={isDisabled}
             title={label}
             className={cn(
-              "inline-flex cursor-pointer items-center gap-2 whitespace-normal rounded-md px-3 py-2 text-left text-xs font-medium leading-snug transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
+              "inline-flex max-w-full cursor-pointer items-center gap-2 whitespace-normal rounded-md px-3 py-2 text-left text-xs font-medium leading-snug transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/60",
               action.primary || isConfirm
                 ? "bg-foreground text-background hover:bg-foreground/90"
                 : isCancel

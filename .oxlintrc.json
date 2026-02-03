@@ -1,9 +1,29 @@
 {
+  "ignorePatterns": [
+    "components/",
+    "scripts/",
+    "*/**.test.ts",
+    "*/**.test.tsx"
+  ],
   "rules": {
+    "require-await": "off",
+    "sort-keys": "off",
     "func-style": "off",
     "eqeqeq": "warn",
     "no-debugger": "warn",
     "no-console": "off",
-    "no-unused-vars": "warn"
-  }
+    "no-inline-comments": "off",
+    "max-statements": "off",
+    "no-unused-vars": "warn",
+    "complexity": "off",
+    "no-multi-comp": "off",
+    "typescript/no-import-type-side-effects": "off",
+    "import/consistent-type-specifier-style": ["error", "prefer-inline"]
+  },
+  "extends": [
+    "./node_modules/ultracite/config/oxlint/core/.oxlintrc.json",
+    "./node_modules/ultracite/config/oxlint/react/.oxlintrc.json",
+    "./node_modules/ultracite/config/oxlint/next/.oxlintrc.json"
+  ],
+  "$schema": "./node_modules/oxlint/configuration_schema.json"
 }

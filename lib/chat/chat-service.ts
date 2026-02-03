@@ -1,9 +1,18 @@
 import { google } from "@ai-sdk/google";
-import { generateText, Output, streamText, stepCountIs, tool } from "ai";
+import {
+  generateText,
+  hasToolCall,
+  Output,
+  stepCountIs,
+  streamText,
+  tool,
+} from "ai";
 import { z } from "zod";
 
 import {
+  ApplyPolicyChangeSchema,
   CepToolExecutor,
+  CreateDLPRuleSchema,
   DraftPolicyChangeSchema,
   EnrollBrowserSchema,
   GetChromeEventsSchema,
@@ -31,11 +40,12 @@ You CAN:
 - Provide step-by-step guidance with Admin Console links
 - Generate enrollment tokens for Chrome Browser Cloud Management
 - Draft policy change proposals using the draftPolicyChange tool
+- Apply policy changes after user confirmation using applyPolicyChange
+- Create DLP audit rules using createDLPRule
 
 You CANNOT:
-- Directly modify policies, rules, or configurations in the Admin Console
-- Enable or disable features without user confirmation
-- Execute changes on behalf of the administrator
+- Execute changes without explicit user confirmation
+- Modify policies until user says "Confirm"
 
 # Policy Change Workflow (Draft & Commit Pattern)
 When you identify an issue requiring configuration changes:
@@ -47,7 +57,33 @@ When you identify an issue requiring configuration changes:
    - reasoning: Why this change is recommended
 3. The UI will render a confirmation card for the user to review
 4. Wait for user to say "Confirm" or "Cancel" before proceeding
-5. If confirmed, provide the Admin Console link and step-by-step instructions
+5. If confirmed, call applyPolicyChange with the stored applyParams from the proposal
+6. Report success or failure to the user
+
+# Handling User Confirmations
+When the user says "Confirm" after a draftPolicyChange proposal:
+1. Look for the most recent draftPolicyChange result in the conversation history
+2. Extract the applyParams (policySchemaId, targetResource, value) from that result
+3. Call applyPolicyChange with those parameters
+4. Report the success or failure to the user
+
+# Browser Security Configuration
+When the user asks about cookie encryption, incognito mode, or browser security:
+1. Call getChromeConnectorConfiguration to check current settings
+2. Call draftPolicyChange to propose the changes (can include multiple settings)
+3. Wait for user to say "Confirm"
+4. Call applyPolicyChange with the proposed configuration
+
+# Creating DLP Rules
+When the user asks to set up DLP monitoring or audit rules:
+1. First call listDLPRules to see existing rules
+2. Call draftPolicyChange to propose the DLP rule configuration, using:
+   - policyName: "dlp.audit.rule" (or similar descriptive name)
+   - targetUnit: The org unit path
+   - proposedValue: { displayName, triggers, action }
+   - reasoning: Why this rule is being created
+3. Wait for user confirmation before proceeding
+4. When user says "Confirm", call createDLPRule with the proposed configuration
 
 # Operating Principles
 - Think in steps; decide what to inspect next based on results.
@@ -137,7 +173,6 @@ export async function createChatStream({
 }: CreateChatStreamParams) {
   const executor = providedExecutor ?? new CepToolExecutor(accessToken);
 
-  // 1. Analyze intent and proactively retrieve knowledge (RAG)
   const lastUserMessage = messages.findLast(
     (message) => message.role === "user"
   )?.content;
@@ -221,7 +256,10 @@ export async function createChatStream({
   const result = streamText({
     model: google("gemini-2.0-flash-001"),
     messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
-    stopWhen: stepCountIs(5),
+    stopWhen: [
+      stepCountIs(15), // Safety limit (increased for multi-step workflows)
+      hasToolCall("suggestActions"), // Semantic completion signal
+    ],
     tools: {
       getChromeEvents: tool({
         description: "Get recent Chrome events.",
@@ -280,6 +318,20 @@ export async function createChatStream({
           "Draft a policy change proposal for user review. Returns a confirmation card that the user can approve before any changes are made.",
         inputSchema: DraftPolicyChangeSchema,
         execute: async (args) => executor.draftPolicyChange(args),
+      }),
+
+      applyPolicyChange: tool({
+        description:
+          "Apply a policy change after user confirmation. Use this when the user says 'Confirm' after a draftPolicyChange proposal.",
+        inputSchema: ApplyPolicyChangeSchema,
+        execute: async (args) => executor.applyPolicyChange(args),
+      }),
+
+      createDLPRule: tool({
+        description:
+          "Create a DLP (Data Loss Prevention) rule to monitor or block sensitive data. Use this for setting up audit rules or data protection policies.",
+        inputSchema: CreateDLPRuleSchema,
+        execute: async (args) => executor.createDLPRule(args),
       }),
 
       searchKnowledge: tool({

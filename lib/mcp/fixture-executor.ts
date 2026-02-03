@@ -1,6 +1,8 @@
 import { type z } from "zod";
 
 import {
+  type ApplyPolicyChangeSchema,
+  type CreateDLPRuleSchema,
   type DraftPolicyChangeSchema,
   type EnrollBrowserSchema,
   type GetChromeEventsSchema,
@@ -8,15 +10,17 @@ import {
   type ListDLPRulesSchema,
 } from "./registry";
 import {
+  type ApplyPolicyChangeResult,
   type ChromeEventsResult,
   type ConnectorConfigResult,
+  type CreateDLPRuleResult,
   type DebugAuthResult,
   type DLPRulesResult,
   type DraftPolicyChangeResult,
+  type EnrollBrowserResult,
   type FixtureData,
   type IToolExecutor,
   type OrgUnitsResult,
-  type EnrollBrowserResult,
 } from "./types";
 
 /**
@@ -43,7 +47,7 @@ export class FixtureToolExecutor implements IToolExecutor {
     }
 
     const items = this.fixtures.auditEvents?.items ?? [];
-    const maxResults = args.maxResults ?? 10;
+    const maxResults = args.maxResults ?? 50;
     const events = items.slice(0, maxResults);
 
     return {
@@ -64,9 +68,19 @@ export class FixtureToolExecutor implements IToolExecutor {
       };
     }
 
-    return {
-      rules: this.fixtures.dlpRules ?? [],
-    };
+    const fixtureRules = this.fixtures.dlpRules ?? [];
+    const rules = fixtureRules.map((rule, idx) => ({
+      id: rule.name?.split("/").pop() ?? `rule-${idx + 1}`,
+      displayName: rule.displayName ?? `DLP Rule ${idx + 1}`,
+      description: rule.description ?? "",
+      settingType: rule.triggers?.join(", ") ?? "",
+      orgUnit: "",
+      policyType: rule.action ?? "AUDIT",
+      resourceName: rule.name ?? "",
+      consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+    }));
+
+    return { rules };
   }
 
   async listOrgUnits(): Promise<OrgUnitsResult> {
@@ -195,8 +209,10 @@ export class FixtureToolExecutor implements IToolExecutor {
     args: z.infer<typeof DraftPolicyChangeSchema>
   ): Promise<DraftPolicyChangeResult> {
     await Promise.resolve();
+    const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
     return {
       _type: "ui.confirmation",
+      proposalId,
       title: `Proposed Change: ${args.policyName}`,
       description: args.reasoning,
       diff: args.proposedValue,
@@ -205,6 +221,42 @@ export class FixtureToolExecutor implements IToolExecutor {
         args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
       intent: "update_policy",
       status: "pending_approval",
+      applyParams: {
+        policySchemaId: args.policyName,
+        targetResource: args.targetUnit,
+        value: args.proposedValue,
+      },
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async applyPolicyChange(
+    args: z.infer<typeof ApplyPolicyChangeSchema>
+  ): Promise<ApplyPolicyChangeResult> {
+    await Promise.resolve();
+    return {
+      _type: "ui.success",
+      message: `Policy ${args.policySchemaId} applied successfully`,
+      policySchemaId: args.policySchemaId,
+      targetResource: args.targetResource,
+      appliedValue: args.value,
+    };
+  }
+
+  // eslint-disable-next-line class-methods-use-this
+  async createDLPRule(
+    args: z.infer<typeof CreateDLPRuleSchema>
+  ): Promise<CreateDLPRuleResult> {
+    await Promise.resolve();
+    return {
+      _type: "ui.success",
+      message: `DLP rule "${args.displayName}" created successfully`,
+      ruleName: `policies/dlp-${Date.now()}`,
+      displayName: args.displayName,
+      targetOrgUnit: args.targetOrgUnit,
+      triggers: args.triggers,
+      action: args.action,
+      consoleUrl: "https://admin.google.com/ac/chrome/dlp",
     };
   }
 

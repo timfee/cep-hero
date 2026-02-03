@@ -1,0 +1,35 @@
+{
+  "orgUnits": [
+    {
+      "orgUnitId": "03ph8a2z1enroot",
+      "name": "Root",
+      "orgUnitPath": "/",
+      "parentOrgUnitId": null,
+      "description": "Root organization unit"
+    },
+    {
+      "orgUnitId": "03ph8a2z1eneng",
+      "name": "Engineering",
+      "orgUnitPath": "/Engineering",
+      "parentOrgUnitId": "03ph8a2z1enroot",
+      "description": "Engineering team"
+    }
+  ],
+  "connectorPolicies": [
+    {
+      "targetKey": { "targetResource": "orgunits/03ph8a2z1enroot" },
+      "value": {
+        "policySchema": "chrome.users.CookieEncryption",
+        "value": { "cookieEncryptionMode": "DISABLED" }
+      }
+    },
+    {
+      "targetKey": { "targetResource": "orgunits/03ph8a2z1enroot" },
+      "value": {
+        "policySchema": "chrome.users.IncognitoModeAvailability",
+        "value": { "incognitoModeAvailability": "AVAILABLE" }
+      }
+    }
+  ],
+  "dlpRules": []
+}

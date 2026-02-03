@@ -14,6 +14,7 @@ import type {
   ChromeEventsOutput,
   ConnectorConfigOutput,
   DlpRulesOutput,
+  PolicyChangeConfirmationOutput,
   SuggestedActionsOutput,
 } from "@/types/chat";
 
@@ -26,7 +27,7 @@ import {
 } from "@/components/ai-elements/conversation";
 import { DlpRulesCard } from "@/components/ai-elements/dlp-rules-card";
 import { EventsTable } from "@/components/ai-elements/events-table";
-import { Loader } from "@/components/ai-elements/loader";
+import { PulsePillIndicator } from "@/components/ai-elements/loader";
 import {
   Message,
   MessageContent,
@@ -34,6 +35,7 @@ import {
   MessageActions,
   MessageAction,
 } from "@/components/ai-elements/message";
+import { PolicyChangeConfirmation } from "@/components/ai-elements/policy-change-confirmation";
 import {
   PromptInput,
   PromptInputBody,
@@ -73,24 +75,24 @@ const CANCEL_PATTERN = /^(cancel|no)\b/i;
 
 const FALLBACK_ACTIONS: ActionItem[] = [
   {
+    id: "hero-dlp-audit",
+    label: "Set up DLP monitoring",
+    command: "Help me set up DLP to audit all traffic for sensitive data",
+  },
+  {
+    id: "hero-browser-security",
+    label: "Secure browsers",
+    command: "Help me turn on cookie encryption and disable incognito mode",
+  },
+  {
     id: "fallback-connector-config",
     label: "Review connector settings",
     command: "Review connector settings",
   },
   {
-    id: "fallback-dlp-rules",
-    label: "List data protection rules",
-    command: "List data protection rules",
-  },
-  {
     id: "fallback-events",
     label: "Show recent security events",
     command: "Show recent security events",
-  },
-  {
-    id: "fallback-org-units",
-    label: "List organizational units",
-    command: "List organizational units",
   },
 ];
 
@@ -111,7 +113,7 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
     .slice(0, 3)
     .map((s, idx) => ({
       id: `empty-${idx}`,
-      label: s.text.length > 40 ? s.text.slice(0, 40) + "..." : s.text,
+      label: s.text,
       command: s.action,
       primary: idx === 0,
     }));
@@ -122,45 +124,22 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
  */
 function generateWelcomeMessage(data: OverviewData | null): string {
   if (!data) {
-    return `Hey there! I'm your Chrome Enterprise Premium assistant. I'm ready to help you manage and secure your browser fleet.
+    return `Hey there! I'm your Chrome Enterprise Premium assistant.
 
-What would you like to work on?`;
+Use the buttons below to start.`;
   }
 
-  const suggestions = data.suggestions || [];
-  const hasCriticalCards = data.postureCards?.some(
-    (c) => c.status === "critical"
-  );
+  const headline = data.headline?.trim();
+  const summary = data.summary?.trim();
 
-  if (suggestions.length === 0 && !hasCriticalCards) {
-    return `Hey there! I'm your Chrome Enterprise Premium assistant. I've reviewed your fleet and things look good!
+  const sections = [
+    `Hey there! I'm your Chrome Enterprise Premium assistant.`,
+    headline,
+    summary,
+    "Use the buttons below to start.",
+  ].filter((section): section is string => Boolean(section));
 
-${data.summary || "Your security posture appears healthy."}
-
-Is there anything specific you'd like me to help you with?`;
-  }
-
-  const actionItems = suggestions
-    .toSorted((a, b) => a.priority - b.priority)
-    .slice(0, 3)
-    .map((s) => {
-      if (s.category === "security") {
-        return `**Security** - ${s.text}`;
-      } else if (s.category === "compliance") {
-        return `**Compliance** - ${s.text}`;
-      } else if (s.category === "monitoring") {
-        return `**Monitoring** - ${s.text}`;
-      }
-      return `**${s.category}** - ${s.text}`;
-    });
-
-  return `Hey there! I'm your Chrome Enterprise Premium assistant. I've been looking at your fleet data and found some things we should address.
-
-${data.headline || ""}
-
-${actionItems.length > 0 ? actionItems.join("\n\n") : ""}
-
-What would you like to tackle first?`;
+  return sections.join("\n\n");
 }
 
 /**
@@ -190,7 +169,12 @@ export function ChatConsole() {
   const { data: overviewData } = useSWR<OverviewData | null>(
     "/api/overview",
     fetcher,
-    { revalidateOnFocus: false }
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      keepPreviousData: true,
+    }
   );
 
   const isStreaming = status === "submitted" || status === "streaming";
@@ -379,12 +363,10 @@ export function ChatConsole() {
                     const toolName = getToolName(part);
                     const toolPart = part as ToolPart;
 
-                    // 1. Suggest Actions -> Skip inline rendering (moved to end of message)
                     if (toolName === "suggestActions") {
                       return null;
                     }
 
-                    // 2. List Org Units -> Custom Card List
                     if (
                       toolName === "listOrgUnits" &&
                       toolPart.state === "output-available"
@@ -398,7 +380,6 @@ export function ChatConsole() {
                       );
                     }
 
-                    // 3. Chrome events -> table view
                     if (
                       toolName === "getChromeEvents" &&
                       toolPart.state === "output-available"
@@ -414,7 +395,6 @@ export function ChatConsole() {
                       );
                     }
 
-                    // 4. DLP rules -> list view
                     if (
                       toolName === "listDLPRules" &&
                       toolPart.state === "output-available"
@@ -428,7 +408,6 @@ export function ChatConsole() {
                       );
                     }
 
-                    // 5. Connector configuration -> scope status
                     if (
                       toolName === "getChromeConnectorConfiguration" &&
                       toolPart.state === "output-available"
@@ -442,6 +421,31 @@ export function ChatConsole() {
                           />
                         </div>
                       );
+                    }
+
+                    // Policy change confirmation UI
+                    if (
+                      toolName === "draftPolicyChange" &&
+                      toolPart.state === "output-available"
+                    ) {
+                      const output =
+                        toolPart.output as PolicyChangeConfirmationOutput;
+                      if (output?._type === "ui.confirmation") {
+                        return (
+                          <div key={partKey} className="pl-4 lg:pl-6">
+                            <PolicyChangeConfirmation
+                              proposal={output}
+                              onConfirm={() => {
+                                void sendMessage({ text: "Confirm" });
+                              }}
+                              onCancel={() => {
+                                void sendMessage({ text: "Cancel" });
+                              }}
+                              isApplying={isStreaming}
+                            />
+                          </div>
+                        );
+                      }
                     }
 
                     // Default -> Collapsible Tool View
@@ -498,7 +502,11 @@ export function ChatConsole() {
           })}
 
           {/* Submitted state loader */}
-          {status === "submitted" && <Loader variant="dots" />}
+          {isStreaming && (
+            <div className="pl-4 lg:pl-6">
+              <PulsePillIndicator label="Working on it" />
+            </div>
+          )}
         </ConversationContent>
 
         <ConversationScrollButton />

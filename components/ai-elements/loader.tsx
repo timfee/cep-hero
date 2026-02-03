@@ -109,6 +109,30 @@ export const Loader = ({
   </div>
 );
 
+export const PulsePillIndicator = ({
+  className,
+  label = "Working",
+}: {
+  className?: string;
+  label?: string;
+}) => (
+  <div
+    className={cn(
+      "inline-flex items-center gap-2 rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-xs font-medium text-primary",
+      className
+    )}
+    aria-live="polite"
+    aria-label={label}
+  >
+    <motion.span
+      className="inline-flex h-2.5 w-2.5 rounded-full bg-primary"
+      animate={{ scale: [1, 1.25, 1], opacity: [0.6, 1, 0.6] }}
+      transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
+    />
+    <span>{label}</span>
+  </div>
+);
+
 // Thinking indicator with animated text
 export const ThinkingIndicator = ({
   className,

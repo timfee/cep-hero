@@ -3,7 +3,8 @@
  * This is the core eval execution engine that runs cases and collects results.
  */
 
-import { callChat } from "@/lib/test-helpers/chat-client";
+import { type FixtureData } from "@/lib/mcp/types";
+import { callChat, callChatMessages } from "@/lib/test-helpers/chat-client";
 import {
   ensureEvalServer,
   releaseEvalServer,
@@ -19,7 +20,9 @@ import {
 import { buildEvalPrompt, loadEvalFixtures } from "./fixtures";
 import { type EvidenceCheckInput, batchEvaluateEvidence } from "./llm-judge";
 import {
+  type ConversationTurn,
   type EvalCase,
+  type TurnAssertion,
   buildPromptMap,
   filterEvalCases,
   loadEvalRegistry,
@@ -53,6 +56,130 @@ export interface RunnerOptions {
 export interface RunnerResult {
   summary: EvalSummary;
   reports: EvalReport[];
+}
+
+interface MultiTurnResult {
+  responseText: string;
+  toolCalls: string[];
+  prompt: string;
+  error?: string;
+  turnResults: {
+    turn: number;
+    passed: boolean;
+    toolCalls: string[];
+    missingToolCalls: string[];
+    missingEvidence: string[];
+  }[];
+}
+
+/**
+ * Run a multi-turn conversation and check per-turn assertions.
+ */
+async function runMultiTurnConversation(
+  conversationScript: ConversationTurn[],
+  turnAssertions: TurnAssertion[],
+  fixtures: FixtureData | undefined
+): Promise<MultiTurnResult> {
+  interface ChatMessage {
+    role: "system" | "user" | "assistant";
+    content: string;
+  }
+  const messages: ChatMessage[] = [
+    { role: "system", content: "You are CEP Hero." },
+  ];
+
+  const allToolCalls: string[] = [];
+  const allResponses: string[] = [];
+  const turnResults: MultiTurnResult["turnResults"] = [];
+
+  for (
+    let turnIndex = 0;
+    turnIndex < conversationScript.length;
+    turnIndex += 1
+  ) {
+    const turn = conversationScript[turnIndex];
+    messages.push({ role: "user", content: turn.content });
+
+    try {
+      const resp = await callChatMessages(messages, { fixtures });
+      const assistantText = resp.text;
+      const turnToolCalls = resp.toolCalls ?? [];
+
+      messages.push({ role: "assistant", content: assistantText });
+      allToolCalls.push(...turnToolCalls);
+      allResponses.push(assistantText);
+
+      // Check turn-specific assertions
+      const turnAssertion = turnAssertions.find((a) => a.turn === turnIndex);
+      if (turnAssertion) {
+        const requiredTools = turnAssertion.required_tool_calls ?? [];
+        const missingToolCalls = requiredTools.filter(
+          (tool) => !turnToolCalls.includes(tool)
+        );
+
+        const requiredEvidence = turnAssertion.required_evidence ?? [];
+        const missingEvidence = requiredEvidence.filter(
+          (evidence) =>
+            !assistantText.toLowerCase().includes(evidence.toLowerCase())
+        );
+
+        turnResults.push({
+          turn: turnIndex,
+          passed: missingToolCalls.length === 0 && missingEvidence.length === 0,
+          toolCalls: turnToolCalls,
+          missingToolCalls,
+          missingEvidence,
+        });
+      } else {
+        turnResults.push({
+          turn: turnIndex,
+          passed: true,
+          toolCalls: turnToolCalls,
+          missingToolCalls: [],
+          missingEvidence: [],
+        });
+      }
+    } catch (caughtError) {
+      const errorMessage =
+        caughtError instanceof Error
+          ? caughtError.message
+          : String(caughtError);
+
+      return {
+        responseText: allResponses.join("\n\n---\n\n"),
+        toolCalls: [...new Set(allToolCalls)],
+        prompt: conversationScript.map((t) => t.content).join(" -> "),
+        error: `Turn ${turnIndex}: ${errorMessage}`,
+        turnResults,
+      };
+    }
+  }
+
+  // Check if any turn failed
+  const failedTurns = turnResults.filter((t) => !t.passed);
+  const error =
+    failedTurns.length > 0
+      ? failedTurns
+          .map((t) => {
+            const issues: string[] = [];
+            if (t.missingToolCalls.length > 0) {
+              issues.push(`missing tools: ${t.missingToolCalls.join(", ")}`);
+            }
+            if (t.missingEvidence.length > 0) {
+              issues.push(`missing evidence: ${t.missingEvidence.join(", ")}`);
+            }
+            return `Turn ${t.turn}: ${issues.join("; ")}`;
+          })
+          .join(" | ")
+      : undefined;
+
+  return {
+    responseText: allResponses.join("\n\n---\n\n"),
+    toolCalls: [...new Set(allToolCalls)],
+    prompt: conversationScript.map((t) => t.content).join(" -> "),
+    error,
+    turnResults,
+  };
 }
 
 /**
@@ -123,15 +250,6 @@ export async function runEvals(
       await Bun.sleep(pauseMs);
     }
 
-    const basePrompt =
-      promptMap.get(evalCase.id) ?? `Help me troubleshoot: ${evalCase.title}`;
-    // By default, do NOT inject fixtures into prompt - force AI to call tools
-    const prompt = buildEvalPrompt(basePrompt, {
-      fixtures: evalCase.fixtures,
-      overrides: evalCase.overrides,
-      caseId: evalCase.id,
-      // injectIntoPrompt defaults to false unless EVAL_INJECT_PROMPT=1
-    });
     const fixtures = loadEvalFixtures(evalCase.id);
     const caseStart = performance.now();
 
@@ -139,17 +257,46 @@ export async function runEvals(
     let responseMetadata: unknown = undefined;
     let toolCalls: string[] | undefined;
     let error: string | undefined;
+    let prompt: string;
 
-    try {
-      const resp = await callChat(prompt, { fixtures });
-      responseText = resp.text;
-      responseMetadata = resp.metadata;
-      ({ toolCalls } = resp);
-    } catch (caughtError) {
-      error =
-        caughtError instanceof Error
-          ? caughtError.message
-          : String(caughtError);
+    // Check if this is a multi-turn conversation eval
+    const isMultiTurn =
+      evalCase.conversation_script.length > 0 && evalCase.mode === "multi-turn";
+
+    if (isMultiTurn) {
+      // Run multi-turn conversation
+      const result = await runMultiTurnConversation(
+        evalCase.conversation_script,
+        evalCase.turn_assertions ?? [],
+        fixtures
+      );
+      ({ responseText } = result);
+      ({ toolCalls } = result);
+      ({ error } = result);
+      ({ prompt } = result);
+    } else {
+      // Single-turn case
+      const basePrompt =
+        promptMap.get(evalCase.id) ?? `Help me troubleshoot: ${evalCase.title}`;
+      // By default, do NOT inject fixtures into prompt - force AI to call tools
+      prompt = buildEvalPrompt(basePrompt, {
+        fixtures: evalCase.fixtures,
+        overrides: evalCase.overrides,
+        caseId: evalCase.id,
+        // injectIntoPrompt defaults to false unless EVAL_INJECT_PROMPT=1
+      });
+
+      try {
+        const resp = await callChat(prompt, { fixtures });
+        responseText = resp.text;
+        responseMetadata = resp.metadata;
+        ({ toolCalls } = resp);
+      } catch (caughtError) {
+        error =
+          caughtError instanceof Error
+            ? caughtError.message
+            : String(caughtError);
+      }
     }
 
     const schemaResult = checkStructuredResponse({

@@ -70,6 +70,7 @@ const NOTABLE_EVENT_NAMES = [
 ] as const;
 
 const NOTABLE_RESULTS = ["BLOCKED", "QUARANTINED", "DENIED"] as const;
+const BLOCKED_RESULTS = ["BLOCKED", "QUARANTINED", "DENIED"] as const;
 
 function isNotableEvent(event: ChromeEvent): boolean {
   const primary = event.events?.[0];
@@ -99,6 +100,20 @@ function isNotableEvent(event: ChromeEvent): boolean {
   return false;
 }
 
+function getEventResult(event: ChromeEvent): string | null {
+  const primary = event.events?.[0];
+  if (!primary) {
+    return null;
+  }
+  const resultParam = primary.parameters?.find(
+    (param) => param.name === "EVENT_RESULT"
+  );
+  if (typeof resultParam?.value === "string" && resultParam.value.length > 0) {
+    return resultParam.value;
+  }
+  return null;
+}
+
 function isErrorEvent(type?: string | null): boolean {
   if (!type) {
     return false;
@@ -113,6 +128,81 @@ function isErrorEvent(type?: string | null): boolean {
     "VIOLATION",
   ];
   return errorPatterns.some((pattern) => type.toUpperCase().includes(pattern));
+}
+
+function formatShortDateTime(value?: string | null): string {
+  if (!value) {
+    return "";
+  }
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return date.toLocaleString(undefined, {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function summarizeEvents(events: ChromeEvent[]) {
+  const timestamps = events
+    .map((event) => event.id?.time)
+    .filter(
+      (time): time is string => typeof time === "string" && time.length > 0
+    )
+    .map((time) => new Date(time))
+    .filter((date) => !Number.isNaN(date.getTime()));
+
+  const sortedTimes = timestamps.toSorted((a, b) => a.getTime() - b.getTime());
+  const oldest = sortedTimes.at(0) ?? null;
+  const latest = sortedTimes.at(-1) ?? null;
+
+  let blockedCount = 0;
+  let notableCount = 0;
+  let errorCount = 0;
+  const typeCounts = new Map<string, number>();
+
+  for (const event of events) {
+    if (isNotableEvent(event)) {
+      notableCount += 1;
+    }
+
+    const primary = event.events?.[0];
+    const typeLabel = humanizeEventName(primary?.name ?? primary?.type);
+    if (typeLabel) {
+      typeCounts.set(typeLabel, (typeCounts.get(typeLabel) ?? 0) + 1);
+    }
+
+    const result = getEventResult(event);
+    if (
+      result &&
+      BLOCKED_RESULTS.includes(
+        result.toUpperCase() as (typeof BLOCKED_RESULTS)[number]
+      )
+    ) {
+      blockedCount += 1;
+    }
+
+    if (isErrorEvent(primary?.type)) {
+      errorCount += 1;
+    }
+  }
+
+  const topTypes = [...typeCounts.entries()]
+    .toSorted((a, b) => b[1] - a[1])
+    .slice(0, 3)
+    .map(([label]) => label);
+
+  return {
+    blockedCount,
+    notableCount,
+    errorCount,
+    topTypes,
+    oldest,
+    latest,
+  };
 }
 
 export const EventsTable = memo(function EventsTable({
@@ -144,7 +234,8 @@ export const EventsTable = memo(function EventsTable({
     );
   }
 
-  const rows = events.slice(0, 15);
+  const rows = events.slice(0, 25);
+  const summary = summarizeEvents(events);
 
   return (
     <div className="rounded-md border border-border bg-card">
@@ -166,6 +257,40 @@ export const EventsTable = memo(function EventsTable({
         <span className="text-xs text-foreground/60">
           {rows.length}/{events.length}
         </span>
+      </div>
+
+      <div className="border-b border-border/50 px-3 py-2 text-xs text-foreground/70">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded bg-foreground/10 px-1.5 py-0.5">
+            Total: {events.length}
+          </span>
+          <span className="rounded bg-foreground/10 px-1.5 py-0.5">
+            Blocked: {summary.blockedCount}
+          </span>
+          <span className="rounded bg-foreground/10 px-1.5 py-0.5">
+            Alerts: {summary.notableCount}
+          </span>
+          <span className="rounded bg-foreground/10 px-1.5 py-0.5">
+            Errors: {summary.errorCount}
+          </span>
+          {summary.topTypes.length > 0 && (
+            <span className="text-foreground/60">
+              Top types: {summary.topTypes.join(", ")}
+            </span>
+          )}
+        </div>
+        {(summary.oldest || summary.latest) && (
+          <div className="mt-1 text-foreground/50">
+            Range:{" "}
+            {summary.oldest
+              ? formatShortDateTime(summary.oldest.toISOString())
+              : "Unknown"}{" "}
+            -{" "}
+            {summary.latest
+              ? formatShortDateTime(summary.latest.toISOString())
+              : "Unknown"}
+          </div>
+        )}
       </div>
 
       <div role="list">

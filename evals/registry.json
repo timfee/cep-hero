@@ -1455,6 +1455,65 @@
       },
       "assertions": [],
       "cleanup": []
+    },
+    {
+      "id": "HERO-001",
+      "title": "DLP Audit Rule Creation (Multi-Turn)",
+      "category": "dlp",
+      "source_refs": ["Hero-DLP-Audit"],
+      "case_file": "evals/cases/HERO-001-dlp-audit-rule-creation.md",
+      "mode": "multi-turn",
+      "tags": ["dlp", "audit", "multi-turn", "hero"],
+      "conversation_script": [
+        {
+          "role": "user",
+          "content": "Look at your DLP - let's make an audit rule for all traffic"
+        },
+        { "role": "user", "content": "Confirm" }
+      ],
+      "turn_assertions": [
+        {
+          "turn": 0,
+          "required_tool_calls": ["listDLPRules", "draftPolicyChange"]
+        },
+        { "turn": 1, "required_tool_calls": ["createDLPRule"] }
+      ],
+      "expected_schema": [],
+      "overrides": ["evals/fixtures/HERO-001/overrides.json"],
+      "required_evidence": ["DLP", "audit", "rule"],
+      "assertions": [],
+      "cleanup": []
+    },
+    {
+      "id": "HERO-002",
+      "title": "Browser Security - Cookie Encryption + Disable Incognito (Multi-Turn)",
+      "category": "security",
+      "source_refs": ["Hero-Browser-Security"],
+      "case_file": "evals/cases/HERO-002-browser-security-cookie-incognito.md",
+      "mode": "multi-turn",
+      "tags": ["security", "cookies", "incognito", "multi-turn", "hero"],
+      "conversation_script": [
+        {
+          "role": "user",
+          "content": "Apply cookie encryption and disable incognito mode for my fleet"
+        },
+        { "role": "user", "content": "Confirm" }
+      ],
+      "turn_assertions": [
+        {
+          "turn": 0,
+          "required_tool_calls": [
+            "getChromeConnectorConfiguration",
+            "draftPolicyChange"
+          ]
+        },
+        { "turn": 1, "required_tool_calls": ["applyPolicyChange"] }
+      ],
+      "expected_schema": [],
+      "overrides": ["evals/fixtures/HERO-002/overrides.json"],
+      "required_evidence": ["cookie", "incognito", "policy"],
+      "assertions": [],
+      "cleanup": []
     }
   ]
 }

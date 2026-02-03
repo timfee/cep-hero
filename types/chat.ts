@@ -56,6 +56,40 @@ export interface ConnectorConfigOutput {
   suggestion?: string;
 }
 
+export interface PolicyChangeConfirmationOutput {
+  _type: "ui.confirmation";
+  proposalId: string;
+  title: string;
+  description: string;
+  diff: unknown;
+  target: string;
+  adminConsoleUrl: string;
+  intent: string;
+  status: string;
+  applyParams?: {
+    policySchemaId: string;
+    targetResource: string;
+    value: unknown;
+  };
+}
+
+export interface PolicyApplySuccessOutput {
+  _type: "ui.success";
+  message: string;
+  policySchemaId: string;
+  targetResource: string;
+  appliedValue?: unknown;
+}
+
+export interface PolicyApplyErrorOutput {
+  _type: "ui.error";
+  message: string;
+  policySchemaId: string;
+  targetResource: string;
+  error?: string;
+  suggestion?: string;
+}
+
 export interface Hypothesis {
   cause: string;
   confidence: number;

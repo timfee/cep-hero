@@ -37,6 +37,58 @@ export interface OverviewData {
   sources: string[];
 }
 
+const EMAIL_RE = /[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi;
+const DOMAIN_RE =
+  /\b(?!(?:localhost|local|example|example\.com)\b)(?:[a-z0-9-]+\.)+[a-z]{2,}\b/gi;
+const URL_RE = /\b(?:https?:\/\/|www\.)[^\s)]+/gi;
+function redactSensitive(text: string): string {
+  return text
+    .replace(URL_RE, "[redacted]")
+    .replace(EMAIL_RE, "[redacted]")
+    .replace(DOMAIN_RE, "[redacted]");
+}
+
+function sanitizeOverviewText(text: string): string {
+  return redactSensitive(text).trim();
+}
+
+function sanitizeHeadline(text: string): string {
+  const redacted = redactSensitive(text);
+  return redacted.trim();
+}
+
+function sanitizeSuggestion(suggestion: Suggestion): Suggestion {
+  return {
+    ...suggestion,
+    text: sanitizeOverviewText(suggestion.text),
+    action: redactSensitive(suggestion.action),
+  };
+}
+
+function sanitizePostureCard(card: OverviewCard): OverviewCard {
+  return {
+    ...card,
+    label: redactSensitive(card.label),
+    value: redactSensitive(card.value),
+    note: sanitizeOverviewText(card.note),
+    action: redactSensitive(card.action),
+    source: redactSensitive(card.source),
+  };
+}
+
+export function sanitizeOverview(data: OverviewData): OverviewData {
+  return {
+    ...data,
+    headline: sanitizeHeadline(data.headline),
+    summary: sanitizeOverviewText(data.summary),
+    postureCards: data.postureCards.map((card) => sanitizePostureCard(card)),
+    suggestions: data.suggestions.map((suggestion) =>
+      sanitizeSuggestion(suggestion)
+    ),
+    sources: data.sources.map((source) => redactSensitive(source)),
+  };
+}
+
 export const DEFAULT_SUGGESTIONS: Suggestion[] = [
   {
     text: "Set up a DLP audit rule to monitor all traffic for sensitive data",
@@ -96,7 +148,7 @@ export function normalizeOverview(data: unknown): OverviewData | null {
     ? obj.suggestions.filter(isValidSuggestion)
     : [];
 
-  return {
+  const normalized: OverviewData = {
     headline: typeof obj.headline === "string" ? obj.headline : "Fleet posture",
     summary: typeof obj.summary === "string" ? obj.summary : "",
     postureCards,
@@ -105,6 +157,8 @@ export function normalizeOverview(data: unknown): OverviewData | null {
       ? obj.sources.filter((s) => typeof s === "string")
       : [],
   };
+
+  return sanitizeOverview(normalized);
 }
 
 /**
@@ -155,11 +209,11 @@ function isRecord(value: unknown): value is Record<string, unknown> {
  * Create default overview data when API fails or returns invalid data.
  */
 export function createDefaultOverview(): OverviewData {
-  return {
+  return sanitizeOverview({
     headline: "Fleet posture",
     summary: "",
     postureCards: [],
     suggestions: [...DEFAULT_SUGGESTIONS],
     sources: [],
-  };
+  });
 }

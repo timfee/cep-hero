@@ -12,6 +12,23 @@ export interface EvalRubric {
   criteria: string[];
 }
 
+/**
+ * A single turn in a multi-turn conversation eval.
+ */
+export interface ConversationTurn {
+  role: "user";
+  content: string;
+}
+
+/**
+ * Assertions for a specific turn in a multi-turn conversation.
+ */
+export interface TurnAssertion {
+  turn: number;
+  required_tool_calls?: string[];
+  required_evidence?: string[];
+}
+
 export interface EvalCase {
   id: string;
   title: string;
@@ -20,7 +37,10 @@ export interface EvalCase {
   case_file: string;
   mode: string;
   tags: string[];
-  conversation_script: unknown[];
+  /** Multi-turn conversation script for hero workflows */
+  conversation_script: ConversationTurn[];
+  /** Per-turn assertions for multi-turn evals */
+  turn_assertions?: TurnAssertion[];
   expected_schema: string[];
   fixtures?: string[];
   overrides?: string[];

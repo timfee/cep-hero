@@ -23,12 +23,7 @@ const BodySchema = z.object({
   content: z.string().optional(),
 });
 
-/**
- * Extract the most recent user message content from a list of messages.
- *
- * @param {ChatMessage[]} messages - The list of chat messages.
- * @returns {string} The content of the last message with role 'user', or an empty string.
- */
+// Returns the most recent user message content (or empty string).
 export function getLastUserMessage(messages: ChatMessage[]): string {
   const lastUser = [...messages]
     .toReversed()
@@ -61,13 +56,7 @@ export function getMessagesFromBody(body: unknown): ChatMessage[] {
     .filter((msg): msg is ChatMessage => msg !== null);
 }
 
-/**
- * Extract a simple prompt string from the body if messages are missing.
- * Supports 'input' or 'content' fields.
- *
- * @param {unknown} body - The raw request body.
- * @returns {string} The extracted prompt string, or empty string if not found.
- */
+// Extracts a prompt string from `input` or `content` when messages are missing.
 export function extractInlinePrompt(body: unknown): string {
   const parsed = BodySchema.safeParse(body);
 
@@ -88,14 +77,7 @@ export function extractInlinePrompt(body: unknown): string {
   return "";
 }
 
-/**
- * Safely preview a JSON object as a string, truncated to a limit.
- * Useful for logging without flooding the console.
- *
- * @param {unknown} value - The value to stringify.
- * @param {number} limit - Max length of the output string (default 500).
- * @returns {string} The preview string.
- */
+// Stringifies a value for logs with a size limit.
 export function safeJsonPreview(value: unknown, limit = 500): string {
   try {
     const str = JSON.stringify(value);

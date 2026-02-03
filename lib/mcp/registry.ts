@@ -22,7 +22,17 @@ export const GetChromeEventsSchema = z.object({
   maxResults: z
     .number()
     .optional()
-    .describe("Number of events to fetch (default 10)"),
+    .describe("Number of events to fetch (default 50)"),
+  startTime: z
+    .string()
+    .optional()
+    .describe(
+      "Optional RFC3339 timestamp to filter events starting at this time"
+    ),
+  endTime: z
+    .string()
+    .optional()
+    .describe("Optional RFC3339 timestamp to filter events up to this time"),
   pageToken: z
     .string()
     .optional()
@@ -80,13 +90,45 @@ export const DraftPolicyChangeSchema = z.object({
 });
 
 /**
+ * Schema for applying a policy change (after user confirmation).
+ * This tool executes the actual policy modification via Chrome Policy API.
+ */
+export const ApplyPolicyChangeSchema = z.object({
+  policySchemaId: z
+    .string()
+    .describe(
+      "Full policy schema ID (e.g., chrome.users.IncognitoModeAvailability)"
+    ),
+  targetResource: z
+    .string()
+    .describe("Target org unit resource (e.g., orgunits/03ph8a2z1en...)"),
+  value: z.record(z.string(), z.unknown()).describe("Policy value to apply"),
+});
+
+/**
+ * Schema for creating a DLP rule.
+ * Uses Cloud Identity API to create data protection rules.
+ */
+export const CreateDLPRuleSchema = z.object({
+  displayName: z.string().describe("Human-readable name for the rule"),
+  targetOrgUnit: z.string().describe("Org Unit ID to apply the rule to"),
+  triggers: z
+    .array(z.enum(["UPLOAD", "DOWNLOAD", "PRINT", "CLIPBOARD"]))
+    .describe("Actions that trigger this rule"),
+  action: z
+    .enum(["AUDIT", "WARN", "BLOCK"])
+    .default("AUDIT")
+    .describe("Action to take when rule is triggered"),
+});
+
+/**
  * Inputs for the fleet overview tool.
  */
 export const GetFleetOverviewSchema = z.object({
   maxEvents: z
     .number()
     .optional()
-    .describe("Max number of recent Chrome events to analyze (default 25)"),
+    .describe("Max number of recent Chrome events to analyze (default 50)"),
   knowledgeQuery: z
     .string()
     .optional()
@@ -151,9 +193,14 @@ interface FleetKnowledgeContext {
 
 interface FleetOverviewFacts {
   eventCount: number;
+  blockedEventCount: number;
+  errorEventCount: number;
   dlpRuleCount: number;
   connectorPolicyCount: number;
   latestEventAt: string | null;
+  eventWindowLabel: string;
+  eventSampled: boolean;
+  eventSampleCount: number;
   errors: string[];
 }
 
@@ -281,27 +328,99 @@ function buildOrgUnitTargetResource(value: string): string {
 }
 
 /**
+ * Format a Cloud Identity setting type into a human-readable name.
+ * Example: "settings/security.password" -> "Security: Password"
+ */
+function formatSettingType(settingType: string): string {
+  if (!settingType) {
+    return "";
+  }
+
+  // Remove "settings/" prefix
+  const withoutPrefix = settingType.replace(/^settings\//, "");
+
+  // Split on dots and underscores, capitalize each part
+  const parts = withoutPrefix.split(/[._]/);
+
+  if (parts.length === 0) {
+    return withoutPrefix;
+  }
+
+  // First part is the category, rest is the setting name
+  const category = parts[0] ?? "";
+  const settingParts = parts.slice(1);
+
+  const capitalizedCategory =
+    category.charAt(0).toUpperCase() + category.slice(1);
+
+  if (settingParts.length === 0) {
+    return capitalizedCategory;
+  }
+
+  const settingName = settingParts
+    .map((p) => p.charAt(0).toUpperCase() + p.slice(1))
+    .join(" ");
+
+  return `${capitalizedCategory}: ${settingName}`;
+}
+
+/**
+ * Format a Cloud Identity setting value into a readable summary.
+ */
+function formatSettingValue(value: Record<string, unknown>): string {
+  const entries = Object.entries(value);
+  if (entries.length === 0) {
+    return "";
+  }
+
+  // For small objects, show key=value pairs
+  if (entries.length <= 3) {
+    return entries
+      .map(([k, v]) => {
+        let formattedValue: string;
+        if (typeof v === "boolean") {
+          formattedValue = v ? "enabled" : "disabled";
+        } else {
+          formattedValue = String(v);
+        }
+        return `${k}: ${formattedValue}`;
+      })
+      .join(", ");
+  }
+
+  // For larger objects, show count of configured fields
+  return `${entries.length} settings configured`;
+}
+
+/**
  * Extract deterministic fleet signals from tool outputs.
  */
 function extractFleetOverviewFacts(
-  eventsResult: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>>,
+  eventsResult: {
+    events: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>>;
+    totalCount: number;
+    sampled: boolean;
+    windowStart: Date;
+    windowEnd: Date;
+  },
   dlpResult: Awaited<ReturnType<CepToolExecutor["listDLPRules"]>>,
   connectorResult: Awaited<
     ReturnType<CepToolExecutor["getChromeConnectorConfiguration"]>
   >
 ): FleetOverviewFacts {
-  const events = "events" in eventsResult ? (eventsResult.events ?? []) : [];
+  const events =
+    "events" in eventsResult.events ? (eventsResult.events.events ?? []) : [];
   const rules = "rules" in dlpResult ? (dlpResult.rules ?? []) : [];
   const connectorValue =
     "value" in connectorResult ? (connectorResult.value ?? []) : [];
 
   const errors: string[] = [];
   if (
-    "error" in eventsResult &&
-    typeof eventsResult.error === "string" &&
-    eventsResult.error.length > 0
+    "error" in eventsResult.events &&
+    typeof eventsResult.events.error === "string" &&
+    eventsResult.events.error.length > 0
   ) {
-    errors.push(`Chrome events: ${eventsResult.error}`);
+    errors.push(`Chrome events: ${eventsResult.events.error}`);
   }
   if (
     "error" in dlpResult &&
@@ -321,11 +440,57 @@ function extractFleetOverviewFacts(
   const latestEventAt =
     events.length > 0 ? (events[0]?.id?.time ?? null) : null;
 
+  const windowDays = Math.max(
+    1,
+    Math.round(
+      (eventsResult.windowEnd.getTime() - eventsResult.windowStart.getTime()) /
+        86_400_000
+    )
+  );
+  const eventWindowLabel = `${windowDays} day${windowDays === 1 ? "" : "s"}`;
+
+  const blockedResults = new Set(["BLOCKED", "DENIED", "QUARANTINED"]);
+  let blockedEventCount = 0;
+  let errorEventCount = 0;
+
+  for (const event of events) {
+    const primary = event.events?.[0];
+    const resultParam = primary?.parameters?.find(
+      (param) => param.name === "EVENT_RESULT"
+    );
+    const resultValue =
+      typeof resultParam?.value === "string" ? resultParam.value : null;
+    if (resultValue && blockedResults.has(resultValue.toUpperCase())) {
+      blockedEventCount += 1;
+    }
+    if (primary?.type) {
+      const type = primary.type.toUpperCase();
+      if (
+        [
+          "FAILURE",
+          "ERROR",
+          "BREACH",
+          "MALWARE",
+          "BLOCKED",
+          "DENIED",
+          "VIOLATION",
+        ].some((pattern) => type.includes(pattern))
+      ) {
+        errorEventCount += 1;
+      }
+    }
+  }
+
   return {
-    eventCount: events.length,
+    eventCount: eventsResult.totalCount,
+    blockedEventCount,
+    errorEventCount,
     dlpRuleCount: rules.length,
     connectorPolicyCount: connectorValue.length,
     latestEventAt,
+    eventWindowLabel,
+    eventSampled: eventsResult.sampled,
+    eventSampleCount: events.length,
     errors,
   };
 }
@@ -341,7 +506,7 @@ async function summarizeFleetOverview(
   const result = await generateText({
     model: googleModel("gemini-2.0-flash-001"),
     output: Output.object({ schema: FleetOverviewResponseSchema }),
-    system: `You are the Chrome Enterprise Premium assistant (CEP assistant) - a knowledgeable Chrome Enterprise Premium expert who helps IT admins secure and manage their browser fleet. You're direct, helpful, and focused on actionable insights. Never be generic or vague.`,
+    system: `You are the Chrome Enterprise Premium assistant (CEP assistant) - a knowledgeable Chrome Enterprise Premium expert who helps IT admins secure and manage their browser fleet. You're direct, helpful, and focused on actionable insights. Write like a human in a chat: smooth, conversational, and concise. Never be generic, robotic, or listy.`,
     prompt: `Analyze this Chrome Enterprise fleet data and generate a compelling overview.
 
 ## Fleet Facts
@@ -356,26 +521,26 @@ ${JSON.stringify(knowledge, null, 2)}
 ## Output Requirements
 
 ### Headline
-Write a single sentence that captures the most important insight about this fleet. Make it specific, insight-driven, and grounded in the data. Examples:
-- "Your fleet has 50 DLP rules but no connector policies - data may be leaking."
-- "I found 3 security gaps that need your attention."
-- "Your Chrome fleet looks healthy, but event reporting could be improved."
+Write a single welcoming sentence as a light check-in. Keep it under 15 words. Do NOT include emails, domains, or URLs. Keep it calm, high-level, and non-alarmist. Avoid diagnostic or problem-focused language in the headline. Examples:
+- "Welcome back. Here's a quick fleet check-in."
+- "You're set to review a few key fleet highlights."
 Avoid overly generic headlines; focus on what's most actionable or notable.
 
 ### Summary
-2-3 sentences explaining the current state. Be specific about what's configured and what's missing. Reference actual numbers. If there are issues, lead with them.
+Write 2-3 sentences as a single paragraph. Make it conversational and actionable, not choppy. Avoid colons, parentheses, and bullet-like phrasing. Use natural language that explains what matters and what the admin can do next (e.g., "I can help you set up connector policies" or "We can review recent DLP activity"). Keep it calm and helpful, avoid dense statistics, and do NOT include emails, domains, or URLs.
+If \`eventSampled\` is true, do NOT claim a full total; describe it as a sample.
 
 ### Posture Cards (generate 3-5 cards, prioritized by importance)
 Each card should represent a meaningful security or compliance metric:
 
 1. **DLP Coverage** - Are DLP rules configured? How many? Status: healthy if >0 rules, warning if 0.
-2. **Event Monitoring** - Are Chrome events being captured? Status based on event count and recency.
+2. **Event Monitoring** - Are Chrome events being captured? Status based on event count and recency. Use \`eventWindowLabel\`, \`eventCount\`, \`blockedEventCount\`, and \`eventSampled\` to make the value meaningful.
 3. **Connector Policies** - Are data connectors configured? Status: critical if 0, healthy if configured.
 4. **Browser Security** - Cookie encryption, incognito mode, Safe Browsing status (infer from connector policies if available).
 
 For each card:
 - \`label\`: Clear, human name (e.g., "Data Protection Rules", "Security Events", "Connector Status")
-- \`value\`: The metric (e.g., "50 rules", "10 events", "Not configured")
+- \`value\`: The metric (e.g., "50 rules", "Last 6h: 42 events (5 blocked)", "Last 15 days: 120+ events (sampled)", "Not configured")
 - \`note\`: Contextual, human-readable insight (NOT dates like "2026-01-20", but things like "Protecting sensitive data" or "No rules configured yet")
 - \`status\`: "healthy" (green), "warning" (yellow), "critical" (red), or "info" (blue)
 - \`progress\`: Optional 0-100 percentage if applicable
@@ -389,6 +554,7 @@ Prioritize by impact. Each suggestion must have:
 - \`action\`: The exact command to execute
 - \`priority\`: 1-10 (1=most urgent)
 - \`category\`: "security", "compliance", "monitoring", or "optimization"
+Do NOT include emails, domains, or URLs in suggestions.
 
 **Suggestion Examples Based on Common Gaps:**
 - If dlpRuleCount is 0: "Set up a DLP audit rule to monitor all traffic for sensitive data like SSNs and credit cards"
@@ -421,14 +587,124 @@ export class CepToolExecutor {
     this.auth = client;
   }
 
+  private async getChromeEventsWindowSummary({
+    windowDays,
+    pageSize = 1000,
+    maxPages = 10,
+    sampleSize = 50,
+  }: {
+    windowDays: number;
+    pageSize?: number;
+    maxPages?: number;
+    sampleSize?: number;
+  }) {
+    const windowEnd = new Date();
+    const windowStart = new Date(windowEnd.getTime() - windowDays * 86_400_000);
+
+    const dayBuckets = Array.from({ length: windowDays }, (_, index) => {
+      const dayEnd = new Date(windowEnd.getTime() - index * 86_400_000);
+      const dayStart = new Date(dayEnd.getTime() - 86_400_000);
+      return { dayStart, dayEnd };
+    }).toSorted((a, b) => a.dayStart.getTime() - b.dayStart.getTime());
+
+    let totalCount = 0;
+    let sampled = false;
+    let sampleEvents: Awaited<ReturnType<CepToolExecutor["getChromeEvents"]>> =
+      { events: [], nextPageToken: null };
+
+    const dayResults = await Promise.all(
+      dayBuckets.map(async ({ dayStart, dayEnd }) => {
+        let pageToken: string | undefined;
+        let dayCount = 0;
+        let daySampled = false;
+        const dayStartIso = dayStart.toISOString();
+        const dayEndIso = dayEnd.toISOString();
+
+        for (let page = 0; page < maxPages; page += 1) {
+          const result = await this.getChromeEvents({
+            maxResults: pageSize,
+            pageToken,
+            startTime: dayStartIso,
+            endTime: dayEndIso,
+          });
+
+          if ("error" in result) {
+            return { error: result, dayCount: 0, daySampled: false };
+          }
+
+          const items = result.events ?? [];
+          dayCount += items.length;
+
+          if (
+            "events" in sampleEvents &&
+            sampleEvents.events.length < sampleSize
+          ) {
+            const remaining = sampleSize - sampleEvents.events.length;
+            sampleEvents = {
+              events: [...sampleEvents.events, ...items.slice(0, remaining)],
+              nextPageToken: result.nextPageToken ?? null,
+            };
+          }
+
+          if (!result.nextPageToken) {
+            pageToken = undefined;
+            break;
+          }
+
+          pageToken = result.nextPageToken ?? undefined;
+        }
+
+        if (pageToken) {
+          daySampled = true;
+        }
+
+        return { dayCount, daySampled };
+      })
+    );
+
+    for (const result of dayResults) {
+      if ("error" in result) {
+        return {
+          events: result.error as Awaited<
+            ReturnType<CepToolExecutor["getChromeEvents"]>
+          >,
+          totalCount: 0,
+          sampled: false,
+          windowStart,
+          windowEnd,
+        };
+      }
+
+      totalCount += result.dayCount;
+      if (result.daySampled) {
+        sampled = true;
+      }
+    }
+
+    return {
+      events: sampleEvents,
+      totalCount,
+      sampled,
+      windowStart,
+      windowEnd,
+    };
+  }
+
   /**
    * Fetch recent Chrome audit events from the Admin SDK Reports API.
    */
   async getChromeEvents({
-    maxResults = 10,
+    maxResults = 50,
+    startTime,
+    endTime,
     pageToken,
   }: z.infer<typeof GetChromeEventsSchema>) {
-    console.log("[chrome-events] request", { maxResults, pageToken });
+    console.log("[chrome-events] request", {
+      maxResults,
+      pageToken,
+      startTime,
+      endTime,
+    });
 
     const service = googleApis.admin({
       version: "reports_v1",
@@ -441,6 +717,8 @@ export class CepToolExecutor {
         maxResults,
         customerId: this.customerId,
         pageToken,
+        startTime,
+        endTime,
       });
       console.log(
         "[chrome-events] response",
@@ -497,17 +775,45 @@ export class CepToolExecutor {
         })
       );
 
+      interface CloudIdentityPolicy {
+        name?: string | null;
+        customer?: string | null;
+        type?: string | null;
+        policyQuery?: {
+          query?: string | null;
+          orgUnit?: string | null;
+          sortOrder?: number | null;
+        } | null;
+        setting?: {
+          type?: string | null;
+          value?: Record<string, unknown> | null;
+        } | null;
+      }
+
       const rules = (res.data.policies ?? []).map(
-        (policy: { name?: string | null }, idx: number) => {
+        (policy: CloudIdentityPolicy, idx: number) => {
           const resourceName = policy.name ?? "";
           const id = resourceName.split("/").pop() ?? `rule-${idx + 1}`;
-          const displayName = id;
-          const description = "";
+
+          const settingType = policy.setting?.type ?? "";
+          const displayName =
+            formatSettingType(settingType) || `Policy ${idx + 1}`;
+
+          const settingValue = policy.setting?.value;
+          const description = settingValue
+            ? formatSettingValue(settingValue)
+            : "";
+
+          const orgUnit = policy.policyQuery?.orgUnit ?? "";
+          const policyType = policy.type ?? "UNKNOWN";
 
           return {
             id,
             displayName,
             description,
+            settingType,
+            orgUnit,
+            policyType,
             resourceName,
             consoleUrl: "https://admin.google.com/ac/chrome/dlp",
           };
@@ -882,8 +1188,11 @@ export class CepToolExecutor {
    */
   // eslint-disable-next-line class-methods-use-this
   draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
+    const proposalId = `proposal-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
     return {
       _type: "ui.confirmation" as const,
+      proposalId,
       title: `Proposed Change: ${args.policyName}`,
       description: args.reasoning,
       diff: args.proposedValue,
@@ -892,7 +1201,244 @@ export class CepToolExecutor {
         args.adminConsoleUrl ?? "https://admin.google.com/ac/chrome/settings",
       intent: "update_policy",
       status: "pending_approval",
+      applyParams: {
+        policySchemaId: args.policyName,
+        targetResource: args.targetUnit,
+        value: args.proposedValue,
+      },
     };
+  }
+
+  /**
+   * Apply a policy change after user confirmation.
+   * Uses Chrome Policy API batchModify to execute the change.
+   */
+  async applyPolicyChange(args: z.infer<typeof ApplyPolicyChangeSchema>) {
+    const service = googleApis.chromepolicy({
+      version: "v1",
+      auth: this.auth,
+    });
+
+    const targetResource = buildOrgUnitTargetResource(args.targetResource);
+
+    console.log("[apply-policy-change] request", {
+      policySchemaId: args.policySchemaId,
+      targetResource,
+      value: args.value,
+    });
+
+    try {
+      const res = await service.customers.policies.orgunits.batchModify({
+        customer: `customers/${this.customerId}`,
+        requestBody: {
+          requests: [
+            {
+              policyTargetKey: {
+                targetResource,
+              },
+              policyValue: {
+                policySchema: args.policySchemaId,
+                value: args.value,
+              },
+              updateMask: "*",
+            },
+          ],
+        },
+      });
+
+      console.log(
+        "[apply-policy-change] response",
+        JSON.stringify({ status: res.status })
+      );
+
+      return {
+        _type: "ui.success" as const,
+        message: `Policy ${args.policySchemaId} applied successfully`,
+        policySchemaId: args.policySchemaId,
+        targetResource,
+        appliedValue: args.value,
+      };
+    } catch (error: unknown) {
+      const { code, message, errors } = getErrorDetails(error);
+      console.log(
+        "[apply-policy-change] error",
+        JSON.stringify({ code, message, errors })
+      );
+
+      return {
+        _type: "ui.error" as const,
+        error: message ?? "Failed to apply policy change",
+        suggestion:
+          "Verify you have Chrome policy admin rights and the policy schema ID is correct.",
+        policySchemaId: args.policySchemaId,
+        targetResource,
+      };
+    }
+  }
+
+  /**
+   * Create a DLP rule using Cloud Identity API.
+   */
+  /**
+   * Create a DLP rule using the Cloud Identity Policy API v1beta1.
+   * Requires scope: https://www.googleapis.com/auth/cloud-identity.policies
+   */
+  async createDLPRule(args: z.infer<typeof CreateDLPRuleSchema>) {
+    console.log("[create-dlp-rule] request", {
+      displayName: args.displayName,
+      targetOrgUnit: args.targetOrgUnit,
+      triggers: args.triggers,
+      action: args.action,
+    });
+
+    const token = await this.auth.getAccessToken();
+    const accessToken = token?.token;
+
+    if (!accessToken) {
+      return {
+        _type: "ui.error" as const,
+        message: "No access token available",
+        error: "Authentication required",
+        displayName: args.displayName,
+        targetOrgUnit: args.targetOrgUnit,
+        triggers: args.triggers,
+        action: args.action,
+        consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+      };
+    }
+
+    const triggerConditions = args.triggers.map((trigger) => {
+      switch (trigger) {
+        case "UPLOAD": {
+          return "chrome.file_upload";
+        }
+        case "DOWNLOAD": {
+          return "chrome.file_download";
+        }
+        case "PRINT": {
+          return "chrome.print";
+        }
+        case "CLIPBOARD": {
+          return "chrome.clipboard";
+        }
+        default: {
+          throw new Error(`Unexpected trigger type: ${trigger as string}`);
+        }
+      }
+    });
+
+    const actionMapping: Record<string, string> = {
+      AUDIT: "AUDIT_ONLY",
+      WARN: "WARN_USER",
+      BLOCK: "BLOCK_CONTENT",
+    };
+
+    // Build the policy payload for Cloud Identity Policy API v1beta1
+    const policyPayload = {
+      customer: `customers/${this.customerId}`,
+      policyQuery: {
+        orgUnit: buildOrgUnitTargetResource(args.targetOrgUnit),
+        query: "user.is_member_of_any()",
+      },
+      setting: {
+        type: "rule.dlp",
+        value: {
+          name: args.displayName,
+          description: `DLP rule created via CEP Hero: ${args.displayName}`,
+          triggers: triggerConditions,
+          action: actionMapping[args.action] ?? "AUDIT_ONLY",
+          enabled: true,
+          // Match all content - a broad audit rule
+          conditions: ["all_content.matches_any()"],
+        },
+      },
+    };
+
+    try {
+      // Call Cloud Identity Policy API v1beta1 to create the policy
+      const res = await fetch(
+        "https://cloudidentity.googleapis.com/v1beta1/policies",
+        {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(policyPayload),
+        }
+      );
+
+      const data: unknown = await res.json();
+
+      if (!res.ok) {
+        const errorData = data as { error?: { message?: string } };
+        const errorMessage =
+          errorData?.error?.message ?? `API error: ${res.status}`;
+
+        console.log("[create-dlp-rule] API error", JSON.stringify(errorData));
+
+        // If the API call fails, provide manual steps as fallback
+        return {
+          _type: "ui.manual_steps" as const,
+          message: `API call failed: ${errorMessage}. Please create the rule manually.`,
+          error: errorMessage,
+          displayName: args.displayName,
+          targetOrgUnit: args.targetOrgUnit,
+          triggers: args.triggers,
+          action: args.action,
+          consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+          steps: [
+            "1. Go to Admin Console > Security > Access and data control > Data protection",
+            "2. Click 'Manage Rules' then 'Add rule' > 'New rule'",
+            `3. Name the rule: ${args.displayName}`,
+            `4. Set scope to org unit: ${args.targetOrgUnit}`,
+            `5. Add Chrome triggers: ${args.triggers.join(", ")}`,
+            `6. Set action to: ${args.action}`,
+            "7. Save and enable the rule",
+          ],
+        };
+      }
+
+      const responseData = data as { name?: string };
+      console.log(
+        "[create-dlp-rule] success",
+        JSON.stringify({ name: responseData.name })
+      );
+
+      return {
+        _type: "ui.success" as const,
+        message: `DLP rule "${args.displayName}" created successfully!`,
+        ruleName: responseData.name ?? args.displayName,
+        displayName: args.displayName,
+        targetOrgUnit: args.targetOrgUnit,
+        triggers: args.triggers,
+        action: args.action,
+        consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+      };
+    } catch (error: unknown) {
+      const message = getErrorMessage(error);
+      console.log("[create-dlp-rule] error", JSON.stringify({ message }));
+
+      return {
+        _type: "ui.manual_steps" as const,
+        message: `Unable to create DLP rule: ${message}. Please create it manually.`,
+        error: message,
+        displayName: args.displayName,
+        targetOrgUnit: args.targetOrgUnit,
+        triggers: args.triggers,
+        action: args.action,
+        consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+        steps: [
+          "1. Go to Admin Console > Security > Access and data control > Data protection",
+          "2. Click 'Manage Rules' then 'Add rule' > 'New rule'",
+          `3. Name the rule: ${args.displayName}`,
+          `4. Set scope to org unit: ${args.targetOrgUnit}`,
+          `5. Add Chrome triggers: ${args.triggers.join(", ")}`,
+          `6. Set action to: ${args.action}`,
+          "7. Save and enable the rule",
+        ],
+      };
+    }
   }
 
   /**
@@ -916,23 +1462,35 @@ export class CepToolExecutor {
    * Summarize fleet posture from live CEP data.
    */
   async getFleetOverview({
-    maxEvents = 25,
+    maxEvents = 50,
     knowledgeQuery,
   }: z.infer<typeof GetFleetOverviewSchema>) {
-    const [eventsResult, dlpResult, connectorResult] = await Promise.all([
-      this.getChromeEvents({ maxResults: maxEvents }),
+    const eventsWindowSummary = await this.getChromeEventsWindowSummary({
+      windowDays: 7,
+      pageSize: 1000,
+      maxPages: 10,
+      sampleSize: maxEvents,
+    });
+
+    const [dlpResult, connectorResult] = await Promise.all([
       this.listDLPRules(),
       this.getChromeConnectorConfiguration(),
     ]);
 
     const dataPayload = {
-      eventsResult,
+      eventsResult: eventsWindowSummary.events,
+      eventsWindow: {
+        totalCount: eventsWindowSummary.totalCount,
+        sampled: eventsWindowSummary.sampled,
+        windowStart: eventsWindowSummary.windowStart.toISOString(),
+        windowEnd: eventsWindowSummary.windowEnd.toISOString(),
+      },
       dlpResult,
       connectorResult,
     };
 
     const facts = extractFleetOverviewFacts(
-      eventsResult,
+      eventsWindowSummary,
       dlpResult,
       connectorResult
     );
@@ -951,6 +1509,10 @@ export class CepToolExecutor {
       const hasDlpRules = facts.dlpRuleCount > 0;
       const hasConnectors = facts.connectorPolicyCount > 0;
       const hasEvents = facts.eventCount > 0;
+      const eventSampleNote = facts.eventSampled ? " (sampled)" : "";
+      const eventCountLabel = facts.eventSampled
+        ? `${facts.eventCount}+ events${eventSampleNote}`
+        : `${facts.eventCount} events`;
 
       const suggestions: FleetOverviewResponse["suggestions"] = [];
 
@@ -995,19 +1557,18 @@ export class CepToolExecutor {
         !hasConnectors && "connector policies",
       ].filter(Boolean);
 
-      let headline =
-        "Your Chrome fleet is configured, but let's verify everything is working.";
+      let headline = "Welcome back — here’s a quick fleet check-in.";
       if (!hasDlpRules || !hasConnectors) {
         headline =
           missingItems.length === 2
-            ? "Your fleet is missing DLP rules and connector policies - your data may not be protected."
-            : `Your fleet has no ${missingItems[0]} configured - this is a security gap.`;
+            ? "Welcome back — a couple security gaps are worth tightening up."
+            : `Welcome back — ${missingItems[0]} still need attention.`;
       }
 
       return {
         headline,
         summary:
-          "I could not generate a full AI summary, but here's what I found from your fleet data.",
+          "Here’s a quick check-in based on your fleet data. I can help you address the items below.",
         postureCards: [
           {
             label: "Data Protection Rules",
@@ -1027,9 +1588,15 @@ export class CepToolExecutor {
           {
             label: "Security Events",
             value:
-              facts.eventCount > 0 ? `${facts.eventCount} events` : "No events",
+              facts.eventCount > 0
+                ? `${eventCountLabel} in ${facts.eventWindowLabel}${
+                    facts.blockedEventCount > 0
+                      ? ` (${facts.blockedEventCount} blocked)`
+                      : ""
+                  }`
+                : "No events",
             note: hasEvents
-              ? "Browser activity being monitored"
+              ? `Recent activity across the last ${facts.eventWindowLabel}`
               : "Event reporting may be disabled",
             source: "Admin SDK Reports",
             action: "Show recent security events",

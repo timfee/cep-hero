@@ -1,20 +1,6 @@
 /* eslint-disable @typescript-eslint/unbound-method */
 import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
 
-/**
- * IMPORTANT: RATE LIMITING AND SESSION HEADERS
- *
- * If you encounter 429 Too Many Requests errors, you need to refresh the
- * session headers. This typically occurs when running off-corp without a valid
- * session.
- *
- * To resolve:
- * 1. Log in to support.google.com on a corp account.
- * 2. Copy the request headers from a successful page load.
- * 3. Update the 'headers' constant below.
- *
- * See detailed instructions near the 'headers' constant below.
- */
 import { getStandardId, processDocs, turndown } from "./utils";
 import { MAX_CONCURRENCY, MAX_REQUESTS, type Document } from "./vector-types";
 
@@ -32,7 +18,7 @@ interface CrawleeError extends Error {
  */
 function extractCleanTitle(element: unknown, url: string): string {
   const title = getElementText(element);
-  if (title.length > 0) {
+  if (title && title.length > 0) {
     return title.replaceAll(/\s+/g, " ").trim();
   }
 
@@ -116,17 +102,7 @@ function coerceHeaders(value: Record<string, unknown>): Record<string, string> {
   );
 }
 
-/**
- * INSTRUCTIONS FOR UPDATING HEADERS
- *
- * 1. Visit https://support.google.com from your corp account.
- * 2. Resolve any CAPTCHA if prompted and refresh.
- * 3. Open DevTools (Network tab), find the main doc request.
- * 4. Right-click -> Copy -> Copy as fetch.
- * 5. Extract the 'headers' object and paste it below.
- *
- * Video: https://screencast.googleplex.com/cast/NTgyNzMyOTE3NDUzNjE5Mnw4NmFjYzgwYi04Yw
- */
+// Header refresh instructions live in scripts/AGENTS.md.
 const headers = resolveHeaders({
   accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",

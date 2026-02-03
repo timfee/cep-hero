@@ -69,10 +69,6 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 
-// ============================================================================
-// Provider Context & Types
-// ============================================================================
-
 export interface AttachmentsContext {
   files: (FileUIPart & { id: string })[];
   add: (files: File[] | FileList) => void;
@@ -144,11 +140,9 @@ export function PromptInputProvider({
   initialInput: initialTextInput = "",
   children,
 }: PromptInputProviderProps) {
-  // ----- textInput state
   const [textInput, setTextInput] = useState(initialTextInput);
   const clearInput = useCallback(() => setTextInput(""), []);
 
-  // ----- attachments state (global when wrapped)
   const [attachmentFiles, setAttachmentFiles] = useState<
     (FileUIPart & { id: string })[]
   >([]);
@@ -374,11 +368,9 @@ export const PromptInput = ({
   const inputRef = useRef<HTMLInputElement | null>(null);
   const formRef = useRef<HTMLFormElement | null>(null);
 
-  // ----- Local attachments (only used when no provider)
   const [items, setItems] = useState<(FileUIPart & { id: string })[]>([]);
   const files = usingProvider ? controller.attachments.files : items;
 
-  // ----- Local referenced sources (always local to PromptInput)
   const [referencedSources, setReferencedSources] = useState<
     (SourceDocumentUIPart & { id: string })[]
   >([]);
@@ -657,7 +649,8 @@ export const PromptInput = ({
         reader.onerror = () => resolve(null);
         reader.readAsDataURL(blob);
       });
-    } catch {
+    } catch (error) {
+      console.warn("[prompt-input] failed to convert blob url", error);
       return null;
     }
   };
@@ -735,8 +728,8 @@ export const PromptInput = ({
                   controller.textInput.clear();
                 }
               })
-              .catch(() => {
-                // Don't clear on error - user may want to retry
+              .catch((error) => {
+                console.warn("[prompt-input] submit failed", error);
               });
           } else {
             // Sync function completed without throwing, clear inputs
@@ -745,12 +738,12 @@ export const PromptInput = ({
               controller.textInput.clear();
             }
           }
-        } catch {
-          // Don't clear on error - user may want to retry
+        } catch (error) {
+          console.warn("[prompt-input] submit failed", error);
         }
       })
-      .catch(() => {
-        // Don't clear on error - user may want to retry
+      .catch((error) => {
+        console.warn("[prompt-input] submit failed", error);
       });
   };
 

@@ -8,8 +8,6 @@ import {
   CheckCircleIcon,
   ChevronDownIcon,
   CircleIcon,
-  ClockIcon,
-  WrenchIcon,
   XCircleIcon,
 } from "lucide-react";
 import { isValidElement } from "react";
@@ -71,13 +69,13 @@ export const getStatusBadge = (status: ToolPart["state"]) => {
     ),
     "input-available": (
       <motion.div
-        animate={{ rotate: 360 }}
-        transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+        animate={{ scale: [1, 1.2, 1], opacity: [0.6, 1, 0.6] }}
+        transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
       >
-        <ClockIcon className="size-3.5" />
+        <CircleIcon className="size-3.5" />
       </motion.div>
     ),
-    "approval-requested": <ClockIcon className="size-3.5 text-yellow-600" />,
+    "approval-requested": <CircleIcon className="size-3.5 text-yellow-600" />,
     "approval-responded": (
       <CheckCircleIcon className="size-3.5 text-blue-600" />
     ),
@@ -132,8 +130,6 @@ export const ToolHeader = ({
 }: ToolHeaderProps) => {
   const derivedName =
     type === "dynamic-tool" ? toolName : type.split("-").slice(1).join("-");
-  const isRunning = state === "input-available" || state === "input-streaming";
-
   return (
     <CollapsibleTrigger
       className={cn(
@@ -143,12 +139,6 @@ export const ToolHeader = ({
       {...props}
     >
       <div className="flex items-center gap-2">
-        <motion.div
-          animate={isRunning ? { rotate: [0, 180, 360] } : {}}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-        >
-          <WrenchIcon className="size-4 text-muted-foreground" />
-        </motion.div>
         <span className="font-medium text-sm">{title ?? derivedName}</span>
         {getStatusBadge(state)}
       </div>

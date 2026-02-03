@@ -22,7 +22,7 @@ function generatePolicyMarkdown(policy: PolicyDefinition): string {
     metadata.push(`**Policy ID:** ${policy.id}`);
   }
   if (policy.deprecated === true) {
-    metadata.push(`**Status:** ⚠️ Deprecated`);
+    metadata.push("**Status:** Deprecated");
   }
   if (policy.device_only === true) {
     metadata.push(`**Scope:** Device-only`);
@@ -171,15 +171,15 @@ async function processPolicyDocs(documents: PolicyDocument[]): Promise<void> {
       const failed = results.filter((r) => r.status === "rejected").length;
 
       if (failed > 0) {
-        console.log(`  ⚠️ ${failed} documents failed to process`);
+        console.log(`  ${failed} documents failed to process`);
       }
-      console.log(`  ✅ ${successful} documents processed successfully`);
+      console.log(`  ${successful} documents processed successfully`);
     } catch (error) {
       console.error(`Failed to process batch ${i + 1}:`, error);
     }
   }
 
-  console.log("\n✅ All policy documents processed successfully!");
+  console.log("\nAll policy documents processed successfully.");
 }
 
 const API_URL =

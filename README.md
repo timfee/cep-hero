@@ -9,7 +9,7 @@ It talks to real Google Cloud APIs (Admin SDK, Chrome Management, Cloud Identity
 
 ---
 
-## 🛠️ Developer Setup (Required)
+## Developer Setup (Required)
 
 To run this application, you must create a Google Cloud Project and configure OAuth credentials.
 
@@ -18,9 +18,10 @@ To run this application, you must create a Google Cloud Project and configure OA
 1.  Go to the [Google Cloud Console](https://console.cloud.google.com/).
 2.  Create a new project (e.g., `cep-hero`).
 3.  **Enable the following APIs** (API & Services > Library):
-    - **Admin SDK** (`admin.googleapis.com`)
-    - **Chrome Management API** (`chromemanagement.googleapis.com`)
-    - **Cloud Identity API** (`cloudidentity.googleapis.com`)
+    - **Admin SDK** (`admin.googleapis.com`) - For audit logs, org units, users, groups
+    - **Chrome Management API** (`chromemanagement.googleapis.com`) - For Chrome reports and profiles
+    - **Chrome Policy API** (`chromepolicy.googleapis.com`) - For reading/writing Chrome policies
+    - **Cloud Identity API** (`cloudidentity.googleapis.com`) - For DLP rules and Cloud Identity policies
 
 ### 2. Configure OAuth Consent Screen
 
@@ -28,12 +29,17 @@ To run this application, you must create a Google Cloud Project and configure OA
 2.  Select **Internal** (if you are a Workspace user) or **External** (for testing).
 3.  Fill in the app name and email.
 4.  **Scopes:** Add the following scopes:
-    - `https://www.googleapis.com/auth/chrome.management.reports.readonly`
-    - `https://www.googleapis.com/auth/chrome.management.profiles.readonly`
-    - `https://www.googleapis.com/auth/cloud-identity.policies`
-    - `https://www.googleapis.com/auth/admin.reports.audit.readonly`
-    - `https://www.googleapis.com/auth/cloud-platform`
-    - `openid`, `email`, `profile`
+    - `https://www.googleapis.com/auth/chrome.management.reports.readonly` - Read Chrome reports
+    - `https://www.googleapis.com/auth/chrome.management.profiles.readonly` - Read Chrome profiles
+    - `https://www.googleapis.com/auth/chrome.management.policy` - **Read/write Chrome policies** (required for applying policy changes)
+    - `https://www.googleapis.com/auth/cloud-identity.policies` - **Read/write Cloud Identity policies** (required for creating DLP rules)
+    - `https://www.googleapis.com/auth/admin.reports.audit.readonly` - Read audit logs
+    - `https://www.googleapis.com/auth/admin.directory.orgunit` - Read/write org units
+    - `https://www.googleapis.com/auth/admin.directory.group` - Read groups
+    - `https://www.googleapis.com/auth/admin.directory.user` - Read users
+    - `https://www.googleapis.com/auth/cloud-platform` - Cloud platform access
+    - `https://www.googleapis.com/auth/ediscovery` - eDiscovery access
+    - `openid`, `email`, `profile` - Basic identity
 5.  Save and continue.
 
 ### 3. Create OAuth Credentials
@@ -76,7 +82,7 @@ GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 
 ---
 
-## 🚀 Usage Guide
+## Usage Guide
 
 ### 1. Install Dependencies
 
@@ -162,9 +168,9 @@ The eval framework uses **fixture injection** to provide deterministic test data
 
 For comprehensive eval documentation, see:
 
-- **[QUEST_INSTRUCTIONS.md](./QUEST_INSTRUCTIONS.md)** - Complete guide to understanding, running, and improving evals
-- **[QUEST_TASKS.md](./QUEST_TASKS.md)** - Progress tracking for eval system improvements
 - **[evals/README.md](./evals/README.md)** - Eval-specific details and fixture format
+- **[evals/cases/README.md](./evals/cases/README.md)** - Case index and category coverage
+- **[evals/MANUAL_TESTING.md](./evals/MANUAL_TESTING.md)** - Manual eval runs and result review
 
 ### Common Commands
 
@@ -186,7 +192,7 @@ bun run fixtures:capture
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 - **`lib/mcp/registry.ts`**: Deterministic tools + evidence extraction + structured AI summaries.
 - **`lib/mcp/server-factory.ts`**: MCP tool registrations and Streamable HTTP transport.

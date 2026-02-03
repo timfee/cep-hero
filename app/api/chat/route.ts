@@ -32,7 +32,6 @@ function extractFixtureData(body: unknown) {
  * Handle streaming CEP chat responses.
  */
 export async function POST(req: Request) {
-  // 1. Authenticate
   const authResult = await authenticateRequest(req);
 
   if (authResult.status === "unauthorized") {
@@ -51,7 +50,6 @@ export async function POST(req: Request) {
 
   const { accessToken } = authResult;
 
-  // 2. Parse Request Body
   let body: unknown;
   try {
     body = await req.json();
@@ -78,7 +76,6 @@ export async function POST(req: Request) {
     });
   }
 
-  // 3. Check for fixture data in eval mode
   const isEvalTestMode = req.headers.get("x-eval-test-mode") === "1";
   const fixtureData = extractFixtureData(body);
   const executor =
@@ -86,7 +83,6 @@ export async function POST(req: Request) {
       ? new FixtureToolExecutor(loadFixtureData(fixtureData))
       : undefined;
 
-  // 5. Create and Return Chat Stream
   return createChatStream({
     messages,
     accessToken,

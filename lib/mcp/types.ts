@@ -1,6 +1,8 @@
 import { type z } from "zod";
 
 import {
+  type ApplyPolicyChangeSchema,
+  type CreateDLPRuleSchema,
   type DraftPolicyChangeSchema,
   type EnrollBrowserSchema,
   type FleetOverviewResponse,
@@ -41,6 +43,9 @@ export type DLPRulesResult =
         id: string;
         displayName: string;
         description: string;
+        settingType: string;
+        orgUnit: string;
+        policyType: string;
         resourceName: string;
         consoleUrl: string;
       }[];
@@ -97,6 +102,7 @@ export type DebugAuthResult =
 
 export interface DraftPolicyChangeResult {
   _type: "ui.confirmation";
+  proposalId?: string;
   title: string;
   description: string;
   diff: unknown;
@@ -104,6 +110,34 @@ export interface DraftPolicyChangeResult {
   adminConsoleUrl: string;
   intent: string;
   status: string;
+  applyParams?: {
+    policySchemaId: string;
+    targetResource: string;
+    value: unknown;
+  };
+}
+
+export interface ApplyPolicyChangeResult {
+  _type: "ui.success" | "ui.error";
+  message: string;
+  policySchemaId: string;
+  targetResource: string;
+  appliedValue?: unknown;
+  error?: string;
+  suggestion?: string;
+}
+
+export interface CreateDLPRuleResult {
+  _type: "ui.success" | "ui.manual_steps";
+  message: string;
+  ruleName?: string;
+  displayName: string;
+  targetOrgUnit: string;
+  triggers: string[];
+  action: string;
+  consoleUrl: string;
+  error?: string;
+  steps?: string[];
 }
 
 export interface IToolExecutor {
@@ -128,6 +162,14 @@ export interface IToolExecutor {
   draftPolicyChange(
     args: z.infer<typeof DraftPolicyChangeSchema>
   ): Promise<DraftPolicyChangeResult>;
+
+  applyPolicyChange(
+    args: z.infer<typeof ApplyPolicyChangeSchema>
+  ): Promise<ApplyPolicyChangeResult>;
+
+  createDLPRule(
+    args: z.infer<typeof CreateDLPRuleSchema>
+  ): Promise<CreateDLPRuleResult>;
 
   getFleetOverview(args: z.infer<typeof GetFleetOverviewSchema>): Promise<
     | FleetOverviewResponse
@@ -173,11 +215,14 @@ export interface FixtureData {
     nextPageToken?: string;
   };
   dlpRules?: {
-    id: string;
-    displayName: string;
-    description: string;
-    resourceName: string;
-    consoleUrl: string;
+    name?: string;
+    displayName?: string;
+    description?: string;
+    condition?: unknown;
+    action?: string;
+    triggers?: string[];
+    enabled?: boolean;
+    note?: string;
   }[];
   connectorPolicies?: {
     targetKey?: { targetResource?: string };
