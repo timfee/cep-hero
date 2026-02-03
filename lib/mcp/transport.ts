@@ -29,7 +29,7 @@ export class NextJsSseTransport implements Transport {
    * Start hook required by the MCP transport interface.
    */
   async start(): Promise<void> {
-    await Promise.resolve();
+    await writeDebugLog("mcp.transport.start", { sessionId: this._sessionId });
   }
 
   /**
