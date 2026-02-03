@@ -12,9 +12,10 @@ import {
   type GetChromeEventsSchema,
   type GetFleetOverviewSchema,
 } from "@/lib/mcp/schemas";
+import { type DebugAuthResult } from "@/lib/mcp/types";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
-import { debugAuth, type DebugAuthResult } from "./auth";
+import { debugAuth } from "./auth";
 import { getChromeEvents, getChromeEventsWindowSummary } from "./chrome-events";
 import {
   getChromeConnectorConfiguration,

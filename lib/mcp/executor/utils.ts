@@ -1,17 +1,15 @@
-import { normalizeResource, type OrgUnit } from "@/lib/mcp/org-units";
+import {
+  buildOrgUnitTargetResource as coreBuildOrgUnitTargetResource,
+  normalizeResource,
+  type OrgUnit,
+} from "@/lib/mcp/org-units";
 
 /**
  * Build a target resource path for Chrome Policy API.
+ * Delegates to the canonical implementation in org-units.ts.
  */
 export function buildOrgUnitTargetResource(orgUnitId: string): string {
-  if (!orgUnitId) {
-    return "";
-  }
-  const normalized = normalizeResource(orgUnitId);
-  if (normalized.startsWith("orgunits/")) {
-    return normalized;
-  }
-  return `orgunits/${normalized}`;
+  return coreBuildOrgUnitTargetResource(orgUnitId);
 }
 
 /**
