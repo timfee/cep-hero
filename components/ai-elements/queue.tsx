@@ -1,3 +1,7 @@
+/**
+ * Queue components for displaying message queues and todo lists with collapsible sections.
+ * Shows queued messages, attachments, and tasks with completion states.
+ */
 "use client";
 
 import type { ComponentProps } from "react";
@@ -35,6 +39,9 @@ export interface QueueTodo {
 
 export type QueueItemProps = ComponentProps<"li">;
 
+/**
+ * Individual queue item with hover styling.
+ */
 export const QueueItem = ({ className, ...props }: QueueItemProps) => (
   <li
     className={cn(
@@ -49,6 +56,9 @@ export type QueueItemIndicatorProps = ComponentProps<"span"> & {
   completed?: boolean;
 };
 
+/**
+ * Circular indicator that changes appearance based on completion state.
+ */
 export const QueueItemIndicator = ({
   completed = false,
   className,
@@ -70,6 +80,9 @@ export type QueueItemContentProps = ComponentProps<"span"> & {
   completed?: boolean;
 };
 
+/**
+ * Queue item text content with strikethrough for completed items.
+ */
 export const QueueItemContent = ({
   completed = false,
   className,
@@ -91,6 +104,9 @@ export type QueueItemDescriptionProps = ComponentProps<"div"> & {
   completed?: boolean;
 };
 
+/**
+ * Secondary description text for queue items.
+ */
 export const QueueItemDescription = ({
   completed = false,
   className,
