@@ -12,34 +12,19 @@ import "./globals.css";
 const googleSansText = localFont({
   src: [
     {
-      path: "../public/Google_Sans_Text/GoogleSansText-Regular.ttf",
+      path: "../public/Google_Sans_Text/GoogleSansText-Regular.woff2",
       weight: "400",
       style: "normal",
     },
     {
-      path: "../public/Google_Sans_Text/GoogleSansText-Italic.ttf",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Text/GoogleSansText-Medium.ttf",
+      path: "../public/Google_Sans_Text/GoogleSansText-Medium.woff2",
       weight: "500",
       style: "normal",
     },
     {
-      path: "../public/Google_Sans_Text/GoogleSansText-MediumItalic.ttf",
-      weight: "500",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Text/GoogleSansText-Bold.ttf",
+      path: "../public/Google_Sans_Text/GoogleSansText-Bold.woff2",
       weight: "700",
       style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Text/GoogleSansText-BoldItalic.ttf",
-      weight: "700",
-      style: "italic",
     },
   ],
   variable: "--font-google-sans-text",
@@ -47,68 +32,7 @@ const googleSansText = localFont({
 });
 
 const googleSansCode = localFont({
-  src: [
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-Light.ttf",
-      weight: "300",
-      style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-LightItalic.ttf",
-      weight: "300",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-Regular.ttf",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-Italic.ttf",
-      weight: "400",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-Medium.ttf",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-MediumItalic.ttf",
-      weight: "500",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-SemiBold.ttf",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-SemiBoldItalic.ttf",
-      weight: "600",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-Bold.ttf",
-      weight: "700",
-      style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-BoldItalic.ttf",
-      weight: "700",
-      style: "italic",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-ExtraBold.ttf",
-      weight: "800",
-      style: "normal",
-    },
-    {
-      path: "../public/Google_Sans_Code/GoogleSansCode-ExtraBoldItalic.ttf",
-      weight: "800",
-      style: "italic",
-    },
-  ],
+  src: "../public/Google_Sans_Code/GoogleSansCode-Regular.woff2",
   variable: "--font-google-sans-code",
   display: "swap",
 });
