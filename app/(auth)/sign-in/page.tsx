@@ -7,7 +7,7 @@
 import { track } from "@vercel/analytics";
 import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useState, useTransition } from "react";
+import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { enrollUser } from "@/app/gimme/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -331,7 +331,7 @@ function RegistrationForm() {
  * Timeout duration before resetting the sign-in loading state.
  * Allows retry if popup is blocked or user cancels.
  */
-const SIGNIN_TIMEOUT_MS = 10000;
+const SIGNIN_TIMEOUT_MS = 10_000;
 
 /**
  * Sign-in page component with sign-in button and registration form.
@@ -346,7 +346,9 @@ export default function SignInPage() {
 
   // Reset loading state after timeout to allow retry if sign-in fails
   useEffect(() => {
-    if (!isSigningIn) return;
+    if (!isSigningIn) {
+      return;
+    }
 
     const timeout = setTimeout(() => {
       setIsSigningIn(false);
