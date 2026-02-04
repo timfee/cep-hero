@@ -60,6 +60,14 @@ export async function createUser(
   name: ParsedName,
   recoveryEmail: string
 ): Promise<void> {
+  // Debug logging to trace what's being sent to Google API
+  console.log("[gimme] createUser called", {
+    primaryEmail,
+    givenName: name.givenName,
+    familyName: name.familyName,
+    recoveryEmail,
+  });
+
   await directory.users.insert({
     requestBody: {
       primaryEmail,

@@ -29,7 +29,15 @@ export function parseName(fullName: string): ParsedName {
 }
 
 /**
+ * Check if a string looks like an email address.
+ */
+function looksLikeEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+}
+
+/**
  * Validate name field with length limits.
+ * Also rejects values that look like email addresses to prevent data corruption.
  */
 export function validateName(
   name: unknown
@@ -43,6 +51,17 @@ export function validateName(
     return {
       valid: false,
       error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
+    };
+  }
+
+  // Reject email addresses as names - this catches a data corruption bug
+  if (looksLikeEmail(trimmedName)) {
+    console.error("[gimme] CRITICAL: Name field contains email address", {
+      name: trimmedName,
+    });
+    return {
+      valid: false,
+      error: "Please enter your full name, not an email address",
     };
   }
 
