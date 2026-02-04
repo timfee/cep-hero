@@ -1,8 +1,4 @@
 import { type Metadata } from "next";
-import { headers } from "next/headers";
-import { redirect } from "next/navigation";
-
-import { auth } from "@/lib/auth";
 
 export const metadata: Metadata = {
   title: "Sign In",
@@ -10,16 +6,15 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export default async function AuthLayout({
+/**
+ * Auth layout - wraps sign-in page with styling.
+ * Does NOT redirect authenticated users to avoid race conditions during sign-out.
+ */
+export default function AuthLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (session) {
-    redirect("/");
-  }
-
   return (
     <div className="relative min-h-screen bg-background">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">

@@ -84,6 +84,7 @@ export function UserStatusBar() {
 
   /**
    * Signs out the user and redirects to sign-in page.
+   * Uses window.location for hard redirect to ensure cookies are cleared.
    */
   const performSignOut = useCallback(async () => {
     try {
@@ -94,8 +95,9 @@ export function UserStatusBar() {
         err instanceof Error ? err.message : "Unknown error"
       );
     }
-    router.push("/sign-in");
-  }, [router]);
+    // Hard redirect to ensure server sees cleared cookies
+    window.location.href = "/sign-in";
+  }, []);
 
   const fetchStatus = useCallback(async () => {
     try {
