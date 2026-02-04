@@ -11,6 +11,7 @@ import {
   resolveOrgUnitDisplay,
 } from "@/lib/mcp/org-units";
 
+import { type ConnectorConfigResult } from "./executor/connector";
 import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
@@ -22,7 +23,6 @@ import {
 } from "./registry";
 import {
   type ApplyPolicyChangeResult,
-  type ConnectorConfigResult,
   type CreateDLPRuleResult,
   type DebugAuthResult,
   type DraftPolicyChangeResult,
