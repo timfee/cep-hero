@@ -1,7 +1,15 @@
 "use client";
 
-import { AlertTriangle, Clock, LogIn, LogOut, RefreshCw } from "lucide-react";
+import {
+  AlertTriangle,
+  Clock,
+  LogIn,
+  LogOut,
+  RefreshCw,
+  User,
+} from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
@@ -10,7 +18,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -227,7 +234,7 @@ export function UserStatusBar() {
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-white/[0.06]"
+            className="flex cursor-pointer items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-white/[0.06]"
             aria-label={`Account menu for ${displayName}`}
           >
             <div className="flex flex-col items-end">
@@ -240,67 +247,54 @@ export function UserStatusBar() {
                 </span>
               )}
             </div>
-            {/* Countdown timer replacing avatar */}
+            {/* Countdown timer with time displayed */}
             <div
               className={cn(
-                "flex size-8 items-center justify-center rounded-full text-xs font-medium",
+                "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
                 statusIndicator
                   ? cn(statusIndicator.bgColor, statusIndicator.textColor)
                   : "bg-muted text-muted-foreground"
               )}
             >
               {statusIndicator ? (
-                <Clock className="size-4" />
+                <>
+                  <Clock className="size-3.5" />
+                  <span>{statusIndicator.text}</span>
+                </>
               ) : (
-                <AlertTriangle className="size-4" />
+                <>
+                  <AlertTriangle className="size-3.5" />
+                  <span>Error</span>
+                </>
               )}
             </div>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
-          <DropdownMenuLabel>Sign-in status</DropdownMenuLabel>
-          <DropdownMenuSeparator />
-          {/* Status info section */}
-          <div className="px-2 py-2">
-            <div className="flex items-center gap-2">
-              {statusIndicator ? (
-                <div
-                  className={cn(
-                    "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs",
-                    statusIndicator.bgColor,
-                    statusIndicator.textColor
-                  )}
-                >
-                  <Clock className="size-3" />
-                  <span>{statusIndicator.text}</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
-                  <AlertTriangle className="size-3" />
-                  <span>Unknown status</span>
-                </div>
-              )}
-            </div>
-            {tokenError && (
-              <p className="mt-1 text-xs text-destructive">
-                Token error detected
-              </p>
-            )}
-          </div>
-          <DropdownMenuSeparator />
+        <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuItem asChild className="cursor-pointer">
+            <Link href="/sign-in-status">
+              <User className="size-4" />
+              Account status
+            </Link>
+          </DropdownMenuItem>
           {(isTokenExpired || isTokenExpiringSoon || tokenError) && (
             <>
-              <DropdownMenuItem onClick={handleReauth}>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                onClick={handleReauth}
+                className="cursor-pointer"
+              >
                 <RefreshCw className="size-4" />
                 Re-authenticate
               </DropdownMenuItem>
-              <DropdownMenuSeparator />
             </>
           )}
+          <DropdownMenuSeparator />
           <DropdownMenuItem
             variant="destructive"
             onClick={handleSignOut}
             disabled={signingOut}
+            className="cursor-pointer"
           >
             <LogOut className="size-4" />
             {signingOut ? "Signing out..." : "Sign out"}

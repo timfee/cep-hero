@@ -195,7 +195,7 @@ describe("UserStatusBar component", () => {
     expect(statusIndicator).toBeInTheDocument();
   });
 
-  it("shows countdown timer icon in trigger button", async () => {
+  it("shows countdown time in trigger button", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
         json: () =>
@@ -215,15 +215,13 @@ describe("UserStatusBar component", () => {
       })
     ) as typeof fetch;
 
-    const { container, getByText } = render(<UserStatusBar />);
+    const { getByText } = render(<UserStatusBar />);
 
     await waitFor(() => {
       expect(getByText("Test User")).toBeInTheDocument();
+      // Time should be displayed next to the clock icon
+      expect(getByText("1h 0m")).toBeInTheDocument();
     });
-
-    // Check that the trigger button contains the clock icon container
-    const clockContainer = container.querySelector(".rounded-full.size-8");
-    expect(clockContainer).toBeInTheDocument();
   });
 
   it("renders dropdown trigger with proper aria-label", async () => {
