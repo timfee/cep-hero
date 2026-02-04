@@ -1,5 +1,5 @@
 {
-  "version": "2.0.0",
+  "version": "3.0.0",
   "cases": [
     {
       "id": "EC-001",
@@ -7,9 +7,7 @@
       "category": "enrollment",
       "source_refs": ["CommonChallenge-1"],
       "case_file": "evals/cases/EC-001-network-enrollment-connectivity.md",
-      "mode": "deterministic",
       "tags": ["enrollment", "network"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "fixtures": [
         "evals/fixtures/EC-001/net-fail.log",
@@ -22,9 +20,7 @@
         "handshake",
         "wifi"
       ],
-      "required_tool_calls": ["getChromeEvents"],
-      "assertions": [],
-      "cleanup": []
+      "required_tool_calls": ["getChromeEvents"]
     },
     {
       "id": "EC-002",
@@ -32,15 +28,11 @@
       "category": "enrollment",
       "source_refs": ["CommonChallenge-2"],
       "case_file": "evals/cases/EC-002-enrollment-error-codes.md",
-      "mode": "deterministic",
       "tags": ["enrollment", "errors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
       "overrides": ["evals/fixtures/EC-002/overrides.json"],
-      "required_evidence": ["402", "license"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["402", "license"]
     },
     {
       "id": "EC-003",
@@ -48,16 +40,12 @@
       "category": "updates",
       "source_refs": ["CommonChallenge-3"],
       "case_file": "evals/cases/EC-003-chromeos-auto-update-failures.md",
-      "mode": "deterministic",
       "tags": ["updates", "chromeos"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
       "overrides": ["evals/fixtures/EC-003/overrides.json"],
       "required_evidence": ["UPDATE_ENGINE", "scatter", "pinned"],
-      "required_tool_calls": ["getChromeEvents"],
-      "assertions": [],
-      "cleanup": []
+      "required_tool_calls": ["getChromeEvents"]
     },
     {
       "id": "EC-004",
@@ -65,14 +53,10 @@
       "category": "enrollment",
       "source_refs": ["CommonChallenge-4"],
       "case_file": "evals/cases/EC-004-duplicate-machine-identifier.md",
-      "mode": "deterministic",
       "tags": ["enrollment", "devices"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-004/overrides.json"],
-      "required_evidence": ["DUPLICATE", "machine", "VM", "clone", "sysprep"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["DUPLICATE", "machine", "VM", "clone", "sysprep"]
     },
     {
       "id": "EC-005",
@@ -80,12 +64,8 @@
       "category": "policy",
       "source_refs": ["CommonChallenge-5"],
       "case_file": "evals/cases/EC-005-policy-not-applying-restart.md",
-      "mode": "deterministic",
       "tags": ["policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-006",
@@ -93,12 +73,8 @@
       "category": "policy",
       "source_refs": ["CommonChallenge-6"],
       "case_file": "evals/cases/EC-006-macos-policy-sync-issue.md",
-      "mode": "deterministic",
       "tags": ["policy", "macos"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-007",
@@ -106,14 +82,10 @@
       "category": "browser",
       "source_refs": ["CommonChallenge-7"],
       "case_file": "evals/cases/EC-007-browser-crashes-aw-snap.md",
-      "mode": "deterministic",
       "tags": ["browser", "crash"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-007/overrides.json"],
-      "required_evidence": ["Aw, Snap", "crash", "memory", "extension"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["Aw, Snap", "crash", "memory", "extension"]
     },
     {
       "id": "EC-008",
@@ -121,14 +93,10 @@
       "category": "browser",
       "source_refs": ["CommonChallenge-8"],
       "case_file": "evals/cases/EC-008-browser-performance-high-cpu.md",
-      "mode": "deterministic",
       "tags": ["browser", "performance"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-008/overrides.json"],
-      "required_evidence": ["CPU", "extension", "performance", "disable"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["CPU", "extension", "performance", "disable"]
     },
     {
       "id": "EC-009",
@@ -136,9 +104,7 @@
       "category": "endpoint",
       "source_refs": ["CommonChallenge-9"],
       "case_file": "evals/cases/EC-009-endpoint-verification-macos-keychain.md",
-      "mode": "deterministic",
       "tags": ["endpoint-verification", "macos"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-009/overrides.json"],
       "required_evidence": [
@@ -146,9 +112,7 @@
         "KEYCHAIN_ACCESS_DENIED",
         "Safe Storage",
         "macOS"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-010",
@@ -156,14 +120,10 @@
       "category": "endpoint",
       "source_refs": ["CommonChallenge-10"],
       "case_file": "evals/cases/EC-010-endpoint-verification-windows-dpapi.md",
-      "mode": "deterministic",
       "tags": ["endpoint-verification", "windows"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-010/overrides.json"],
-      "required_evidence": ["DPAPI", "S4U", "Windows", "Safe Storage"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["DPAPI", "S4U", "Windows", "Safe Storage"]
     },
     {
       "id": "EC-011",
@@ -171,14 +131,10 @@
       "category": "endpoint",
       "source_refs": ["CommonChallenge-11"],
       "case_file": "evals/cases/EC-011-endpoint-verification-recover-key.md",
-      "mode": "deterministic",
       "tags": ["endpoint-verification", "windows"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-011/overrides.json"],
-      "required_evidence": ["DPAPI", "key recovery", "Safe Storage", "reset"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["DPAPI", "key recovery", "Safe Storage", "reset"]
     },
     {
       "id": "EC-012",
@@ -186,9 +142,7 @@
       "category": "endpoint",
       "source_refs": ["CommonChallenge-12"],
       "case_file": "evals/cases/EC-012-endpoint-verification-sw-bug.md",
-      "mode": "deterministic",
       "tags": ["endpoint-verification"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-012/overrides.json"],
       "required_evidence": [
@@ -196,9 +150,7 @@
         "status code 2",
         "extension",
         "reinstall"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-013",
@@ -206,9 +158,7 @@
       "category": "devices",
       "source_refs": ["CommonChallenge-13"],
       "case_file": "evals/cases/EC-013-chromebook-battery-power-issues.md",
-      "mode": "deterministic",
       "tags": ["chromeos", "hardware"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-013/overrides.json"],
       "required_evidence": [
@@ -216,9 +166,7 @@
         "NOT_CHARGING",
         "DEGRADED",
         "power cycle"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-014",
@@ -226,14 +174,10 @@
       "category": "auth",
       "source_refs": ["CommonChallenge-14"],
       "case_file": "evals/cases/EC-014-account-conflict-gtempaccount.md",
-      "mode": "deterministic",
       "tags": ["accounts", "chromeos"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-014/overrides.json"],
-      "required_evidence": ["gtempaccount", "conflict", "rename", "guest"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["gtempaccount", "conflict", "rename", "guest"]
     },
     {
       "id": "EC-015",
@@ -241,12 +185,8 @@
       "category": "system",
       "source_refs": ["CommonChallenge-15"],
       "case_file": "evals/cases/EC-015-shared-drive-move-playback-issues.md",
-      "mode": "deterministic",
       "tags": ["chromeos", "storage"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-016",
@@ -254,9 +194,7 @@
       "category": "devices",
       "source_refs": ["CommonChallenge-16"],
       "case_file": "evals/cases/EC-016-device-lockout-previous-owner.md",
-      "mode": "deterministic",
       "tags": ["chromeos", "devices"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-016/overrides.json"],
       "required_evidence": [
@@ -264,9 +202,7 @@
         "oldcompany.com",
         "48 hours",
         "powerwash"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-017",
@@ -274,14 +210,10 @@
       "category": "integration",
       "source_refs": ["CommonChallenge-17"],
       "case_file": "evals/cases/EC-017-citrix-spa-integration-issues.md",
-      "mode": "deterministic",
       "tags": ["citrix", "integration"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-017/overrides.json"],
-      "required_evidence": ["Citrix", "group", "policy", "limit"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["Citrix", "group", "policy", "limit"]
     },
     {
       "id": "EC-018",
@@ -289,14 +221,10 @@
       "category": "enrollment",
       "source_refs": ["CommonChallenge-18"],
       "case_file": "evals/cases/EC-018-enrollment-connectors-not-registering.md",
-      "mode": "deterministic",
       "tags": ["enrollment", "connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-018/overrides.json"],
-      "required_evidence": ["license", "token", "enrollment", "managed"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["license", "token", "enrollment", "managed"]
     },
     {
       "id": "EC-019",
@@ -306,12 +234,8 @@
       "case_file": "evals/cases/EC-019-capturing-network-logs.md",
       "mode": "how-to",
       "tags": ["network", "logging"],
-      "conversation_script": [],
-      "expected_schema": [],
       "fixtures": ["evals/fixtures/EC-019/net.log"],
-      "required_evidence": ["network", "log"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["network", "log"]
     },
     {
       "id": "EC-020",
@@ -319,12 +243,8 @@
       "category": "system",
       "source_refs": ["CommonChallenge-20"],
       "case_file": "evals/cases/EC-020-remote-log-collection-support.md",
-      "mode": "deterministic",
       "tags": ["support", "logging"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-021",
@@ -332,14 +252,10 @@
       "category": "network",
       "source_refs": ["CommonChallenge-21"],
       "case_file": "evals/cases/EC-021-wifi-deauth-reason-codes.md",
-      "mode": "deterministic",
       "tags": ["network", "wifi"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "fixtures": ["evals/fixtures/EC-021/eventlog.txt"],
-      "required_evidence": ["reason code", "Wi-Fi"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["reason code", "Wi-Fi"]
     },
     {
       "id": "EC-022",
@@ -347,12 +263,8 @@
       "category": "policy",
       "source_refs": ["CommonChallenge-22"],
       "case_file": "evals/cases/EC-022-update-scattering-delays.md",
-      "mode": "deterministic",
       "tags": ["updates", "policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-023",
@@ -360,9 +272,7 @@
       "category": "browser",
       "source_refs": ["CommonChallenge-23"],
       "case_file": "evals/cases/EC-023-citrix-spa-profile-picker.md",
-      "mode": "deterministic",
       "tags": ["citrix", "browser"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-023/overrides.json"],
       "required_evidence": [
@@ -370,9 +280,7 @@
         "Citrix",
         "close",
         "BrowserSignin"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-024",
@@ -380,14 +288,10 @@
       "category": "integration",
       "source_refs": ["CommonChallenge-24"],
       "case_file": "evals/cases/EC-024-citrix-spa-group-sync.md",
-      "mode": "deterministic",
       "tags": ["citrix", "groups"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-024/overrides.json"],
-      "required_evidence": ["group", "visibility", "permission", "Directory"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["group", "visibility", "permission", "Directory"]
     },
     {
       "id": "EC-025",
@@ -395,14 +299,10 @@
       "category": "integration",
       "source_refs": ["CommonChallenge-25"],
       "case_file": "evals/cases/EC-025-citrix-spa-expired-token-proxy.md",
-      "mode": "deterministic",
       "tags": ["citrix", "auth"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-025/overrides.json"],
-      "required_evidence": ["expired", "token", "proxy", "re-authenticat"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["expired", "token", "proxy", "re-authenticat"]
     },
     {
       "id": "EC-026",
@@ -410,14 +310,10 @@
       "category": "integration",
       "source_refs": ["CommonChallenge-26"],
       "case_file": "evals/cases/EC-026-citrix-spa-service-unavailable.md",
-      "mode": "deterministic",
       "tags": ["citrix", "availability"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-026/overrides.json"],
-      "required_evidence": ["Service Unavailable", "outage", "support", "logs"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["Service Unavailable", "outage", "support", "logs"]
     },
     {
       "id": "EC-027",
@@ -427,14 +323,11 @@
       "case_file": "evals/cases/EC-027-os-version-mismatch.md",
       "mode": "rubric",
       "tags": ["caa", "os"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-028",
@@ -444,14 +337,11 @@
       "case_file": "evals/cases/EC-028-encryption-status-detection-failure.md",
       "mode": "rubric",
       "tags": ["caa", "encryption"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-029",
@@ -461,14 +351,11 @@
       "case_file": "evals/cases/EC-029-ip-subnet-or-geo-blocking.md",
       "mode": "rubric",
       "tags": ["caa", "network"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-030",
@@ -478,14 +365,11 @@
       "case_file": "evals/cases/EC-030-split-brain-profile-context.md",
       "mode": "rubric",
       "tags": ["caa", "profiles"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-031",
@@ -495,7 +379,6 @@
       "case_file": "evals/cases/EC-031-corporate-owned-vs-byod.md",
       "mode": "rubric",
       "tags": ["caa", "devices"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-031/overrides.json"],
       "required_evidence": [
@@ -507,9 +390,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-032",
@@ -519,14 +400,11 @@
       "case_file": "evals/cases/EC-032-access-level-logic-errors.md",
       "mode": "rubric",
       "tags": ["caa", "policy"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-033",
@@ -536,7 +414,6 @@
       "case_file": "evals/cases/EC-033-malware-scanning-timeouts.md",
       "mode": "rubric",
       "tags": ["dlp", "malware"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-033/overrides.json"],
       "required_evidence": [
@@ -548,9 +425,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-034",
@@ -560,7 +435,6 @@
       "case_file": "evals/cases/EC-034-password-protected-files-blocked.md",
       "mode": "rubric",
       "tags": ["dlp", "malware"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-034/overrides.json"],
       "required_evidence": [
@@ -572,9 +446,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-035",
@@ -584,7 +456,6 @@
       "case_file": "evals/cases/EC-035-dlp-false-positives.md",
       "mode": "rubric",
       "tags": ["dlp"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-035/overrides.json"],
       "required_evidence": [
@@ -596,9 +467,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-036",
@@ -608,7 +477,6 @@
       "case_file": "evals/cases/EC-036-printing-restrictions-blocked-jobs.md",
       "mode": "rubric",
       "tags": ["dlp", "printing"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-036/overrides.json"],
       "required_evidence": [
@@ -620,9 +488,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-037",
@@ -632,7 +498,6 @@
       "case_file": "evals/cases/EC-037-clipboard-restrictions.md",
       "mode": "rubric",
       "tags": ["dlp", "clipboard"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-037/overrides.json"],
       "required_evidence": [
@@ -644,9 +509,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-038",
@@ -656,14 +519,11 @@
       "case_file": "evals/cases/EC-038-policy-precedence-conflicts.md",
       "mode": "rubric",
       "tags": ["policy"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-039",
@@ -673,14 +533,11 @@
       "case_file": "evals/cases/EC-039-ou-inheritance-override.md",
       "mode": "rubric",
       "tags": ["policy", "ou"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-040",
@@ -690,14 +547,11 @@
       "case_file": "evals/cases/EC-040-policy-schema-json-errors.md",
       "mode": "rubric",
       "tags": ["policy", "json"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-041",
@@ -707,14 +561,11 @@
       "case_file": "evals/cases/EC-041-recommended-vs-mandatory.md",
       "mode": "rubric",
       "tags": ["policy"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-042",
@@ -724,14 +575,11 @@
       "case_file": "evals/cases/EC-042-user-affiliation-profile-separation.md",
       "mode": "rubric",
       "tags": ["policy", "users"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-043",
@@ -741,7 +589,6 @@
       "case_file": "evals/cases/EC-043-force-install-failures.md",
       "mode": "rubric",
       "tags": ["extensions"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-043/overrides.json"],
       "required_evidence": [
@@ -753,9 +600,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-044",
@@ -765,7 +610,6 @@
       "case_file": "evals/cases/EC-044-permission-increase-blocking.md",
       "mode": "rubric",
       "tags": ["extensions"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-044/overrides.json"],
       "required_evidence": [
@@ -777,9 +621,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-045",
@@ -789,16 +631,13 @@
       "case_file": "evals/cases/EC-045-malicious-extension-removal.md",
       "mode": "rubric",
       "tags": ["extensions"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-045/overrides.json"],
       "required_evidence": ["malicious", "installed", "blocklist", "devices"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-046",
@@ -808,16 +647,13 @@
       "case_file": "evals/cases/EC-046-enrollment-token-invalid-or-expired.md",
       "mode": "rubric",
       "tags": ["enrollment"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-046/overrides.json"],
       "required_evidence": ["expired", "token", "new"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-047",
@@ -827,7 +663,6 @@
       "case_file": "evals/cases/EC-047-stale-device-sync.md",
       "mode": "rubric",
       "tags": ["devices"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-047/overrides.json"],
       "required_evidence": [
@@ -839,9 +674,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-048",
@@ -851,16 +684,13 @@
       "case_file": "evals/cases/EC-048-user-session-revocation-delay.md",
       "mode": "rubric",
       "tags": ["users"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-048/overrides.json"],
       "required_evidence": ["suspend", "session", "token", "SignOutUser"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-049",
@@ -870,14 +700,11 @@
       "case_file": "evals/cases/EC-049-pac-file-proxy-authentication.md",
       "mode": "rubric",
       "tags": ["proxy", "network"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-050",
@@ -887,14 +714,11 @@
       "case_file": "evals/cases/EC-050-ssl-inspection-conflicts.md",
       "mode": "rubric",
       "tags": ["proxy", "security"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-051",
@@ -904,7 +728,6 @@
       "case_file": "evals/cases/EC-051-connector-handshake-service-availability.md",
       "mode": "rubric",
       "tags": ["connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-051/overrides.json"],
       "required_evidence": [
@@ -916,9 +739,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-052",
@@ -928,16 +749,13 @@
       "case_file": "evals/cases/EC-052-performance-degradation-telemetry.md",
       "mode": "rubric",
       "tags": ["telemetry"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-052/overrides.json"],
       "required_evidence": ["Legacy Ad Blocker", "CPU", "extension", "disable"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-053",
@@ -947,7 +765,6 @@
       "case_file": "evals/cases/EC-053-corrupt-extension-state.md",
       "mode": "rubric",
       "tags": ["extensions"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-053/overrides.json"],
       "required_evidence": [
@@ -959,9 +776,7 @@
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-054",
@@ -971,16 +786,13 @@
       "case_file": "evals/cases/EC-054-deprovisioning-gaps.md",
       "mode": "rubric",
       "tags": ["devices"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-054/overrides.json"],
       "required_evidence": ["97 days", "141 days", "deprovision", "Admin SDK"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-055",
@@ -990,14 +802,11 @@
       "case_file": "evals/cases/EC-055-connector-connectivity-firewall.md",
       "mode": "rubric",
       "tags": ["connectors", "network"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "rubric": {
         "min_score": 1,
         "criteria": ["diagnosis", "evidence", "next"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-056",
@@ -1005,12 +814,8 @@
       "category": "system",
       "source_refs": ["Diagnostic-30"],
       "case_file": "evals/cases/EC-056-api-quota-exhaustion.md",
-      "mode": "deterministic",
       "tags": ["quota", "apis"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-057",
@@ -1018,14 +823,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S01"],
       "case_file": "evals/cases/EC-057-connector-scope-mis-targeted.md",
-      "mode": "deterministic",
       "tags": ["connectors", "policy"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-057/overrides.json"],
-      "required_evidence": ["scope", "OU", "Engineering-Test"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["scope", "OU", "Engineering-Test"]
     },
     {
       "id": "EC-058",
@@ -1033,12 +834,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S02"],
       "case_file": "evals/cases/EC-058-missing-policy-target-key.md",
-      "mode": "deterministic",
       "tags": ["policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-059",
@@ -1046,12 +843,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S03"],
       "case_file": "evals/cases/EC-059-malformed-resolve-payload.md",
-      "mode": "deterministic",
       "tags": ["policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-060",
@@ -1059,9 +852,7 @@
       "category": "dlp",
       "source_refs": ["TestPlan-S04"],
       "case_file": "evals/cases/EC-060-dlp-rules-absent.md",
-      "mode": "deterministic",
       "tags": ["dlp"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-060/overrides.json"],
       "required_evidence": [
@@ -1069,9 +860,7 @@
         "no DLP rules",
         "0 rules",
         "create rule"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-061",
@@ -1079,9 +868,7 @@
       "category": "dlp",
       "source_refs": ["TestPlan-S05"],
       "case_file": "evals/cases/EC-061-dlp-rule-not-firing.md",
-      "mode": "deterministic",
       "tags": ["dlp"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-061/overrides.json"],
       "required_evidence": [
@@ -1089,9 +876,7 @@
         "NO_MATCH",
         "threshold",
         "scope"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-062",
@@ -1099,15 +884,11 @@
       "category": "events",
       "source_refs": ["TestPlan-S06"],
       "case_file": "evals/cases/EC-062-event-reporting-off.md",
-      "mode": "deterministic",
       "tags": ["events"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-062/overrides.json"],
       "required_evidence": ["CloudReporting", "disabled", "enable"],
-      "required_tool_calls": ["getChromeConnectorConfiguration"],
-      "assertions": [],
-      "cleanup": []
+      "required_tool_calls": ["getChromeConnectorConfiguration"]
     },
     {
       "id": "EC-063",
@@ -1115,12 +896,8 @@
       "category": "security",
       "source_refs": ["TestPlan-S07"],
       "case_file": "evals/cases/EC-063-safe-browsing-disabled.md",
-      "mode": "deterministic",
       "tags": ["safe-browsing"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-064",
@@ -1128,14 +905,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S08"],
       "case_file": "evals/cases/EC-064-bulk-data-connector-disabled.md",
-      "mode": "deterministic",
       "tags": ["connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-064/overrides.json"],
-      "required_evidence": ["bulk", "disabled", "enable", "connector"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["bulk", "disabled", "enable", "connector"]
     },
     {
       "id": "EC-065",
@@ -1143,14 +916,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S09"],
       "case_file": "evals/cases/EC-065-web-data-connector-missing.md",
-      "mode": "deterministic",
       "tags": ["connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-065/overrides.json"],
-      "required_evidence": ["web", "disabled", "enable", "connector"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["web", "disabled", "enable", "connector"]
     },
     {
       "id": "EC-066",
@@ -1158,14 +927,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S10"],
       "case_file": "evals/cases/EC-066-file-transfer-connector-missing.md",
-      "mode": "deterministic",
       "tags": ["connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-066/overrides.json"],
-      "required_evidence": ["file transfer", "disabled", "enable", "connector"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["file transfer", "disabled", "enable", "connector"]
     },
     {
       "id": "EC-067",
@@ -1173,14 +938,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S11"],
       "case_file": "evals/cases/EC-067-print-connector-mis-scoped.md",
-      "mode": "deterministic",
       "tags": ["connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-067/overrides.json"],
-      "required_evidence": ["print", "customer", "scope", "OU"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["print", "customer", "scope", "OU"]
     },
     {
       "id": "EC-068",
@@ -1188,12 +949,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S12"],
       "case_file": "evals/cases/EC-068-mixed-group-vs-ou-precedence.md",
-      "mode": "deterministic",
       "tags": ["policy", "groups"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-069",
@@ -1201,14 +958,10 @@
       "category": "enrollment",
       "source_refs": ["TestPlan-S13"],
       "case_file": "evals/cases/EC-069-enrollment-token-wrong-ou.md",
-      "mode": "deterministic",
       "tags": ["enrollment"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-069/overrides.json"],
-      "required_evidence": ["targetResource", "root", "OU", "Enroll-Eng"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["targetResource", "root", "OU", "Enroll-Eng"]
     },
     {
       "id": "EC-070",
@@ -1216,14 +969,10 @@
       "category": "enrollment",
       "source_refs": ["TestPlan-S14"],
       "case_file": "evals/cases/EC-070-enrollment-permission-denied.md",
-      "mode": "deterministic",
       "tags": ["enrollment"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-070/overrides.json"],
-      "required_evidence": ["PERMISSION_DENIED", "role", "admin"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["PERMISSION_DENIED", "role", "admin"]
     },
     {
       "id": "EC-071",
@@ -1231,12 +980,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S15"],
       "case_file": "evals/cases/EC-071-propagation-delay.md",
-      "mode": "deterministic",
       "tags": ["policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-072",
@@ -1244,12 +989,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S16"],
       "case_file": "evals/cases/EC-072-bad-schema-id.md",
-      "mode": "deterministic",
       "tags": ["policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-073",
@@ -1257,12 +998,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S17"],
       "case_file": "evals/cases/EC-073-group-targeting-format.md",
-      "mode": "deterministic",
       "tags": ["groups", "policy"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-074",
@@ -1272,11 +1009,7 @@
       "case_file": "evals/cases/EC-074-reference-doc-grounding.md",
       "mode": "reference",
       "tags": ["grounding"],
-      "conversation_script": [],
-      "expected_schema": [],
-      "required_evidence": ["DLP", "Chrome"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["DLP", "Chrome"]
     },
     {
       "id": "EC-075",
@@ -1284,14 +1017,10 @@
       "category": "auth",
       "source_refs": ["TestPlan-S19"],
       "case_file": "evals/cases/EC-075-token-expired.md",
-      "mode": "deterministic",
       "tags": ["auth"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-075/overrides.json"],
-      "required_evidence": ["UNAUTHENTICATED", "expired", "token", "re-auth"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["UNAUTHENTICATED", "expired", "token", "re-auth"]
     },
     {
       "id": "EC-076",
@@ -1299,12 +1028,8 @@
       "category": "system",
       "source_refs": ["TestPlan-S20"],
       "case_file": "evals/cases/EC-076-rate-limit-handling.md",
-      "mode": "deterministic",
       "tags": ["rate-limit"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-077",
@@ -1312,12 +1037,8 @@
       "category": "system",
       "source_refs": ["TestPlan-S21"],
       "case_file": "evals/cases/EC-077-outlook-blocked.md",
-      "mode": "deterministic",
       "tags": ["url-filtering"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-078",
@@ -1325,12 +1046,8 @@
       "category": "system",
       "source_refs": ["TestPlan-S22"],
       "case_file": "evals/cases/EC-078-outlook-still-blocked-after-removal.md",
-      "mode": "deterministic",
       "tags": ["url-filtering"],
-      "conversation_script": [],
-      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-      "assertions": [],
-      "cleanup": []
+      "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"]
     },
     {
       "id": "EC-079",
@@ -1338,9 +1055,7 @@
       "category": "dlp",
       "source_refs": ["TestPlan-S23"],
       "case_file": "evals/cases/EC-079-detector-tuning.md",
-      "mode": "deterministic",
       "tags": ["dlp"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-079/overrides.json"],
       "required_evidence": [
@@ -1348,9 +1063,7 @@
         "internal-share.example.com",
         "allowlist",
         "tuning"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-080",
@@ -1358,14 +1071,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S24"],
       "case_file": "evals/cases/EC-080-conflicting-dlp-vs-connector.md",
-      "mode": "deterministic",
       "tags": ["dlp", "connectors"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-080/overrides.json"],
-      "required_evidence": ["DLP", "connector", "coverage", "bulk"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["DLP", "connector", "coverage", "bulk"]
     },
     {
       "id": "EC-081",
@@ -1375,11 +1084,7 @@
       "case_file": "evals/cases/EC-081-multi-ou-comparison.md",
       "mode": "comparison",
       "tags": ["policy", "ou"],
-      "conversation_script": [],
-      "expected_schema": [],
-      "required_evidence": ["Engineering", "connector"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["Engineering", "connector"]
     },
     {
       "id": "EC-082",
@@ -1387,14 +1092,10 @@
       "category": "connector",
       "source_refs": ["TestPlan-S26"],
       "case_file": "evals/cases/EC-082-multi-turn-connector-scope-confirmation.md",
-      "mode": "deterministic",
       "tags": ["connector", "multi-turn", "scope"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-082/overrides.json"],
-      "required_evidence": ["customer", "scope", "OU", "re-scope"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["customer", "scope", "OU", "re-scope"]
     },
     {
       "id": "EC-083",
@@ -1402,9 +1103,7 @@
       "category": "devices",
       "source_refs": ["CommonChallenge-CheckOU"],
       "case_file": "evals/cases/EC-083-check-org-units.md",
-      "mode": "deterministic",
       "tags": ["org-units"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
       "overrides": ["evals/fixtures/EC-083/overrides.json"],
       "required_evidence": [
@@ -1412,9 +1111,7 @@
         "Sales",
         "Marketing",
         "organizational unit"
-      ],
-      "assertions": [],
-      "cleanup": []
+      ]
     },
     {
       "id": "EC-084",
@@ -1424,7 +1121,6 @@
       "case_file": "evals/cases/EC-084-dlp-audit-rule-all-traffic.md",
       "mode": "rubric",
       "tags": ["dlp", "audit", "policy"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "next_steps"],
       "fixtures": ["evals/fixtures/EC-084/overrides.json"],
       "overrides": ["evals/fixtures/EC-084/overrides.json"],
@@ -1432,9 +1128,7 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["diagnosis", "evidence", "next", "admin_console_link"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "EC-085",
@@ -1444,7 +1138,6 @@
       "case_file": "evals/cases/EC-085-browser-security-cookie-incognito.md",
       "mode": "rubric",
       "tags": ["security", "cookies", "incognito", "policy"],
-      "conversation_script": [],
       "expected_schema": ["diagnosis", "evidence", "next_steps"],
       "fixtures": ["evals/fixtures/EC-085/overrides.json"],
       "overrides": ["evals/fixtures/EC-085/overrides.json"],
@@ -1452,9 +1145,7 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["diagnosis", "evidence", "next", "admin_console_link"]
-      },
-      "assertions": [],
-      "cleanup": []
+      }
     },
     {
       "id": "HERO-001",
@@ -1469,20 +1160,23 @@
           "role": "user",
           "content": "Look at your DLP - let's make an audit rule for all traffic"
         },
-        { "role": "user", "content": "Confirm" }
+        {
+          "role": "user",
+          "content": "Confirm"
+        }
       ],
       "turn_assertions": [
         {
           "turn": 0,
           "required_tool_calls": ["listDLPRules", "draftPolicyChange"]
         },
-        { "turn": 1, "required_tool_calls": ["createDLPRule"] }
+        {
+          "turn": 1,
+          "required_tool_calls": ["createDLPRule"]
+        }
       ],
-      "expected_schema": [],
       "overrides": ["evals/fixtures/HERO-001/overrides.json"],
-      "required_evidence": ["DLP", "audit", "rule"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["DLP", "audit", "rule"]
     },
     {
       "id": "HERO-002",
@@ -1497,7 +1191,10 @@
           "role": "user",
           "content": "Apply cookie encryption and disable incognito mode for my fleet"
         },
-        { "role": "user", "content": "Confirm" }
+        {
+          "role": "user",
+          "content": "Confirm"
+        }
       ],
       "turn_assertions": [
         {
@@ -1507,13 +1204,13 @@
             "draftPolicyChange"
           ]
         },
-        { "turn": 1, "required_tool_calls": ["applyPolicyChange"] }
+        {
+          "turn": 1,
+          "required_tool_calls": ["applyPolicyChange"]
+        }
       ],
-      "expected_schema": [],
       "overrides": ["evals/fixtures/HERO-002/overrides.json"],
-      "required_evidence": ["cookie", "incognito", "policy"],
-      "assertions": [],
-      "cleanup": []
+      "required_evidence": ["cookie", "incognito", "policy"]
     }
   ]
 }

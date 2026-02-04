@@ -10,6 +10,16 @@ import {
 } from "@/lib/test-helpers/eval-server";
 
 import {
+  aggregateCategories,
+  aggregateSummaries,
+  collectFailures,
+  printComprehensiveSummary,
+  printIterationHeader,
+  runGeminiAnalysis,
+  writeComprehensiveReports,
+} from "./analysis";
+import {
+  checkForbiddenEvidence,
   checkRequiredEvidence,
   checkRequiredToolCalls,
   checkRubricScore,
@@ -264,6 +274,7 @@ interface AssertionResultSimple {
 function collectFailureMessages(
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
+  forbiddenEvidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple
 ) {
   const messages: string[] = [];
@@ -276,6 +287,9 @@ function collectFailureMessages(
   if (!evidenceResult.passed) {
     messages.push(evidenceResult.message);
   }
+  if (!forbiddenEvidenceResult.passed) {
+    messages.push(forbiddenEvidenceResult.message);
+  }
   return messages;
 }
 
@@ -285,15 +299,22 @@ function collectFailureMessages(
 function checkAssertionFailures(
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
+  forbiddenEvidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple,
   error: string | undefined
 ) {
-  if (schemaResult.passed && evidenceResult.passed && toolCallsResult.passed) {
+  const allPassed =
+    schemaResult.passed &&
+    evidenceResult.passed &&
+    forbiddenEvidenceResult.passed &&
+    toolCallsResult.passed;
+  if (allPassed) {
     return null;
   }
   const messages = collectFailureMessages(
     schemaResult,
     evidenceResult,
+    forbiddenEvidenceResult,
     toolCallsResult
   );
   return { status: "fail" as const, error: error ?? messages[0] };
@@ -306,6 +327,7 @@ function determineReportStatus(
   error: string | undefined,
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
+  forbiddenEvidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple,
   rubricResult: EvalReport["rubricResult"]
 ) {
@@ -316,6 +338,7 @@ function determineReportStatus(
   const assertionFail = checkAssertionFailures(
     schemaResult,
     evidenceResult,
+    forbiddenEvidenceResult,
     toolCallsResult,
     error
   );
@@ -414,6 +437,7 @@ async function executeCaseConversation(
 interface AssertionResults {
   schemaResult: ReturnType<typeof checkStructuredResponse>;
   evidenceResult: ReturnType<typeof checkRequiredEvidence>;
+  forbiddenEvidenceResult: ReturnType<typeof checkForbiddenEvidence>;
   toolCallsResult: ReturnType<typeof checkRequiredToolCalls>;
   rubricResult: EvalReport["rubricResult"];
 }
@@ -437,6 +461,12 @@ function runAssertions(
     requiredEvidence: evalCase.required_evidence,
   });
 
+  const forbiddenEvidenceResult = checkForbiddenEvidence({
+    text: response.responseText,
+    metadata: response.responseMetadata,
+    forbiddenEvidence: evalCase.forbidden_evidence,
+  });
+
   const toolCallsResult = checkRequiredToolCalls({
     toolCalls: response.toolCalls,
     requiredToolCalls: evalCase.required_tool_calls,
@@ -444,7 +474,13 @@ function runAssertions(
 
   const rubricResult = computeRubricResult(evalCase, response);
 
-  return { schemaResult, evidenceResult, toolCallsResult, rubricResult };
+  return {
+    schemaResult,
+    evidenceResult,
+    forbiddenEvidenceResult,
+    toolCallsResult,
+    rubricResult,
+  };
 }
 
 /**
@@ -490,6 +526,7 @@ function buildEvalReport(
     response.error,
     assertions.schemaResult,
     assertions.evidenceResult,
+    assertions.forbiddenEvidenceResult,
     assertions.toolCallsResult,
     assertions.rubricResult
   );
@@ -508,6 +545,7 @@ function buildEvalReport(
     expectedSchema: evalCase.expected_schema,
     schemaResult: assertions.schemaResult,
     evidenceResult: assertions.evidenceResult,
+    forbiddenEvidenceResult: assertions.forbiddenEvidenceResult,
     toolCallsResult: assertions.toolCallsResult,
     toolCalls: response.toolCalls,
     rubricResult: assertions.rubricResult,
@@ -906,12 +944,50 @@ export async function runEvals(
 }
 
 /**
- * CLI entry point.
+ * Options for the main entry point.
  */
-export async function main() {
+export interface MainOptions {
+  iterations?: number;
+  html?: boolean;
+  analyze?: boolean;
+}
+
+/**
+ * CLI entry point with support for iterations, HTML reports, and analysis.
+ */
+export async function main(options: MainOptions = {}) {
+  const { iterations = 1, html = false, analyze = false } = options;
+  const summaries: EvalSummary[] = [];
+
   try {
-    const { summary } = await runEvals();
-    process.exit(summary.failed + summary.errors > 0 ? 1 : 0);
+    for (let i = 0; i < iterations; i++) {
+      printIterationHeader(i + 1, iterations);
+      const { summary } = await runEvals();
+      summaries.push(summary);
+    }
+
+    // For multiple iterations, print comprehensive summary
+    if (iterations > 1 || html || analyze) {
+      const totals = aggregateSummaries(summaries);
+      const categories = aggregateCategories(summaries);
+      const failures = collectFailures(summaries);
+
+      printComprehensiveSummary(totals, categories, failures);
+
+      if (html) {
+        await writeComprehensiveReports(totals, categories, failures);
+      }
+
+      if (analyze) {
+        await runGeminiAnalysis(totals, categories, failures);
+      }
+
+      process.exit(totals.failed + totals.errors > 0 ? 1 : 0);
+    } else {
+      // Single iteration without extra features
+      const summary = summaries[0];
+      process.exit(summary.failed + summary.errors > 0 ? 1 : 0);
+    }
   } catch (error) {
     console.error("[eval] Fatal error:", error);
     process.exit(1);

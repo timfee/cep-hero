@@ -1,423 +1,202 @@
-# CEP evals
+# CEP Evals
 
-This directory holds eval definitions and run artifacts for the CEP assistant. Each eval is a short, well-defined scenario that checks whether the assistant responds in the right shape and with the right evidence.
+Behavioral tests for the CEP diagnostic assistant. Each eval checks if the assistant produces the expected diagnosis, evidence, and recommendations for a given scenario.
 
-## What is an eval
+## Quick Start
 
-An eval is a behavior check for a scenario. It answers a simple question: given this input, do we get a response with the right diagnosis, evidence, and next steps? It is not a unit test of a function. It is a contract for expected behavior.
+```bash
+# Run all evals with fixture data (server auto-starts)
+EVAL_FIXTURES=1 bun run evals
 
-## What is a test
+# Run specific case
+EVAL_IDS=EC-001 EVAL_FIXTURES=1 bun run evals
 
-Tests (in `tests/` directory) verify code correctness with deterministic outcomes. Evals (here) assess AI behavior quality along multiple dimensions.
+# Run by category or tag
+EVAL_CATEGORY=connector EVAL_FIXTURES=1 bun run evals
+EVAL_TAGS=dlp EVAL_FIXTURES=1 bun run evals
+```
+
+The runner automatically manages the dev server (starts on port 3100, stops when done).
 
 ## Structure
 
-- `registry.json` - Source of truth for all 85 eval cases, organized by 15 failure-domain categories
-- `cases/` - One Markdown file per eval case (EC-001 through EC-085)
-- `fixtures/` - Deterministic log samples and API snapshots
-- `lib/` - Standalone eval runner (no bun:test dependency)
-- `reports/` - JSON output per run (gitignored)
-
-## Running evals
-
-Start the server once:
-
-```bash
-bun run dev
+```
+evals/
+├── registry.json       # Case definitions (87 cases across 15 categories)
+├── cases/              # Markdown files with prompts and expected results
+├── fixtures/
+│   ├── base/           # Shared API snapshot (api-base.json)
+│   └── EC-###/         # Per-case overrides (overrides.json)
+├── lib/                # Runner implementation
+└── reports/            # JSON + HTML output (gitignored)
 ```
 
-Then run evals:
+## Environment Variables
 
-```bash
-# Run all evals
-EVAL_USE_BASE=1 bun run evals
+| Variable                  | Purpose                                        |
+| ------------------------- | ---------------------------------------------- |
+| `EVAL_FIXTURES=1`         | Enable fixture data (base + overrides + files) |
+| `EVAL_IDS=EC-001,EC-002`  | Run specific cases                             |
+| `EVAL_CATEGORY=connector` | Filter by category                             |
+| `EVAL_TAGS=dlp`           | Filter by tag                                  |
+| `EVAL_SERIAL=1`           | Run sequentially (for rate limiting)           |
+| `EVAL_LLM_JUDGE=0`        | Disable semantic evidence matching             |
+| `EVAL_VERBOSE=1`          | Detailed output                                |
+| `EVAL_TEST_MODE=1`        | Synthetic responses (no API calls)             |
 
-# Run without server management (faster if server already running)
-EVAL_USE_BASE=1 bun run evals:fast
+## Registry Format (v3.0)
 
-# Run with verbose output
-EVAL_USE_BASE=1 bun run evals:verbose
+Cases are defined in `registry.json` with a minimal format. Empty fields are omitted:
+
+```json
+{
+  "id": "EC-086",
+  "title": "Scenario title",
+  "category": "policy",
+  "tags": ["relevant", "tags"],
+  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+  "required_evidence": ["key", "terms"],
+  "forbidden_evidence": ["powerwash", "factory reset"],
+  "required_tool_calls": ["getChromeEvents"],
+  "reference_response": "The issue is caused by..."
+}
 ```
 
-Run a single eval:
+**Assertion fields:**
 
-```bash
-EVAL_IDS=EC-075 EVAL_USE_BASE=1 bun run evals
+- `required_evidence` - Terms that MUST appear in the response
+- `forbidden_evidence` - Terms that must NOT appear (negative test cases)
+- `required_tool_calls` - Tools that must be called
+- `reference_response` - Golden response for comparison (optional)
+
+Optional fields are normalized with defaults when loaded:
+
+- `mode` defaults to `"deterministic"`
+- `source_refs`, `tags`, `expected_schema` default to `[]`
+- `case_file` defaults to `evals/cases/{id}.md`
+
+## Adding a Case
+
+1. Create `evals/cases/EC-###.md`:
+
+```markdown
+# EC-086: Scenario title
+
+## Summary
+
+Brief description.
+
+## Conversation
+
+User: "The exact prompt"
+
+## Expected result
+
+- What diagnosis should identify
+- What evidence should reference
+- What next steps should recommend
 ```
 
-Run by category or tag:
+2. Add to `registry.json` (only include fields with values):
 
-```bash
-EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
-EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
+```json
+{
+  "id": "EC-086",
+  "title": "Scenario title",
+  "category": "policy",
+  "tags": ["policy"],
+  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+  "required_evidence": ["key", "terms"]
+}
 ```
 
-## Comprehensive eval runner
+3. Optionally add `evals/fixtures/EC-086/overrides.json`.
 
-For thorough evaluation with aggregated results and AI-powered analysis:
+4. Run and iterate:
 
 ```bash
-# Basic run (all cases, fixture data, skip Gemini analysis)
-bun run evals:comprehensive --skip-analysis
-
-# With LLM judge scoring
-bun run evals:comprehensive --with-judge
-
-# Multiple iterations to identify flaky tests
-bun run evals:comprehensive --iterations 3
-
-# Full run with judge and multiple iterations
-bun run evals:comprehensive:full
-
-# Filter to specific cases
-bun run evals:comprehensive --cases EC-001,EC-002
+EVAL_IDS=EC-086 EVAL_FIXTURES=1 bun run evals
 ```
 
-### CLI options
+## CLI Options
 
-| Option            | Description                              |
-| ----------------- | ---------------------------------------- |
-| `--with-judge`    | Enable LLM judge for evidence evaluation |
-| `--iterations N`  | Run N times (default: 1)                 |
-| `--skip-analysis` | Skip Gemini 2.5 Pro analysis             |
-| `--cases IDS`     | Filter to specific case IDs              |
-| `--help`          | Show help                                |
+The eval runner supports CLI flags for advanced features:
 
-### Output
+```bash
+# Show help
+bun run evals --help
 
-The comprehensive runner produces:
+# Generate HTML report
+EVAL_FIXTURES=1 bun run evals --html
 
-- Beautiful terminal output with pass rates and category breakdown
-- JSON report saved to `evals/comprehensive/reports/`
-- HTML report with dark theme styling
-- Optional Gemini 2.5 Pro analysis with insights and recommendations
+# Run with LLM judge
+EVAL_FIXTURES=1 bun run evals --with-judge
 
-Exit code is non-zero if any tests fail (for CI integration).
+# Multiple iterations (detects flaky tests)
+EVAL_FIXTURES=1 bun run evals --iterations 3
 
-## Environment variables
+# Run Gemini analysis on results
+EVAL_FIXTURES=1 bun run evals --analyze
 
-- `EVAL_USE_BASE=1` - Load base fixtures from `evals/fixtures/base/api-base.json`
-- `EVAL_USE_FIXTURES=1` - Load case-specific overrides from `evals/fixtures/EC-###/`
-- `EVAL_INJECT_PROMPT=1` - Inject fixture data into prompt (default: off, fixtures returned via tool calls)
-- `EVAL_IDS=EC-001,EC-002` - Run specific eval IDs
-- `EVAL_CATEGORY=connector` - Run evals in a category
-- `EVAL_TAGS=dlp` - Run evals with specific tags
-- `EVAL_LIMIT=10` - Maximum number of cases to run
-- `EVAL_SERIAL=1` - Run cases sequentially (useful for rate limiting)
-- `EVAL_MANAGE_SERVER=0` - Skip server lifecycle management
-- `EVAL_VERBOSE=1` - Enable verbose output
-- `EVAL_TEST_MODE=1` - Return synthetic responses (avoids quota/latency)
-- `EVAL_LLM_JUDGE=0` - Disable LLM-as-judge for evidence evaluation
-- `CHAT_URL` - Override chat API URL (default: `http://localhost:3100/api/chat`)
+# Full run (judge + 3 iterations + HTML + analysis)
+EVAL_FIXTURES=1 bun run evals:full
 
-## Base snapshot + overrides
+# Filter to specific cases via CLI
+bun run evals --cases EC-001,EC-002
+```
 
-When `EVAL_USE_BASE=1` is set, the base snapshot is loaded and merged with any
-per-case overrides before it is attached to the prompt. Overrides can come from
-either of these sources:
+Reports are saved to `evals/reports/`.
 
-- `overrides` in `registry.json` (paths to JSON override files).
-- `evals/fixtures/EC-###/overrides.json` when present.
+## Evidence Matching
 
-When `EVAL_USE_FIXTURES=1` is also set, the fixture files listed in the registry
-are attached alongside the merged base snapshot.
+Evidence is checked in two phases:
 
-## Fixture format
+1. **String matching** - Normalized text search (handles wifi/Wi-Fi variations)
+2. **LLM judge** - Semantic evaluation for cases that fail string matching
 
-Fixtures are real samples, trimmed down. Keep them short and focused. If you
-need JSON, store it as raw JSON lines so it is readable and easy to trim.
+The LLM judge handles synonyms ("deauth" ↔ "deauthentication") and paraphrasing. Disable with `EVAL_LLM_JUDGE=0`.
 
-How to generate fixtures:
+## When an Eval Fails
 
-1. Reproduce the issue in a real environment.
-2. Export the log (net-export, eventlog.txt, update_engine.log).
-3. Redact secrets and PII (emails, tokens, device IDs).
-4. Trim to the few lines that show the failure mode.
-5. Save to `evals/fixtures/` and reference it in `registry.json`.
+Check `evals/reports/EC-###-*.json` for details, then:
 
-To capture a realistic base snapshot from live APIs:
+1. **Is the AI response actually wrong?**
+   - Missing data → Improve fixtures
+   - Wrong reasoning → Improve system instructions
+   - Missing capability → Improve tools
+
+2. **Is the eval too strict?**
+   - Loosen `required_evidence` terms
+   - Accept alternative valid phrasings
+
+Don't loosen requirements just to make tests pass - that defeats the purpose.
+
+## Fixture Data
+
+Fixtures provide deterministic test data:
+
+- **Base snapshot** (`fixtures/base/api-base.json`) - Shared org units, policies, events
+- **Case overrides** (`fixtures/EC-###/overrides.json`) - Case-specific data merged with base
+
+### Capturing Fresh Fixtures
+
+To regenerate the base snapshot from live Google APIs:
 
 ```bash
 bun run fixtures:capture
 ```
 
-This writes `evals/fixtures/base/api-base.json` with org units, policy schemas,
-and a small sample of Chrome reports and audit events. The script redacts
-emails, customer IDs, IPs, and hashes. If a scope is missing, the fixture will
-include an error field so you can see what failed.
+**Requirements:**
 
-Use the base snapshot in runs by setting:
+- `GOOGLE_SERVICE_ACCOUNT_JSON` - Service account credentials with Admin SDK access
+- `GOOGLE_TOKEN_EMAIL` - Email for domain-wide delegation impersonation
+- `GOOGLE_CUSTOMER_ID` - Google Workspace customer ID
 
-```bash
-EVAL_USE_BASE=1
-```
+**What it captures:**
 
-Credential check (recommended before capture):
+- Org units (first 10)
+- Policy schemas (first 10)
+- Chrome management reports
+- Audit events sample
 
-```bash
-bun run credentials:check
-```
-
-Example `evals/fixtures/EC-019/net.log`:
-
-```json
-{"time":"2026-01-20T04:02:22.802Z","type":"DNS_REQUEST","params":{"hostname":"clients.google.com"}}
-{"time":"2026-01-20T04:02:23.102Z","type":"SOCKET_CONNECT","params":{"address":"142.250.72.14","port":443}}
-```
-
-Example `evals/fixtures/EC-021/eventlog.txt`:
-
-```text
-2026-01-20T04:02:22.802Z wifi: deauth reason=15 (4-way handshake timeout) ssid=CorpNet signal=-72dBm
-2026-01-20T04:02:24.402Z wifi: assoc status=17 (AP cannot support more stations)
-```
-
-Example `evals/fixtures/EC-003/update_engine.log`:
-
-```text
-2026-01-20T04:02:22.802Z update_engine: Update check failed (code=402 missing license)
-2026-01-20T04:02:23.902Z update_engine: Target version policy is set to 119.0.6045.123
-```
-
-## Report format
-
-Each run writes a report to `evals/reports/`. This is what you review when a
-case fails or regresses.
-
-Example (trimmed):
-
-```json
-{
-  "caseId": "EC-019",
-  "title": "Capturing network logs",
-  "prompt": "How do I capture net logs for this issue?...",
-  "responseText": "No connector policies are applied...",
-  "schemaMatched": false,
-  "status": "pass"
-}
-```
-
-## LLM-as-Judge
-
-By default, evidence evaluation uses an LLM to evaluate responses semantically. This solves the "whack-a-mole" problem of constantly adjusting evidence requirements.
-
-**How it works:**
-
-1. String matching with text normalization runs first (handles wifi/Wi-Fi variations)
-2. Cases that fail string matching are batched and sent to Gemini
-3. LLM evaluates if the response semantically addresses each evidence concept
-4. Failures are upgraded to passes if the LLM determines evidence is present
-
-**Why this matters:**
-
-- "Wi-Fi" matches "wifi" (hyphen normalization)
-- "4-way handshake timeout" matches "deauth" (semantic equivalence)
-- No need to constantly tweak evidence requirements
-
-**Disable with:** `EVAL_LLM_JUDGE=0`
-
-## Tool Call Validation
-
-Evals can require that specific tools are called during the conversation. This ensures the AI follows the standard operating procedure (e.g., always calling `getChromeEvents` first for troubleshooting).
-
-**How it works:**
-
-1. Define `required_tool_calls` in registry.json for a case
-2. The eval runner parses streaming responses to capture tool calls
-3. After the response completes, tool calls are validated against requirements
-4. Missing required tool calls cause the eval to fail
-
-**Registry example:**
-
-```json
-{
-  "id": "EC-001",
-  "required_tool_calls": ["getChromeEvents"],
-  ...
-}
-```
-
-**Why this matters:**
-
-- Ensures the AI doesn't give generic advice without checking actual data
-- Validates that the AI follows the SOP in the system prompt
-- Catches cases where the AI skips diagnostic steps
-
-**Report output:**
-
-```json
-{
-  "toolCallsResult": {
-    "passed": false,
-    "message": "Missing required tool calls: getChromeEvents",
-    "details": {
-      "requiredToolCalls": ["getChromeEvents"],
-      "actualToolCalls": ["suggestActions"],
-      "missing": ["getChromeEvents"]
-    }
-  },
-  "toolCalls": ["suggestActions"]
-}
-```
-
-## What to do when a result is wrong
-
-When an eval fails, use this decision tree:
-
-```
-Eval Failed
-    │
-    ├── Is the AI response actually wrong?
-    │   │
-    │   ├── YES → The AI needs improvement
-    │   │   │
-    │   │   ├── Missing data? → Add/improve fixtures
-    │   │   ├── Wrong reasoning? → Improve system instructions
-    │   │   ├── Missing capability? → Add/improve tools
-    │   │   └── Missing knowledge? → Add RAG content or enable web search
-    │   │
-    │   └── NO → The eval is too strict
-    │       │
-    │       ├── Loosen required_evidence terms
-    │       ├── Accept alternative valid phrasings
-    │       └── Review if the expected behavior is realistic
-    │
-    └── Is this a one-off or pattern?
-        │
-        ├── ONE-OFF → Fix this specific case
-        │   └── Adjust fixture, prompt, or evidence requirements
-        │
-        └── PATTERN → Fix systemically
-            └── Update system instructions, tools, or workflow
-            └── Run full eval suite to verify fix doesn't break others
-```
-
-### Example walkthrough
-
-EC-019 runs with fixtures and the response ignores `net-export`. The report
-fails with missing evidence:
-
-```json
-{
-  "caseId": "EC-019",
-  "status": "fail",
-  "error": "Missing required evidence: net-export",
-  "responseText": "Capturing net logs will help diagnose the network issue..."
-}
-```
-
-**Diagnosis**: The eval caught a real problem - the AI mentioned "net logs"
-generically but didn't reference the specific `net-export` tool.
-
-**Fix options** (in order of preference):
-
-1. **Adjust the fixture** - Add explicit net-export data so the AI has something
-   concrete to reference. Keep fixtures short so the model notices them.
-
-2. **Adjust the prompt** - Make the case file prompt more specific: "The user
-   has already captured a net-export log. Analyze it."
-
-3. **Improve system instructions** - If this is a pattern (AI ignores provided
-   logs), add general guidance about always referencing provided data.
-
-4. **Tighten the eval** - If the AI should mention `net-export` but the evidence
-   check is missing, add it to `required_evidence` in `registry.json`.
-
-**Anti-pattern**: Don't loosen evidence requirements just to make the eval pass.
-That defeats the purpose.
-
-## When to add a new eval
-
-Add a case when you:
-
-- **Ship a new troubleshooting path** - Lock down the expected behavior before it regresses
-- **Fix a bug** - Prevent the same failure mode from returning
-- **See a customer failure** - Capture real-world scenarios
-- **Identify a coverage gap** - Run the eval suite and notice missing scenarios
-
-## How to add a new eval
-
-**Step 1**: Create a case file in `cases/EC-###-descriptive-name.md`:
-
-```markdown
-# EC-086: Your scenario title
-
-## Summary
-
-Brief description of the troubleshooting scenario.
-
-## Reproduction
-
-1. Steps to reproduce the issue
-2. What conditions trigger it
-3. What the user observes
-
-## Conversation
-
-User: "The exact prompt the user would ask"
-
-## Expected result
-
-- What the diagnosis should identify
-- What evidence should be referenced
-- What next steps should be recommended
-
-## Cleanup
-
-- Any cleanup steps if using live data
-```
-
-**Step 2**: Add entry in `registry.json`:
-
-```json
-{
-  "id": "EC-086",
-  "title": "Your scenario title",
-  "category": "policy",
-  "source_refs": ["YourSource-1"],
-  "case_file": "evals/cases/EC-086-your-scenario-title.md",
-  "mode": "rubric",
-  "tags": ["relevant", "tags"],
-  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-  "fixtures": [],
-  "required_evidence": ["key", "terms"],
-  "required_tool_calls": ["getChromeEvents"],
-  "rubric": { "min_score": 2, "criteria": ["diagnosis", "evidence", "next"] }
-}
-```
-
-**Registry fields:**
-
-- `required_evidence` - Terms/phrases that must appear in the response
-- `required_tool_calls` - Tools that must be called (e.g., `getChromeEvents`, `getChromeConnectorConfiguration`)
-
-**Step 3**: Optionally create fixtures in `evals/fixtures/EC-086/overrides.json`.
-
-**Step 4**: Run in isolation and iterate:
-
-```bash
-EVAL_IDS=EC-086 EVAL_USE_BASE=1 bun run evals
-```
-
-## Iteration workflow
-
-When working on an eval, use this tight feedback loop:
-
-```bash
-# Terminal 1: Keep server running
-bun run dev
-
-# Terminal 2: Run specific eval repeatedly
-EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals:fast
-
-# After changes, re-run immediately
-# Check evals/reports/EC-057-*.json for detailed output
-```
-
-## Further reading
-
-For comprehensive documentation including AI SDK patterns, loop control best
-practices, and the full eval improvement roadmap, see:
-
-- **[QUEST_INSTRUCTIONS.md](../QUEST_INSTRUCTIONS.md)** - Complete guide
-- **[QUEST_TASKS.md](../QUEST_TASKS.md)** - Progress tracking
+**PII Redaction:** The script automatically redacts emails, customer IDs, IP addresses, file paths, and hashes before writing fixtures.

@@ -1,158 +1,69 @@
-#!/usr/bin/env bun
 /**
- * Comprehensive eval runner with beautiful human-readable output.
+ * Comprehensive analysis features: HTML reports, Gemini analysis, and pretty output.
  */
 
-/* eslint-disable import/no-nodejs-modules, max-statements, jest/require-hook */
 import { google } from "@ai-sdk/google";
 import { generateObject } from "ai";
-import { mkdir, readdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
-import {
-  ensureEvalServer,
-  releaseEvalServer,
-} from "@/lib/test-helpers/eval-server";
+import { type EvalSummary } from "./reporter";
 
-const REPORTS_DIR = "evals/reports";
-const OUTPUT_DIR = "evals/comprehensive/reports";
-
-/**
- * Width of the display boxes in characters (excluding box characters).
- *
- * NOTE: Other layout values in this file (header spacing, word-wrap
- * thresholds, and padEnd widths) are tuned for this value. If you change
- * DISPLAY_BOX_WIDTH, you must adjust those related values to keep the
- * boxes aligned.
- */
+const OUTPUT_DIR = "evals/reports";
 const DISPLAY_BOX_WIDTH = 58;
 
-interface Summary {
-  runId: string;
-  passed: number;
-  failed: number;
-  totalCases: number;
-  durationMs: number;
-  byCategory: Record<string, { passed: number; failed: number; total: number }>;
-  failures: { id: string; title: string; reason: string }[];
-}
-
-interface CliOptions {
-  withJudge: boolean;
-  skipAnalysis: boolean;
-  iterations: number;
-  casesArg: string | undefined;
-}
-
-interface Totals {
-  passed: number;
-  failed: number;
-  total: number;
-  durationMs: number;
-}
-
-interface CategoryData {
-  passed: number;
-  failed: number;
-  total: number;
-}
+/**
+ * Failure data for display.
+ */
 interface FailureData {
   id: string;
   title: string;
   reason: string;
 }
 
-function parseCliArgs(): CliOptions | null {
-  const args = process.argv.slice(2);
-  const showHelp = args.includes("--help") || args.includes("-h");
+/**
+ * Category statistics.
+ */
+interface CategoryData {
+  passed: number;
+  failed: number;
+  total: number;
+}
 
-  if (showHelp) {
-    console.log(`
-Usage: bun evals/comprehensive/index.ts [options]
+/**
+ * Aggregated totals across iterations.
+ */
+export interface AggregatedTotals {
+  passed: number;
+  failed: number;
+  errors: number;
+  total: number;
+  durationMs: number;
+}
 
-Options:
-  --with-judge      Enable LLM judge
-  --iterations N    Run N times (default: 1)
-  --skip-analysis   Skip Gemini analysis
-  --cases IDS       Filter cases
-  --help            Show help
-`);
-    return null;
-  }
-
-  const iterationsArg = args.find((_, i) => args[i - 1] === "--iterations");
-  const casesArg = args.find((_, i) => args[i - 1] === "--cases");
-
-  const iterations = iterationsArg ? Number.parseInt(iterationsArg, 10) : 1;
-  if (Number.isNaN(iterations) || iterations < 1) {
-    console.error(
-      `Error: --iterations must be a positive integer, got: ${iterationsArg}`
-    );
-    process.exit(1);
-  }
-
+/**
+ * Aggregate multiple summaries into totals.
+ */
+export function aggregateSummaries(summaries: EvalSummary[]): AggregatedTotals {
   return {
-    withJudge: args.includes("--with-judge"),
-    skipAnalysis: args.includes("--skip-analysis"),
-    iterations,
-    casesArg,
+    passed: summaries.reduce((sum, s) => sum + s.passed, 0),
+    failed: summaries.reduce((sum, s) => sum + s.failed, 0),
+    errors: summaries.reduce((sum, s) => sum + s.errors, 0),
+    total: summaries.reduce((sum, s) => sum + s.totalCases, 0),
+    durationMs: summaries.reduce((sum, s) => sum + s.durationMs, 0),
   };
 }
 
-async function findLatestSummary(): Promise<string | undefined> {
-  const files = await readdir(REPORTS_DIR);
-  return files
-    .filter((f) => f.startsWith("summary-"))
-    .toSorted()
-    .pop();
-}
-
-async function runEvals(options: CliOptions): Promise<Summary | null> {
-  const env: Record<string, string> = {
-    ...(process.env as Record<string, string>),
-    EVAL_USE_BASE: "1",
-    EVAL_SERIAL: "1",
-    EVAL_LLM_JUDGE: options.withJudge ? "1" : "0",
-    EVAL_MANAGE_SERVER: "0",
-  };
-
-  if (options.casesArg) {
-    env.EVAL_IDS = options.casesArg;
-  }
-
-  const proc = Bun.spawn(["bun", "run", "evals"], {
-    env,
-    stdout: "inherit",
-    stderr: "inherit",
-  });
-
-  await proc.exited;
-
-  const latest = await findLatestSummary();
-  if (!latest) {
-    return null;
-  }
-
-  const content = await readFile(`${REPORTS_DIR}/${latest}`, "utf8");
-  return JSON.parse(content) as Summary;
-}
-
-function aggregateTotals(summaries: Summary[]): Totals {
-  return {
-    passed: summaries.reduce((s, r) => s + r.passed, 0),
-    failed: summaries.reduce((s, r) => s + r.failed, 0),
-    total: summaries.reduce((s, r) => s + r.totalCases, 0),
-    durationMs: summaries.reduce((s, r) => s + r.durationMs, 0),
-  };
-}
-
-function aggregateCategories(
-  summaries: Summary[]
+/**
+ * Aggregate category data across summaries.
+ */
+export function aggregateCategories(
+  summaries: EvalSummary[]
 ): Record<string, CategoryData> {
   const categories: Record<string, CategoryData> = {};
 
-  for (const s of summaries) {
-    for (const [cat, data] of Object.entries(s.byCategory)) {
+  for (const summary of summaries) {
+    for (const [cat, data] of Object.entries(summary.byCategory)) {
       categories[cat] ??= { passed: 0, failed: 0, total: 0 };
       categories[cat].passed += data.passed;
       categories[cat].failed += data.failed;
@@ -163,33 +74,40 @@ function aggregateCategories(
   return categories;
 }
 
-function collectFailures(summaries: Summary[]): FailureData[] {
+/**
+ * Collect unique failures across summaries.
+ */
+export function collectFailures(summaries: EvalSummary[]): FailureData[] {
   const failureMap = new Map<string, FailureData>();
 
-  for (const s of summaries) {
-    for (const f of s.failures) {
-      failureMap.set(f.id, f);
+  for (const summary of summaries) {
+    for (const failure of summary.failures) {
+      failureMap.set(failure.id, failure);
     }
   }
 
   return [...failureMap.values()];
 }
 
-function printHeader(options: CliOptions): void {
-  console.log(`\n${"═".repeat(60)}`);
-  console.log("  COMPREHENSIVE EVAL");
-  console.log("═".repeat(60));
-  console.log(`  Iterations: ${options.iterations}`);
-  console.log(`  LLM Judge: ${options.withJudge ? "enabled" : "disabled"}`);
-  console.log(`${"═".repeat(60)}\n`);
+/**
+ * Print iteration header.
+ */
+export function printIterationHeader(iteration: number, total: number): void {
+  if (total > 1) {
+    console.log(`\n── Iteration ${iteration}/${total} ──\n`);
+  }
 }
 
-function printSummary(
-  totals: Totals,
-  passRate: number,
+/**
+ * Print comprehensive summary with box drawing.
+ */
+export function printComprehensiveSummary(
+  totals: AggregatedTotals,
   categories: Record<string, CategoryData>,
   failures: FailureData[]
 ): void {
+  const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
+
   console.log("\n");
   console.log(`╔${"═".repeat(DISPLAY_BOX_WIDTH)}╗`);
   console.log(`║${" ".repeat(20)}RESULTS SUMMARY${" ".repeat(23)}║`);
@@ -206,6 +124,9 @@ function printSummary(
 
   console.log(
     `║  Failed:         ${String(totals.failed).padStart(6)}                                 ║`
+  );
+  console.log(
+    `║  Errors:         ${String(totals.errors).padStart(6)}                                 ║`
   );
   console.log(
     `║  Pass Rate:      ${passRate.toFixed(1).padStart(5)}%                                 ║`
@@ -246,11 +167,16 @@ function printSummary(
   console.log(`╚${"═".repeat(DISPLAY_BOX_WIDTH)}╝`);
 }
 
-async function runGeminiAnalysis(
-  passRate: number,
+/**
+ * Run Gemini analysis on results.
+ */
+export async function runGeminiAnalysis(
+  totals: AggregatedTotals,
   categories: Record<string, CategoryData>,
   failures: FailureData[]
 ): Promise<void> {
+  const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
+
   console.log("\n⏳ Running Gemini analysis...\n");
 
   const AnalysisSchema = z.object({
@@ -316,12 +242,16 @@ Results:
   }
 }
 
-function generateHtmlReport(
-  totals: Totals,
-  passRate: number,
+/**
+ * Generate HTML report.
+ */
+export function generateHtmlReport(
+  totals: AggregatedTotals,
   categories: Record<string, CategoryData>,
   failures: FailureData[]
 ): string {
+  const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
+
   const categoryRows = Object.entries(categories)
     .toSorted()
     .map(([cat, d]) => {
@@ -384,72 +314,29 @@ function generateHtmlReport(
 </html>`;
 }
 
-async function main(): Promise<void> {
-  const options = parseCliArgs();
-  if (!options) {
-    process.exit(0);
-  }
-
-  printHeader(options);
-
-  // Start server once, run all iterations, then release
-  await ensureEvalServer({
-    chatUrl: "http://localhost:3100/api/chat",
-    manageServer: true,
-  });
-
-  const allSummaries: Summary[] = [];
-
-  try {
-    for (let i = 0; i < options.iterations; i += 1) {
-      if (options.iterations > 1) {
-        console.log(`\n── Run ${i + 1}/${options.iterations} ──\n`);
-      }
-      const summary = await runEvals(options);
-      if (summary) {
-        allSummaries.push(summary);
-      }
-    }
-  } finally {
-    releaseEvalServer();
-  }
-
-  if (allSummaries.length === 0) {
-    console.error("\n❌ No results collected\n");
-    process.exit(1);
-  }
-
-  const totals = aggregateTotals(allSummaries);
+/**
+ * Write comprehensive report files.
+ */
+export async function writeComprehensiveReports(
+  totals: AggregatedTotals,
+  categories: Record<string, CategoryData>,
+  failures: FailureData[]
+): Promise<void> {
   const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
-  const categories = aggregateCategories(allSummaries);
-  const failures = collectFailures(allSummaries);
-
-  printSummary(totals, passRate, categories, failures);
-
-  if (!options.skipAnalysis) {
-    await runGeminiAnalysis(passRate, categories, failures);
-  }
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
   const report = { timestamp, totals, categories, failures, passRate };
 
   await writeFile(
-    `${OUTPUT_DIR}/report-${timestamp}.json`,
+    `${OUTPUT_DIR}/comprehensive-${timestamp}.json`,
     JSON.stringify(report, null, 2)
   );
 
-  const html = generateHtmlReport(totals, passRate, categories, failures);
-  await writeFile(`${OUTPUT_DIR}/report-${timestamp}.html`, html);
+  const html = generateHtmlReport(totals, categories, failures);
+  await writeFile(`${OUTPUT_DIR}/comprehensive-${timestamp}.html`, html);
 
   console.log(`\n📄 Reports saved to ${OUTPUT_DIR}/`);
-  console.log(`   • report-${timestamp}.json`);
-  console.log(`   • report-${timestamp}.html\n`);
-
-  // Exit with non-zero code if there are failures (for CI/automation)
-  if (totals.failed > 0) {
-    process.exit(1);
-  }
+  console.log(`   • comprehensive-${timestamp}.json`);
+  console.log(`   • comprehensive-${timestamp}.html\n`);
 }
-
-main();

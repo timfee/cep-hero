@@ -154,11 +154,11 @@ CEP-Hero uses two types of quality assurance: **unit tests** for code correctnes
 # Run unit tests
 bun test
 
-# Run evals (start server first in another terminal with `bun run dev`)
-EVAL_USE_BASE=1 bun run evals
+# Run evals (server auto-starts)
+EVAL_FIXTURES=1 bun run evals
 
 # Run a specific eval
-EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals
+EVAL_IDS=EC-057 EVAL_FIXTURES=1 bun run evals
 ```
 
 ### Understanding Evals
@@ -173,21 +173,20 @@ For comprehensive eval documentation, see:
 
 - **[evals/README.md](./evals/README.md)** - Eval-specific details and fixture format
 - **[evals/cases/README.md](./evals/cases/README.md)** - Case index and category coverage
-- **[evals/MANUAL_TESTING.md](./evals/MANUAL_TESTING.md)** - Manual eval runs and result review
 
 ### Common Commands
 
 ```bash
-# Run all evals (server already running)
-EVAL_USE_BASE=1 bun run evals:fast
+# Run all evals
+EVAL_FIXTURES=1 bun run evals
 
 # Run by category
-EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
-EVAL_CATEGORY=policy EVAL_USE_BASE=1 bun run evals
-EVAL_CATEGORY=dlp EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=connector EVAL_FIXTURES=1 bun run evals
+EVAL_CATEGORY=policy EVAL_FIXTURES=1 bun run evals
+EVAL_CATEGORY=dlp EVAL_FIXTURES=1 bun run evals
 
 # Run in serial mode (for rate limiting)
-EVAL_SERIAL=1 EVAL_USE_BASE=1 bun run evals
+EVAL_SERIAL=1 EVAL_FIXTURES=1 bun run evals
 
 # Capture live fixtures
 bun run fixtures:capture

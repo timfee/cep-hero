@@ -23,6 +23,32 @@ export interface TurnAssertion {
   required_evidence?: string[];
 }
 
+/**
+ * Raw case structure as stored in registry.json (minimal, no defaults).
+ */
+interface RawEvalCase {
+  id: string;
+  title: string;
+  category: string;
+  source_refs?: string[];
+  case_file?: string;
+  mode?: string;
+  tags?: string[];
+  conversation_script?: ConversationTurn[];
+  turn_assertions?: TurnAssertion[];
+  expected_schema?: string[];
+  fixtures?: string[];
+  overrides?: string[];
+  required_evidence?: string[];
+  forbidden_evidence?: string[];
+  required_tool_calls?: string[];
+  rubric?: EvalRubric;
+  reference_response?: string;
+}
+
+/**
+ * Normalized case structure with defaults applied.
+ */
 export interface EvalCase {
   id: string;
   title: string;
@@ -37,8 +63,10 @@ export interface EvalCase {
   fixtures?: string[];
   overrides?: string[];
   required_evidence?: string[];
+  forbidden_evidence?: string[];
   required_tool_calls?: string[];
   rubric?: EvalRubric;
+  reference_response?: string;
 }
 
 export interface EvalRegistry {
@@ -54,9 +82,11 @@ export interface FilterOptions {
 }
 
 /**
- * Type guard for valid eval registry structure.
+ * Type guard for valid raw eval registry structure.
  */
-function isEvalRegistry(value: unknown): value is EvalRegistry {
+function isRawEvalRegistry(
+  value: unknown
+): value is { version: string; cases: RawEvalCase[] } {
   if (!isPlainObject(value)) {
     return false;
   }
@@ -64,20 +94,48 @@ function isEvalRegistry(value: unknown): value is EvalRegistry {
 }
 
 /**
- * Load the eval registry from disk.
+ * Normalize a raw case by applying defaults for omitted fields.
+ */
+function normalizeCase(raw: RawEvalCase): EvalCase {
+  return {
+    id: raw.id,
+    title: raw.title,
+    category: raw.category,
+    source_refs: raw.source_refs ?? [],
+    case_file: raw.case_file ?? `evals/cases/${raw.id}.md`,
+    mode: raw.mode ?? "deterministic",
+    tags: raw.tags ?? [],
+    conversation_script: raw.conversation_script ?? [],
+    turn_assertions: raw.turn_assertions,
+    expected_schema: raw.expected_schema ?? [],
+    fixtures: raw.fixtures,
+    overrides: raw.overrides,
+    required_evidence: raw.required_evidence,
+    forbidden_evidence: raw.forbidden_evidence,
+    required_tool_calls: raw.required_tool_calls,
+    rubric: raw.rubric,
+    reference_response: raw.reference_response,
+  };
+}
+
+/**
+ * Load the eval registry from disk and normalize all cases.
  */
 export function loadEvalRegistry(
   registryPath: string = path.join(process.cwd(), "evals", "registry.json")
-) {
+): EvalRegistry {
   if (!existsSync(registryPath)) {
     throw new Error(`Registry not found: ${registryPath}`);
   }
   const contents = readFileSync(registryPath, "utf8");
   const parsed: unknown = JSON.parse(contents);
-  if (!isEvalRegistry(parsed)) {
+  if (!isRawEvalRegistry(parsed)) {
     throw new Error("Invalid eval registry format");
   }
-  return parsed;
+  return {
+    version: parsed.version,
+    cases: parsed.cases.map(normalizeCase),
+  };
 }
 
 /**

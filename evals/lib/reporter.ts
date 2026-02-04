@@ -23,6 +23,7 @@ export interface EvalReport {
   expectedSchema: string[];
   schemaResult: AssertionResult;
   evidenceResult: AssertionResult;
+  forbiddenEvidenceResult?: AssertionResult;
   toolCallsResult?: AssertionResult;
   toolCalls?: string[];
   rubricResult?: {

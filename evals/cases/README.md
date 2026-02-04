@@ -8,13 +8,13 @@ Cases are organized by **failure domain** (15 categories) rather than by source 
 
 ```bash
 # Run all evals
-EVAL_USE_BASE=1 bun run evals
+EVAL_FIXTURES=1 bun run evals
 
 # Run by category
-EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=connector EVAL_FIXTURES=1 bun run evals
 
 # Run specific case
-EVAL_IDS=EC-057 EVAL_USE_BASE=1 bun run evals
+EVAL_IDS=EC-057 EVAL_FIXTURES=1 bun run evals
 ```
 
 ## Categories
