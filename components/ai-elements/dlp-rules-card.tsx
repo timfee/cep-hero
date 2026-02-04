@@ -14,6 +14,9 @@ interface DlpRule {
   id?: string;
   displayName?: string;
   description?: string;
+  settingType?: string;
+  policyType?: string;
+  orgUnit?: string;
   consoleUrl?: string;
 }
 
@@ -21,6 +24,68 @@ interface DlpRulesOutput {
   rules?: DlpRule[];
   error?: string;
   suggestion?: string;
+}
+
+/**
+ * Formats the trigger type for display (e.g., "UPLOAD" → "Upload").
+ */
+function formatTrigger(trigger: string) {
+  return trigger
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+/**
+ * Formats the action type with appropriate styling class.
+ */
+function getActionStyle(action: string) {
+  switch (action.toUpperCase()) {
+    case "BLOCK":
+      return "text-destructive";
+    case "WARN":
+      return "text-yellow-600 dark:text-yellow-500";
+    case "AUDIT":
+    default:
+      return "text-muted-foreground";
+  }
+}
+
+/**
+ * Renders a compact trigger → action badge.
+ */
+function TriggerActionBadge({
+  triggers,
+  action,
+}: {
+  triggers: string;
+  action: string;
+}) {
+  if (!triggers && !action) {
+    return null;
+  }
+
+  const formattedTriggers = triggers
+    ? triggers
+        .split(/[,\s]+/)
+        .filter(Boolean)
+        .map(formatTrigger)
+        .join(", ")
+    : null;
+  const formattedAction = action || "Audit";
+
+  return (
+    <span className="text-xs">
+      {formattedTriggers && (
+        <>
+          <span className="text-muted-foreground">{formattedTriggers}</span>
+          <span className="text-muted-foreground"> → </span>
+        </>
+      )}
+      <span className={getActionStyle(formattedAction)}>{formattedAction}</span>
+    </span>
+  );
 }
 
 export const DlpRulesCard = memo(function DlpRulesCard({
@@ -73,12 +138,18 @@ export const DlpRulesCard = memo(function DlpRulesCard({
       <div className="divide-y divide-border">
         {rules.slice(0, 8).map((rule, index) => (
           <div key={rule.id ?? index} className="px-3 py-2 text-sm">
-            <p className="font-medium text-foreground">
-              {rule.displayName ?? rule.id ?? "Unnamed rule"}
-            </p>
-            {rule.description && (
+            <div className="flex items-baseline justify-between gap-2">
+              <span className="font-medium text-foreground">
+                {rule.displayName ?? rule.id ?? "Unnamed rule"}
+              </span>
+              <TriggerActionBadge
+                triggers={rule.settingType ?? ""}
+                action={rule.policyType ?? ""}
+              />
+            </div>
+            {rule.orgUnit && rule.orgUnit !== "/" && (
               <p className="text-xs text-muted-foreground">
-                {rule.description}
+                Scope: {rule.orgUnit}
               </p>
             )}
             {rule.consoleUrl && (
@@ -88,7 +159,7 @@ export const DlpRulesCard = memo(function DlpRulesCard({
                 target="_blank"
                 rel="noopener"
               >
-                Open in Admin console
+                View in Admin console
               </a>
             )}
           </div>
