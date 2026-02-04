@@ -134,12 +134,25 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
             {dlpData ? "Rule Name" : "Policy"}
           </span>
           <p className="text-xs text-foreground">{ruleName}</p>
-          {!dlpData && (
-            <p className="text-[10px] text-muted-foreground font-mono">
-              {targetDisplay}
-            </p>
-          )}
         </div>
+
+        {!dlpData && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Target Org Unit
+            </span>
+            <div className="flex items-center gap-2">
+              <span className="text-xs text-foreground">
+                {targetDisplay.startsWith("orgunits/") ? "/" : targetDisplay}
+              </span>
+              {targetResource && (
+                <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
+                  {targetResource.replace("orgunits/", "")}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
         {dlpData && (
           <div className="flex gap-8">
