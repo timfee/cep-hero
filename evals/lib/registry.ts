@@ -40,8 +40,10 @@ interface RawEvalCase {
   fixtures?: string[];
   overrides?: string[];
   required_evidence?: string[];
+  forbidden_evidence?: string[];
   required_tool_calls?: string[];
   rubric?: EvalRubric;
+  reference_response?: string;
 }
 
 /**
@@ -61,8 +63,10 @@ export interface EvalCase {
   fixtures?: string[];
   overrides?: string[];
   required_evidence?: string[];
+  forbidden_evidence?: string[];
   required_tool_calls?: string[];
   rubric?: EvalRubric;
+  reference_response?: string;
 }
 
 export interface EvalRegistry {
@@ -107,8 +111,10 @@ function normalizeCase(raw: RawEvalCase): EvalCase {
     fixtures: raw.fixtures,
     overrides: raw.overrides,
     required_evidence: raw.required_evidence,
+    forbidden_evidence: raw.forbidden_evidence,
     required_tool_calls: raw.required_tool_calls,
     rubric: raw.rubric,
+    reference_response: raw.reference_response,
   };
 }
 
