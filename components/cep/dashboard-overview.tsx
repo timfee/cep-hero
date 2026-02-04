@@ -14,7 +14,7 @@ import {
   AlertCircle,
   Info,
 } from "lucide-react";
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import useSWR from "swr";
 
 import type {
@@ -25,6 +25,8 @@ import type {
 
 import { Shimmer, SkeletonShimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
+
+import { useDashboardLoad } from "./dashboard-load-context";
 
 /**
  * Fetch JSON data from a URL, throwing on non-OK responses.
@@ -80,6 +82,7 @@ interface DashboardOverviewProps {
  */
 export function DashboardOverview({ onAction }: DashboardOverviewProps) {
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const { setDashboardLoaded } = useDashboardLoad();
 
   const { data, error, isLoading, isValidating, mutate } = useSWR<OverviewData>(
     "/api/overview",
@@ -104,6 +107,16 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
       setIsRefreshing(false);
     }
   }, [mutate]);
+
+  const hasSummaryContent = Boolean(
+    data?.summary && data.summary.trim().length > 0
+  );
+
+  useEffect(() => {
+    if (hasSummaryContent && !isLoading && !isValidating) {
+      setDashboardLoaded(true);
+    }
+  }, [hasSummaryContent, isLoading, isValidating, setDashboardLoaded]);
 
   if (isLoading && !data) {
     return (
@@ -147,9 +160,6 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
 
   // Show shimmer while refreshing/validating OR when the summary text hasn't arrived yet
   // This ensures the shimmer stays visible until the AI-generated text is actually available
-  const hasSummaryContent = Boolean(
-    data.summary && data.summary.trim().length > 0
-  );
   const hasHeadlineContent = Boolean(
     data.headline && data.headline.trim().length > 0
   );

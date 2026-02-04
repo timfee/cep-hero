@@ -25,6 +25,15 @@ mock.module("@vercel/analytics", () => ({
   track: mock(() => Promise.resolve()),
 }));
 
+// Mock useDashboardLoad
+const mockSetDashboardLoaded = mock(() => {});
+mock.module("./dashboard-load-context", () => ({
+  useDashboardLoad: () => ({
+    isDashboardLoaded: false,
+    setDashboardLoaded: mockSetDashboardLoaded,
+  }),
+}));
+
 import { DashboardOverview } from "./dashboard-overview";
 
 describe("DashboardOverview component", () => {
@@ -33,6 +42,7 @@ describe("DashboardOverview component", () => {
   afterEach(() => {
     mockOnAction.mockClear();
     mockMutate.mockClear();
+    mockSetDashboardLoaded.mockClear();
   });
 
   it("shows skeleton shimmer during initial loading", () => {
@@ -222,6 +232,45 @@ describe("DashboardOverview component", () => {
     await waitFor(() => {
       expect(getByText("All systems healthy")).toBeInTheDocument();
       expect(getByText("No issues require your attention")).toBeInTheDocument();
+    });
+  });
+
+  it("calls setDashboardLoaded when content loads", async () => {
+    mockSWRReturn = {
+      data: {
+        headline: "Fleet Status",
+        summary: "Dashboard loaded with content.",
+        postureCards: [],
+        suggestions: [],
+        sources: [],
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    render(<DashboardOverview onAction={mockOnAction} />);
+
+    await waitFor(() => {
+      expect(mockSetDashboardLoaded).toHaveBeenCalledWith(true);
+    });
+  });
+
+  it("does not call setDashboardLoaded when still loading", async () => {
+    mockSWRReturn = {
+      data: null,
+      error: null,
+      isLoading: true,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    render(<DashboardOverview onAction={mockOnAction} />);
+
+    // Give effect time to run
+    await waitFor(() => {
+      expect(mockSetDashboardLoaded).not.toHaveBeenCalled();
     });
   });
 });
