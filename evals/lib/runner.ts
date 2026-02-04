@@ -982,7 +982,7 @@ export async function main(options: MainOptions = {}) {
         await runGeminiAnalysis(totals, categories, failures);
       }
 
-      process.exit(totals.failed > 0 ? 1 : 0);
+      process.exit(totals.failed + totals.errors > 0 ? 1 : 0);
     } else {
       // Single iteration without extra features
       const summary = summaries[0];

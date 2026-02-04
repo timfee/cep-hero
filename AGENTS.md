@@ -265,41 +265,38 @@ Registry uses a minimal format where empty fields are omitted. Defaults are appl
 ### Running Evals
 
 ```bash
-# With fixture injection (recommended)
+# With fixture injection (recommended, server auto-starts)
 EVAL_FIXTURES=1 bun run evals
 
 # Specific cases
 EVAL_IDS="EC-071,EC-072" EVAL_FIXTURES=1 bun run evals
 
-# Fast mode (server already running)
-EVAL_FIXTURES=1 bun run evals:fast
-
 # Test mode (no AI calls)
 EVAL_TEST_MODE=1 bun run evals
 ```
 
-### Comprehensive Eval Runner
+### CLI Options
 
-For thorough evaluation with aggregated results and optional Gemini analysis:
+The eval runner supports advanced options via CLI flags:
 
 ```bash
-# Basic run (all cases with fixture data)
-bun run evals:comprehensive --skip-analysis
+# Generate HTML report
+EVAL_FIXTURES=1 bun run evals --html
 
 # With LLM judge scoring
-bun run evals:comprehensive --with-judge
+EVAL_FIXTURES=1 bun run evals --with-judge
 
 # Multiple iterations (identifies flaky tests)
-bun run evals:comprehensive --iterations 3
+EVAL_FIXTURES=1 bun run evals --iterations 3
 
-# Full run (judge + 3 iterations)
-bun run evals:comprehensive:full
+# Full run (judge + 3 iterations + HTML + analysis)
+EVAL_FIXTURES=1 bun run evals:full
 
-# Specific cases only
-bun run evals:comprehensive --cases EC-001,EC-002
+# Specific cases via CLI
+bun run evals --cases EC-001,EC-002
 ```
 
-Reports saved to `evals/comprehensive/reports/` (JSON + HTML).
+Reports saved to `evals/reports/` (JSON + HTML).
 
 ## When Oxlint + Oxfmt Can't Help
 
