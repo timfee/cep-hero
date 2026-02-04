@@ -189,10 +189,10 @@
 
 @layer utilities {
   .animate-gradient-shift {
-    animation: gradient-shift 15s ease infinite;
+    animation: gradient-shift 20s ease-in-out infinite;
   }
   .animate-gradient-shift-reverse {
-    animation: gradient-shift-reverse 20s ease infinite;
+    animation: gradient-shift-reverse 25s ease-in-out infinite;
   }
 }
 
