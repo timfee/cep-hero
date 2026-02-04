@@ -11,23 +11,26 @@ import {
   buildTargetEmail,
   createAdminClient,
   createUser,
+  makeUserSuperAdmin,
+  userExists,
+} from "@/lib/gimme/admin-client";
+import {
+  RATE_LIMIT_MAX_REQUESTS,
+  RATE_LIMIT_WINDOW_MS,
+} from "@/lib/gimme/constants";
+import { sendErrorEmail, sendSuccessEmail } from "@/lib/gimme/email";
+import { type EnrollmentResult } from "@/lib/gimme/types";
+import {
   type EnrollmentInput,
-  type EnrollmentResult,
   EnrollmentSchema,
   extractUsername,
   generatePassword,
-  makeUserSuperAdmin,
   parseName,
-  RATE_LIMIT_MAX_REQUESTS,
-  RATE_LIMIT_WINDOW_MS,
-  sendErrorEmail,
-  sendSuccessEmail,
   stripQuotes,
-  userExists,
-} from "@/lib/gimme";
+} from "@/lib/gimme/validation";
 import { checkRateLimit, timingSafeEqual } from "@/lib/rate-limit";
 
-export type { EnrollmentResult } from "@/lib/gimme";
+export type { EnrollmentResult } from "@/lib/gimme/types";
 
 /**
  * Get the client IP from request headers.

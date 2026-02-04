@@ -6,15 +6,17 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
-import { getErrorDetails } from "@/lib/mcp/errors";
-import { resolveOrgUnitDisplay } from "@/lib/mcp/org-units";
+import { logApiError, logApiRequest, logApiResponse } from "@/lib/mcp/errors";
+import {
+  buildOrgUnitTargetResource,
+  resolveOrgUnitDisplay,
+} from "@/lib/mcp/org-units";
 import {
   type ApplyPolicyChangeSchema,
   type DraftPolicyChangeSchema,
 } from "@/lib/mcp/schemas";
 
 import { type OrgUnitContext } from "./context";
-import { buildOrgUnitTargetResource } from "./utils";
 
 /**
  * Arguments for drafting a Chrome policy change proposal.
@@ -114,14 +116,10 @@ export async function applyPolicyChange(
   customerId: string,
   args: ApplyPolicyChangeArgs
 ) {
-  const service = googleApis.chromepolicy({
-    version: "v1",
-    auth,
-  });
-
+  const service = googleApis.chromepolicy({ version: "v1", auth });
   const targetResource = buildOrgUnitTargetResource(args.targetResource);
 
-  console.log("[apply-policy-change] request", {
+  logApiRequest("apply-policy-change", {
     policySchemaId: args.policySchemaId,
     targetResource,
     value: args.value,
@@ -144,10 +142,7 @@ export async function applyPolicyChange(
       },
     });
 
-    console.log(
-      "[apply-policy-change] response",
-      JSON.stringify({ status: res.status })
-    );
+    logApiResponse("apply-policy-change", { status: res.status });
 
     return {
       _type: "ui.success",
@@ -155,21 +150,20 @@ export async function applyPolicyChange(
       policySchemaId: args.policySchemaId,
       targetResource,
       appliedValue: args.value,
-    };
+    } as const;
   } catch (error: unknown) {
-    const { code, message, errors } = getErrorDetails(error);
-    console.log(
-      "[apply-policy-change] error",
-      JSON.stringify({ code, message, errors })
-    );
+    logApiError("apply-policy-change", error);
 
     return {
       _type: "ui.error",
-      error: message ?? "Failed to apply policy change",
+      error:
+        error instanceof Error
+          ? error.message
+          : "Failed to apply policy change",
       suggestion:
         "Verify you have Chrome policy admin rights and the policy schema ID is correct.",
       policySchemaId: args.policySchemaId,
       targetResource,
-    };
+    } as const;
   }
 }

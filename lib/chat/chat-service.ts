@@ -18,7 +18,7 @@ import {
   ListDLPRulesSchema,
   ListOrgUnitsSchema,
 } from "@/lib/mcp/registry";
-import { type IToolExecutor } from "@/lib/mcp/types";
+import { type ToolExecutor } from "@/lib/mcp/types";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
 
 import { type ChatMessage } from "./request-utils";
@@ -160,7 +160,7 @@ Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.`;
 interface CreateChatStreamParams {
   messages: ChatMessage[];
   accessToken: string;
-  executor?: IToolExecutor;
+  executor?: ToolExecutor;
 }
 
 interface SearchHit {
