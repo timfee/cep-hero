@@ -5,10 +5,7 @@ Behavioral tests for the CEP diagnostic assistant. Each eval checks if the assis
 ## Quick Start
 
 ```bash
-# Start server (required)
-bun run dev
-
-# Run all evals with fixture data
+# Run all evals with fixture data (server auto-starts)
 EVAL_FIXTURES=1 bun run evals
 
 # Run specific case
@@ -18,6 +15,8 @@ EVAL_IDS=EC-001 EVAL_FIXTURES=1 bun run evals
 EVAL_CATEGORY=connector EVAL_FIXTURES=1 bun run evals
 EVAL_TAGS=dlp EVAL_FIXTURES=1 bun run evals
 ```
+
+The runner automatically manages the dev server (starts on port 3100, stops when done).
 
 ## Structure
 

@@ -92,11 +92,7 @@ function buildFixtureData(mergedObject: Record<string, unknown>): FixtureData {
  * Check if fixtures are enabled via environment for loadEvalFixtures.
  */
 function isLoadFixturesEnabled(): boolean {
-  return (
-    process.env.EVAL_FIXTURES === "1" ||
-    process.env.EVAL_USE_BASE === "1" ||
-    process.env.EVAL_USE_FIXTURES === "1"
-  );
+  return process.env.EVAL_FIXTURES === "1";
 }
 
 /**
@@ -242,15 +238,9 @@ interface ResolvedPromptOptions {
 
 /**
  * Check if fixtures are enabled via environment variables.
- * EVAL_FIXTURES=1 is the unified flag (enables both base and file fixtures).
- * EVAL_USE_BASE and EVAL_USE_FIXTURES are kept for backwards compatibility.
  */
 function isFixturesEnabled(): boolean {
-  return (
-    process.env.EVAL_FIXTURES === "1" ||
-    process.env.EVAL_USE_BASE === "1" ||
-    process.env.EVAL_USE_FIXTURES === "1"
-  );
+  return process.env.EVAL_FIXTURES === "1";
 }
 
 /**

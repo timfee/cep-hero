@@ -244,7 +244,7 @@ The system uses dependency injection to swap between production and eval modes:
 1. Create a case file in `evals/cases/EC-###.md` with the user prompt
 2. Add the case to `evals/registry.json` (minimal format - only include fields with values)
 3. Optionally create `evals/fixtures/EC-###/overrides.json` for case-specific data
-4. Run with `EVAL_IDS="EC-###" EVAL_USE_BASE=1 bun run evals`
+4. Run with `EVAL_IDS="EC-###" EVAL_FIXTURES=1 bun run evals`
 
 ### Registry Format (v3.0)
 
