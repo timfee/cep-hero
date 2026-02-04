@@ -281,6 +281,13 @@ export async function sendErrorEmail(
   recipientName: string,
   errorMessage: string
 ): Promise<void> {
+  // Debug logging to trace email parameters
+  console.log("[gimme] sendErrorEmail called", {
+    recipientEmail,
+    recipientName,
+    errorMessage,
+  });
+
   const { gmail, senderEmail } = await getGmailClient();
 
   const htmlBody = buildErrorEmailHtml(recipientName, errorMessage);
