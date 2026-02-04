@@ -178,8 +178,25 @@ Fixtures provide deterministic test data:
 - **Base snapshot** (`fixtures/base/api-base.json`) - Shared org units, policies, events
 - **Case overrides** (`fixtures/EC-###/overrides.json`) - Case-specific data merged with base
 
-Generate a fresh base snapshot:
+### Capturing Fresh Fixtures
+
+To regenerate the base snapshot from live Google APIs:
 
 ```bash
 bun run fixtures:capture
 ```
+
+**Requirements:**
+
+- `GOOGLE_SERVICE_ACCOUNT_JSON` - Service account credentials with Admin SDK access
+- `GOOGLE_TOKEN_EMAIL` - Email for domain-wide delegation impersonation
+- `GOOGLE_CUSTOMER_ID` - Google Workspace customer ID
+
+**What it captures:**
+
+- Org units (first 10)
+- Policy schemas (first 10)
+- Chrome management reports
+- Audit events sample
+
+**PII Redaction:** The script automatically redacts emails, customer IDs, IP addresses, file paths, and hashes before writing fixtures.
