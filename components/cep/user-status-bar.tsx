@@ -102,20 +102,24 @@ export function UserStatusBar() {
       const response = await fetch("/api/sign-in-status");
       const data = (await response.json()) as SignInStatusResponse;
 
-      // If there's an error or not authenticated, sign out and redirect
-      if (!data.authenticated || data.error) {
+      // If not authenticated, sign out and redirect
+      if (!data.authenticated) {
+        setStatus({ loading: false, data: null, error: "Not authenticated" });
         await performSignOut();
         return;
       }
 
-      setStatus({ loading: false, data, error: null });
+      // Show data even if there's a token error (let user see status and re-auth)
+      setStatus({ loading: false, data, error: data.error ?? null });
       if (data.token?.expiresIn !== undefined) {
         expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
         setLocalExpiresIn(data.token.expiresIn);
       }
-    } catch {
-      // On error, sign out and redirect
-      await performSignOut();
+    } catch (err) {
+      // On transient network errors, show error state instead of signing out
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch status";
+      setStatus({ loading: false, data: null, error: errorMessage });
     }
   }, [performSignOut]);
 
@@ -183,7 +187,8 @@ export function UserStatusBar() {
     );
   }
 
-  if (!status.data?.authenticated || status.error) {
+  // Show "Not signed in" only when not authenticated (not for token errors)
+  if (!status.data?.authenticated) {
     return (
       <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
         <Branding />
