@@ -221,6 +221,12 @@ function RegistrationForm() {
 }
 
 /**
+ * Timeout duration before resetting the sign-in loading state.
+ * Allows retry if popup is blocked or user cancels.
+ */
+const SIGNIN_TIMEOUT_MS = 10000;
+
+/**
  * Sign-in page component with sign-in button and registration form.
  */
 export default function SignInPage() {
@@ -230,6 +236,17 @@ export default function SignInPage() {
     setIsSigningIn(true);
     handleSignIn();
   }, []);
+
+  // Reset loading state after timeout to allow retry if sign-in fails
+  useEffect(() => {
+    if (!isSigningIn) return;
+
+    const timeout = setTimeout(() => {
+      setIsSigningIn(false);
+    }, SIGNIN_TIMEOUT_MS);
+
+    return () => clearTimeout(timeout);
+  }, [isSigningIn]);
 
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
