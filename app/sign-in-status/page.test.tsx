@@ -20,13 +20,34 @@ import SignInStatusPage from "./page";
 
 describe("SignInStatusPage component", () => {
   const originalFetch = globalThis.fetch;
+  const originalLocation = globalThis.location;
+  let locationHref = "";
 
   beforeEach(() => {
     mockPush.mockClear();
+    locationHref = "";
+    // Mock window.location.href
+    Object.defineProperty(globalThis, "location", {
+      value: {
+        ...originalLocation,
+        href: "",
+        set href(value: string) {
+          locationHref = value;
+        },
+        get href() {
+          return locationHref;
+        },
+      },
+      writable: true,
+    });
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    Object.defineProperty(globalThis, "location", {
+      value: originalLocation,
+      writable: true,
+    });
   });
 
   it("shows loading state initially", () => {
@@ -54,7 +75,7 @@ describe("SignInStatusPage component", () => {
     render(<SignInStatusPage />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      expect(locationHref).toBe("/sign-in");
     });
   });
 
@@ -74,7 +95,7 @@ describe("SignInStatusPage component", () => {
     render(<SignInStatusPage />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      expect(locationHref).toBe("/sign-in");
     });
   });
 
@@ -86,7 +107,7 @@ describe("SignInStatusPage component", () => {
     render(<SignInStatusPage />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      expect(locationHref).toBe("/sign-in");
     });
   });
 

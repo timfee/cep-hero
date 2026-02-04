@@ -76,8 +76,9 @@ function formatTimeRemaining(seconds: number): string {
 
 /**
  * Signs out the user and redirects to sign-in page.
+ * Uses window.location for hard redirect to ensure cookies are cleared.
  */
-async function performSignOut(router: ReturnType<typeof useRouter>) {
+async function performSignOut() {
   try {
     await fetch("/api/sign-out", { method: "POST" });
   } catch (error) {
@@ -86,7 +87,8 @@ async function performSignOut(router: ReturnType<typeof useRouter>) {
       error instanceof Error ? error.message : "Unknown error"
     );
   }
-  router.push("/sign-in");
+  // Hard redirect to ensure server sees cleared cookies
+  window.location.href = "/sign-in";
 }
 
 /**
@@ -243,7 +245,7 @@ export default function SignInStatusPage() {
 
       // Server error - sign out
       if (!response.ok) {
-        await performSignOut(router);
+        await performSignOut();
         return;
       }
 
@@ -251,7 +253,7 @@ export default function SignInStatusPage() {
 
       // If not authenticated or there's an error, sign out and redirect
       if (!data.authenticated || data.error) {
-        await performSignOut(router);
+        await performSignOut();
         return;
       }
 
@@ -262,7 +264,7 @@ export default function SignInStatusPage() {
       }
     } catch {
       // On any error, sign out and redirect
-      await performSignOut(router);
+      await performSignOut();
     }
   }, [router]);
 
@@ -293,7 +295,7 @@ export default function SignInStatusPage() {
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
-    await performSignOut(router);
+    await performSignOut();
   }, [router]);
 
   const handleReauth = useCallback(() => {
