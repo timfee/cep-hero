@@ -7,29 +7,15 @@
 import { track } from "@vercel/analytics";
 import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
-import { useActionState, useCallback, useEffect, useState } from "react";
+import { useCallback, useState, useTransition } from "react";
 
-import { enrollUser, type EnrollmentResult } from "@/app/gimme/actions";
+import { enrollUser } from "@/app/gimme/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { signIn } from "@/lib/auth-client";
-
-/**
- * Form state type for useActionState.
- */
-type FormState = EnrollmentResult | null;
-
-/**
- * Wrapper for the enrollUser action to work with useActionState.
- */
-function enrollAction(
-  _prevState: FormState,
-  formData: FormData
-): Promise<FormState> {
-  return enrollUser(formData);
-}
+import { ALLOWED_EMAIL_SUFFIX, MAX_NAME_LENGTH } from "@/lib/gimme/constants";
 
 /**
  * Handle sign-in button click.
@@ -105,52 +91,160 @@ function CheckEmailNotice({
 }
 
 /**
- * Registration form component.
+ * Client-side validation errors.
+ */
+interface FieldErrors {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
+/**
+ * Validate form fields on the client side.
+ */
+function validateFields(
+  name: string,
+  email: string,
+  password: string
+): FieldErrors {
+  const errors: FieldErrors = {};
+
+  const trimmedName = name.trim();
+  if (!trimmedName) {
+    errors.name = "Name is required";
+  } else if (trimmedName.length > MAX_NAME_LENGTH) {
+    errors.name = `Name must be ${MAX_NAME_LENGTH} characters or less`;
+  }
+
+  const trimmedEmail = email.trim().toLowerCase();
+  if (!trimmedEmail) {
+    errors.email = "Email is required";
+  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
+    errors.email = "Invalid email format";
+  } else if (!trimmedEmail.endsWith(ALLOWED_EMAIL_SUFFIX)) {
+    errors.email = "Email must end with @google.com";
+  }
+
+  if (!password) {
+    errors.password = "Enrollment password is required";
+  }
+
+  return errors;
+}
+
+/**
+ * Registration form component with client-side validation and value persistence.
  */
 function RegistrationForm() {
-  const [state, formAction, isPending] = useActionState<FormState, FormData>(
-    enrollAction,
-    null
-  );
-  const [formKey, setFormKey] = useState(0);
-  // Track success state separately to allow proper reset
-  const [showSuccess, setShowSuccess] = useState(false);
+  const [isPending, startTransition] = useTransition();
+
+  // Controlled form values - persist across submissions
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+
+  // Client-side validation errors
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
+
+  // Server response
+  const [serverError, setServerError] = useState<string | null>(null);
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
 
-  // Update success state when action completes
-  useEffect(() => {
-    if (state?.notificationSentTo) {
-      setShowSuccess(true);
-      setSuccessEmail(state.notificationSentTo);
-    }
-  }, [state?.notificationSentTo]);
+  const handleSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault();
+
+      // Client-side validation
+      const errors = validateFields(name, email, password);
+      setFieldErrors(errors);
+
+      if (Object.keys(errors).length > 0) {
+        return;
+      }
+
+      // Clear previous server error
+      setServerError(null);
+
+      // Submit to server
+      const formData = new FormData();
+      formData.set("name", name.trim());
+      formData.set("email", email.trim().toLowerCase());
+      formData.set("password", password);
+
+      startTransition(async () => {
+        const result = await enrollUser(formData);
+
+        if (result.error) {
+          setServerError(result.error);
+        } else if (result.notificationSentTo) {
+          setSuccessEmail(result.notificationSentTo);
+        }
+      });
+    },
+    [name, email, password]
+  );
 
   const handleReset = useCallback(() => {
-    setShowSuccess(false);
     setSuccessEmail(null);
-    setFormKey((prev) => prev + 1);
+    setServerError(null);
+    setFieldErrors({});
+    setName("");
+    setEmail("");
+    setPassword("");
   }, []);
 
-  if (showSuccess && successEmail) {
+  // Clear field error on change
+  const handleNameChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setName(e.target.value);
+      if (fieldErrors.name) {
+        setFieldErrors((prev) => ({ ...prev, name: undefined }));
+      }
+    },
+    [fieldErrors.name]
+  );
+
+  const handleEmailChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setEmail(e.target.value);
+      if (fieldErrors.email) {
+        setFieldErrors((prev) => ({ ...prev, email: undefined }));
+      }
+    },
+    [fieldErrors.email]
+  );
+
+  const handlePasswordChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      setPassword(e.target.value);
+      if (fieldErrors.password) {
+        setFieldErrors((prev) => ({ ...prev, password: undefined }));
+      }
+    },
+    [fieldErrors.password]
+  );
+
+  if (successEmail) {
     return <CheckEmailNotice email={successEmail} onReset={handleReset} />;
   }
 
   return (
-    <Card key={formKey}>
-      <CardHeader className="pb-4">
+    <Card>
+      <CardHeader className="pb-3">
         <CardTitle className="text-lg">Create an Account</CardTitle>
       </CardHeader>
       <CardContent>
-        <form action={formAction} className="space-y-4">
-          {state?.error && (
-            <Alert variant="destructive">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          {serverError && (
+            <Alert variant="destructive" className="py-2">
               <AlertCircle className="h-4 w-4" />
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{state.error}</AlertDescription>
+              <AlertDescription className="text-sm">
+                {serverError}
+              </AlertDescription>
             </Alert>
           )}
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label htmlFor="name" className="text-sm font-medium">
               Full Name
             </label>
@@ -159,14 +253,19 @@ function RegistrationForm() {
               name="name"
               type="text"
               placeholder="John Doe"
-              required
+              value={name}
+              onChange={handleNameChange}
               disabled={isPending}
               autoComplete="name"
+              aria-invalid={!!fieldErrors.name}
               className="border-border bg-background"
             />
+            {fieldErrors.name && (
+              <p className="text-xs text-destructive">{fieldErrors.name}</p>
+            )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label htmlFor="email" className="text-sm font-medium">
               Google Email
             </label>
@@ -175,17 +274,23 @@ function RegistrationForm() {
               name="email"
               type="email"
               placeholder="username@google.com"
-              required
+              value={email}
+              onChange={handleEmailChange}
               disabled={isPending}
               autoComplete="email"
+              aria-invalid={!!fieldErrors.email}
               className="border-border bg-background"
             />
-            <p className="text-xs text-muted-foreground">
-              Must end with @google.com
-            </p>
+            {fieldErrors.email ? (
+              <p className="text-xs text-destructive">{fieldErrors.email}</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Must end with @google.com
+              </p>
+            )}
           </div>
 
-          <div className="space-y-2">
+          <div className="space-y-1">
             <label htmlFor="password" className="text-sm font-medium">
               Enrollment Password
             </label>
@@ -193,15 +298,17 @@ function RegistrationForm() {
               id="password"
               name="password"
               type="password"
-              placeholder="Enter enrollment password"
-              required
+              placeholder="From your team lead"
+              value={password}
+              onChange={handlePasswordChange}
               disabled={isPending}
               autoComplete="off"
+              aria-invalid={!!fieldErrors.password}
               className="border-border bg-background"
             />
-            <p className="text-xs text-muted-foreground">
-              Contact your team lead for the enrollment password.
-            </p>
+            {fieldErrors.password && (
+              <p className="text-xs text-destructive">{fieldErrors.password}</p>
+            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={isPending}>
