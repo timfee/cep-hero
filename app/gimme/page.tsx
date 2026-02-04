@@ -1,12 +1,12 @@
 /**
- * Redirect from /gimme to /sign-in with register tab selected.
+ * Redirect from /gimme to /sign-in page.
  */
 
 import { redirect } from "next/navigation";
 
 /**
- * Redirect to sign-in page with register tab.
+ * Redirect to sign-in page.
  */
 export default function GimmePage() {
-  redirect("/sign-in?tab=register");
+  redirect("/sign-in");
 }

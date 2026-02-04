@@ -7,15 +7,13 @@
 import { track } from "@vercel/analytics";
 import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
-import { useSearchParams } from "next/navigation";
 import { useActionState, useCallback, useState } from "react";
 
 import { enrollUser, type EnrollmentResult } from "@/app/gimme/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { signIn } from "@/lib/auth-client";
 
 /**
@@ -78,55 +76,38 @@ function CheckEmailNotice({
   onReset: () => void;
 }) {
   return (
-    <div className="space-y-4">
-      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-        <AlertTitle className="text-blue-800 dark:text-blue-200">
-          Check Your Email
-        </AlertTitle>
-        <AlertDescription className="text-blue-700 dark:text-blue-300">
-          We&apos;ve sent a notification to <strong>{email}</strong> with the
-          details of your request.
-        </AlertDescription>
-      </Alert>
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-4">
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+            <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-200">
+              Check Your Email
+            </AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-300">
+              We&apos;ve sent a notification to <strong>{email}</strong> with
+              the details of your request.
+            </AlertDescription>
+          </Alert>
 
-      <Button
-        type="button"
-        variant="outline"
-        className="w-full"
-        onClick={onReset}
-      >
-        Submit Another Request
-      </Button>
-    </div>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={onReset}
+          >
+            Submit Another Request
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
 /**
- * Sign-in tab content with Google OAuth button.
+ * Registration form component.
  */
-function SignInTab() {
-  const onSignIn = useCallback(handleSignIn, []);
-
-  return (
-    <div className="space-y-4">
-      <Button className="w-full" size="lg" onClick={onSignIn}>
-        <GoogleIcon />
-        Continue with Google
-      </Button>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Requires a Google Workspace admin account with Chrome management
-        permissions.
-      </p>
-    </div>
-  );
-}
-
-/**
- * Self-enrollment tab content with registration form.
- */
-function EnrollmentTab() {
+function RegistrationForm() {
   const [state, formAction, isPending] = useActionState<FormState, FormData>(
     enrollAction,
     null
@@ -147,8 +128,11 @@ function EnrollmentTab() {
   }
 
   return (
-    <Card key={formKey} className="border-0 shadow-none">
-      <CardContent className="p-0">
+    <Card key={formKey}>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg">Create an Account</CardTitle>
+      </CardHeader>
+      <CardContent>
         <form action={formAction} className="space-y-4">
           {state?.error && (
             <Alert variant="destructive">
@@ -226,17 +210,16 @@ function EnrollmentTab() {
 }
 
 /**
- * Sign-in page component with tabs for sign-in and self-enrollment.
+ * Sign-in page component with sign-in button and registration form.
  */
 export default function SignInPage() {
-  const searchParams = useSearchParams();
-  const defaultTab =
-    searchParams.get("tab") === "register" ? "register" : "signin";
+  const onSignIn = useCallback(handleSignIn, []);
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md">
-        <div className="mb-8 text-center">
+      <div className="w-full max-w-md space-y-6">
+        {/* Branding */}
+        <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
             <Image src="/icon.png" alt="CEP Hero" height={50} width={50} />
           </div>
@@ -246,18 +229,37 @@ export default function SignInPage() {
           </p>
         </div>
 
-        <Tabs defaultValue={defaultTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="signin">Sign In</TabsTrigger>
-            <TabsTrigger value="register">Register</TabsTrigger>
-          </TabsList>
-          <TabsContent value="signin" className="mt-6">
-            <SignInTab />
-          </TabsContent>
-          <TabsContent value="register" className="mt-6">
-            <EnrollmentTab />
-          </TabsContent>
-        </Tabs>
+        {/* Sign In Section */}
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-lg">Sign In</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Button className="w-full" size="lg" onClick={onSignIn}>
+              <GoogleIcon />
+              Continue with Google
+            </Button>
+            <p className="mt-3 text-center text-xs text-muted-foreground">
+              Requires a Google Workspace admin account with Chrome management
+              permissions.
+            </p>
+          </CardContent>
+        </Card>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or register for access
+            </span>
+          </div>
+        </div>
+
+        {/* Registration Form */}
+        <RegistrationForm />
       </div>
     </main>
   );
