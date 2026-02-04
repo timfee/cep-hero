@@ -1,0 +1,63 @@
+{
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T13:00:00.000Z",
+          "applicationName": "chrome"
+        },
+        "events": [
+          {
+            "type": "DEVICE_INVENTORY",
+            "name": "STALE_DEVICE_DETECTED",
+            "parameters": [
+              { "name": "DEVICE_ID", "value": "chromebook-stale-001" },
+              { "name": "DEVICE_NAME", "value": "ChromeBook-Old-1" },
+              { "name": "SERIAL_NUMBER", "value": "5CD0000001" },
+              { "name": "LAST_SYNC_TIME", "value": "2025-10-15T12:00:00.000Z" },
+              { "name": "DAYS_SINCE_SYNC", "value": "97" },
+              { "name": "DEVICE_STATUS", "value": "ACTIVE" },
+              { "name": "RECOMMENDATION", "value": "Deprovision via API" }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "browsers": [
+    {
+      "deviceId": "chromebook-stale-001",
+      "machineName": "ChromeBook-Old-1",
+      "serialNumber": "5CD0000001",
+      "lastActivityTime": "2025-10-15T12:00:00.000Z",
+      "lastSyncTime": "2025-10-15T12:00:00.000Z",
+      "daysSinceLastSync": 97,
+      "deviceStatus": "ACTIVE",
+      "deprovisioningRecommended": true,
+      "note": "Device has not synced in 97 days. Consider deprovisioning via Admin SDK."
+    },
+    {
+      "deviceId": "chromebook-stale-002",
+      "machineName": "ChromeBook-Old-2",
+      "serialNumber": "5CD0000002",
+      "lastActivityTime": "2025-09-01T08:00:00.000Z",
+      "lastSyncTime": "2025-09-01T08:00:00.000Z",
+      "daysSinceLastSync": 141,
+      "deviceStatus": "ACTIVE",
+      "deprovisioningRecommended": true,
+      "note": "Device has not synced in 141 days. Consider deprovisioning via Admin SDK."
+    },
+    {
+      "deviceId": "chromebook-stale-003",
+      "machineName": "ChromeBook-Old-3",
+      "serialNumber": "5CD0000003",
+      "lastActivityTime": "2025-08-15T10:00:00.000Z",
+      "lastSyncTime": "2025-08-15T10:00:00.000Z",
+      "daysSinceLastSync": 158,
+      "deviceStatus": "ACTIVE",
+      "deprovisioningRecommended": true,
+      "note": "Device has not synced in 158 days. Consider deprovisioning via Admin SDK."
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+2026-01-20T04:02:20.102Z wifi: scanning for networks
+2026-01-20T04:02:22.802Z wifi: deauth reason=15 (4-way handshake timeout) ssid=CorpNet signal=-72dBm
+2026-01-20T04:02:24.102Z wifi: association failed status=1 (unspecified failure) ssid=CorpNet
+2026-01-20T04:02:26.402Z wifi: deauth reason=34 (poor channel conditions) channel=11 retries=5
+2026-01-20T04:02:28.802Z wifi: assoc status=17 (AP cannot support more stations) ssid=CorpNet
+2026-01-20T04:02:30.102Z wifi: connection attempt failed, no network available
+2026-01-20T04:02:32.402Z enrollment: ERROR - network connectivity check failed, cannot reach enrollment server

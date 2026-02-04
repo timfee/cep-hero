@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "chromeEvents": "UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token. Token expired at 2026-01-20T08:00:00.000Z",
+    "orgUnits": "UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token. Token expired at 2026-01-20T08:00:00.000Z",
+    "dlpRules": "UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token. Token expired at 2026-01-20T08:00:00.000Z",
+    "connectorConfig": "UNAUTHENTICATED: Request had invalid authentication credentials. Expected OAuth 2 access token. Token expired at 2026-01-20T08:00:00.000Z"
+  },
+  "auditEvents": {
+    "items": []
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "auditEvents": {
+    "items": []
+  },
+  "browsers": [],
+  "enrollmentToken": {
+    "token": "valid-token-not-applied-xyz",
+    "expiresAt": "2026-12-31T23:59:59.000Z",
+    "targetResource": "orgunits/03ph8a2z221pcso",
+    "status": "valid"
+  },
+  "connectorPolicies": []
+}

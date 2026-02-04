@@ -1,0 +1,68 @@
+{
+  "dlpRules": [],
+  "connectorPolicies": [
+    {
+      "targetKey": { "targetResource": "orgunits/03ph8a2z23yjui6" },
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": { "enableCloudReporting": true }
+      },
+      "sourceKey": { "targetResource": "orgunits/03ph8a2z23yjui6" }
+    }
+  ],
+  "orgUnits": [
+    {
+      "orgUnitId": "id:03ph8a2z23yjui6",
+      "orgUnitPath": "/",
+      "name": "Root Organization",
+      "parentOrgUnitId": null,
+      "description": "Root organizational unit"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z221pcso",
+      "orgUnitPath": "/Engineering",
+      "name": "Engineering",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6",
+      "description": "Engineering department"
+    },
+    {
+      "orgUnitId": "id:03ph8a2z1hiis1t",
+      "orgUnitPath": "/Sales",
+      "name": "Sales",
+      "parentOrgUnitId": "id:03ph8a2z23yjui6",
+      "description": "Sales department"
+    }
+  ],
+  "auditEvents": {
+    "items": [
+      {
+        "kind": "admin#reports#activity",
+        "id": {
+          "time": "2026-01-20T04:02:22.802Z",
+          "uniqueQualifier": "-58716657015301156",
+          "applicationName": "chrome"
+        },
+        "actor": {
+          "email": "user@example.com",
+          "profileId": "12345"
+        },
+        "events": [
+          {
+            "type": "CONTENT_TRANSFER_TYPE",
+            "name": "CONTENT_TRANSFER",
+            "parameters": [
+              { "name": "EVENT_RESULT", "value": "DETECTED" },
+              { "name": "CONTENT_NAME", "value": "sensitive-document.pdf" },
+              { "name": "TRIGGER_TYPE", "value": "FILE_UPLOAD" },
+              {
+                "name": "EVENT_REASON",
+                "value": "CONTENT_MATCHED_SENSITIVE_DATA_TYPES"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "nextPageToken": null
+  }
+}

@@ -1,0 +1,306 @@
+/**
+ * Integration tests for Chrome Policy API targetResource behavior with different org unit formats.
+ *
+ * These tests require:
+ * - GOOGLE_SERVICE_ACCOUNT_JSON: Service account credentials with domain-wide delegation
+ * - GOOGLE_TOKEN_EMAIL: Admin user email for impersonation
+ * - GOOGLE_CUSTOMER_ID (optional): Customer ID, defaults to auto-detection
+ *
+ * Tests are skipped if credentials are missing or lack proper Admin API permissions.
+ */
+
+import { loadEnvConfig } from "@next/env";
+import { beforeAll, describe, expect, it } from "bun:test";
+
+import {
+  listOrgUnits,
+  makeGoogleClients,
+  probePolicyTargetResources,
+} from "@/lib/test-helpers/google-admin";
+
+loadEnvConfig(process.cwd());
+
+const TEST_TIMEOUT_MS = 30_000;
+const hasServiceAccount = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+
+let credentialsValidated = false;
+let hasValidPermissions = false;
+
+/**
+ * Validate that credentials have proper Admin API permissions.
+ */
+async function validateCredentials(): Promise<boolean> {
+  if (credentialsValidated) {
+    return hasValidPermissions;
+  }
+  credentialsValidated = true;
+
+  if (!hasServiceAccount) {
+    return false;
+  }
+
+  try {
+    const { directory, customerId } = await makeGoogleClients();
+    const res = await directory.orgunits.list({
+      customerId,
+      type: "all",
+    });
+    hasValidPermissions = res.status === 200;
+    return hasValidPermissions;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (message.includes("403") || message.includes("Forbidden")) {
+      console.log(
+        "[connector-config-api] skipping tests - service account lacks Admin API permissions"
+      );
+    } else {
+      console.log(
+        "[connector-config-api] skipping tests - credential validation failed:",
+        message
+      );
+    }
+    return false;
+  }
+}
+
+const runIt = hasServiceAccount ? it : it.skip;
+
+type OrgUnit = {
+  orgUnitId?: string | null;
+  orgUnitPath?: string | null;
+  parentOrgUnitId?: string | null;
+};
+
+/**
+ * Remove the "id:" prefix from org unit IDs if present.
+ */
+function normalizeOrgUnitId(orgUnitId?: string | null) {
+  if (!orgUnitId) {
+    return null;
+  }
+  return orgUnitId.replace(/^id:/, "");
+}
+
+/**
+ * Build target resource strings from org units for API testing.
+ */
+function buildTargetResources(orgUnits: OrgUnit[]) {
+  const [firstOu] = orgUnits;
+  const rootOu = orgUnits.find((ou) => ou.orgUnitPath === "/");
+  const firstId = normalizeOrgUnitId(firstOu?.orgUnitId);
+  const rootId = normalizeOrgUnitId(rootOu?.orgUnitId);
+  const resources = [
+    firstId ? `orgunits/${firstId}` : null,
+    rootId ? `orgunits/${rootId}` : null,
+  ].filter((value): value is string => Boolean(value));
+  return Array.from(new Set(resources));
+}
+
+/**
+ * Summarize resolved policy results for logging.
+ */
+function summarizeResolvedPolicies(
+  results: Array<{
+    targetResource?: string | null;
+    resolvedPolicies: Array<{
+      targetKey?: { targetResource?: string | null };
+    }>;
+  }>
+) {
+  return results.map((result) => {
+    const [firstPolicy] = result.resolvedPolicies;
+    return {
+      targetResource: result.targetResource,
+      policyCount: result.resolvedPolicies.length,
+      sampleTarget: firstPolicy?.targetKey?.targetResource ?? null,
+    };
+  });
+}
+
+/**
+ * Get the parent org unit ID from the first org unit, throwing if not found.
+ */
+async function requireParentOrgUnitId() {
+  const orgUnits = await listOrgUnits();
+  const [firstOu] = orgUnits;
+  const parentId = normalizeOrgUnitId(firstOu?.parentOrgUnitId);
+  if (!parentId) {
+    throw new Error("No parent org unit ID found");
+  }
+  return parentId;
+}
+
+describe("Chrome Policy API targetResource behavior", () => {
+  beforeAll(async () => {
+    if (!hasServiceAccount) {
+      console.log(
+        "[connector-config-api] skipping tests - no service account configured"
+      );
+      return;
+    }
+    await validateCredentials();
+  });
+
+  runIt(
+    "lists org units to understand structure",
+    async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
+      const orgUnits = await listOrgUnits();
+      console.log(
+        "[connector-config-api] org units:",
+        JSON.stringify(
+          orgUnits.map((ou) => ({
+            path: ou.orgUnitPath,
+            id: ou.orgUnitId,
+            parentId: ou.parentOrgUnitId,
+          })),
+          null,
+          2
+        )
+      );
+
+      expect(orgUnits.length).toBeGreaterThanOrEqual(0);
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  runIt(
+    "probes different targetResource formats",
+    async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
+      const { customerId } = await makeGoogleClients();
+      const orgUnits = await listOrgUnits();
+
+      const targetResources = buildTargetResources(orgUnits);
+
+      console.log(
+        "[connector-config-api] testing targetResources:",
+        targetResources
+      );
+      console.log("[connector-config-api] customerId:", customerId);
+
+      const policySchemaFilter = "chrome.users.SafeBrowsingProtectionLevel";
+
+      const { results, errors } = await probePolicyTargetResources({
+        policySchemaFilter,
+        targetResources,
+      });
+
+      console.log(
+        "[connector-config-api] results:",
+        JSON.stringify(summarizeResolvedPolicies(results), null, 2)
+      );
+
+      console.log(
+        "[connector-config-api] errors:",
+        JSON.stringify(errors, null, 2)
+      );
+
+      expect(results.length + errors.length).toBe(targetResources.length);
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  runIt(
+    "verifies empty string is rejected",
+    async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
+      const { results, errors } = await probePolicyTargetResources({
+        policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
+        targetResources: [""],
+      });
+
+      console.log(
+        "[connector-config-api] empty string test - results:",
+        results.length
+      );
+      console.log(
+        "[connector-config-api] empty string test - errors:",
+        JSON.stringify(errors, null, 2)
+      );
+
+      expect(errors.length).toBe(1);
+      expect(errors[0]?.message).toContain("orgunits");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  runIt(
+    "verifies my_customer is rejected as org unit",
+    async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
+      const { results, errors } = await probePolicyTargetResources({
+        policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
+        targetResources: ["orgunits/my_customer"],
+      });
+
+      console.log(
+        "[connector-config-api] my_customer test - results:",
+        results.length
+      );
+      console.log(
+        "[connector-config-api] my_customer test - errors:",
+        JSON.stringify(errors, null, 2)
+      );
+
+      expect(errors.length).toBe(1);
+      expect(errors[0]?.message).toContain("Invalid");
+    },
+    TEST_TIMEOUT_MS
+  );
+
+  runIt(
+    "tests parent org unit ID (root)",
+    async () => {
+      if (!(await validateCredentials())) {
+        console.log("[connector-config-api] skipping - invalid permissions");
+        return;
+      }
+
+      const parentId = await requireParentOrgUnitId();
+
+      console.log("[connector-config-api] testing parent ID:", parentId);
+
+      const { results, errors } = await probePolicyTargetResources({
+        policySchemaFilter: "chrome.users.SafeBrowsingProtectionLevel",
+        targetResources: [`orgunits/${parentId}`],
+      });
+
+      console.log(
+        "[connector-config-api] parent ID test - results:",
+        JSON.stringify(
+          results.map((r) => ({
+            targetResource: r.targetResource,
+            policyCount: r.resolvedPolicies.length,
+          })),
+          null,
+          2
+        )
+      );
+      console.log(
+        "[connector-config-api] parent ID test - errors:",
+        JSON.stringify(errors, null, 2)
+      );
+
+      expect(results.length).toBe(1);
+      expect(errors.length).toBe(0);
+    },
+    TEST_TIMEOUT_MS
+  );
+});
