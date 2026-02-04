@@ -8,7 +8,7 @@
 import { track } from "@vercel/analytics";
 import { getToolName, isToolUIPart } from "ai";
 import { RefreshCcwIcon, CopyIcon } from "lucide-react";
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
 import type { ActionItem } from "@/components/ai-elements/action-buttons";
@@ -190,11 +190,23 @@ export function ChatConsole() {
 
   const isStreaming = status === "submitted" || status === "streaming";
 
+  // Track which proposal is currently being applied (by proposalId)
+  const [applyingProposalId, setApplyingProposalId] = useState<string | null>(
+    null
+  );
+
   const isWaitingForResponse = useMemo(() => {
     if (!isStreaming) return false;
     const lastMessage = messages.at(-1);
     return !lastMessage || lastMessage.role === "user";
   }, [isStreaming, messages]);
+
+  // Clear applying state when streaming stops
+  useEffect(() => {
+    if (!isStreaming && applyingProposalId !== null) {
+      setApplyingProposalId(null);
+    }
+  }, [isStreaming, applyingProposalId]);
 
   const fallbackActions = useMemo(() => FALLBACK_ACTIONS, []);
 
@@ -519,17 +531,19 @@ export function ChatConsole() {
                       const output =
                         toolPart.output as PolicyChangeConfirmationOutput;
                       if (output?._type === "ui.confirmation") {
+                        const proposalId = output.proposalId ?? partKey;
                         return (
                           <div key={partKey} className="pl-4 lg:pl-6">
                             <PolicyChangeConfirmation
                               proposal={output}
                               onConfirm={() => {
+                                setApplyingProposalId(proposalId);
                                 void sendMessage({ text: "Confirm" });
                               }}
                               onCancel={() => {
                                 void sendMessage({ text: "Cancel" });
                               }}
-                              isApplying={isStreaming}
+                              isApplying={applyingProposalId === proposalId}
                             />
                           </div>
                         );

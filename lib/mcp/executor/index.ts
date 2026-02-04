@@ -3,6 +3,7 @@
  */
 
 import { OAuth2Client } from "google-auth-library";
+import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
 import {
@@ -41,6 +42,7 @@ export class CepToolExecutor {
   private auth: OAuth2Client;
   private customerId: string;
   private orgUnitContextPromise: Promise<OrgUnitContext> | null = null;
+  private resolvedCustomerIdPromise: Promise<string> | null = null;
 
   constructor(accessToken: string, customerId = "my_customer") {
     this.customerId = customerId;
@@ -61,6 +63,50 @@ export class CepToolExecutor {
   }
 
   /**
+   * Resolves the actual customer ID from Chrome Policy API.
+   * Cloud Identity API requires the actual obfuscated ID (e.g., "C046psxkn"),
+   * not "my_customer".
+   */
+  private async resolveCustomerId(): Promise<string> {
+    // If already a specific customer ID (not my_customer), use it directly
+    if (this.customerId !== "my_customer") {
+      return this.customerId;
+    }
+
+    // Lazily resolve and cache the actual customer ID
+    if (this.resolvedCustomerIdPromise === null) {
+      this.resolvedCustomerIdPromise = this.fetchActualCustomerId();
+    }
+    return this.resolvedCustomerIdPromise;
+  }
+
+  /**
+   * Fetches the actual obfuscated customer ID using Chrome Policy API.
+   */
+  private async fetchActualCustomerId(): Promise<string> {
+    try {
+      const policy = googleApis.chromepolicy({
+        version: "v1",
+        auth: this.auth,
+      });
+      const res = await policy.customers.policySchemas.list({
+        parent: "customers/my_customer",
+        pageSize: 1,
+      });
+      const schemaName = res.data.policySchemas?.[0]?.name ?? "";
+      const match = schemaName.match(/customers\/([^/]+)\//);
+      if (match?.[1]) {
+        console.log("[executor] resolved customer ID:", match[1]);
+        return match[1];
+      }
+    } catch (error) {
+      console.log("[executor] failed to resolve customer ID:", error);
+    }
+    // Fallback to my_customer if resolution fails
+    return this.customerId;
+  }
+
+  /**
    * Fetches Chrome audit events from the Admin SDK Reports API.
    */
   getChromeEvents(args: ChromeEventsArgs) {
@@ -69,10 +115,14 @@ export class CepToolExecutor {
 
   /**
    * Lists DLP rules from Cloud Identity with org unit resolution.
+   * Uses resolved customer ID since Cloud Identity API requires the actual ID.
    */
   async listDLPRules(args: ListDLPRulesArgs = {}) {
-    const orgUnitContext = await this.getOrgUnitContext();
-    return listDLPRules(this.auth, this.customerId, orgUnitContext, args);
+    const [orgUnitContext, resolvedCustomerId] = await Promise.all([
+      this.getOrgUnitContext(),
+      this.resolveCustomerId(),
+    ]);
+    return listDLPRules(this.auth, resolvedCustomerId, orgUnitContext, args);
   }
 
   /**
@@ -125,10 +175,14 @@ export class CepToolExecutor {
 
   /**
    * Creates a new DLP rule in Cloud Identity.
+   * Uses resolved customer ID since Cloud Identity API requires the actual ID.
    */
   async createDLPRule(args: CreateDLPRuleArgs) {
-    const orgUnitContext = await this.getOrgUnitContext();
-    return createDLPRule(this.auth, this.customerId, orgUnitContext, args);
+    const [orgUnitContext, resolvedCustomerId] = await Promise.all([
+      this.getOrgUnitContext(),
+      this.resolveCustomerId(),
+    ]);
+    return createDLPRule(this.auth, resolvedCustomerId, orgUnitContext, args);
   }
 
   /**
