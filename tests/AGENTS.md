@@ -110,17 +110,14 @@ const value = process.env.MY_VAR?.replace(/^['"]|['"]$/g, "");
 
 ## Evaluation Framework
 
-The eval framework tests AI diagnostic capabilities using fixture injection.
+The eval framework tests AI diagnostic capabilities using fixture injection. The runner automatically manages the dev server.
 
 ```bash
 # Run evals with fixtures (recommended)
-EVAL_USE_BASE=1 bun run evals
+EVAL_FIXTURES=1 bun run evals
 
 # Specific cases
-EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals
-
-# Fast mode (server already running)
-EVAL_USE_BASE=1 bun run evals:fast
+EVAL_IDS="EC-071,EC-072" EVAL_FIXTURES=1 bun run evals
 
 # Test mode (no AI calls, quota-safe)
 EVAL_TEST_MODE=1 bun run evals
