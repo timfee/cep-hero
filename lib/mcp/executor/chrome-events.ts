@@ -6,7 +6,15 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type admin_reports_v1 } from "googleapis";
 import { type z } from "zod";
 
-import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
+import { MS_PER_DAY } from "@/lib/mcp/constants";
+import {
+  type ApiErrorResponse,
+  createApiError,
+  isApiError,
+  logApiError,
+  logApiRequest,
+  logApiResponse,
+} from "@/lib/mcp/errors";
 import { type GetChromeEventsSchema } from "@/lib/mcp/schemas";
 
 /**
@@ -20,16 +28,10 @@ interface ChromeEventsSuccess {
   nextPageToken: string | null;
 }
 
-interface ChromeEventsError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
 /**
  * Result of fetching Chrome audit events, either a list of events or an error.
  */
-export type ChromeEventsResult = ChromeEventsSuccess | ChromeEventsError;
+export type ChromeEventsResult = ChromeEventsSuccess | ApiErrorResponse;
 
 /**
  * Fetch recent Chrome audit events from the Admin SDK Reports API.
@@ -41,17 +43,9 @@ export async function getChromeEvents(
 ): Promise<ChromeEventsResult> {
   const { maxResults = 50, startTime, endTime, pageToken } = args;
 
-  console.log("[chrome-events] request", {
-    maxResults,
-    pageToken,
-    startTime,
-    endTime,
-  });
+  logApiRequest("chrome-events", { maxResults, pageToken, startTime, endTime });
 
-  const service = googleApis.admin({
-    version: "reports_v1",
-    auth,
-  });
+  const service = googleApis.admin({ version: "reports_v1", auth });
 
   try {
     const res = await service.activities.list({
@@ -64,25 +58,18 @@ export async function getChromeEvents(
       endTime,
     });
 
-    console.log(
-      "[chrome-events] response",
-      JSON.stringify({
-        count: res.data.items?.length ?? 0,
-        sample: res.data.items?.[0]?.id,
-        nextPageToken: res.data.nextPageToken ?? null,
-      })
-    );
+    logApiResponse("chrome-events", {
+      count: res.data.items?.length ?? 0,
+      sample: res.data.items?.[0]?.id,
+      nextPageToken: res.data.nextPageToken ?? null,
+    });
 
     return {
       events: res.data.items ?? [],
       nextPageToken: res.data.nextPageToken ?? null,
     };
   } catch (error: unknown) {
-    const { code, message, errors } = getErrorDetails(error);
-    console.log(
-      "[chrome-events] error",
-      JSON.stringify({ code, message, errors })
-    );
+    logApiError("chrome-events", error);
     return createApiError(error, "chrome-events");
   }
 }
@@ -118,7 +105,7 @@ export async function getChromeEventsWindowSummary(
   } = config;
 
   const windowEnd = new Date();
-  const windowStart = new Date(windowEnd.getTime() - windowDays * 86_400_000);
+  const windowStart = new Date(windowEnd.getTime() - windowDays * MS_PER_DAY);
   const dayBuckets = buildDayBuckets(windowEnd, windowDays);
 
   const dayResults = await Promise.all(
@@ -147,14 +134,14 @@ interface DayBucket {
  */
 function buildDayBuckets(windowEnd: Date, windowDays: number) {
   return Array.from({ length: windowDays }, (_, index) => {
-    const dayEnd = new Date(windowEnd.getTime() - index * 86_400_000);
-    const dayStart = new Date(dayEnd.getTime() - 86_400_000);
+    const dayEnd = new Date(windowEnd.getTime() - index * MS_PER_DAY);
+    const dayStart = new Date(dayEnd.getTime() - MS_PER_DAY);
     return { dayStart, dayEnd };
   }).toSorted((a, b) => a.dayStart.getTime() - b.dayStart.getTime());
 }
 
 interface DayResult {
-  error?: ChromeEventsError;
+  error?: ApiErrorResponse;
   events?: Activity[];
   dayCount: number;
   daySampled: boolean;
@@ -170,71 +157,37 @@ async function fetchDayEvents(
   pageSize: number,
   maxPages: number
 ) {
-  const state = { pageToken: undefined as string | undefined, dayCount: 0 };
+  let pageToken: string | undefined;
+  let dayCount = 0;
   const events: Activity[] = [];
 
   for (let page = 0; page < maxPages; page += 1) {
-    const result = await fetchSinglePage(
-      auth,
-      customerId,
-      bucket,
-      pageSize,
-      state.pageToken
-    );
-    if ("error" in result) {
+    const result = await getChromeEvents(auth, customerId, {
+      maxResults: pageSize,
+      pageToken,
+      startTime: bucket.dayStart.toISOString(),
+      endTime: bucket.dayEnd.toISOString(),
+    });
+
+    if (isApiError(result)) {
       return { error: result, dayCount: 0, daySampled: false };
     }
-    const processed = processPageResult(result, events, state);
-    if (processed.done) {
+
+    const items = result.events ?? [];
+    dayCount += items.length;
+    events.push(...items);
+    pageToken = result.nextPageToken ?? undefined;
+
+    if (!result.nextPageToken) {
       break;
     }
   }
 
   return {
     events,
-    dayCount: state.dayCount,
-    daySampled: state.pageToken !== undefined,
+    dayCount,
+    daySampled: pageToken !== undefined,
   };
-}
-
-/**
- * Fetches a single page of events from the Reports API.
- */
-async function fetchSinglePage(
-  auth: OAuth2Client,
-  customerId: string,
-  bucket: DayBucket,
-  pageSize: number,
-  pageToken: string | undefined
-) {
-  const result = await getChromeEvents(auth, customerId, {
-    maxResults: pageSize,
-    pageToken,
-    startTime: bucket.dayStart.toISOString(),
-    endTime: bucket.dayEnd.toISOString(),
-  });
-  return result;
-}
-
-/**
- * Accumulates page results and updates pagination state.
- */
-function processPageResult(
-  result: ChromeEventsSuccess,
-  events: Activity[],
-  state: { pageToken: string | undefined; dayCount: number }
-) {
-  const items = result.events ?? [];
-  state.dayCount += items.length;
-  events.push(...items);
-  state.pageToken = result.nextPageToken ?? undefined;
-  return { done: result.nextPageToken === null };
-}
-
-interface AggregationState {
-  totalCount: number;
-  sampled: boolean;
-  allEvents: Activity[];
 }
 
 /**
@@ -246,66 +199,35 @@ function aggregateDayResults(
   windowStart: Date,
   windowEnd: Date
 ) {
-  const state: AggregationState = {
-    totalCount: 0,
-    sampled: false,
-    allEvents: [],
-  };
+  let totalCount = 0;
+  let sampled = false;
+  const allEvents: Activity[] = [];
 
   for (const result of dayResults) {
-    const errorResult = checkForError(result, windowStart, windowEnd);
-    if (errorResult !== null) {
-      return errorResult;
+    if (result.error) {
+      return {
+        events: result.error,
+        totalCount: 0,
+        sampled: false,
+        windowStart,
+        windowEnd,
+      };
     }
-    accumulateResult(result, state);
+
+    totalCount += result.dayCount;
+    sampled = sampled || result.daySampled;
+    if (result.events) {
+      allEvents.push(...result.events);
+    }
   }
 
-  return buildSuccessResult(state, sampleSize, windowStart, windowEnd);
-}
-
-/**
- * Returns an error result if the day fetch failed.
- */
-function checkForError(result: DayResult, windowStart: Date, windowEnd: Date) {
-  if (result.error === undefined) {
-    return null;
-  }
-  return {
-    events: result.error,
-    totalCount: 0,
-    sampled: false,
-    windowStart,
-    windowEnd,
-  };
-}
-
-/**
- * Adds a day's events to the aggregation state.
- */
-function accumulateResult(result: DayResult, state: AggregationState) {
-  state.totalCount += result.dayCount;
-  state.sampled = state.sampled || result.daySampled;
-  if (result.events !== undefined) {
-    state.allEvents.push(...result.events);
-  }
-}
-
-/**
- * Builds the final success result with sampled events.
- */
-function buildSuccessResult(
-  state: AggregationState,
-  sampleSize: number,
-  windowStart: Date,
-  windowEnd: Date
-) {
   return {
     events: {
-      events: state.allEvents.slice(0, sampleSize),
+      events: allEvents.slice(0, sampleSize),
       nextPageToken: null,
     },
-    totalCount: state.totalCount,
-    sampled: state.sampled,
+    totalCount,
+    sampled,
     windowStart,
     windowEnd,
   };

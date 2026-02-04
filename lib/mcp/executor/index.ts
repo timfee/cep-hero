@@ -6,11 +6,11 @@ import { OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
+import { extractFleetOverviewFacts } from "@/lib/mcp/fleet-overview/extract";
 import {
   buildFallbackOverview,
-  extractFleetOverviewFacts,
   summarizeFleetOverview,
-} from "@/lib/mcp/fleet-overview";
+} from "@/lib/mcp/fleet-overview/summarize";
 import {
   type GetChromeEventsSchema,
   type GetFleetOverviewSchema,

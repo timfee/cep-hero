@@ -2,6 +2,8 @@
  * Extracts deterministic fleet signals from raw API tool outputs.
  */
 
+import { MS_PER_DAY } from "@/lib/mcp/constants";
+
 import { type FleetOverviewFacts } from "./types";
 
 /**
@@ -175,7 +177,7 @@ function isErrorEventType(type: string | undefined) {
 function calculateWindowLabel(windowStart: Date, windowEnd: Date) {
   const windowDays = Math.max(
     1,
-    Math.round((windowEnd.getTime() - windowStart.getTime()) / 86_400_000)
+    Math.round((windowEnd.getTime() - windowStart.getTime()) / MS_PER_DAY)
   );
   return `${windowDays} day${windowDays === 1 ? "" : "s"}`;
 }

@@ -18,11 +18,11 @@ export {
 
 export { CepToolExecutor } from "./executor";
 
+export { extractFleetOverviewFacts } from "./fleet-overview/extract";
 export {
   buildFallbackOverview,
-  extractFleetOverviewFacts,
   summarizeFleetOverview,
-} from "./fleet-overview";
+} from "./fleet-overview/summarize";
 
 export { createApiError, getErrorDetails, getErrorMessage } from "./errors";
 

@@ -5,11 +5,13 @@
 import { type OAuth2Client } from "google-auth-library";
 import { z } from "zod";
 
-import { resolveOrgUnitDisplay } from "@/lib/mcp/org-units";
+import {
+  buildOrgUnitTargetResource,
+  resolveOrgUnitDisplay,
+} from "@/lib/mcp/org-units";
 import { type CreateDLPRuleSchema } from "@/lib/mcp/schemas";
 
 import { type OrgUnitContext } from "./context";
-import { buildOrgUnitTargetResource } from "./utils";
 
 /**
  * Arguments for creating a new DLP rule via Cloud Identity.

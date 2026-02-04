@@ -1,9 +1,21 @@
 /**
- * Core type definitions for MCP tool executor results and interfaces.
+ * Core type definitions for MCP tool executor interface.
+ *
+ * Result types are defined in their respective executor files:
+ * - ChromeEventsResult: ./executor/chrome-events
+ * - ConnectorConfigResult: ./executor/connector
+ * - ListDLPRulesResult: ./executor/dlp-list
+ * - EnrollBrowserResult: ./executor/enrollment
+ * - ListOrgUnitsResult: ./executor/org-units-api
  */
 
 import { type z } from "zod";
 
+import { type ChromeEventsResult } from "./executor/chrome-events";
+import { type ConnectorConfigResult } from "./executor/connector";
+import { type ListDLPRulesResult } from "./executor/dlp-list";
+import { type EnrollBrowserResult } from "./executor/enrollment";
+import { type ListOrgUnitsResult } from "./executor/org-units-api";
 import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
@@ -14,103 +26,6 @@ import {
   type GetFleetOverviewSchema,
   type ListDLPRulesSchema,
 } from "./registry";
-
-/**
- * Result from fetching Chrome audit events.
- */
-export type ChromeEventsResult =
-  | {
-      events: {
-        kind?: string;
-        id?: {
-          time?: string;
-          uniqueQualifier?: string;
-          applicationName?: string;
-        };
-        actor?: { email?: string; profileId?: string };
-        events?: {
-          type?: string;
-          name?: string;
-          parameters?: {
-            name?: string;
-            value?: string;
-            intValue?: string;
-            boolValue?: boolean;
-            multiValue?: string[];
-          }[];
-        }[];
-      }[];
-      nextPageToken: string | null;
-    }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from listing DLP rules.
- */
-export type DLPRulesResult =
-  | {
-      rules: {
-        id: string;
-        displayName: string;
-        description: string;
-        settingType: string;
-        orgUnit: string;
-        policyType: string;
-        resourceName: string;
-        consoleUrl: string;
-      }[];
-      help?: unknown;
-    }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from listing organizational units.
- */
-export type OrgUnitsResult =
-  | {
-      orgUnits: {
-        orgUnitId?: string | null;
-        name?: string | null;
-        orgUnitPath?: string | null;
-        parentOrgUnitId?: string | null;
-        description?: string | null;
-      }[];
-    }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from browser enrollment token generation.
- */
-export type EnrollBrowserResult =
-  | { enrollmentToken: string; expiresAt: string | null }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from fetching Chrome connector configuration.
- */
-export type ConnectorConfigResult =
-  | {
-      status: string;
-      policySchemas: string[];
-      value: {
-        targetKey?: { targetResource?: string };
-        value?: { policySchema?: string; value?: Record<string, unknown> };
-        sourceKey?: { targetResource?: string };
-      }[];
-      targetResource?: string;
-      targetResourceName?: string | null;
-      attemptedTargets?: string[];
-      errors?: { targetResource: string; message: string }[];
-    }
-  | {
-      error: string;
-      suggestion: string;
-      requiresReauth: boolean;
-      policySchemas?: string[];
-      targetResource?: string;
-      targetResourceName?: string | null;
-      attemptedTargets?: string[];
-    };
 
 /**
  * Result from debug authentication check.
@@ -177,16 +92,16 @@ export interface CreateDLPRuleResult {
  * Contract for CEP tool execution. Implementations include CepToolExecutor
  * for production API calls and FixtureToolExecutor for deterministic testing.
  */
-export interface IToolExecutor {
+export interface ToolExecutor {
   getChromeEvents(
     args: z.infer<typeof GetChromeEventsSchema>
   ): Promise<ChromeEventsResult>;
 
   listDLPRules(
     args?: z.infer<typeof ListDLPRulesSchema>
-  ): Promise<DLPRulesResult>;
+  ): Promise<ListDLPRulesResult>;
 
-  listOrgUnits(): Promise<OrgUnitsResult>;
+  listOrgUnits(): Promise<ListOrgUnitsResult>;
 
   enrollBrowser(
     args: z.infer<typeof EnrollBrowserSchema>

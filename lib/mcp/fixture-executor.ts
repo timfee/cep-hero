@@ -4,12 +4,14 @@
 
 import { type z } from "zod";
 
+import { CONNECTOR_POLICY_SCHEMAS } from "@/lib/mcp/constants";
 import { resolveEnrollmentToken } from "@/lib/mcp/fixture-enrollment";
 import {
   buildOrgUnitNameMap,
   resolveOrgUnitDisplay,
 } from "@/lib/mcp/org-units";
 
+import { type ConnectorConfigResult } from "./executor/connector";
 import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
@@ -21,28 +23,20 @@ import {
 } from "./registry";
 import {
   type ApplyPolicyChangeResult,
-  type ConnectorConfigResult,
   type CreateDLPRuleResult,
   type DebugAuthResult,
   type DraftPolicyChangeResult,
   type FixtureData,
-  type IToolExecutor,
+  type ToolExecutor,
 } from "./types";
 
 export { loadFixtureData } from "./fixture-loader";
 
 /**
- * Wraps a value in a resolved promise for async interface compliance.
- */
-function resolveValue<T>(value: T) {
-  return Promise.resolve(value);
-}
-
-/**
  * Returns fixture data instead of calling real Google APIs.
  * Used for deterministic evaluation testing.
  */
-export class FixtureToolExecutor implements IToolExecutor {
+export class FixtureToolExecutor implements ToolExecutor {
   private fixtures: FixtureData;
 
   constructor(fixtures: FixtureData) {
@@ -54,39 +48,33 @@ export class FixtureToolExecutor implements IToolExecutor {
    */
   async getChromeEvents(args: z.infer<typeof GetChromeEventsSchema>) {
     if (typeof this.fixtures.errors?.chromeEvents === "string") {
-      const errorResult = await resolveValue({
+      return {
         error: this.fixtures.errors.chromeEvents,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
-      });
-      return errorResult;
+      };
     }
 
     const items = this.fixtures.auditEvents?.items ?? [];
     const maxResults = args.maxResults ?? 50;
-    const result = await resolveValue({
+    return {
       events: items.slice(0, maxResults),
       nextPageToken: this.fixtures.auditEvents?.nextPageToken ?? null,
-    });
-    return result;
+    };
   }
 
   /**
    * Returns DLP rules from fixture data.
    */
-  async listDLPRules(_args?: z.infer<typeof ListDLPRulesSchema>) {
+  async listDLPRules() {
     if (typeof this.fixtures.errors?.dlpRules === "string") {
-      const errorResult = await resolveValue({
+      return {
         error: this.fixtures.errors.dlpRules,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
-      });
-      return errorResult;
+      };
     }
-
-    const rules = mapDlpRules(this.fixtures);
-    const result = await resolveValue({ rules });
-    return result;
+    return { rules: mapDlpRules(this.fixtures) };
   }
 
   /**
@@ -94,35 +82,28 @@ export class FixtureToolExecutor implements IToolExecutor {
    */
   async listOrgUnits() {
     if (typeof this.fixtures.errors?.orgUnits === "string") {
-      const errorResult = await resolveValue({
+      return {
         error: this.fixtures.errors.orgUnits,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
-      });
-      return errorResult;
+      };
     }
-    const result = await resolveValue({
-      orgUnits: this.fixtures.orgUnits ?? [],
-    });
-    return result;
+    return { orgUnits: this.fixtures.orgUnits ?? [] };
   }
 
   /**
    * Returns enrollment token from fixture data.
    */
-  async enrollBrowser(_args: z.infer<typeof EnrollBrowserSchema>) {
+  async enrollBrowser() {
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
-      const errorResult = await resolveValue({
+      return {
         error: this.fixtures.errors.enrollBrowser,
         suggestion:
           "Ensure the caller has Chrome policy admin rights and the API is enabled.",
         requiresReauth: false,
-      });
-      return errorResult;
+      };
     }
-    const tokenResult = resolveEnrollmentToken(this.fixtures.enrollmentToken);
-    const result = await resolveValue(tokenResult);
-    return result;
+    return resolveEnrollmentToken(this.fixtures.enrollmentToken);
   }
 
   /**
@@ -130,62 +111,49 @@ export class FixtureToolExecutor implements IToolExecutor {
    */
   async getChromeConnectorConfiguration() {
     if (typeof this.fixtures.errors?.connectorConfig === "string") {
-      const errorResult = await resolveValue({
+      return {
         error: this.fixtures.errors.connectorConfig,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
         policySchemas: [],
-      });
-      return errorResult;
+      };
     }
-    const configResult = buildConnectorConfig(this.fixtures);
-    const result = await resolveValue(configResult);
-    return result;
+    return buildConnectorConfig(this.fixtures);
   }
 
   /**
    * Returns mock auth debug info.
    */
   async debugAuth() {
-    const authResult = buildDebugAuthResponse(this.fixtures);
-    const result = await resolveValue(authResult);
-    return result;
+    return buildDebugAuthResponse();
   }
 
   /**
    * Returns a draft policy change proposal.
    */
   async draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
-    const draftResult = buildDraftPolicyResponse(args, this.fixtures);
-    const result = await resolveValue(draftResult);
-    return result;
+    return buildDraftPolicyResponse(args, this.fixtures);
   }
 
   /**
    * Returns a successful policy application result.
    */
   async applyPolicyChange(args: z.infer<typeof ApplyPolicyChangeSchema>) {
-    const applyResult = buildApplyPolicyResponse(args, this.fixtures);
-    const result = await resolveValue(applyResult);
-    return result;
+    return buildApplyPolicyResponse(args);
   }
 
   /**
    * Returns a successful DLP rule creation result.
    */
   async createDLPRule(args: z.infer<typeof CreateDLPRuleSchema>) {
-    const dlpResult = buildCreateDlpResponse(args, this.fixtures);
-    const result = await resolveValue(dlpResult);
-    return result;
+    return buildCreateDlpResponse(args, this.fixtures);
   }
 
   /**
    * Returns a fleet overview summary from fixture data.
    */
-  async getFleetOverview(_args: z.infer<typeof GetFleetOverviewSchema>) {
-    const overviewResult = buildFleetOverviewResponse(this.fixtures);
-    const result = await resolveValue(overviewResult);
-    return result;
+  async getFleetOverview() {
+    return buildFleetOverviewResponse(this.fixtures);
   }
 }
 
@@ -210,7 +178,7 @@ interface FleetOverviewFixtureResponse {
 /**
  * Builds mock auth debug response.
  */
-function buildDebugAuthResponse(_fixtures: FixtureData): DebugAuthResult {
+function buildDebugAuthResponse(): DebugAuthResult {
   return {
     scopes: [
       "https://www.googleapis.com/auth/admin.reports.audit.readonly",
@@ -228,8 +196,7 @@ function buildDebugAuthResponse(_fixtures: FixtureData): DebugAuthResult {
  * Builds a successful policy application response.
  */
 function buildApplyPolicyResponse(
-  args: z.infer<typeof ApplyPolicyChangeSchema>,
-  _fixtures: FixtureData
+  args: z.infer<typeof ApplyPolicyChangeSchema>
 ): ApplyPolicyChangeResult {
   return {
     _type: "ui.success",
@@ -273,25 +240,8 @@ function mapDlpRules(fixtures: FixtureData) {
  * Finds the root org unit ID from a list of org units.
  */
 function findRootOrgUnitId(orgUnits: FixtureData["orgUnits"]) {
-  const id = orgUnits?.find((unit) => unit.orgUnitPath === "/")?.orgUnitId;
-  return id ?? undefined;
+  return orgUnits?.find((unit) => unit.orgUnitPath === "/")?.orgUnitId;
 }
-
-/**
- * Policy schemas relevant to Chrome connector configuration.
- */
-const CONNECTOR_POLICY_SCHEMAS = [
-  "chrome.users.SafeBrowsingProtectionLevel",
-  "chrome.users.SafeBrowsingExtendedReporting",
-  "chrome.users.SafeBrowsingAllowlistDomain",
-  "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
-  "chrome.users.SafeBrowsingDeepScanningEnabled",
-  "chrome.users.CloudReporting",
-  "chrome.users.CloudProfileReportingEnabled",
-  "chrome.users.CloudReportingUploadFrequencyV2",
-  "chrome.users.MetricsReportingEnabled",
-  "chrome.users.DataLeakPreventionReportingEnabled",
-];
 
 /**
  * Builds connector configuration from fixture data.
@@ -304,7 +254,7 @@ function buildConnectorConfig(fixtures: FixtureData): ConnectorConfigResult {
 
   return {
     status: "Resolved",
-    policySchemas: CONNECTOR_POLICY_SCHEMAS,
+    policySchemas: [...CONNECTOR_POLICY_SCHEMAS],
     value: fixtures.connectorPolicies ?? [],
     targetResource,
     targetResourceName,

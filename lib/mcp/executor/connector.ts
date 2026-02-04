@@ -5,33 +5,26 @@
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type chromepolicy_v1 } from "googleapis";
 
+import { CONNECTOR_POLICY_SCHEMAS } from "@/lib/mcp/constants";
 import {
+  type ApiErrorResponse,
   createApiError,
-  getErrorDetails,
   getErrorMessage,
+  logApiError,
+  logApiResponse,
 } from "@/lib/mcp/errors";
-import { normalizeResource } from "@/lib/mcp/org-units";
+import {
+  buildOrgUnitTargetResource,
+  normalizeResource,
+} from "@/lib/mcp/org-units";
 
 import { type OrgUnitContext } from "./context";
-import { buildOrgUnitTargetResource, resolveOrgUnitCandidates } from "./utils";
+import { resolveOrgUnitCandidates } from "./utils";
 
 type ResolvedPolicy =
   chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
     policyTargetKey?: { targetResource?: string };
   };
-
-const CONNECTOR_POLICY_SCHEMAS = [
-  "chrome.users.SafeBrowsingProtectionLevel",
-  "chrome.users.SafeBrowsingExtendedReporting",
-  "chrome.users.SafeBrowsingAllowlistDomain",
-  "chrome.users.SafeBrowsingForTrustedSourcesEnabled",
-  "chrome.users.SafeBrowsingDeepScanningEnabled",
-  "chrome.users.CloudReporting",
-  "chrome.users.CloudProfileReportingEnabled",
-  "chrome.users.CloudReportingUploadFrequencyV2",
-  "chrome.users.MetricsReportingEnabled",
-  "chrome.users.DataLeakPreventionReportingEnabled",
-];
 
 interface ConnectorConfigSuccess {
   status: string;
@@ -43,10 +36,7 @@ interface ConnectorConfigSuccess {
   errors?: { targetResource: string; message: string }[];
 }
 
-interface ConnectorConfigError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
+interface ConnectorConfigError extends ApiErrorResponse {
   policySchemas?: string[];
   targetResource?: string;
   targetResourceName?: string | null;
@@ -70,7 +60,7 @@ export async function getChromeConnectorConfiguration(
   orgUnitContext: OrgUnitContext
 ) {
   const service = googleApis.chromepolicy({ version: "v1", auth });
-  const { orgUnitNameMap, rootOrgUnitId } = orgUnitContext;
+  const { orgUnitNameMap } = orgUnitContext;
 
   const targetCandidates = buildTargetCandidates(orgUnitContext);
   if (targetCandidates.length === 0) {
@@ -85,8 +75,7 @@ export async function getChromeConnectorConfiguration(
       customerId,
       targetCandidates,
       attemptedTargets,
-      orgUnitNameMap,
-      rootOrgUnitId
+      orgUnitNameMap
     );
   } catch (error: unknown) {
     return buildCatchError(error, attemptedTargets, orgUnitNameMap);
@@ -135,8 +124,7 @@ async function resolveConnectorPolicies(
   customerId: string,
   targetCandidates: string[],
   attemptedTargets: string[],
-  orgUnitNameMap: Map<string, string>,
-  _rootOrgUnitId: string | null
+  orgUnitNameMap: Map<string, string>
 ) {
   const resolvedPolicies: ResolvedPolicy[] = [];
   const resolveErrors: { targetResource: string; message: string }[] = [];
@@ -222,15 +210,11 @@ function logResolveResponse(
   targetResource: string,
   policies: ResolvedPolicy[] | undefined
 ) {
-  const sampleTarget = policies?.[0]?.policyTargetKey?.targetResource;
-  console.log(
-    "[connector-config] response",
-    JSON.stringify({
-      targetResource,
-      count: policies?.length ?? 0,
-      sampleTargetResource: sampleTarget,
-    })
-  );
+  logApiResponse("connector-config", {
+    targetResource,
+    count: policies?.length ?? 0,
+    sampleTargetResource: policies?.[0]?.policyTargetKey?.targetResource,
+  });
 }
 
 /**
@@ -290,11 +274,7 @@ function buildCatchError(
   attemptedTargets: string[],
   orgUnitNameMap: Map<string, string>
 ) {
-  const { code, message, errors } = getErrorDetails(error);
-  console.log(
-    "[connector-config] error",
-    JSON.stringify({ code, message, errors })
-  );
+  logApiError("connector-config", error);
 
   const [errorTarget] = attemptedTargets;
   const apiError = createApiError(error, "connector-config");

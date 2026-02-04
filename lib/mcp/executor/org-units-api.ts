@@ -5,7 +5,13 @@
 import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type admin_directory_v1 } from "googleapis";
 
-import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
+import {
+  type ApiErrorResponse,
+  createApiError,
+  logApiError,
+  logApiRequest,
+  logApiResponse,
+} from "@/lib/mcp/errors";
 
 interface OrgUnitItem {
   orgUnitId?: string | null;
@@ -19,18 +25,12 @@ interface ListOrgUnitsSuccess {
   orgUnits: OrgUnitItem[];
 }
 
-interface ListOrgUnitsError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
 /**
  * Result of listing organizational units, either a list of units or an error.
  */
-export type ListOrgUnitsResult = ListOrgUnitsSuccess | ListOrgUnitsError;
+export type ListOrgUnitsResult = ListOrgUnitsSuccess | ApiErrorResponse;
 
-const SERVICE_UNAVAILABLE: ListOrgUnitsError = {
+const SERVICE_UNAVAILABLE: ApiErrorResponse = {
   error: "Directory orgunit client unavailable",
   suggestion: "Confirm Admin SDK is enabled and has correct scopes.",
   requiresReauth: false,
@@ -42,7 +42,7 @@ const SERVICE_UNAVAILABLE: ListOrgUnitsError = {
  */
 export async function listOrgUnits(auth: OAuth2Client, customerId: string) {
   const service = googleApis.admin({ version: "directory_v1", auth });
-  console.log("[org-units] request");
+  logApiRequest("org-units");
 
   if (service.orgunits?.list === undefined) {
     return SERVICE_UNAVAILABLE;
@@ -50,15 +50,12 @@ export async function listOrgUnits(auth: OAuth2Client, customerId: string) {
 
   try {
     const res = await service.orgunits.list({ customerId, type: "all" });
-    console.log(
-      "[org-units] response",
-      JSON.stringify({
-        count: res.data.organizationUnits?.length ?? 0,
-      })
-    );
+    logApiResponse("org-units", {
+      count: res.data.organizationUnits?.length ?? 0,
+    });
     return { orgUnits: mapOrgUnits(res.data.organizationUnits ?? []) };
   } catch (error: unknown) {
-    logError(error);
+    logApiError("org-units", error);
     return createApiError(error, "org-units");
   }
 }
@@ -74,12 +71,4 @@ function mapOrgUnits(units: admin_directory_v1.Schema$OrgUnit[]) {
     parentOrgUnitId: ou.parentOrgUnitId,
     description: ou.description,
   }));
-}
-
-/**
- * Logs structured error details for debugging.
- */
-function logError(error: unknown) {
-  const { code, message, errors } = getErrorDetails(error);
-  console.log("[org-units] error", JSON.stringify({ code, message, errors }));
 }

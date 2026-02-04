@@ -2,7 +2,7 @@
  * Enrollment token resolution for fixture-based testing.
  */
 
-import { type EnrollBrowserResult } from "./types";
+import { type EnrollBrowserResult } from "./executor/enrollment";
 
 const DEFAULT_TOKEN = "fixture-enrollment-token-12345";
 
