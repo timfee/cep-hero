@@ -16,6 +16,17 @@ mock.module("next/image", () => ({
   ),
 }));
 
+// Mock next/navigation
+mock.module("next/navigation", () => ({
+  useSearchParams: () => ({
+    get: () => null,
+  }),
+  useRouter: () => ({
+    push: mock(noop),
+    refresh: mock(noop),
+  }),
+}));
+
 // Mock vercel analytics
 const mockTrack = mock(noop);
 mock.module("@vercel/analytics", () => ({

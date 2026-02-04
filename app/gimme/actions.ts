@@ -69,18 +69,99 @@ async function sendErrorAndReturn(
 }
 
 /**
- * Server Action to handle self-enrollment form submission.
- * Returns only notification status - details are sent via email.
+ * Validate basic form inputs and return early error if invalid.
  */
-export async function enrollUser(
-  formData: FormData
+function validateFormInputs(
+  name: string,
+  email: string,
+  password: string
+): EnrollmentResult | null {
+  if (!name) {
+    return { notificationSentTo: "", error: "Name is required" };
+  }
+  if (name.length > MAX_NAME_LENGTH) {
+    return {
+      notificationSentTo: "",
+      error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
+    };
+  }
+  const emailResult = validateEmail(email);
+  if (!emailResult.valid) {
+    return { notificationSentTo: "", error: emailResult.error };
+  }
+  if (!password) {
+    return { notificationSentTo: "", error: "Enrollment password is required" };
+  }
+  return null;
+}
+
+/**
+ * Validate the enrollment password against the configured secret.
+ */
+function validateEnrollmentPassword(
+  password: string,
+  clientIp: string
+): { valid: true } | { valid: false; error: string } {
+  const enrollmentPassword = stripQuotes(process.env.SELF_ENROLLMENT_PASSWORD);
+  if (!enrollmentPassword) {
+    console.error("[gimme] SELF_ENROLLMENT_PASSWORD not configured");
+    return {
+      valid: false,
+      error:
+        "Self-enrollment is temporarily unavailable. Please contact an administrator.",
+    };
+  }
+  if (!timingSafeEqual(password, enrollmentPassword)) {
+    console.log("[gimme] invalid enrollment password", { clientIp });
+    return {
+      valid: false,
+      error:
+        "Invalid enrollment password. Please check with your team lead for the correct password.",
+    };
+  }
+  return { valid: true };
+}
+
+/**
+ * Create the admin account in Google Workspace.
+ */
+async function createAdminAccount(
+  username: string,
+  googleEmail: string,
+  name: string,
+  clientIp: string
 ): Promise<EnrollmentResult> {
-  const name = formData.get("name")?.toString().trim() ?? "";
-  const email = formData.get("email")?.toString().trim().toLowerCase() ?? "";
-  const password = formData.get("password")?.toString() ?? "";
+  const newEmail = buildTargetEmail(username);
+  const newPassword = generatePassword();
+  const parsedName = parseName(name);
 
-  const clientIp = await getClientIp();
+  console.log("[gimme] creating account", { username, newEmail, clientIp });
 
+  const directory = await createAdminClient();
+  const exists = await userExists(directory, newEmail);
+  if (exists) {
+    console.log("[gimme] user already exists", { newEmail });
+    return sendErrorAndReturn(
+      googleEmail,
+      name,
+      `Account ${newEmail} already exists. Contact an administrator for access.`
+    );
+  }
+
+  await createUser(directory, newEmail, newPassword, parsedName, googleEmail);
+  console.log("[gimme] user created", { newEmail });
+
+  await makeUserSuperAdmin(directory, newEmail);
+  console.log("[gimme] super admin granted", { newEmail });
+
+  await sendSuccessEmail(googleEmail, name, newEmail, newPassword);
+  return { notificationSentTo: googleEmail };
+}
+
+/**
+ * Check rate limit and return error if exceeded.
+ */
+function checkRateLimitError(clientIp: string): EnrollmentResult | null {
   const rateLimit = checkRateLimit({
     identifier: `gimme:${clientIp}`,
     maxRequests: RATE_LIMIT_MAX_REQUESTS,
@@ -93,79 +174,29 @@ export async function enrollUser(
       error: `Too many requests. Please try again in ${minutes} minutes.`,
     };
   }
+  return null;
+}
 
-  if (!name) {
-    return { notificationSentTo: "", error: "Name is required" };
-  }
-
-  if (name.length > MAX_NAME_LENGTH) {
-    return {
-      notificationSentTo: "",
-      error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
-    };
-  }
-
+/**
+ * Process validated enrollment request.
+ */
+async function processEnrollment(
+  name: string,
+  email: string,
+  password: string,
+  clientIp: string
+): Promise<EnrollmentResult> {
   const emailResult = validateEmail(email);
-  if (!emailResult.valid) {
-    return { notificationSentTo: "", error: emailResult.error };
-  }
-
-  if (!password) {
-    return { notificationSentTo: "", error: "Enrollment password is required" };
-  }
-
-  // From here on, we have a valid @google.com email.
-  // All outcomes (success or failure) are sent via email only.
-  const { username } = emailResult;
+  const { username } = emailResult as { valid: true; username: string };
   const googleEmail = `${username}${ALLOWED_EMAIL_SUFFIX}`;
 
-  const enrollmentPassword = stripQuotes(process.env.SELF_ENROLLMENT_PASSWORD);
-  if (!enrollmentPassword) {
-    console.error("[gimme] SELF_ENROLLMENT_PASSWORD not configured");
-    return sendErrorAndReturn(
-      googleEmail,
-      name,
-      "Self-enrollment is temporarily unavailable. Please contact an administrator."
-    );
+  const passwordResult = validateEnrollmentPassword(password, clientIp);
+  if (!passwordResult.valid) {
+    return sendErrorAndReturn(googleEmail, name, passwordResult.error);
   }
-
-  if (!timingSafeEqual(password, enrollmentPassword)) {
-    console.log("[gimme] invalid enrollment password", { clientIp });
-    return sendErrorAndReturn(
-      googleEmail,
-      name,
-      "Invalid enrollment password. Please check with your team lead for the correct password."
-    );
-  }
-
-  const newEmail = buildTargetEmail(username);
-  const newPassword = generatePassword();
-  const parsedName = parseName(name);
-
-  console.log("[gimme] creating account", { username, newEmail, clientIp });
 
   try {
-    const directory = await createAdminClient();
-
-    const exists = await userExists(directory, newEmail);
-    if (exists) {
-      console.log("[gimme] user already exists", { newEmail });
-      return sendErrorAndReturn(
-        googleEmail,
-        name,
-        `Account ${newEmail} already exists. Contact an administrator for access.`
-      );
-    }
-
-    await createUser(directory, newEmail, newPassword, parsedName, googleEmail);
-    console.log("[gimme] user created", { newEmail });
-
-    await makeUserSuperAdmin(directory, newEmail);
-    console.log("[gimme] super admin granted", { newEmail });
-
-    await sendSuccessEmail(googleEmail, name, newEmail, newPassword);
-
-    return { notificationSentTo: googleEmail };
+    return await createAdminAccount(username, googleEmail, name, clientIp);
   } catch (error) {
     const errorMessage =
       error instanceof Error ? error.message : "Unknown error";
@@ -176,4 +207,29 @@ export async function enrollUser(
       "Failed to create account due to a technical error. Please try again or contact an administrator."
     );
   }
+}
+
+/**
+ * Server Action to handle self-enrollment form submission.
+ * Returns only notification status - details are sent via email.
+ */
+export async function enrollUser(
+  formData: FormData
+): Promise<EnrollmentResult> {
+  const name = formData.get("name")?.toString().trim() ?? "";
+  const email = formData.get("email")?.toString().trim().toLowerCase() ?? "";
+  const password = formData.get("password")?.toString() ?? "";
+  const clientIp = await getClientIp();
+
+  const rateLimitError = checkRateLimitError(clientIp);
+  if (rateLimitError) {
+    return rateLimitError;
+  }
+
+  const validationError = validateFormInputs(name, email, password);
+  if (validationError) {
+    return validationError;
+  }
+
+  return processEnrollment(name, email, password, clientIp);
 }
