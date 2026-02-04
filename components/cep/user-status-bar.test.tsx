@@ -59,18 +59,48 @@ describe("UserStatusBar component", () => {
     expect(getByText("CEP Hero")).toBeInTheDocument();
   });
 
-  it("shows not signed in with branding when unauthenticated", async () => {
+  it("redirects to sign-in when unauthenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
         json: () => Promise.resolve({ authenticated: false }),
       })
     ) as typeof fetch;
 
-    const { getByText } = render(<UserStatusBar />);
+    render(<UserStatusBar />);
 
     await waitFor(() => {
-      expect(getByText("Not signed in")).toBeInTheDocument();
-      expect(getByText("CEP Hero")).toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+    });
+  });
+
+  it("redirects to sign-in when there is an auth error", async () => {
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
+        json: () =>
+          Promise.resolve({
+            authenticated: true,
+            user: { name: "Test", email: "test@example.com", image: null },
+            error: "Token validation failed",
+          }),
+      })
+    ) as typeof fetch;
+
+    render(<UserStatusBar />);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+    });
+  });
+
+  it("redirects to sign-in when fetch throws an error", async () => {
+    globalThis.fetch = mock(() =>
+      Promise.reject(new Error("Network error"))
+    ) as typeof fetch;
+
+    render(<UserStatusBar />);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/sign-in");
     });
   });
 
