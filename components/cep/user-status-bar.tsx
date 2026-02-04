@@ -82,23 +82,42 @@ export function UserStatusBar() {
   const [signingOut, setSigningOut] = useState(false);
   const expiresAtRef = useRef<number | null>(null);
 
+  /**
+   * Signs out the user and redirects to sign-in page.
+   */
+  const performSignOut = useCallback(async () => {
+    try {
+      await fetch("/api/sign-out", { method: "POST" });
+    } catch (err) {
+      console.log(
+        "[user-status-bar] Sign out error:",
+        err instanceof Error ? err.message : "Unknown error"
+      );
+    }
+    router.push("/sign-in");
+  }, [router]);
+
   const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/sign-in-status");
       const data = (await response.json()) as SignInStatusResponse;
+
+      // If there's an error or not authenticated, sign out and redirect
+      if (!data.authenticated || data.error) {
+        await performSignOut();
+        return;
+      }
+
       setStatus({ loading: false, data, error: null });
       if (data.token?.expiresIn !== undefined) {
         expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
         setLocalExpiresIn(data.token.expiresIn);
       }
-    } catch (err) {
-      setStatus({
-        loading: false,
-        data: null,
-        error: err instanceof Error ? err.message : "Failed to fetch status",
-      });
+    } catch {
+      // On error, sign out and redirect
+      await performSignOut();
     }
-  }, []);
+  }, [performSignOut]);
 
   useEffect(() => {
     void fetchStatus();
@@ -129,17 +148,8 @@ export function UserStatusBar() {
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
-    try {
-      await fetch("/api/sign-out", { method: "POST" });
-      router.push("/sign-in");
-    } catch (err) {
-      console.log(
-        "[user-status-bar] Sign out error:",
-        err instanceof Error ? err.message : "Unknown error"
-      );
-      router.push("/sign-in");
-    }
-  }, [router]);
+    await performSignOut();
+  }, [performSignOut]);
 
   const handleReauth = useCallback(() => {
     router.push("/sign-in");
