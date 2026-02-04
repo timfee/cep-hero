@@ -2,8 +2,8 @@
   "ignorePatterns": [
     "components/",
     "scripts/",
-    "*/**.test.ts",
-    "*/**.test.tsx"
+    "**/*.test.ts",
+    "**/*.test.tsx"
   ],
   "rules": {
     "sort-keys": "off",
@@ -18,7 +18,7 @@
     "import/consistent-type-specifier-style": ["error", "prefer-inline"],
     "import/no-nodejs-modules": [
       "error",
-      { "allow": ["node:fs", "node:fs/promises", "node:path"] }
+      { "allow": ["node:fs", "node:fs/promises", "node:path", "node:crypto"] }
     ],
 
     "jest/require-hook": "off",

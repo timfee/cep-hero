@@ -5,7 +5,7 @@
 "use client";
 
 import { Mail, AlertCircle, Loader2 } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useCallback } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -22,7 +22,7 @@ type FormState = EnrollmentResult | null;
 /**
  * Wrapper for the enrollUser action to work with useActionState.
  */
-async function enrollAction(
+function enrollAction(
   _prevState: FormState,
   formData: FormData
 ): Promise<FormState> {
@@ -74,9 +74,9 @@ export function EnrollmentForm() {
   );
   const [formKey, setFormKey] = useState(0);
 
-  function handleReset() {
+  const handleReset = useCallback(() => {
     setFormKey((prev) => prev + 1);
-  }
+  }, []);
 
   // Show "check your email" when notification was sent (regardless of outcome)
   if (state?.notificationSentTo) {
