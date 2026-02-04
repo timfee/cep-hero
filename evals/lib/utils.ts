@@ -16,7 +16,7 @@ export function isPlainObject(
 /**
  * Type guard for non-empty strings.
  */
-export function isNonEmptyString(value: string | undefined): value is string {
+export function isNonEmptyString(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
