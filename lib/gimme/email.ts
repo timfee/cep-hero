@@ -2,8 +2,9 @@
  * Email utilities for gimme self-enrollment notifications.
  */
 
-import { JWT } from "google-auth-library";
 import { google } from "googleapis";
+
+import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
 import { GMAIL_SCOPES } from "./constants";
 import { stripQuotes } from "./validation";
@@ -39,8 +40,7 @@ function buildSuccessEmailHtml(
   newEmail: string,
   password: string
 ): string {
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -55,7 +55,6 @@ function buildSuccessEmailHtml(
     <div class="content">
       <p>Hi ${name},</p>
       <p>Your super admin account for <strong>cep-netnew.cc</strong> has been created successfully.</p>
-
       <div class="credentials">
         <div style="margin-bottom: 12px;">
           <div class="credential-label">Email Address</div>
@@ -66,9 +65,7 @@ function buildSuccessEmailHtml(
           <div class="credential-value">${password}</div>
         </div>
       </div>
-
       <p class="notice">You will be required to change this password on first login.</p>
-
       <div class="chrome-profile">
         <div class="chrome-profile-title">
           <span>&#128736;</span> Create a New Chrome Profile
@@ -82,7 +79,6 @@ function buildSuccessEmailHtml(
           </ol>
         </div>
       </div>
-
       <div class="steps">
         <p><strong>Next Steps:</strong></p>
         <ol>
@@ -93,23 +89,20 @@ function buildSuccessEmailHtml(
           <li>Create a new secure password when prompted</li>
         </ol>
       </div>
-
       <p style="color: #5f6368; font-size: 12px; margin-top: 24px;">
         This account was created via CEP Hero self-enrollment. Your @google.com email has been set as the recovery email.
       </p>
     </div>
   </div>
 </body>
-</html>
-`.trim();
+</html>`;
 }
 
 /**
  * Build the error email HTML content.
  */
 function buildErrorEmailHtml(name: string, errorMessage: string): string {
-  return `
-<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html>
 <head>
   <meta charset="utf-8">
@@ -124,21 +117,17 @@ function buildErrorEmailHtml(name: string, errorMessage: string): string {
     <div class="content">
       <p>Hi ${name},</p>
       <p>We were unable to process your self-enrollment request for a cep-netnew.cc admin account.</p>
-
       <div class="error-box">
         <strong>Reason:</strong> ${errorMessage}
       </div>
-
       <p>If you believe this is an error, please contact your team lead or try again later.</p>
-
       <p style="color: #5f6368; font-size: 12px; margin-top: 24px;">
         This message was sent via CEP Hero self-enrollment.
       </p>
     </div>
   </div>
 </body>
-</html>
-`.trim();
+</html>`;
 }
 
 /**
@@ -176,22 +165,8 @@ function buildEmailMessage(
 }
 
 /**
- * Load service account credentials from environment.
- */
-function loadServiceAccountCredentials() {
-  const json = stripQuotes(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
-  if (!json) {
-    throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not configured");
-  }
-  const creds = JSON.parse(json);
-  const privateKey = creds.private_key.includes(String.raw`\n`)
-    ? creds.private_key.replaceAll(String.raw`\n`, "\n")
-    : creds.private_key;
-  return { clientEmail: creds.client_email, privateKey };
-}
-
-/**
- * Get authenticated Gmail client using JWT with domain-wide delegation.
+ * Get authenticated Gmail client.
+ * Reuses shared service account authentication.
  */
 async function getGmailClient() {
   const senderEmail = stripQuotes(process.env.GOOGLE_TOKEN_EMAIL);
@@ -199,18 +174,18 @@ async function getGmailClient() {
     throw new Error("GOOGLE_TOKEN_EMAIL not configured for sending emails");
   }
 
-  const { clientEmail, privateKey } = loadServiceAccountCredentials();
+  // Use shared service account token fetching
+  const accessToken = await getServiceAccountAccessToken(
+    GMAIL_SCOPES,
+    senderEmail
+  );
 
-  const jwtClient = new JWT({
-    email: clientEmail,
-    key: privateKey,
-    scopes: GMAIL_SCOPES,
-    subject: senderEmail,
-  });
+  // Gmail API requires OAuth2 client with access token
+  const { OAuth2Client } = await import("google-auth-library");
+  const auth = new OAuth2Client();
+  auth.setCredentials({ access_token: accessToken });
 
-  await jwtClient.authorize();
-
-  const gmail = google.gmail({ version: "v1", auth: jwtClient });
+  const gmail = google.gmail({ version: "v1", auth });
   return { gmail, senderEmail };
 }
 
@@ -284,7 +259,13 @@ export async function sendErrorEmail(
   const { gmail, senderEmail } = await getGmailClient();
 
   const htmlBody = buildErrorEmailHtml(recipientName, errorMessage);
-  const plainText = `Hi ${recipientName},\n\nWe were unable to process your CEP Hero enrollment request.\n\nReason: ${errorMessage}\n\nPlease contact your team lead if you believe this is an error.`;
+  const plainText = `Hi ${recipientName},
+
+We were unable to process your CEP Hero enrollment request.
+
+Reason: ${errorMessage}
+
+Please contact your team lead if you believe this is an error.`;
 
   const rawMessage = buildEmailMessage(
     recipientEmail,
