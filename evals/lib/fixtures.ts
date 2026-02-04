@@ -89,15 +89,23 @@ function buildFixtureData(mergedObject: Record<string, unknown>): FixtureData {
 }
 
 /**
+ * Check if fixtures are enabled via EVAL_FIXTURES environment variable.
+ */
+function isFixturesEnabled(): boolean {
+  return process.env.EVAL_FIXTURES === "1";
+}
+
+/**
  * Load fixture data for an eval case by merging base fixtures with case-specific overrides.
  */
 export function loadEvalFixtures(
   caseId: string,
   options: LoadFixturesOptions = {}
 ) {
+  const fixturesEnabled = isFixturesEnabled();
   const {
-    useBase = process.env.EVAL_USE_BASE === "1",
-    useFixtures = process.env.EVAL_USE_FIXTURES === "1",
+    useBase = fixturesEnabled,
+    useFixtures = fixturesEnabled,
     rootDir = process.cwd(),
   } = options;
 
@@ -234,10 +242,11 @@ interface ResolvedPromptOptions {
 function resolvePromptOptions(
   options: PromptBuildOptions
 ): ResolvedPromptOptions {
+  const fixturesEnabled = isFixturesEnabled();
   return {
     rootDir: options.rootDir ?? process.cwd(),
-    useBase: options.useBase ?? process.env.EVAL_USE_BASE === "1",
-    useFixtures: options.useFixtures ?? process.env.EVAL_USE_FIXTURES === "1",
+    useBase: options.useBase ?? fixturesEnabled,
+    useFixtures: options.useFixtures ?? fixturesEnabled,
     injectIntoPrompt:
       options.injectIntoPrompt ?? process.env.EVAL_INJECT_PROMPT === "1",
   };

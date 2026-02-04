@@ -242,61 +242,61 @@ The system uses dependency injection to swap between production and eval modes:
 ### Adding New Eval Cases
 
 1. Create a case file in `evals/cases/EC-###.md` with the user prompt
-2. Add the case to `evals/registry.json` with expected schema and rubric
+2. Add the case to `evals/registry.json` (minimal format - only include fields with values)
 3. Optionally create `evals/fixtures/EC-###/overrides.json` for case-specific data
-4. Run with `EVAL_IDS="EC-###" EVAL_USE_BASE=1 bun run evals`
+4. Run with `EVAL_IDS="EC-###" EVAL_FIXTURES=1 bun run evals`
 
-### Fixture Data Structure
+### Registry Format (v3.0)
 
-```typescript
-type FixtureData = {
-  orgUnits?: Array<{ orgUnitId; name; orgUnitPath; parentOrgUnitId }>;
-  auditEvents?: { items: Array<ChromeEvent>; nextPageToken?: string };
-  dlpRules?: Array<{ id; displayName; description; resourceName; consoleUrl }>;
-  connectorPolicies?: Array<{ targetKey; value; sourceKey }>;
-  policySchemas?: Array<{ name; policyDescription }>;
-  errors?: { chromeEvents?; dlpRules?; connectorConfig?; orgUnits? };
-};
+Registry uses a minimal format where empty fields are omitted. Defaults are applied when loaded:
+
+```json
+{
+  "id": "EC-086",
+  "title": "Scenario title",
+  "category": "policy",
+  "tags": ["policy"],
+  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+  "required_evidence": ["key", "terms"],
+  "required_tool_calls": ["getChromeEvents"]
+}
 ```
 
 ### Running Evals
 
 ```bash
-# With fixture injection (recommended)
-EVAL_USE_BASE=1 bun run evals
+# With fixture injection (recommended, server auto-starts)
+EVAL_FIXTURES=1 bun run evals
 
 # Specific cases
-EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals
-
-# Fast mode (server already running)
-EVAL_USE_BASE=1 bun run evals:fast
+EVAL_IDS="EC-071,EC-072" EVAL_FIXTURES=1 bun run evals
 
 # Test mode (no AI calls)
 EVAL_TEST_MODE=1 bun run evals
 ```
 
-### Comprehensive Eval Runner
+### CLI Options
 
-For thorough evaluation with aggregated results and optional Gemini analysis:
+The eval runner supports advanced options via CLI flags:
 
 ```bash
-# Basic run (all cases with fixture data)
-bun run evals:comprehensive --skip-analysis
+# Generate HTML report
+EVAL_FIXTURES=1 bun run evals --html
 
 # With LLM judge scoring
-bun run evals:comprehensive --with-judge
+EVAL_FIXTURES=1 bun run evals --with-judge
 
 # Multiple iterations (identifies flaky tests)
-bun run evals:comprehensive --iterations 3
+EVAL_FIXTURES=1 bun run evals --iterations 3
 
-# Full run (judge + 3 iterations)
-bun run evals:comprehensive:full
+# Full run (judge + 3 iterations + HTML + analysis)
+EVAL_FIXTURES=1 bun run evals:full
 
-# Specific cases only
-bun run evals:comprehensive --cases EC-001,EC-002
+# Specific cases via CLI
+bun run evals --cases EC-001,EC-002
 ```
 
-Reports saved to `evals/comprehensive/reports/` (JSON + HTML).
+Reports saved to `evals/reports/` (JSON + HTML).
 
 ## When Oxlint + Oxfmt Can't Help
 

@@ -346,7 +346,9 @@ export default function SignInPage() {
 
   // Reset loading state after timeout to allow retry if sign-in fails
   useEffect(() => {
-    if (!isSigningIn) {return;}
+    if (!isSigningIn) {
+      return;
+    }
 
     const timeout = setTimeout(() => {
       setIsSigningIn(false);

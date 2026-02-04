@@ -229,3 +229,42 @@ export function checkRubricScore({
     details: { score, minScore, total: criteria.length },
   };
 }
+
+/**
+ * Check that forbidden evidence does NOT appear in response (negative test cases).
+ */
+export function checkForbiddenEvidence({
+  text,
+  metadata,
+  forbiddenEvidence,
+}: {
+  text: string;
+  metadata: unknown;
+  forbiddenEvidence: string[] | undefined;
+}): AssertionResult {
+  if (forbiddenEvidence === undefined || forbiddenEvidence.length === 0) {
+    return { passed: true, message: "No forbidden evidence specified" };
+  }
+
+  const metadataText =
+    metadata !== undefined && metadata !== null ? JSON.stringify(metadata) : "";
+  const combined = normalizeForMatching(`${text}\n${metadataText}`);
+
+  const found = forbiddenEvidence.filter((needle) =>
+    combined.includes(normalizeForMatching(needle))
+  );
+
+  if (found.length === 0) {
+    return {
+      passed: true,
+      message: "No forbidden evidence found",
+      details: { forbiddenEvidence },
+    };
+  }
+
+  return {
+    passed: false,
+    message: `Found forbidden evidence: ${found.join(", ")}`,
+    details: { forbiddenEvidence, found },
+  };
+}
