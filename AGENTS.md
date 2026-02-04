@@ -242,21 +242,24 @@ The system uses dependency injection to swap between production and eval modes:
 ### Adding New Eval Cases
 
 1. Create a case file in `evals/cases/EC-###.md` with the user prompt
-2. Add the case to `evals/registry.json` with expected schema and rubric
+2. Add the case to `evals/registry.json` (minimal format - only include fields with values)
 3. Optionally create `evals/fixtures/EC-###/overrides.json` for case-specific data
 4. Run with `EVAL_IDS="EC-###" EVAL_USE_BASE=1 bun run evals`
 
-### Fixture Data Structure
+### Registry Format (v3.0)
 
-```typescript
-type FixtureData = {
-  orgUnits?: Array<{ orgUnitId; name; orgUnitPath; parentOrgUnitId }>;
-  auditEvents?: { items: Array<ChromeEvent>; nextPageToken?: string };
-  dlpRules?: Array<{ id; displayName; description; resourceName; consoleUrl }>;
-  connectorPolicies?: Array<{ targetKey; value; sourceKey }>;
-  policySchemas?: Array<{ name; policyDescription }>;
-  errors?: { chromeEvents?; dlpRules?; connectorConfig?; orgUnits? };
-};
+Registry uses a minimal format where empty fields are omitted. Defaults are applied when loaded:
+
+```json
+{
+  "id": "EC-086",
+  "title": "Scenario title",
+  "category": "policy",
+  "tags": ["policy"],
+  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
+  "required_evidence": ["key", "terms"],
+  "required_tool_calls": ["getChromeEvents"]
+}
 ```
 
 ### Running Evals
