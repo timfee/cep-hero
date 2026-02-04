@@ -99,7 +99,22 @@ export async function listDLPRules(
 }
 
 /**
+ * Pattern to match DLP rule setting types in Cloud Identity.
+ * DLP rules have setting.type starting with "rule.dlp".
+ */
+const DLP_SETTING_TYPE_PATTERN = /^rule\.dlp/i;
+
+/**
+ * Checks if a policy is a DLP rule based on its setting type.
+ */
+function isDlpRule(policy: CloudIdentityPolicy) {
+  const settingType = policy.setting?.type ?? "";
+  return DLP_SETTING_TYPE_PATTERN.test(settingType);
+}
+
+/**
  * Fetches policies and transforms them to the output format.
+ * Filters to only include actual DLP rules (setting.type matches "rule.dlp.*").
  */
 async function fetchAndMapPolicies(
   service: {
@@ -119,24 +134,30 @@ async function fetchAndMapPolicies(
   }
 
   const res = await policiesApi.list({
-    filter: `customer == "customers/${customerId}"`,
+    filter: `customer == "customers/${customerId}" AND setting.type.matches("rule.dlp.*")`,
   });
-  logPolicyResponse(res.data.policies);
+  const allPolicies = res.data.policies ?? [];
+  const dlpPolicies = allPolicies.filter(isDlpRule);
+  logPolicyResponse(allPolicies, dlpPolicies);
 
-  const rules = mapPoliciesToRules(res.data.policies ?? [], orgUnitContext);
+  const rules = mapPoliciesToRules(dlpPolicies, orgUnitContext);
   const result = await addHelpIfRequested(rules, args.includeHelp ?? false);
   return result;
 }
 
 /**
- * Logs the API response summary for debugging.
+ * Logs the API response summary for debugging, showing both raw and filtered counts.
  */
-function logPolicyResponse(policies: CloudIdentityPolicy[] | undefined) {
+function logPolicyResponse(
+  allPolicies: CloudIdentityPolicy[],
+  dlpPolicies: CloudIdentityPolicy[]
+) {
   console.log(
     "[dlp-rules] response",
     JSON.stringify({
-      count: policies?.length ?? 0,
-      sample: policies?.[0]?.name,
+      totalPolicies: allPolicies.length,
+      dlpRulesCount: dlpPolicies.length,
+      sample: dlpPolicies[0]?.setting?.type,
     })
   );
 }
