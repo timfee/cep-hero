@@ -61,9 +61,16 @@ export function ResizablePanels({
   className,
 }: ResizablePanelsProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const leftWidthRef = useRef(defaultLeftWidth);
   const [leftWidth, setLeftWidth] = useState(defaultLeftWidth);
   const [isDragging, setIsDragging] = useState(false);
 
+  // Keep ref in sync with state for use in event handlers
+  useEffect(() => {
+    leftWidthRef.current = leftWidth;
+  }, [leftWidth]);
+
+  // Load stored width from localStorage on mount
   useEffect(() => {
     if (typeof window === "undefined") return;
     const stored = localStorage.getItem(storageKey);
@@ -75,11 +82,19 @@ export function ResizablePanels({
     }
   }, [storageKey, minLeftWidth, maxLeftWidth]);
 
+  /**
+   * Save the current width to localStorage.
+   */
+  const saveWidth = useCallback(() => {
+    localStorage.setItem(storageKey, leftWidthRef.current.toString());
+  }, [storageKey]);
+
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     e.preventDefault();
     setIsDragging(true);
   }, []);
 
+  // Handle mouse move and up during drag
   useEffect(() => {
     if (!isDragging) return;
 
@@ -93,7 +108,8 @@ export function ResizablePanels({
 
     const handleMouseUp = () => {
       setIsDragging(false);
-      localStorage.setItem(storageKey, leftWidth.toString());
+      // Use ref to get the latest value, avoiding stale closure
+      saveWidth();
     };
 
     document.addEventListener("mousemove", handleMouseMove);
@@ -103,7 +119,30 @@ export function ResizablePanels({
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
     };
-  }, [isDragging, leftWidth, maxLeftWidth, minLeftWidth, storageKey]);
+  }, [isDragging, maxLeftWidth, minLeftWidth, saveWidth]);
+
+  /**
+   * Handle keyboard navigation for accessibility.
+   */
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      let newWidth = leftWidth;
+
+      if (e.key === "ArrowLeft") {
+        newWidth = Math.max(minLeftWidth, leftWidth - 1);
+      } else if (e.key === "ArrowRight") {
+        newWidth = Math.min(maxLeftWidth, leftWidth + 1);
+      } else {
+        return;
+      }
+
+      setLeftWidth(newWidth);
+      // Persist keyboard adjustments
+      leftWidthRef.current = newWidth;
+      saveWidth();
+    },
+    [leftWidth, maxLeftWidth, minLeftWidth, saveWidth]
+  );
 
   const childArray = Array.isArray(children) ? children : [children];
   const leftChild = childArray[0];
@@ -130,20 +169,17 @@ export function ResizablePanels({
           role="separator"
           aria-orientation="vertical"
           aria-label="Resize panels"
+          aria-valuemin={minLeftWidth}
+          aria-valuemax={maxLeftWidth}
+          aria-valuenow={Math.round(leftWidth)}
           tabIndex={0}
           className={cn(
-            "relative z-10 flex w-1 shrink-0 cursor-col-resize items-center justify-center",
+            "group relative z-10 flex w-1 shrink-0 cursor-col-resize items-center justify-center",
             "bg-white/[0.06] transition-colors hover:bg-white/[0.12]",
             isDragging && "bg-white/[0.15]"
           )}
           onMouseDown={handleMouseDown}
-          onKeyDown={(e) => {
-            if (e.key === "ArrowLeft") {
-              setLeftWidth((w) => Math.max(minLeftWidth, w - 1));
-            } else if (e.key === "ArrowRight") {
-              setLeftWidth((w) => Math.min(maxLeftWidth, w + 1));
-            }
-          }}
+          onKeyDown={handleKeyDown}
         >
           <div
             className={cn(
