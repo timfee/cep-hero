@@ -6,10 +6,14 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { z } from "zod";
 
-import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
+import {
+  createApiError,
+  logApiError,
+  logApiRequest,
+  logApiResponse,
+} from "@/lib/mcp/errors";
+import { buildOrgUnitTargetResource } from "@/lib/mcp/org-units";
 import { type EnrollBrowserSchema } from "@/lib/mcp/schemas";
-
-import { buildOrgUnitTargetResource } from "./utils";
 
 /**
  * Arguments for generating a Chrome Browser Cloud Management enrollment token.
@@ -84,7 +88,7 @@ export async function enrollBrowser(
   }
 
   const targetResource = resolveTargetResource(args.orgUnitId);
-  console.log("[enroll-browser] request", {
+  logApiRequest("enroll-browser", {
     orgUnitId: args.orgUnitId,
     targetResource,
   });
@@ -141,33 +145,19 @@ async function executeEnrollment(
       },
     });
 
-    console.log(
-      "[enroll-browser] response",
-      JSON.stringify({
-        token: res.data.name ?? "",
-        expires: res.data.expirationTime,
-      })
-    );
+    logApiResponse("enroll-browser", {
+      token: res.data.name ?? "",
+      expires: res.data.expirationTime,
+    });
 
     return {
       enrollmentToken: res.data.name ?? "",
       expiresAt: res.data.expirationTime ?? null,
     };
   } catch (error: unknown) {
-    logEnrollmentError(error);
+    logApiError("enroll-browser", error);
     return createApiError(error, "enroll-browser");
   }
-}
-
-/**
- * Logs structured error details for debugging.
- */
-function logEnrollmentError(error: unknown) {
-  const { code, message, errors } = getErrorDetails(error);
-  console.log(
-    "[enroll-browser] error",
-    JSON.stringify({ code, message, errors })
-  );
 }
 
 /**

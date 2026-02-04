@@ -6,7 +6,7 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
-import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
+import { createApiError, logApiError, logApiResponse } from "@/lib/mcp/errors";
 import { formatSettingType, formatSettingValue } from "@/lib/mcp/formatters";
 import { resolveOrgUnitDisplay } from "@/lib/mcp/org-units";
 import { type ListDLPRulesSchema } from "@/lib/mcp/schemas";
@@ -152,14 +152,11 @@ function logPolicyResponse(
   allPolicies: CloudIdentityPolicy[],
   dlpPolicies: CloudIdentityPolicy[]
 ) {
-  console.log(
-    "[dlp-rules] response",
-    JSON.stringify({
-      totalPolicies: allPolicies.length,
-      dlpRulesCount: dlpPolicies.length,
-      sample: dlpPolicies[0]?.setting?.type,
-    })
-  );
+  logApiResponse("dlp-rules", {
+    totalPolicies: allPolicies.length,
+    dlpRulesCount: dlpPolicies.length,
+    sample: dlpPolicies[0]?.setting?.type,
+  });
 }
 
 /**
@@ -177,8 +174,7 @@ async function addHelpIfRequested(rules: DLPRule[], includeHelp: boolean) {
  * Logs structured error details for debugging.
  */
 function logDlpError(error: unknown) {
-  const { code, message, errors } = getErrorDetails(error);
-  console.log("[dlp-rules] error", JSON.stringify({ code, message, errors }));
+  logApiError("dlp-rules", error);
 }
 
 /**
