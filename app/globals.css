@@ -166,3 +166,39 @@
     scrollbar-color: oklch(0.32 0 0) transparent;
   }
 }
+
+@keyframes gradient-shift {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes gradient-shift-reverse {
+  0%,
+  100% {
+    background-position: 100% 0%;
+  }
+  50% {
+    background-position: 0% 100%;
+  }
+}
+
+@layer utilities {
+  .animate-gradient-shift {
+    animation: gradient-shift 20s ease-in-out infinite;
+  }
+  .animate-gradient-shift-reverse {
+    animation: gradient-shift-reverse 25s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-gradient-shift,
+  .animate-gradient-shift-reverse {
+    animation: none;
+  }
+}

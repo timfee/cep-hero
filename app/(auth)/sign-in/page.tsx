@@ -221,18 +221,50 @@ function RegistrationForm() {
 }
 
 /**
+ * Timeout duration before resetting the sign-in loading state.
+ * Allows retry if popup is blocked or user cancels.
+ */
+const SIGNIN_TIMEOUT_MS = 10000;
+
+/**
  * Sign-in page component with sign-in button and registration form.
  */
 export default function SignInPage() {
-  const onSignIn = useCallback(handleSignIn, []);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  const onSignIn = useCallback(() => {
+    setIsSigningIn(true);
+    handleSignIn();
+  }, []);
+
+  // Reset loading state after timeout to allow retry if sign-in fails
+  useEffect(() => {
+    if (!isSigningIn) return;
+
+    const timeout = setTimeout(() => {
+      setIsSigningIn(false);
+    }, SIGNIN_TIMEOUT_MS);
+
+    return () => clearTimeout(timeout);
+  }, [isSigningIn]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-8">
-      <div className="w-full max-w-md space-y-6">
+    <main className="isolate relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
+      {/* Animated gradient background */}
+      <div className="animate-gradient-shift absolute inset-0 z-0 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.06_0.02_255),oklch(0.10_0.04_250),oklch(0.07_0.03_265),oklch(0.12_0.05_245),oklch(0.06_0.02_255))]" />
+      <div className="animate-gradient-shift-reverse absolute inset-0 z-0 bg-[length:300%_300%] bg-[radial-gradient(ellipse_80%_60%_at_top_right,oklch(0.15_0.06_250/0.4),transparent_50%),radial-gradient(ellipse_60%_80%_at_bottom_left,oklch(0.14_0.05_270/0.3),transparent_50%)]" />
+
+      <div className="relative z-10 w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
-            <Image src="/icon.png" alt="CEP Hero" height={50} width={50} />
+            <Image
+              src="/icon.png"
+              alt="CEP Hero"
+              height={50}
+              width={50}
+              priority
+            />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
           <p className="mt-1 text-sm text-muted-foreground">
@@ -242,9 +274,23 @@ export default function SignInPage() {
 
         {/* Sign In Button */}
         <div className="space-y-3">
-          <Button className="w-full" size="lg" onClick={onSignIn}>
-            <GoogleIcon />
-            Sign in with Google
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={onSignIn}
+            disabled={isSigningIn}
+          >
+            {isSigningIn ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <GoogleIcon />
+                Sign in with Google
+              </>
+            )}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             Requires a Google Workspace admin account with Chrome management
