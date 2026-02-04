@@ -1,10 +1,10 @@
 "use client";
 
 import { AlertTriangle, Clock, LogIn, LogOut, RefreshCw } from "lucide-react";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -16,6 +16,9 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
+/**
+ * Response from the sign-in status API endpoint.
+ */
 interface SignInStatusResponse {
   authenticated: boolean;
   user?: {
@@ -31,12 +34,18 @@ interface SignInStatusResponse {
   error?: string;
 }
 
+/**
+ * Internal state for tracking authentication status.
+ */
 interface StatusState {
   loading: boolean;
   data: SignInStatusResponse | null;
   error: string | null;
 }
 
+/**
+ * Formats remaining seconds into a human-readable time string.
+ */
 function formatTimeRemaining(seconds: number): string {
   if (seconds <= 0) {
     return "Expired";
@@ -53,20 +62,6 @@ function formatTimeRemaining(seconds: number): string {
     return `${minutes}m ${secs}s`;
   }
   return `${secs}s`;
-}
-
-function getInitials(name: string | null, email: string | null): string {
-  if (name) {
-    const parts = name.split(" ");
-    if (parts.length >= 2) {
-      return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
-    }
-    return name.slice(0, 2).toUpperCase();
-  }
-  if (email) {
-    return email.slice(0, 2).toUpperCase();
-  }
-  return "??";
 }
 
 export function UserStatusBar() {
@@ -143,11 +138,30 @@ export function UserStatusBar() {
     router.push("/sign-in");
   }, [router]);
 
+  /**
+   * Branding component displayed on the left side of the header.
+   */
+  const Branding = () => (
+    <div className="flex items-center gap-2">
+      <Image
+        src="/icon.png"
+        alt="CEP Hero"
+        width={24}
+        height={24}
+        className="rounded"
+      />
+      <span className="text-lg font-semibold text-foreground">CEP Hero</span>
+    </div>
+  );
+
   if (status.loading) {
     return (
-      <div className="flex h-12 items-center gap-2 border-b border-white/[0.06] bg-card/50 px-4">
-        <div className="size-6 animate-pulse rounded-full bg-muted" />
-        <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+      <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
+        <Branding />
+        <div className="flex items-center gap-2">
+          <div className="size-6 animate-pulse rounded-full bg-muted" />
+          <div className="h-4 w-24 animate-pulse rounded bg-muted" />
+        </div>
       </div>
     );
   }
@@ -155,11 +169,14 @@ export function UserStatusBar() {
   if (!status.data?.authenticated || status.error) {
     return (
       <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
-        <span className="text-sm text-muted-foreground">Not signed in</span>
-        <Button size="sm" variant="outline" onClick={handleReauth}>
-          <LogIn className="size-4" />
-          Sign in
-        </Button>
+        <Branding />
+        <div className="flex items-center gap-3">
+          <span className="text-sm text-muted-foreground">Not signed in</span>
+          <Button size="sm" variant="outline" onClick={handleReauth}>
+            <LogIn className="size-4" />
+            Sign in
+          </Button>
+        </div>
       </div>
     );
   }
@@ -169,37 +186,48 @@ export function UserStatusBar() {
   const isTokenExpired = localExpiresIn !== null && localExpiresIn <= 0;
   const isTokenExpiringSoon = localExpiresIn !== null && localExpiresIn < 300;
 
+  /**
+   * Determines the status indicator style and text based on token state.
+   */
+  const getStatusIndicator = () => {
+    if (tokenError) {
+      return {
+        bgColor: "bg-destructive/10",
+        textColor: "text-destructive",
+        text: "Error",
+      };
+    }
+    if (isTokenExpired) {
+      return {
+        bgColor: "bg-destructive/10",
+        textColor: "text-destructive",
+        text: "Expired",
+      };
+    }
+    if (isTokenExpiringSoon) {
+      return {
+        bgColor: "bg-yellow-500/10",
+        textColor: "text-yellow-500",
+        text: formatTimeRemaining(localExpiresIn ?? 0),
+      };
+    }
+    return {
+      bgColor: "bg-emerald-500/10",
+      textColor: "text-emerald-400",
+      text: formatTimeRemaining(localExpiresIn ?? 0),
+    };
+  };
+
+  const statusIndicator =
+    token && localExpiresIn !== null ? getStatusIndicator() : null;
+
   return (
     <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
-      <div className="flex items-center gap-2">
-        {tokenError ? (
-          <div className="flex items-center gap-1.5 rounded-md bg-destructive/10 px-2 py-1 text-xs text-destructive">
-            <AlertTriangle className="size-3" />
-            <span>Token error</span>
-          </div>
-        ) : token && localExpiresIn !== null ? (
-          <div
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs",
-              isTokenExpired
-                ? "bg-destructive/10 text-destructive"
-                : isTokenExpiringSoon
-                  ? "bg-yellow-500/10 text-yellow-500"
-                  : "bg-muted text-muted-foreground"
-            )}
-          >
-            <Clock className="size-3" />
-            <span>
-              {isTokenExpired ? "Expired" : formatTimeRemaining(localExpiresIn)}
-            </span>
-          </div>
-        ) : null}
-      </div>
-
+      <Branding />
       <DropdownMenu>
         <DropdownMenuTrigger asChild>
           <button
-            className="flex items-center gap-3 rounded-md px-2 py-1 transition-colors hover:bg-white/[0.06]"
+            className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1 transition-colors hover:bg-white/[0.06]"
             aria-label={`Account menu for ${displayName}`}
           >
             <div className="flex flex-col items-end">
@@ -212,18 +240,53 @@ export function UserStatusBar() {
                 </span>
               )}
             </div>
-            <Avatar size="sm">
-              {user?.image && (
-                <AvatarImage src={user.image} alt={displayName} />
+            {/* Countdown timer replacing avatar */}
+            <div
+              className={cn(
+                "flex size-8 items-center justify-center rounded-full text-xs font-medium",
+                statusIndicator
+                  ? cn(statusIndicator.bgColor, statusIndicator.textColor)
+                  : "bg-muted text-muted-foreground"
               )}
-              <AvatarFallback>
-                {getInitials(user?.name ?? null, user?.email ?? null)}
-              </AvatarFallback>
-            </Avatar>
+            >
+              {statusIndicator ? (
+                <Clock className="size-4" />
+              ) : (
+                <AlertTriangle className="size-4" />
+              )}
+            </div>
           </button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-56">
-          <DropdownMenuLabel>Account</DropdownMenuLabel>
+        <DropdownMenuContent align="end" className="w-64">
+          <DropdownMenuLabel>Sign-in status</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {/* Status info section */}
+          <div className="px-2 py-2">
+            <div className="flex items-center gap-2">
+              {statusIndicator ? (
+                <div
+                  className={cn(
+                    "flex items-center gap-1.5 rounded-md px-2 py-1 text-xs",
+                    statusIndicator.bgColor,
+                    statusIndicator.textColor
+                  )}
+                >
+                  <Clock className="size-3" />
+                  <span>{statusIndicator.text}</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5 rounded-md bg-muted px-2 py-1 text-xs text-muted-foreground">
+                  <AlertTriangle className="size-3" />
+                  <span>Unknown status</span>
+                </div>
+              )}
+            </div>
+            {tokenError && (
+              <p className="mt-1 text-xs text-destructive">
+                Token error detected
+              </p>
+            )}
+          </div>
           <DropdownMenuSeparator />
           {(isTokenExpired || isTokenExpiringSoon || tokenError) && (
             <>

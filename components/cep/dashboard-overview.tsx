@@ -23,10 +23,8 @@ import type {
   OverviewData,
 } from "@/lib/overview";
 
-import { PulseShimmer, Shimmer } from "@/components/ai-elements/shimmer";
+import { Shimmer, SkeletonShimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
-
-const SKELETON_STAGGER_DELAY_MS = 100;
 
 /**
  * Fetch JSON data from a URL, throwing on non-OK responses.
@@ -112,27 +110,22 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
       <div className="h-full overflow-y-auto">
         <div className="mx-auto max-w-3xl px-8 py-16">
           <header className="mb-16">
-            <PulseShimmer height={40} width="75%" className="rounded-lg" />
-            <div className="mt-5 space-y-2">
-              <PulseShimmer height={20} width="100%" className="rounded" />
-              <PulseShimmer height={20} width="85%" className="rounded" />
+            <SkeletonShimmer height={40} width="75%" className="rounded-lg" />
+            <div className="mt-5 space-y-3">
+              <SkeletonShimmer height={20} width="100%" className="rounded" />
+              <SkeletonShimmer height={20} width="92%" className="rounded" />
+              <SkeletonShimmer height={20} width="80%" className="rounded" />
             </div>
           </header>
           <section>
-            <PulseShimmer height={16} width={96} className="mb-6 rounded" />
+            <SkeletonShimmer height={16} width={96} className="mb-6 rounded" />
             <div className="space-y-3">
               {[0, 1, 2].map((i) => (
-                <div
+                <SkeletonShimmer
                   key={i}
-                  style={{
-                    animationDelay: `${i * SKELETON_STAGGER_DELAY_MS}ms`,
-                  }}
-                >
-                  <PulseShimmer
-                    height={96}
-                    className="rounded-2xl border border-white/10"
-                  />
-                </div>
+                  height={96}
+                  className="rounded-2xl border border-white/10"
+                />
               ))}
             </div>
           </section>
@@ -151,17 +144,26 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
 
   const hasContent =
     data.postureCards.length > 0 || data.suggestions.length > 0;
-  const showShimmer = isRefreshing || isValidating;
+
+  // Show shimmer while refreshing/validating OR when the summary text hasn't arrived yet
+  // This ensures the shimmer stays visible until the AI-generated text is actually available
+  const hasSummaryContent = Boolean(
+    data.summary && data.summary.trim().length > 0
+  );
+  const hasHeadlineContent = Boolean(
+    data.headline && data.headline.trim().length > 0
+  );
+  const showShimmer = isRefreshing || isValidating || !hasSummaryContent;
 
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto max-w-3xl px-8 py-16">
         <header className="mb-16">
           <div className="flex items-start justify-between gap-4">
-            {showShimmer ? (
+            {showShimmer || !hasHeadlineContent ? (
               <div className="max-w-2xl">
                 <Shimmer className="text-4xl font-semibold tracking-tight">
-                  Refreshing overview
+                  Analyzing your fleet
                 </Shimmer>
               </div>
             ) : (
@@ -183,9 +185,9 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
           </div>
           {showShimmer ? (
             <div className="mt-5 space-y-3">
-              <PulseShimmer height={20} width="100%" className="rounded" />
-              <PulseShimmer height={20} width="92%" className="rounded" />
-              <PulseShimmer height={20} width="80%" className="rounded" />
+              <SkeletonShimmer height={20} width="100%" className="rounded" />
+              <SkeletonShimmer height={20} width="92%" className="rounded" />
+              <SkeletonShimmer height={20} width="80%" className="rounded" />
             </div>
           ) : (
             <p className="mt-5 text-lg leading-relaxed text-muted-foreground">

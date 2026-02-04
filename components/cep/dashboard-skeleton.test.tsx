@@ -33,27 +33,19 @@ describe("DashboardSkeleton component", () => {
   it("renders three card skeleton placeholders", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    const cardSkeletons = container.querySelectorAll(".h-24.animate-pulse");
+    // SkeletonShimmer uses overflow-hidden class for the shimmer effect
+    const cardSkeletons = container.querySelectorAll(
+      "section .space-y-3 .overflow-hidden"
+    );
     expect(cardSkeletons.length).toBe(3);
   });
 
-  it("applies animation delays to card skeletons", () => {
+  it("uses SkeletonShimmer components for loading animation", () => {
     const { container } = render(<DashboardSkeleton />);
 
-    const cardSkeletons = container.querySelectorAll(
-      ".h-24.animate-pulse.rounded-2xl"
-    );
-
-    expect(cardSkeletons[0]).toHaveStyle({ animationDelay: "0ms" });
-    expect(cardSkeletons[1]).toHaveStyle({ animationDelay: "100ms" });
-    expect(cardSkeletons[2]).toHaveStyle({ animationDelay: "200ms" });
-  });
-
-  it("uses animate-pulse class for loading animation", () => {
-    const { container } = render(<DashboardSkeleton />);
-
-    const animatedElements = container.querySelectorAll(".animate-pulse");
-    expect(animatedElements.length).toBeGreaterThan(0);
+    // SkeletonShimmer uses overflow-hidden and bg-muted/50 classes
+    const shimmerElements = container.querySelectorAll(".overflow-hidden");
+    expect(shimmerElements.length).toBeGreaterThan(0);
   });
 
   it("has proper container structure with max-width", () => {
@@ -61,5 +53,16 @@ describe("DashboardSkeleton component", () => {
 
     const innerContainer = container.querySelector(".mx-auto.max-w-3xl");
     expect(innerContainer).toBeInTheDocument();
+  });
+
+  it("renders summary line skeletons", () => {
+    const { container } = render(<DashboardSkeleton />);
+
+    // There should be multiple shimmer elements in the summary area (mt-5 space-y-3)
+    const summaryArea = container.querySelector(".mt-5.space-y-3");
+    expect(summaryArea).toBeInTheDocument();
+
+    const summaryShimmers = summaryArea?.querySelectorAll(".overflow-hidden");
+    expect(summaryShimmers?.length).toBe(3);
   });
 });
