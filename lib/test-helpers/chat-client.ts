@@ -14,8 +14,7 @@ const CHAT_TIMEOUT_MS = Number.parseInt(
   process.env.EVAL_CHAT_TIMEOUT_MS ?? "60000",
   10
 );
-const USE_EVAL_FIXTURE_MODE =
-  process.env.EVAL_USE_BASE === "1" || process.env.EVAL_USE_FIXTURES === "1";
+const USE_EVAL_FIXTURE_MODE = process.env.EVAL_FIXTURES === "1";
 
 let chatReady = false;
 let chatReadyPromise: Promise<void> | undefined;
