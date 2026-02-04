@@ -1,9 +1,18 @@
 /**
  * Core type definitions for MCP tool executor results and interfaces.
+ *
+ * Result types are imported from their canonical definitions in executor files.
+ * This provides a single import point for consumers while keeping definitions
+ * close to their implementation.
  */
 
 import { type z } from "zod";
 
+import { type ChromeEventsResult } from "./executor/chrome-events";
+import { type ConnectorConfigResult } from "./executor/connector";
+import { type ListDLPRulesResult } from "./executor/dlp-list";
+import { type EnrollBrowserResult } from "./executor/enrollment";
+import { type ListOrgUnitsResult } from "./executor/org-units-api";
 import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
@@ -16,101 +25,15 @@ import {
 } from "./registry";
 
 /**
- * Result from fetching Chrome audit events.
+ * Re-export result types from their canonical executor definitions.
  */
-export type ChromeEventsResult =
-  | {
-      events: {
-        kind?: string;
-        id?: {
-          time?: string;
-          uniqueQualifier?: string;
-          applicationName?: string;
-        };
-        actor?: { email?: string; profileId?: string };
-        events?: {
-          type?: string;
-          name?: string;
-          parameters?: {
-            name?: string;
-            value?: string;
-            intValue?: string;
-            boolValue?: boolean;
-            multiValue?: string[];
-          }[];
-        }[];
-      }[];
-      nextPageToken: string | null;
-    }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from listing DLP rules.
- */
-export type DLPRulesResult =
-  | {
-      rules: {
-        id: string;
-        displayName: string;
-        description: string;
-        settingType: string;
-        orgUnit: string;
-        policyType: string;
-        resourceName: string;
-        consoleUrl: string;
-      }[];
-      help?: unknown;
-    }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from listing organizational units.
- */
-export type OrgUnitsResult =
-  | {
-      orgUnits: {
-        orgUnitId?: string | null;
-        name?: string | null;
-        orgUnitPath?: string | null;
-        parentOrgUnitId?: string | null;
-        description?: string | null;
-      }[];
-    }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from browser enrollment token generation.
- */
-export type EnrollBrowserResult =
-  | { enrollmentToken: string; expiresAt: string | null }
-  | { error: string; suggestion: string; requiresReauth: boolean };
-
-/**
- * Result from fetching Chrome connector configuration.
- */
-export type ConnectorConfigResult =
-  | {
-      status: string;
-      policySchemas: string[];
-      value: {
-        targetKey?: { targetResource?: string };
-        value?: { policySchema?: string; value?: Record<string, unknown> };
-        sourceKey?: { targetResource?: string };
-      }[];
-      targetResource?: string;
-      targetResourceName?: string | null;
-      attemptedTargets?: string[];
-      errors?: { targetResource: string; message: string }[];
-    }
-  | {
-      error: string;
-      suggestion: string;
-      requiresReauth: boolean;
-      policySchemas?: string[];
-      targetResource?: string;
-      targetResourceName?: string | null;
-      attemptedTargets?: string[];
-    };
+export type {
+  ChromeEventsResult,
+  ConnectorConfigResult,
+  EnrollBrowserResult,
+  ListDLPRulesResult,
+  ListOrgUnitsResult,
+};
 
 /**
  * Result from debug authentication check.
@@ -184,9 +107,9 @@ export interface IToolExecutor {
 
   listDLPRules(
     args?: z.infer<typeof ListDLPRulesSchema>
-  ): Promise<DLPRulesResult>;
+  ): Promise<ListDLPRulesResult>;
 
-  listOrgUnits(): Promise<OrgUnitsResult>;
+  listOrgUnits(): Promise<ListOrgUnitsResult>;
 
   enrollBrowser(
     args: z.infer<typeof EnrollBrowserSchema>

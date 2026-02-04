@@ -59,7 +59,7 @@ type EnrollmentCreateFn = (args: {
 const DEFAULT_TARGET = "customers/my_customer";
 const POLICY_SCHEMA_ID = "chrome.users.EnrollmentToken";
 
-const SERVICE_UNAVAILABLE: EnrollBrowserError = {
+const SERVICE_UNAVAILABLE: ApiErrorResponse = {
   error: "Chrome Management enrollment client unavailable",
   suggestion:
     "Confirm Chrome Management API is enabled and the account has enrollment permissions.",
