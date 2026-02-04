@@ -183,13 +183,6 @@ export function ResizablePanels({
         >
           <div
             className={cn(
-              "absolute inset-y-0 -left-1 -right-1 z-0",
-              "opacity-0 transition-opacity",
-              isDragging && "opacity-100"
-            )}
-          />
-          <div
-            className={cn(
               "h-8 w-1 rounded-full bg-white/20 transition-all",
               "group-hover:h-12 group-hover:bg-white/30",
               isDragging && "h-12 bg-white/40"
