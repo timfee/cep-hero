@@ -45,18 +45,35 @@ async function loadRegistry(): Promise<Registry | null> {
   }
 }
 
+type FixtureOverridesResult =
+  | { success: true; data: FixtureData }
+  | { success: false; error: string; status: number };
+
+/**
+ * Type guard for fixture overrides errors.
+ */
+function isFixtureError(
+  result: FixtureOverridesResult
+): result is { success: false; error: string; status: number } {
+  return !result.success;
+}
+
 /**
  * Load and merge fixture override files for a case.
  */
 async function loadFixtureOverrides(
   overrides: string[]
-): Promise<{ data: FixtureData } | { error: string; status: number }> {
+): Promise<FixtureOverridesResult> {
   let fixtureData: FixtureData = {};
 
   for (const overridePath of overrides) {
     const normalizedPath = normalize(overridePath);
     if (!isPathWithinFixtures(normalizedPath)) {
-      return { error: `Invalid fixture path: ${overridePath}`, status: 400 };
+      return {
+        success: false,
+        error: `Invalid fixture path: ${overridePath}`,
+        status: 400,
+      };
     }
 
     try {
@@ -66,13 +83,14 @@ async function loadFixtureOverrides(
       fixtureData = mergeFixtureData(fixtureData, overrideData);
     } catch {
       return {
+        success: false,
         error: `Failed to load fixture file: ${overridePath}`,
         status: 500,
       };
     }
   }
 
-  return { data: fixtureData };
+  return { success: true, data: fixtureData };
 }
 
 /**
@@ -105,7 +123,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
   }
 
   const result = await loadFixtureOverrides(caseEntry.overrides);
-  if ("error" in result) {
+  if (isFixtureError(result)) {
     return Response.json({ error: result.error }, { status: result.status });
   }
 

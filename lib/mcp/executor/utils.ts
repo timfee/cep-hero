@@ -2,18 +2,7 @@
  * Utility functions for org unit target resource resolution in Chrome Policy API calls.
  */
 
-import {
-  buildOrgUnitTargetResource as coreBuildOrgUnitTargetResource,
-  normalizeResource,
-  type OrgUnit,
-} from "@/lib/mcp/org-units";
-
-/**
- * Builds a target resource path for Chrome Policy API.
- */
-export function buildOrgUnitTargetResource(orgUnitId: string) {
-  return coreBuildOrgUnitTargetResource(orgUnitId);
-}
+import { normalizeResource, type OrgUnit } from "@/lib/mcp/org-units";
 
 /**
  * Resolves candidate org unit IDs for Chrome Policy API calls.

@@ -198,6 +198,27 @@ bun run fixtures:capture
 
 - **`lib/mcp/registry.ts`**: Deterministic tools + evidence extraction + structured AI summaries.
 - **`lib/mcp/server-factory.ts`**: MCP tool registrations and Streamable HTTP transport.
+- **`lib/mcp/errors.ts`**: Unified `ApiResult<T>` type, type guards, and logging utilities.
+- **`lib/mcp/constants.ts`**: Shared constants (MS_PER_DAY, CONNECTOR_POLICY_SCHEMAS).
 - **`app/api/chat/route.ts`**: Chat endpoint that exposes tools to the UI.
 - **`app/api/mcp/route.ts`**: MCP Server endpoint via Streamable HTTP.
 - **`app/api/overview/route.ts`**: Fleet overview endpoint backed by `getFleetOverview`.
+
+---
+
+## Code Standards
+
+For AI agents and contributors, see **[AGENTS.md](./AGENTS.md)** for:
+
+- **API Result Pattern** - Use `ApiResult<T>` discriminated unions
+- **Unified Logging** - Use `logApiRequest`, `logApiResponse`, `logApiError`
+- **Shared Constants** - Add to `lib/mcp/constants.ts`
+- **Anti-patterns to Avoid** - No barrel files, no duplicate types, no unnecessary wrappers
+
+Quick commands:
+
+```bash
+bun x ultracite fix    # Auto-format code
+bun x ultracite check  # Lint check
+bun test               # Run tests
+```
