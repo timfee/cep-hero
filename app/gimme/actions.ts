@@ -185,7 +185,7 @@ export async function enrollUser(
 
   const parseResult = EnrollmentSchema.safeParse(rawData);
   if (!parseResult.success) {
-    const firstError = parseResult.error.errors[0];
+    const [firstError] = parseResult.error.issues;
     return { notificationSentTo: "", error: firstError.message };
   }
 
