@@ -62,13 +62,6 @@ async function sendErrorAndReturn(
   name: string,
   errorMessage: string
 ): Promise<EnrollmentResult> {
-  // Debug logging to trace what's being sent in error emails
-  console.log("[gimme] sendErrorAndReturn called", {
-    email,
-    name,
-    errorMessage,
-  });
-
   try {
     await sendErrorEmail(email, name, errorMessage);
   } catch (emailError) {
@@ -233,14 +226,6 @@ export async function enrollUser(
   const email = formData.get("email")?.toString().trim().toLowerCase() ?? "";
   const password = formData.get("password")?.toString() ?? "";
   const clientIp = await getClientIp();
-
-  // Debug logging to trace form data values
-  console.log("[gimme] enrollUser received form data", {
-    name,
-    email,
-    clientIp,
-    formDataKeys: [...formData.keys()],
-  });
 
   const rateLimitError = checkRateLimitError(clientIp);
   if (rateLimitError) {
