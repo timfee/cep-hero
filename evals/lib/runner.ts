@@ -10,6 +10,7 @@ import {
 } from "@/lib/test-helpers/eval-server";
 
 import {
+  checkForbiddenEvidence,
   checkRequiredEvidence,
   checkRequiredToolCalls,
   checkRubricScore,
@@ -264,6 +265,7 @@ interface AssertionResultSimple {
 function collectFailureMessages(
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
+  forbiddenEvidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple
 ) {
   const messages: string[] = [];
@@ -276,6 +278,9 @@ function collectFailureMessages(
   if (!evidenceResult.passed) {
     messages.push(evidenceResult.message);
   }
+  if (!forbiddenEvidenceResult.passed) {
+    messages.push(forbiddenEvidenceResult.message);
+  }
   return messages;
 }
 
@@ -285,15 +290,22 @@ function collectFailureMessages(
 function checkAssertionFailures(
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
+  forbiddenEvidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple,
   error: string | undefined
 ) {
-  if (schemaResult.passed && evidenceResult.passed && toolCallsResult.passed) {
+  const allPassed =
+    schemaResult.passed &&
+    evidenceResult.passed &&
+    forbiddenEvidenceResult.passed &&
+    toolCallsResult.passed;
+  if (allPassed) {
     return null;
   }
   const messages = collectFailureMessages(
     schemaResult,
     evidenceResult,
+    forbiddenEvidenceResult,
     toolCallsResult
   );
   return { status: "fail" as const, error: error ?? messages[0] };
@@ -306,6 +318,7 @@ function determineReportStatus(
   error: string | undefined,
   schemaResult: AssertionResultSimple,
   evidenceResult: AssertionResultSimple,
+  forbiddenEvidenceResult: AssertionResultSimple,
   toolCallsResult: AssertionResultSimple,
   rubricResult: EvalReport["rubricResult"]
 ) {
@@ -316,6 +329,7 @@ function determineReportStatus(
   const assertionFail = checkAssertionFailures(
     schemaResult,
     evidenceResult,
+    forbiddenEvidenceResult,
     toolCallsResult,
     error
   );
@@ -414,6 +428,7 @@ async function executeCaseConversation(
 interface AssertionResults {
   schemaResult: ReturnType<typeof checkStructuredResponse>;
   evidenceResult: ReturnType<typeof checkRequiredEvidence>;
+  forbiddenEvidenceResult: ReturnType<typeof checkForbiddenEvidence>;
   toolCallsResult: ReturnType<typeof checkRequiredToolCalls>;
   rubricResult: EvalReport["rubricResult"];
 }
@@ -437,6 +452,12 @@ function runAssertions(
     requiredEvidence: evalCase.required_evidence,
   });
 
+  const forbiddenEvidenceResult = checkForbiddenEvidence({
+    text: response.responseText,
+    metadata: response.responseMetadata,
+    forbiddenEvidence: evalCase.forbidden_evidence,
+  });
+
   const toolCallsResult = checkRequiredToolCalls({
     toolCalls: response.toolCalls,
     requiredToolCalls: evalCase.required_tool_calls,
@@ -444,7 +465,13 @@ function runAssertions(
 
   const rubricResult = computeRubricResult(evalCase, response);
 
-  return { schemaResult, evidenceResult, toolCallsResult, rubricResult };
+  return {
+    schemaResult,
+    evidenceResult,
+    forbiddenEvidenceResult,
+    toolCallsResult,
+    rubricResult,
+  };
 }
 
 /**
@@ -490,6 +517,7 @@ function buildEvalReport(
     response.error,
     assertions.schemaResult,
     assertions.evidenceResult,
+    assertions.forbiddenEvidenceResult,
     assertions.toolCallsResult,
     assertions.rubricResult
   );
@@ -508,6 +536,7 @@ function buildEvalReport(
     expectedSchema: evalCase.expected_schema,
     schemaResult: assertions.schemaResult,
     evidenceResult: assertions.evidenceResult,
+    forbiddenEvidenceResult: assertions.forbiddenEvidenceResult,
     toolCallsResult: assertions.toolCallsResult,
     toolCalls: response.toolCalls,
     rubricResult: assertions.rubricResult,

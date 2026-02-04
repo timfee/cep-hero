@@ -58,9 +58,18 @@ Cases are defined in `registry.json` with a minimal format. Empty fields are omi
   "tags": ["relevant", "tags"],
   "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
   "required_evidence": ["key", "terms"],
-  "required_tool_calls": ["getChromeEvents"]
+  "forbidden_evidence": ["powerwash", "factory reset"],
+  "required_tool_calls": ["getChromeEvents"],
+  "reference_response": "The issue is caused by..."
 }
 ```
+
+**Assertion fields:**
+
+- `required_evidence` - Terms that MUST appear in the response
+- `forbidden_evidence` - Terms that must NOT appear (negative test cases)
+- `required_tool_calls` - Tools that must be called
+- `reference_response` - Golden response for comparison (optional)
 
 Optional fields are normalized with defaults when loaded:
 
