@@ -37,13 +37,34 @@ import { UserStatusBar } from "./user-status-bar";
 
 describe("UserStatusBar component", () => {
   const originalFetch = globalThis.fetch;
+  const originalLocation = globalThis.location;
+  let locationHref = "";
 
   beforeEach(() => {
     mockPush.mockClear();
+    locationHref = "";
+    // Mock window.location.href
+    Object.defineProperty(globalThis, "location", {
+      value: {
+        ...originalLocation,
+        href: "",
+        set href(value: string) {
+          locationHref = value;
+        },
+        get href() {
+          return locationHref;
+        },
+      },
+      writable: true,
+    });
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
+    Object.defineProperty(globalThis, "location", {
+      value: originalLocation,
+      writable: true,
+    });
   });
 
   it("shows loading state with branding", () => {
@@ -71,7 +92,7 @@ describe("UserStatusBar component", () => {
     render(<UserStatusBar />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      expect(locationHref).toBe("/sign-in");
     });
   });
 
@@ -91,7 +112,7 @@ describe("UserStatusBar component", () => {
     render(<UserStatusBar />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      expect(locationHref).toBe("/sign-in");
     });
   });
 
@@ -103,7 +124,7 @@ describe("UserStatusBar component", () => {
     render(<UserStatusBar />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      expect(locationHref).toBe("/sign-in");
     });
   });
 
