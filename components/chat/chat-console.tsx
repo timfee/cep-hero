@@ -202,11 +202,12 @@ export function ChatConsole() {
   }, [isStreaming, messages]);
 
   // Clear applying state when streaming stops
+  // Only react to isStreaming changes - applyingProposalId is intentionally excluded
   useEffect(() => {
-    if (!isStreaming && applyingProposalId !== null) {
+    if (!isStreaming) {
       setApplyingProposalId(null);
     }
-  }, [isStreaming, applyingProposalId]);
+  }, [isStreaming]);
 
   const fallbackActions = useMemo(() => FALLBACK_ACTIONS, []);
 
