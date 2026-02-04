@@ -173,10 +173,22 @@ export function ResizablePanels({
           aria-valuemax={maxLeftWidth}
           aria-valuenow={Math.round(leftWidth)}
           tabIndex={0}
-          className="relative z-10 w-px shrink-0 cursor-col-resize bg-transparent"
+          className={cn(
+            "group relative z-10 flex w-1 shrink-0 cursor-col-resize items-center justify-center",
+            "bg-white/[0.06] transition-colors hover:bg-white/[0.12]",
+            isDragging && "bg-white/[0.15]"
+          )}
           onMouseDown={handleMouseDown}
           onKeyDown={handleKeyDown}
-        />
+        >
+          <div
+            className={cn(
+              "h-8 w-1 rounded-full bg-white/20 transition-all",
+              "group-hover:h-12 group-hover:bg-white/30",
+              isDragging && "h-12 bg-white/40"
+            )}
+          />
+        </div>
 
         <div className="flex h-full flex-1 flex-col overflow-hidden">
           {rightChild}
