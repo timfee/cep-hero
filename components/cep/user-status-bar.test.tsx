@@ -75,7 +75,7 @@ describe("UserStatusBar component", () => {
     });
   });
 
-  it("shows user info with error status when there is an auth error", async () => {
+  it("redirects to sign-in when there is an auth error", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
         ok: true,
@@ -83,35 +83,27 @@ describe("UserStatusBar component", () => {
           Promise.resolve({
             authenticated: true,
             user: { name: "Test", email: "test@example.com", image: null },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-              scopes: [],
-            },
             error: "Token validation failed",
           }),
       })
     ) as typeof fetch;
 
-    const { getByText } = render(<UserStatusBar />);
+    render(<UserStatusBar />);
 
     await waitFor(() => {
-      // Should show user info with error indicator, not redirect
-      expect(getByText("Test")).toBeInTheDocument();
-      expect(getByText("Error")).toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith("/sign-in");
     });
   });
 
-  it("shows not signed in when fetch throws an error", async () => {
+  it("redirects to sign-in when fetch throws an error", async () => {
     globalThis.fetch = mock(() =>
       Promise.reject(new Error("Network error"))
     ) as typeof fetch;
 
-    const { getByText } = render(<UserStatusBar />);
+    render(<UserStatusBar />);
 
     await waitFor(() => {
-      // Should show "Not signed in" UI instead of redirecting
-      expect(getByText("Not signed in")).toBeInTheDocument();
+      expect(mockPush).toHaveBeenCalledWith("/sign-in");
     });
   });
 
