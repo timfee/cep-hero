@@ -13,16 +13,9 @@ export interface EnrollmentResult {
 }
 
 /**
- * Parsed name components.
+ * Parsed name components for Google Workspace user creation.
  */
 export interface ParsedName {
   givenName: string;
   familyName: string;
 }
-
-/**
- * Validation result with extracted data.
- */
-export type ValidationResult =
-  | { valid: true; username: string; name: string }
-  | { valid: false; error: string };

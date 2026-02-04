@@ -72,13 +72,6 @@ export async function createUser(
 }
 
 /**
- * Sleep for a specified number of milliseconds.
- */
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
-
-/**
  * Grant super admin privileges to a user.
  * Retries with exponential backoff since Google API has propagation delays
  * after user creation - the user may not be immediately available.
@@ -90,7 +83,7 @@ export async function makeUserSuperAdmin(
   const maxRetries = 5;
   const baseDelay = 1000;
 
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  for (let attempt = 1; attempt <= maxRetries; attempt += 1) {
     try {
       await directory.users.makeAdmin({
         userKey,
@@ -107,7 +100,7 @@ export async function makeUserSuperAdmin(
 
       const delay = baseDelay * attempt;
       console.log("[gimme] makeAdmin retry", { userKey, attempt, delay });
-      await sleep(delay);
+      await Bun.sleep(delay);
     }
   }
 }
