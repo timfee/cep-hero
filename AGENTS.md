@@ -266,13 +266,13 @@ Registry uses a minimal format where empty fields are omitted. Defaults are appl
 
 ```bash
 # With fixture injection (recommended)
-EVAL_USE_BASE=1 bun run evals
+EVAL_FIXTURES=1 bun run evals
 
 # Specific cases
-EVAL_IDS="EC-071,EC-072" EVAL_USE_BASE=1 bun run evals
+EVAL_IDS="EC-071,EC-072" EVAL_FIXTURES=1 bun run evals
 
 # Fast mode (server already running)
-EVAL_USE_BASE=1 bun run evals:fast
+EVAL_FIXTURES=1 bun run evals:fast
 
 # Test mode (no AI calls)
 EVAL_TEST_MODE=1 bun run evals

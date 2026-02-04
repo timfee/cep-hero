@@ -89,15 +89,27 @@ function buildFixtureData(mergedObject: Record<string, unknown>): FixtureData {
 }
 
 /**
+ * Check if fixtures are enabled via environment for loadEvalFixtures.
+ */
+function isLoadFixturesEnabled(): boolean {
+  return (
+    process.env.EVAL_FIXTURES === "1" ||
+    process.env.EVAL_USE_BASE === "1" ||
+    process.env.EVAL_USE_FIXTURES === "1"
+  );
+}
+
+/**
  * Load fixture data for an eval case by merging base fixtures with case-specific overrides.
  */
 export function loadEvalFixtures(
   caseId: string,
   options: LoadFixturesOptions = {}
 ) {
+  const fixturesEnabled = isLoadFixturesEnabled();
   const {
-    useBase = process.env.EVAL_USE_BASE === "1",
-    useFixtures = process.env.EVAL_USE_FIXTURES === "1",
+    useBase = fixturesEnabled,
+    useFixtures = fixturesEnabled,
     rootDir = process.cwd(),
   } = options;
 
@@ -229,15 +241,29 @@ interface ResolvedPromptOptions {
 }
 
 /**
+ * Check if fixtures are enabled via environment variables.
+ * EVAL_FIXTURES=1 is the unified flag (enables both base and file fixtures).
+ * EVAL_USE_BASE and EVAL_USE_FIXTURES are kept for backwards compatibility.
+ */
+function isFixturesEnabled(): boolean {
+  return (
+    process.env.EVAL_FIXTURES === "1" ||
+    process.env.EVAL_USE_BASE === "1" ||
+    process.env.EVAL_USE_FIXTURES === "1"
+  );
+}
+
+/**
  * Resolve prompt build options from explicit values or environment variables.
  */
 function resolvePromptOptions(
   options: PromptBuildOptions
 ): ResolvedPromptOptions {
+  const fixturesEnabled = isFixturesEnabled();
   return {
     rootDir: options.rootDir ?? process.cwd(),
-    useBase: options.useBase ?? process.env.EVAL_USE_BASE === "1",
-    useFixtures: options.useFixtures ?? process.env.EVAL_USE_FIXTURES === "1",
+    useBase: options.useBase ?? fixturesEnabled,
+    useFixtures: options.useFixtures ?? fixturesEnabled,
     injectIntoPrompt:
       options.injectIntoPrompt ?? process.env.EVAL_INJECT_PROMPT === "1",
   };
