@@ -38,6 +38,15 @@ interface ChromeEventsError {
 export type ChromeEventsResult = ChromeEventsSuccess | ChromeEventsError;
 
 /**
+ * Type guard for Chrome events error results.
+ */
+function isChromeEventsError(
+  result: ChromeEventsResult
+): result is ChromeEventsError {
+  return "error" in result;
+}
+
+/**
  * Fetch recent Chrome audit events from the Admin SDK Reports API.
  */
 export async function getChromeEvents(
@@ -161,71 +170,37 @@ async function fetchDayEvents(
   pageSize: number,
   maxPages: number
 ) {
-  const state = { pageToken: undefined as string | undefined, dayCount: 0 };
+  let pageToken: string | undefined;
+  let dayCount = 0;
   const events: Activity[] = [];
 
   for (let page = 0; page < maxPages; page += 1) {
-    const result = await fetchSinglePage(
-      auth,
-      customerId,
-      bucket,
-      pageSize,
-      state.pageToken
-    );
-    if ("error" in result) {
+    const result = await getChromeEvents(auth, customerId, {
+      maxResults: pageSize,
+      pageToken,
+      startTime: bucket.dayStart.toISOString(),
+      endTime: bucket.dayEnd.toISOString(),
+    });
+
+    if (isChromeEventsError(result)) {
       return { error: result, dayCount: 0, daySampled: false };
     }
-    const processed = processPageResult(result, events, state);
-    if (processed.done) {
+
+    const items = result.events ?? [];
+    dayCount += items.length;
+    events.push(...items);
+    pageToken = result.nextPageToken ?? undefined;
+
+    if (!result.nextPageToken) {
       break;
     }
   }
 
   return {
     events,
-    dayCount: state.dayCount,
-    daySampled: state.pageToken !== undefined,
+    dayCount,
+    daySampled: pageToken !== undefined,
   };
-}
-
-/**
- * Fetches a single page of events from the Reports API.
- */
-async function fetchSinglePage(
-  auth: OAuth2Client,
-  customerId: string,
-  bucket: DayBucket,
-  pageSize: number,
-  pageToken: string | undefined
-) {
-  const result = await getChromeEvents(auth, customerId, {
-    maxResults: pageSize,
-    pageToken,
-    startTime: bucket.dayStart.toISOString(),
-    endTime: bucket.dayEnd.toISOString(),
-  });
-  return result;
-}
-
-/**
- * Accumulates page results and updates pagination state.
- */
-function processPageResult(
-  result: ChromeEventsSuccess,
-  events: Activity[],
-  state: { pageToken: string | undefined; dayCount: number }
-) {
-  const items = result.events ?? [];
-  state.dayCount += items.length;
-  events.push(...items);
-  state.pageToken = result.nextPageToken ?? undefined;
-  return { done: result.nextPageToken === null };
-}
-
-interface AggregationState {
-  totalCount: number;
-  sampled: boolean;
-  allEvents: Activity[];
 }
 
 /**
@@ -237,66 +212,35 @@ function aggregateDayResults(
   windowStart: Date,
   windowEnd: Date
 ) {
-  const state: AggregationState = {
-    totalCount: 0,
-    sampled: false,
-    allEvents: [],
-  };
+  let totalCount = 0;
+  let sampled = false;
+  const allEvents: Activity[] = [];
 
   for (const result of dayResults) {
-    const errorResult = checkForError(result, windowStart, windowEnd);
-    if (errorResult !== null) {
-      return errorResult;
+    if (result.error) {
+      return {
+        events: result.error,
+        totalCount: 0,
+        sampled: false,
+        windowStart,
+        windowEnd,
+      };
     }
-    accumulateResult(result, state);
+
+    totalCount += result.dayCount;
+    sampled = sampled || result.daySampled;
+    if (result.events) {
+      allEvents.push(...result.events);
+    }
   }
 
-  return buildSuccessResult(state, sampleSize, windowStart, windowEnd);
-}
-
-/**
- * Returns an error result if the day fetch failed.
- */
-function checkForError(result: DayResult, windowStart: Date, windowEnd: Date) {
-  if (result.error === undefined) {
-    return null;
-  }
-  return {
-    events: result.error,
-    totalCount: 0,
-    sampled: false,
-    windowStart,
-    windowEnd,
-  };
-}
-
-/**
- * Adds a day's events to the aggregation state.
- */
-function accumulateResult(result: DayResult, state: AggregationState) {
-  state.totalCount += result.dayCount;
-  state.sampled = state.sampled || result.daySampled;
-  if (result.events !== undefined) {
-    state.allEvents.push(...result.events);
-  }
-}
-
-/**
- * Builds the final success result with sampled events.
- */
-function buildSuccessResult(
-  state: AggregationState,
-  sampleSize: number,
-  windowStart: Date,
-  windowEnd: Date
-) {
   return {
     events: {
-      events: state.allEvents.slice(0, sampleSize),
+      events: allEvents.slice(0, sampleSize),
       nextPageToken: null,
     },
-    totalCount: state.totalCount,
-    sampled: state.sampled,
+    totalCount,
+    sampled,
     windowStart,
     windowEnd,
   };

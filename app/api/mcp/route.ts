@@ -70,7 +70,7 @@ function touchSession(sessionId: string) {
 export async function GET(req: Request) {
   await sweepExpiredSessions();
   const sessionId = getSessionId(req);
-  if (sessionId === null || sessionId === "") {
+  if (!sessionId) {
     return new Response("Missing mcp-session-id header", { status: 400 });
   }
 
@@ -103,11 +103,11 @@ async function handleExistingSession(
  * Extract bearer token from Authorization header.
  */
 function extractBearerToken(authHeader: string | null): string | undefined {
-  if (typeof authHeader !== "string") {
+  if (!authHeader) {
     return undefined;
   }
   const token = authHeader.replace("Bearer ", "");
-  return token.length > 0 ? token : undefined;
+  return token || undefined;
 }
 
 /**
@@ -117,15 +117,14 @@ async function resolveAccessTokenFromSession(
   req: Request
 ): Promise<string | undefined> {
   const session = await auth.api.getSession({ headers: req.headers });
-  if (session === null || session === undefined) {
+  if (!session) {
     return undefined;
   }
   const response = await auth.api.getAccessToken({
     body: { providerId: "google" },
     headers: req.headers,
   });
-  const token = response?.accessToken;
-  return typeof token === "string" && token.length > 0 ? token : undefined;
+  return response?.accessToken || undefined;
 }
 
 /**
@@ -178,12 +177,12 @@ async function initializeNewSession(
 export async function POST(req: Request) {
   await sweepExpiredSessions();
   const existingSessionId = getSessionId(req);
-  if (existingSessionId !== null && existingSessionId !== "") {
+  if (existingSessionId) {
     return handleExistingSession(existingSessionId, req);
   }
 
   const accessToken = await resolveAccessToken(req);
-  if (accessToken === undefined || accessToken.length === 0) {
+  if (!accessToken) {
     return new Response("Missing access token", { status: 401 });
   }
 
@@ -196,7 +195,7 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   await sweepExpiredSessions();
   const sessionId = getSessionId(req);
-  if (sessionId === null || sessionId === "") {
+  if (!sessionId) {
     return new Response("Missing mcp-session-id header", { status: 400 });
   }
 

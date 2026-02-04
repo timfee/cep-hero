@@ -80,7 +80,7 @@ export async function listDLPRules(
   const service = googleApis.cloudidentity({ version: "v1", auth });
   console.log("[dlp-rules] request");
 
-  if (service.policies?.list === undefined) {
+  if (!service.policies?.list) {
     return DLP_SERVICE_UNAVAILABLE;
   }
 
@@ -93,7 +93,7 @@ export async function listDLPRules(
     );
     return result;
   } catch (error: unknown) {
-    logDlpError(error);
+    logApiError("dlp-rules", error);
     return createApiError(error, "dlp-rules");
   }
 }
@@ -129,7 +129,7 @@ async function fetchAndMapPolicies(
   args: ListDLPRulesArgs
 ) {
   const policiesApi = service.policies;
-  if (policiesApi === undefined) {
+  if (!policiesApi) {
     return { rules: [] };
   }
 
@@ -140,7 +140,9 @@ async function fetchAndMapPolicies(
   const dlpPolicies = allPolicies.filter(isDlpRule);
   logPolicyResponse(allPolicies, dlpPolicies);
 
-  const rules = mapPoliciesToRules(dlpPolicies, orgUnitContext);
+  const rules = dlpPolicies.map((policy, idx) =>
+    mapPolicyToRule(policy, idx, orgUnitContext)
+  );
   const result = await addHelpIfRequested(rules, args.includeHelp ?? false);
   return result;
 }
@@ -168,13 +170,6 @@ async function addHelpIfRequested(rules: DLPRule[], includeHelp: boolean) {
   }
   const help = await searchPolicies("Chrome DLP rules", 4);
   return { rules, help };
-}
-
-/**
- * Logs structured error details for debugging.
- */
-function logDlpError(error: unknown) {
-  logApiError("dlp-rules", error);
 }
 
 /**
@@ -213,18 +208,6 @@ function extractAction(value: Record<string, unknown> | null | undefined) {
 }
 
 /**
- * Transforms Cloud Identity policies to the output rule format.
- */
-function mapPoliciesToRules(
-  policies: CloudIdentityPolicy[],
-  orgUnitContext: OrgUnitContext
-) {
-  return policies.map((policy, idx) =>
-    mapPolicyToRule(policy, idx, orgUnitContext)
-  );
-}
-
-/**
  * Converts a single policy to the output rule format.
  */
 function mapPolicyToRule(
@@ -238,7 +221,7 @@ function mapPolicyToRule(
   const settingTypeRaw = policy.setting?.type ?? "";
   const settingValue = policy.setting?.value;
   const displayName = formatSettingType(settingTypeRaw) || `Policy ${idx + 1}`;
-  const description = formatSettingDescription(settingValue);
+  const description = settingValue ? formatSettingValue(settingValue) : "";
   const orgUnitRaw = policy.policyQuery?.orgUnit ?? "";
   const orgUnit =
     resolveOrgUnitDisplay(
@@ -261,16 +244,4 @@ function mapPolicyToRule(
     resourceName,
     consoleUrl: "https://admin.google.com/ac/chrome/dlp",
   };
-}
-
-/**
- * Formats the setting value into a human-readable description.
- */
-function formatSettingDescription(
-  value: Record<string, unknown> | null | undefined
-) {
-  if (value === null || value === undefined) {
-    return "";
-  }
-  return formatSettingValue(value);
 }
