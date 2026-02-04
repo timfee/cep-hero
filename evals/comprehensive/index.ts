@@ -110,7 +110,7 @@ async function findLatestSummary(): Promise<string | undefined> {
 async function runEvals(options: CliOptions): Promise<Summary | null> {
   const env: Record<string, string> = {
     ...(process.env as Record<string, string>),
-    EVAL_USE_BASE: "1",
+    EVAL_FIXTURES: "1",
     EVAL_SERIAL: "1",
     EVAL_LLM_JUDGE: options.withJudge ? "1" : "0",
     EVAL_MANAGE_SERVER: "0",

@@ -9,14 +9,14 @@ Behavioral tests for the CEP diagnostic assistant. Each eval checks if the assis
 bun run dev
 
 # Run all evals with fixture data
-EVAL_USE_BASE=1 bun run evals
+EVAL_FIXTURES=1 bun run evals
 
 # Run specific case
-EVAL_IDS=EC-001 EVAL_USE_BASE=1 bun run evals
+EVAL_IDS=EC-001 EVAL_FIXTURES=1 bun run evals
 
 # Run by category or tag
-EVAL_CATEGORY=connector EVAL_USE_BASE=1 bun run evals
-EVAL_TAGS=dlp EVAL_USE_BASE=1 bun run evals
+EVAL_CATEGORY=connector EVAL_FIXTURES=1 bun run evals
+EVAL_TAGS=dlp EVAL_FIXTURES=1 bun run evals
 ```
 
 ## Structure
@@ -35,16 +35,16 @@ evals/
 
 ## Environment Variables
 
-| Variable                  | Purpose                                  |
-| ------------------------- | ---------------------------------------- |
-| `EVAL_USE_BASE=1`         | Load base fixture snapshot (recommended) |
-| `EVAL_IDS=EC-001,EC-002`  | Run specific cases                       |
-| `EVAL_CATEGORY=connector` | Filter by category                       |
-| `EVAL_TAGS=dlp`           | Filter by tag                            |
-| `EVAL_SERIAL=1`           | Run sequentially (for rate limiting)     |
-| `EVAL_LLM_JUDGE=0`        | Disable semantic evidence matching       |
-| `EVAL_VERBOSE=1`          | Detailed output                          |
-| `EVAL_TEST_MODE=1`        | Synthetic responses (no API calls)       |
+| Variable                  | Purpose                                        |
+| ------------------------- | ---------------------------------------------- |
+| `EVAL_FIXTURES=1`         | Enable fixture data (base + overrides + files) |
+| `EVAL_IDS=EC-001,EC-002`  | Run specific cases                             |
+| `EVAL_CATEGORY=connector` | Filter by category                             |
+| `EVAL_TAGS=dlp`           | Filter by tag                                  |
+| `EVAL_SERIAL=1`           | Run sequentially (for rate limiting)           |
+| `EVAL_LLM_JUDGE=0`        | Disable semantic evidence matching             |
+| `EVAL_VERBOSE=1`          | Detailed output                                |
+| `EVAL_TEST_MODE=1`        | Synthetic responses (no API calls)             |
 
 ## Registry Format (v3.0)
 
@@ -117,7 +117,7 @@ User: "The exact prompt"
 4. Run and iterate:
 
 ```bash
-EVAL_IDS=EC-086 EVAL_USE_BASE=1 bun run evals
+EVAL_IDS=EC-086 EVAL_FIXTURES=1 bun run evals
 ```
 
 ## Comprehensive Runner
