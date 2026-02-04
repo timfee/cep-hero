@@ -1,11 +1,33 @@
 /**
- * Validation utilities for gimme self-enrollment.
+ * Validation schemas and utilities for gimme self-enrollment.
  */
 
-import { timingSafeEqual } from "@/lib/rate-limit";
+import { z } from "zod";
 
 import { ALLOWED_EMAIL_SUFFIX, MAX_NAME_LENGTH } from "./constants";
-import { type ParsedName, type ValidationResult } from "./types";
+import { type ParsedName } from "./types";
+
+/**
+ * Schema for enrollment form data.
+ */
+export const EnrollmentSchema = z.object({
+  name: z
+    .string()
+    .min(1, "Name is required")
+    .max(MAX_NAME_LENGTH, `Name must be ${MAX_NAME_LENGTH} characters or less`)
+    .transform((val) => val.trim()),
+  email: z
+    .string()
+    .min(1, "Email is required")
+    .email("Invalid email format")
+    .refine((val) => val.toLowerCase().endsWith(ALLOWED_EMAIL_SUFFIX), {
+      message: "Email must end with @google.com",
+    })
+    .transform((val) => val.toLowerCase().trim()),
+  password: z.string().min(1, "Enrollment password is required"),
+});
+
+export type EnrollmentInput = z.infer<typeof EnrollmentSchema>;
 
 /**
  * Strip surrounding quotes from environment variable values.
@@ -29,122 +51,10 @@ export function parseName(fullName: string): ParsedName {
 }
 
 /**
- * Check if a string looks like an email address.
+ * Extract username from validated Google email.
  */
-function looksLikeEmail(value: string): boolean {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-}
-
-/**
- * Validate name field with length limits.
- * Also rejects values that look like email addresses to prevent data corruption.
- */
-export function validateName(
-  name: unknown
-): { valid: false; error: string } | { valid: true; name: string } {
-  if (typeof name !== "string" || name.trim().length === 0) {
-    return { valid: false, error: "Name is required" };
-  }
-
-  const trimmedName = name.trim();
-  if (trimmedName.length > MAX_NAME_LENGTH) {
-    return {
-      valid: false,
-      error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
-    };
-  }
-
-  // Reject email addresses as names - this catches a data corruption bug
-  if (looksLikeEmail(trimmedName)) {
-    console.error("[gimme] CRITICAL: Name field contains email address", {
-      name: trimmedName,
-    });
-    return {
-      valid: false,
-      error: "Please enter your full name, not an email address",
-    };
-  }
-
-  return { valid: true, name: trimmedName };
-}
-
-/**
- * Validate email field and extract username.
- */
-export function validateEmail(
-  email: unknown
-): { valid: false; error: string } | { valid: true; username: string } {
-  if (typeof email !== "string" || email.trim().length === 0) {
-    return { valid: false, error: "Email is required" };
-  }
-
-  const normalizedEmail = email.toLowerCase().trim();
-  if (!normalizedEmail.endsWith(ALLOWED_EMAIL_SUFFIX)) {
-    return { valid: false, error: "Email must end with @google.com" };
-  }
-
-  const username = normalizedEmail.replace(ALLOWED_EMAIL_SUFFIX, "");
-  if (username.length === 0 || !/^[a-z0-9._-]+$/i.test(username)) {
-    return { valid: false, error: "Invalid email format" };
-  }
-
-  return { valid: true, username };
-}
-
-/**
- * Validate enrollment password using timing-safe comparison.
- */
-export function validateEnrollmentPassword(
-  password: unknown
-): { valid: false; error: string } | { valid: true } {
-  if (typeof password !== "string" || password.length === 0) {
-    return { valid: false, error: "Password is required" };
-  }
-
-  const enrollmentPassword = stripQuotes(process.env.SELF_ENROLLMENT_PASSWORD);
-  if (!enrollmentPassword) {
-    console.error("[gimme] SELF_ENROLLMENT_PASSWORD not configured");
-    return { valid: false, error: "Self-enrollment is not configured" };
-  }
-
-  if (!timingSafeEqual(password, enrollmentPassword)) {
-    return { valid: false, error: "Invalid enrollment password" };
-  }
-
-  return { valid: true };
-}
-
-/**
- * Validate complete enrollment request.
- */
-export function validateEnrollmentRequest(body: unknown): ValidationResult {
-  if (
-    body === null ||
-    body === undefined ||
-    typeof body !== "object" ||
-    Array.isArray(body)
-  ) {
-    return { valid: false, error: "Invalid request body" };
-  }
-
-  const { name, email, password } = body as Record<string, unknown>;
-
-  const nameResult = validateName(name);
-  if (!nameResult.valid) {
-    return nameResult;
-  }
-
-  const emailResult = validateEmail(email);
-  if (!emailResult.valid) {
-    return emailResult;
-  }
-
-  const passwordResult = validateEnrollmentPassword(password);
-  if (!passwordResult.valid) {
-    return passwordResult;
-  }
-
-  return { valid: true, username: emailResult.username, name: nameResult.name };
+export function extractUsername(email: string): string {
+  return email.replace(ALLOWED_EMAIL_SUFFIX, "");
 }
 
 /**
