@@ -44,28 +44,30 @@ function DashboardPanel({ onAction }: { onAction: (command: string) => void }) {
 
 /**
  * Chat panel component with slide-in animation.
- * Waits for the dashboard to load before sliding in.
+ * Container stays in place - only content animates to prevent layout shifts.
  */
 function ChatPanel() {
   const { isDashboardLoaded } = useDashboardLoad();
 
   return (
-    <motion.aside
-      className="flex h-full flex-col overflow-hidden"
-      initial={{ x: "100%", opacity: 0 }}
-      animate={{
-        x: isDashboardLoaded ? 0 : "100%",
-        opacity: isDashboardLoaded ? 1 : 0,
-      }}
-      transition={{
-        type: "spring",
-        stiffness: 300,
-        damping: 30,
-        delay: isDashboardLoaded ? 0.1 : 0,
-      }}
-    >
-      <ChatConsole />
-    </motion.aside>
+    <aside className="flex h-full flex-col overflow-hidden">
+      <motion.div
+        className="flex h-full flex-col"
+        initial={{ x: 40, opacity: 0 }}
+        animate={{
+          x: isDashboardLoaded ? 0 : 40,
+          opacity: isDashboardLoaded ? 1 : 0,
+        }}
+        transition={{
+          type: "spring",
+          stiffness: 300,
+          damping: 30,
+          delay: isDashboardLoaded ? 0.1 : 0,
+        }}
+      >
+        <ChatConsole />
+      </motion.div>
+    </aside>
   );
 }
 
