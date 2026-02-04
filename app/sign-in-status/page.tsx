@@ -241,36 +241,28 @@ export default function SignInStatusPage() {
     try {
       const response = await fetch("/api/sign-in-status");
 
-      // Check for server errors before parsing
+      // Server error - sign out
       if (!response.ok) {
-        setStatus({
-          loading: false,
-          data: null,
-          error: `Server error: ${response.status}`,
-        });
+        await performSignOut(router);
         return;
       }
 
       const data = (await response.json()) as SignInStatusResponse;
 
-      // If not authenticated, redirect to sign-in
-      if (!data.authenticated) {
-        setStatus({ loading: false, data: null, error: "Not authenticated" });
+      // If not authenticated or there's an error, sign out and redirect
+      if (!data.authenticated || data.error) {
         await performSignOut(router);
         return;
       }
 
-      // Show data with any errors (let user see status page with token errors)
-      setStatus({ loading: false, data, error: data.error ?? null });
+      setStatus({ loading: false, data, error: null });
       if (data.token?.expiresIn !== undefined) {
         expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
         setLocalExpiresIn(data.token.expiresIn);
       }
-    } catch (error) {
-      // On transient network errors, show error state instead of signing out
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to fetch status";
-      setStatus({ loading: false, data: null, error: errorMessage });
+    } catch {
+      // On any error, sign out and redirect
+      await performSignOut(router);
     }
   }, [router]);
 
@@ -317,22 +309,16 @@ export default function SignInStatusPage() {
     return <LoadingSkeleton />;
   }
 
-  // Handle network errors (no data available)
-  if (!status.data && status.error) {
-    return (
-      <ConnectionError
-        error={status.error}
-        onRefresh={handleRefresh}
-        onSignIn={handleReauth}
-      />
-    );
+  // If no data, we're redirecting (sign out in progress)
+  if (!status.data) {
+    return <LoadingSkeleton />;
   }
 
-  const { user, token, error: tokenError } = status.data ?? {};
+  const { user, token } = status.data;
   const isTokenExpired = localExpiresIn !== null && localExpiresIn <= 0;
   const isTokenExpiringSoon = localExpiresIn !== null && localExpiresIn < 300;
   const statusInfo = getStatusInfo(
-    tokenError,
+    undefined,
     isTokenExpired,
     isTokenExpiringSoon
   );
@@ -432,7 +418,7 @@ export default function SignInStatusPage() {
               Refresh Status
             </Button>
 
-            {(isTokenExpired || isTokenExpiringSoon || tokenError) && (
+            {(isTokenExpired || isTokenExpiringSoon) && (
               <Button onClick={handleReauth} className="w-full">
                 <RefreshCw className="size-4" />
                 Re-authenticate
