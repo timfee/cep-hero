@@ -4,8 +4,7 @@
 
 "use client";
 
-import { track } from "@vercel/analytics";
-import { Mail, AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Mail } from "lucide-react";
 import { useActionState, useState, useCallback } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

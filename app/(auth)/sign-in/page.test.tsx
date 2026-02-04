@@ -62,23 +62,21 @@ describe("SignInPage", () => {
     const { getByText, getByAltText } = render(<SignInPage />);
 
     expect(getByText("CEP Hero")).toBeInTheDocument();
-    expect(
-      getByText("Chrome Enterprise Premium diagnostics")
-    ).toBeInTheDocument();
+    expect(getByText("Agentic CEP assistant demo")).toBeInTheDocument();
     expect(getByAltText("CEP Hero")).toBeInTheDocument();
   });
 
   it("renders sign-in button", () => {
     const { getByRole } = render(<SignInPage />);
 
-    const button = getByRole("button", { name: /continue with google/i });
+    const button = getByRole("button", { name: /sign in with google/i });
     expect(button).toBeInTheDocument();
   });
 
   it("calls signIn.social on button click", () => {
     const { getByRole } = render(<SignInPage />);
 
-    fireEvent.click(getByRole("button", { name: /continue with google/i }));
+    fireEvent.click(getByRole("button", { name: /sign in with google/i }));
     expect(mockSignInSocial).toHaveBeenCalledWith({
       provider: "google",
       callbackURL: "/",

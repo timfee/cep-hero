@@ -154,6 +154,7 @@ function RegistrationForm() {
               required
               disabled={isPending}
               autoComplete="name"
+              className="border-border bg-background"
             />
           </div>
 
@@ -169,6 +170,7 @@ function RegistrationForm() {
               required
               disabled={isPending}
               autoComplete="email"
+              className="border-border bg-background"
             />
             <p className="text-xs text-muted-foreground">
               Must end with @google.com
@@ -187,6 +189,7 @@ function RegistrationForm() {
               required
               disabled={isPending}
               autoComplete="off"
+              className="border-border bg-background"
             />
             <p className="text-xs text-muted-foreground">
               Contact your team lead for the enrollment password.
@@ -225,26 +228,21 @@ export default function SignInPage() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Chrome Enterprise Premium diagnostics
+            Agentic CEP assistant demo
           </p>
         </div>
 
-        {/* Sign In Section */}
-        <Card>
-          <CardHeader className="pb-4">
-            <CardTitle className="text-lg">Sign In</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button className="w-full" size="lg" onClick={onSignIn}>
-              <GoogleIcon />
-              Continue with Google
-            </Button>
-            <p className="mt-3 text-center text-xs text-muted-foreground">
-              Requires a Google Workspace admin account with Chrome management
-              permissions.
-            </p>
-          </CardContent>
-        </Card>
+        {/* Sign In Button */}
+        <div className="space-y-3">
+          <Button className="w-full" size="lg" onClick={onSignIn}>
+            <GoogleIcon />
+            Sign in with Google
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Requires a Google Workspace admin account with Chrome management
+            permissions.
+          </p>
+        </div>
 
         {/* Divider */}
         <div className="relative">
