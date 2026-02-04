@@ -21,7 +21,10 @@ const EMAIL_STYLES = `
   .credentials { background: white; padding: 16px; border-radius: 8px; margin: 16px 0; border: 1px solid #dadce0; }
   .credential-label { font-size: 12px; color: #5f6368; margin-bottom: 4px; }
   .credential-value { font-family: 'Roboto Mono', monospace; font-size: 14px; color: #202124; }
-  .warning { background: #fef7e0; border: 1px solid #f9ab00; padding: 12px; border-radius: 8px; margin: 16px 0; }
+  .notice { color: #5f6368; font-size: 13px; margin: 12px 0; padding-left: 4px; }
+  .chrome-profile { background: #e8f0fe; border: 2px solid #1a73e8; padding: 16px; border-radius: 8px; margin: 16px 0; }
+  .chrome-profile-title { color: #1a73e8; font-weight: 600; font-size: 15px; margin-bottom: 8px; display: flex; align-items: center; gap: 8px; }
+  .chrome-profile-content { color: #202124; font-size: 14px; }
   .error-box { background: #fce8e6; border: 1px solid #d93025; padding: 12px; border-radius: 8px; margin: 16px 0; }
   .steps { margin: 16px 0; }
   .steps li { margin: 8px 0; }
@@ -64,13 +67,26 @@ function buildSuccessEmailHtml(
         </div>
       </div>
 
-      <div class="warning">
-        <strong>Important:</strong> You will be required to change this password on first login.
+      <p class="notice">You will be required to change this password on first login.</p>
+
+      <div class="chrome-profile">
+        <div class="chrome-profile-title">
+          <span>&#128736;</span> Create a New Chrome Profile
+        </div>
+        <div class="chrome-profile-content">
+          <strong>Before signing in</strong>, create a dedicated Chrome profile for this account to avoid conflicts with your Corp account and policies.
+          <ol style="margin: 8px 0 0 0; padding-left: 20px;">
+            <li>Open Chrome and click your profile icon (top right)</li>
+            <li>Click <strong>Add</strong> to create a new profile</li>
+            <li>Use this new profile to sign in to your cep-netnew.cc account</li>
+          </ol>
+        </div>
       </div>
 
       <div class="steps">
         <p><strong>Next Steps:</strong></p>
         <ol>
+          <li>Create a new Chrome profile (see above)</li>
           <li>Go to <a href="https://admin.google.com">admin.google.com</a></li>
           <li>Sign in with your new email address</li>
           <li>Enter the temporary password above</li>
@@ -214,7 +230,29 @@ export async function sendSuccessEmail(
     newAccountEmail,
     password
   );
-  const plainText = `Hi ${recipientName},\n\nYour CEP Hero admin account has been created.\n\nEmail: ${newAccountEmail}\nTemporary Password: ${password}\n\nYou will be required to change this password on first login at admin.google.com.`;
+  const plainText = `Hi ${recipientName},
+
+Your CEP Hero admin account has been created.
+
+Email: ${newAccountEmail}
+Temporary Password: ${password}
+
+Note: You will be required to change this password on first login.
+
+IMPORTANT - CREATE A NEW CHROME PROFILE
+
+Before signing in, create a dedicated Chrome profile for this account to avoid conflicts with your Corp account and policies:
+
+1. Open Chrome and click your profile icon (top right)
+2. Click "Add" to create a new profile
+3. Use this new profile to sign in to your cep-netnew.cc account
+
+Next Steps:
+1. Create a new Chrome profile (see above)
+2. Go to admin.google.com
+3. Sign in with your new email address
+4. Enter the temporary password above
+5. Create a new secure password when prompted`;
 
   const rawMessage = buildEmailMessage(
     recipientEmail,

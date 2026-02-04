@@ -4,8 +4,9 @@
 
 "use client";
 
+import { track } from "@vercel/analytics";
 import { Mail, AlertCircle, Loader2 } from "lucide-react";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -74,7 +75,20 @@ export function EnrollmentForm() {
   );
   const [formKey, setFormKey] = useState(0);
 
+  useEffect(() => {
+    track("Gimme Page Viewed");
+  }, []);
+
+  useEffect(() => {
+    if (state?.notificationSentTo) {
+      track("Gimme Enrollment Submitted", {
+        success: !state.error,
+      });
+    }
+  }, [state?.notificationSentTo, state?.error]);
+
   function handleReset() {
+    track("Gimme Form Reset");
     setFormKey((prev) => prev + 1);
   }
 
