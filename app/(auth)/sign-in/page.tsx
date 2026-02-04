@@ -251,14 +251,20 @@ export default function SignInPage() {
   return (
     <main className="isolate relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
       {/* Animated gradient background */}
-      <div className="animate-gradient-shift absolute inset-0 z-0 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.08_0.03_255),oklch(0.18_0.08_250),oklch(0.10_0.05_265),oklch(0.20_0.10_245),oklch(0.08_0.03_255))]" />
-      <div className="animate-gradient-shift-reverse absolute inset-0 z-0 bg-[length:300%_300%] bg-[radial-gradient(ellipse_80%_60%_at_top_right,oklch(0.25_0.12_250/0.6),transparent_50%),radial-gradient(ellipse_60%_80%_at_bottom_left,oklch(0.22_0.10_270/0.5),transparent_50%)]" />
+      <div className="animate-gradient-shift absolute inset-0 z-0 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.06_0.02_255),oklch(0.10_0.04_250),oklch(0.07_0.03_265),oklch(0.12_0.05_245),oklch(0.06_0.02_255))]" />
+      <div className="animate-gradient-shift-reverse absolute inset-0 z-0 bg-[length:300%_300%] bg-[radial-gradient(ellipse_80%_60%_at_top_right,oklch(0.15_0.06_250/0.4),transparent_50%),radial-gradient(ellipse_60%_80%_at_bottom_left,oklch(0.14_0.05_270/0.3),transparent_50%)]" />
 
       <div className="relative z-10 w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
-            <Image src="/icon.png" alt="CEP Hero" height={50} width={50} />
+            <Image
+              src="/icon.png"
+              alt="CEP Hero"
+              height={50}
+              width={50}
+              priority
+            />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
           <p className="mt-1 text-sm text-muted-foreground">
