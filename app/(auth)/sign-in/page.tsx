@@ -259,6 +259,7 @@ function RegistrationForm() {
               disabled={isPending}
               autoComplete="name"
               aria-invalid={!!fieldErrors.name}
+              className="border-border bg-background"
             />
             {fieldErrors.name && (
               <p className="text-xs text-destructive">{fieldErrors.name}</p>
@@ -279,6 +280,7 @@ function RegistrationForm() {
               disabled={isPending}
               autoComplete="email"
               aria-invalid={!!fieldErrors.email}
+              className="border-border bg-background"
             />
             {fieldErrors.email ? (
               <p className="text-xs text-destructive">{fieldErrors.email}</p>
@@ -303,6 +305,7 @@ function RegistrationForm() {
               disabled={isPending}
               autoComplete="off"
               aria-invalid={!!fieldErrors.password}
+              className="border-border bg-background"
             />
             {fieldErrors.password && (
               <p className="text-xs text-destructive">{fieldErrors.password}</p>
