@@ -82,6 +82,7 @@ export class CepToolExecutor {
 
   /**
    * Fetches the actual obfuscated customer ID using Chrome Policy API.
+   * Throws an error if resolution fails since Cloud Identity API cannot use "my_customer".
    */
   private async fetchActualCustomerId(): Promise<string> {
     try {
@@ -99,11 +100,18 @@ export class CepToolExecutor {
         console.log("[executor] resolved customer ID:", match[1]);
         return match[1];
       }
+      throw new Error("No policy schemas found to extract customer ID");
     } catch (error) {
-      console.log("[executor] failed to resolve customer ID:", error);
+      console.warn(
+        "[executor] unable to resolve customer ID; Cloud Identity APIs require the actual ID",
+        error instanceof Error ? error.message : error
+      );
+      throw new Error(
+        "Failed to resolve customer ID from Chrome Policy API. " +
+          "Ensure Chrome Policy API is accessible or provide an explicit customerId.",
+        { cause: error }
+      );
     }
-    // Fallback to my_customer if resolution fails
-    return this.customerId;
   }
 
   /**

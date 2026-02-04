@@ -191,7 +191,7 @@ describe("Cloud Identity DLP Policy API", () => {
   );
 
   runIt(
-    "fails with my_customer in filter (demonstrates the bug)",
+    "returns error when using my_customer in Cloud Identity filter",
     async () => {
       if (!(await validateCredentials())) {
         console.log("[dlp-api] skipping - invalid permissions");
@@ -224,19 +224,19 @@ describe("Cloud Identity DLP Policy API", () => {
         JSON.stringify(result, null, 2)
       );
 
-      // This test documents the bug - my_customer should fail
-      // If this test starts passing with rules, it means the API behavior changed
+      // Cloud Identity API should reject "my_customer" in filter
+      // The result should contain an error
+      expect("error" in result).toBe(true);
+
       if ("error" in result) {
-        console.log("[dlp-api] my_customer correctly failed:", result.error);
-        // The error should mention the filter being invalid
-        // Note: This test may pass if Google changes their API to accept my_customer
-      } else {
-        // If it succeeded, the API now accepts my_customer (behavior changed)
-        console.log(
-          "[dlp-api] UNEXPECTED: my_customer worked, found",
-          result.rules.length,
-          "rules"
-        );
+        // Error should indicate filter/customer ID issue
+        const errorLower = result.error.toLowerCase();
+        const isFilterError =
+          errorLower.includes("filter") ||
+          errorLower.includes("invalid") ||
+          errorLower.includes("customer");
+        expect(isFilterError).toBe(true);
+        console.log("[dlp-api] my_customer correctly rejected:", result.error);
       }
     },
     TEST_TIMEOUT_MS

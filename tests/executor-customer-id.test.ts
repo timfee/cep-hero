@@ -78,7 +78,7 @@ describe("CepToolExecutor customer ID resolution", () => {
     }
   });
 
-  it("falls back to my_customer when resolution fails", async () => {
+  it("throws error when resolution fails (no silent fallback)", async () => {
     // Mock the Chrome Policy API to throw an error
     const mockPolicySchemas = {
       list: mock(() => Promise.reject(new Error("API error"))),
@@ -103,16 +103,17 @@ describe("CepToolExecutor customer ID resolution", () => {
         }
       ).resolveCustomerId.bind(executor);
 
-      const result = await resolveCustomerId();
-      // Should fall back to my_customer when resolution fails
-      expect(result).toBe("my_customer");
+      // Should throw an error, not silently fall back to my_customer
+      await expect(resolveCustomerId()).rejects.toThrow(
+        "Failed to resolve customer ID"
+      );
     } finally {
       googleApis.chromepolicy = originalChromepolicy;
     }
   });
 
-  it("falls back when policy schema has no name", async () => {
-    // Mock empty policy schema response
+  it("throws error when policy schema has no extractable customer ID", async () => {
+    // Mock empty policy schema response (no name field to extract ID from)
     const mockPolicySchemas = {
       list: mock(() =>
         Promise.resolve({
@@ -142,8 +143,10 @@ describe("CepToolExecutor customer ID resolution", () => {
         }
       ).resolveCustomerId.bind(executor);
 
-      const result = await resolveCustomerId();
-      expect(result).toBe("my_customer");
+      // Should throw when no customer ID can be extracted
+      await expect(resolveCustomerId()).rejects.toThrow(
+        "Failed to resolve customer ID"
+      );
     } finally {
       googleApis.chromepolicy = originalChromepolicy;
     }
