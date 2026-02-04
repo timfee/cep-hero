@@ -82,23 +82,57 @@ export function UserStatusBar() {
   const [signingOut, setSigningOut] = useState(false);
   const expiresAtRef = useRef<number | null>(null);
 
+  /**
+   * Signs out the user and redirects to sign-in page.
+   */
+  const performSignOut = useCallback(async () => {
+    try {
+      await fetch("/api/sign-out", { method: "POST" });
+    } catch (err) {
+      console.log(
+        "[user-status-bar] Sign out error:",
+        err instanceof Error ? err.message : "Unknown error"
+      );
+    }
+    router.push("/sign-in");
+  }, [router]);
+
   const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/sign-in-status");
+
+      // Check for server errors before parsing
+      if (!response.ok) {
+        setStatus({
+          loading: false,
+          data: null,
+          error: `Server error: ${response.status}`,
+        });
+        return;
+      }
+
       const data = (await response.json()) as SignInStatusResponse;
-      setStatus({ loading: false, data, error: null });
+
+      // If not authenticated, sign out and redirect
+      if (!data.authenticated) {
+        setStatus({ loading: false, data: null, error: "Not authenticated" });
+        await performSignOut();
+        return;
+      }
+
+      // Show data even if there's a token error (let user see status and re-auth)
+      setStatus({ loading: false, data, error: data.error ?? null });
       if (data.token?.expiresIn !== undefined) {
         expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
         setLocalExpiresIn(data.token.expiresIn);
       }
     } catch (err) {
-      setStatus({
-        loading: false,
-        data: null,
-        error: err instanceof Error ? err.message : "Failed to fetch status",
-      });
+      // On transient network errors, show error state instead of signing out
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch status";
+      setStatus({ loading: false, data: null, error: errorMessage });
     }
-  }, []);
+  }, [performSignOut]);
 
   useEffect(() => {
     void fetchStatus();
@@ -129,17 +163,8 @@ export function UserStatusBar() {
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
-    try {
-      await fetch("/api/sign-out", { method: "POST" });
-      router.push("/sign-in");
-    } catch (err) {
-      console.log(
-        "[user-status-bar] Sign out error:",
-        err instanceof Error ? err.message : "Unknown error"
-      );
-      router.push("/sign-in");
-    }
-  }, [router]);
+    await performSignOut();
+  }, [performSignOut]);
 
   const handleReauth = useCallback(() => {
     router.push("/sign-in");
@@ -173,7 +198,8 @@ export function UserStatusBar() {
     );
   }
 
-  if (!status.data?.authenticated || status.error) {
+  // Show "Not signed in" only when not authenticated (not for token errors)
+  if (!status.data?.authenticated) {
     return (
       <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
         <Branding />
