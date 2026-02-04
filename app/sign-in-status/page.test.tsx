@@ -32,6 +32,7 @@ describe("SignInStatusPage component", () => {
   it("shows loading state initially", () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
     ) as typeof fetch;
@@ -45,6 +46,7 @@ describe("SignInStatusPage component", () => {
   it("redirects to sign-in when unauthenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
     ) as typeof fetch;
@@ -59,6 +61,7 @@ describe("SignInStatusPage component", () => {
   it("shows error status when there is an auth error", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -94,6 +97,7 @@ describe("SignInStatusPage component", () => {
   it("shows user info and healthy status when authenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -123,6 +127,7 @@ describe("SignInStatusPage component", () => {
   it("shows warning status when token is expiring soon", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -150,6 +155,7 @@ describe("SignInStatusPage component", () => {
   it("shows expired status when token has expired", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -184,6 +190,7 @@ describe("SignInStatusPage component", () => {
   it("shows sign out button", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,

@@ -43,10 +43,14 @@ async function getClientIp(): Promise<string> {
     return realIp;
   }
 
-  // Use stable browser fingerprint for rate limiting (without timestamp)
+  // Use stable browser fingerprint for rate limiting
+  // Include multiple headers to reduce cross-user collisions
   const userAgent = headersList.get("user-agent") ?? "";
   const acceptLang = headersList.get("accept-language") ?? "";
-  const fallbackData = `${userAgent}:${acceptLang}`;
+  const acceptEnc = headersList.get("accept-encoding") ?? "";
+  const secChUa = headersList.get("sec-ch-ua") ?? "";
+  const secChUaPlatform = headersList.get("sec-ch-ua-platform") ?? "";
+  const fallbackData = `${userAgent}:${acceptLang}:${acceptEnc}:${secChUa}:${secChUaPlatform}`;
   return `anon-${crypto.createHash("sha256").update(fallbackData).digest("hex").slice(0, 16)}`;
 }
 

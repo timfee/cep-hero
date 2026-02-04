@@ -49,6 +49,7 @@ describe("UserStatusBar component", () => {
   it("shows loading state with branding", () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
     ) as typeof fetch;
@@ -62,6 +63,7 @@ describe("UserStatusBar component", () => {
   it("redirects to sign-in when unauthenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
     ) as typeof fetch;
@@ -76,6 +78,7 @@ describe("UserStatusBar component", () => {
   it("shows user info with error status when there is an auth error", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -115,6 +118,7 @@ describe("UserStatusBar component", () => {
   it("shows user info when authenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -143,6 +147,7 @@ describe("UserStatusBar component", () => {
   it("shows healthy status indicator when token is valid", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -174,6 +179,7 @@ describe("UserStatusBar component", () => {
   it("shows warning status indicator when token is expiring soon", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -205,6 +211,7 @@ describe("UserStatusBar component", () => {
   it("shows expired status indicator when token has expired", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -236,6 +243,7 @@ describe("UserStatusBar component", () => {
   it("shows countdown time in trigger button", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -265,6 +273,7 @@ describe("UserStatusBar component", () => {
   it("renders dropdown trigger with proper aria-label", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,

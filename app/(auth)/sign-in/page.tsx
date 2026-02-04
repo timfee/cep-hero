@@ -7,7 +7,7 @@
 import { track } from "@vercel/analytics";
 import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
-import { useActionState, useCallback, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 
 import { enrollUser, type EnrollmentResult } from "@/app/gimme/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -113,18 +113,26 @@ function RegistrationForm() {
     null
   );
   const [formKey, setFormKey] = useState(0);
+  // Track success state separately to allow proper reset
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successEmail, setSuccessEmail] = useState<string | null>(null);
+
+  // Update success state when action completes
+  useEffect(() => {
+    if (state?.notificationSentTo) {
+      setShowSuccess(true);
+      setSuccessEmail(state.notificationSentTo);
+    }
+  }, [state?.notificationSentTo]);
 
   const handleReset = useCallback(() => {
+    setShowSuccess(false);
+    setSuccessEmail(null);
     setFormKey((prev) => prev + 1);
   }, []);
 
-  if (state?.notificationSentTo) {
-    return (
-      <CheckEmailNotice
-        email={state.notificationSentTo}
-        onReset={handleReset}
-      />
-    );
+  if (showSuccess && successEmail) {
+    return <CheckEmailNotice email={successEmail} onReset={handleReset} />;
   }
 
   return (
