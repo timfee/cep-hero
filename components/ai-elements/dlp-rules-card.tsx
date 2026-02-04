@@ -78,10 +78,10 @@ function TriggerActionBadge({
   return (
     <span className="text-xs">
       {formattedTriggers && (
-        <span className="text-muted-foreground">{formattedTriggers}</span>
-      )}
-      {formattedTriggers && action && (
-        <span className="text-muted-foreground"> → </span>
+        <>
+          <span className="text-muted-foreground">{formattedTriggers}</span>
+          <span className="text-muted-foreground"> → </span>
+        </>
       )}
       <span className={getActionStyle(formattedAction)}>{formattedAction}</span>
     </span>

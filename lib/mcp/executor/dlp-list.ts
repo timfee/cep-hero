@@ -182,6 +182,41 @@ function logDlpError(error: unknown) {
 }
 
 /**
+ * Extracts triggers from the policy setting value.
+ * Triggers may be stored as an array or comma-separated string.
+ */
+function extractTriggers(value: Record<string, unknown> | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const triggers = value.triggers ?? value.trigger ?? value.triggerTypes;
+  if (Array.isArray(triggers)) {
+    return triggers.join(", ");
+  }
+  if (typeof triggers === "string") {
+    return triggers;
+  }
+  return "";
+}
+
+/**
+ * Extracts action from the policy setting value.
+ * Actions are typically BLOCK, WARN, or AUDIT.
+ */
+function extractAction(value: Record<string, unknown> | null | undefined) {
+  if (!value) {
+    return "";
+  }
+
+  const action = value.action ?? value.actionType ?? value.consequence;
+  if (typeof action === "string") {
+    return action;
+  }
+  return "";
+}
+
+/**
  * Transforms Cloud Identity policies to the output rule format.
  */
 function mapPoliciesToRules(
@@ -204,9 +239,10 @@ function mapPolicyToRule(
   const { orgUnitNameMap, rootOrgUnitId, rootOrgUnitPath } = orgUnitContext;
   const resourceName = policy.name ?? "";
   const id = resourceName.split("/").pop() ?? `rule-${idx + 1}`;
-  const settingType = policy.setting?.type ?? "";
-  const displayName = formatSettingType(settingType) || `Policy ${idx + 1}`;
-  const description = formatSettingDescription(policy.setting?.value);
+  const settingTypeRaw = policy.setting?.type ?? "";
+  const settingValue = policy.setting?.value;
+  const displayName = formatSettingType(settingTypeRaw) || `Policy ${idx + 1}`;
+  const description = formatSettingDescription(settingValue);
   const orgUnitRaw = policy.policyQuery?.orgUnit ?? "";
   const orgUnit =
     resolveOrgUnitDisplay(
@@ -215,15 +251,17 @@ function mapPolicyToRule(
       rootOrgUnitId,
       rootOrgUnitPath
     ) ?? orgUnitRaw;
-  const policyType = policy.type ?? "UNKNOWN";
+
+  const triggers = extractTriggers(settingValue);
+  const action = extractAction(settingValue);
 
   return {
     id,
     displayName,
     description,
-    settingType,
+    settingType: triggers,
     orgUnit,
-    policyType,
+    policyType: action,
     resourceName,
     consoleUrl: "https://admin.google.com/ac/chrome/dlp",
   };
