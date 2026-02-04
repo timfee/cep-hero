@@ -49,6 +49,7 @@ describe("UserStatusBar component", () => {
   it("shows loading state with branding", () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
     ) as typeof fetch;
@@ -59,24 +60,65 @@ describe("UserStatusBar component", () => {
     expect(getByText("CEP Hero")).toBeInTheDocument();
   });
 
-  it("shows not signed in with branding when unauthenticated", async () => {
+  it("redirects to sign-in when unauthenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () => Promise.resolve({ authenticated: false }),
+      })
+    ) as typeof fetch;
+
+    render(<UserStatusBar />);
+
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+    });
+  });
+
+  it("shows user info with error status when there is an auth error", async () => {
+    globalThis.fetch = mock(() =>
+      Promise.resolve({
+        ok: true,
+        json: () =>
+          Promise.resolve({
+            authenticated: true,
+            user: { name: "Test", email: "test@example.com", image: null },
+            token: {
+              expiresIn: 3600,
+              expiresAt: new Date(Date.now() + 3600000).toISOString(),
+              scopes: [],
+            },
+            error: "Token validation failed",
+          }),
       })
     ) as typeof fetch;
 
     const { getByText } = render(<UserStatusBar />);
 
     await waitFor(() => {
+      // Should show user info with error indicator, not redirect
+      expect(getByText("Test")).toBeInTheDocument();
+      expect(getByText("Error")).toBeInTheDocument();
+    });
+  });
+
+  it("shows not signed in when fetch throws an error", async () => {
+    globalThis.fetch = mock(() =>
+      Promise.reject(new Error("Network error"))
+    ) as typeof fetch;
+
+    const { getByText } = render(<UserStatusBar />);
+
+    await waitFor(() => {
+      // Should show "Not signed in" UI instead of redirecting
       expect(getByText("Not signed in")).toBeInTheDocument();
-      expect(getByText("CEP Hero")).toBeInTheDocument();
     });
   });
 
   it("shows user info when authenticated", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -105,6 +147,7 @@ describe("UserStatusBar component", () => {
   it("shows healthy status indicator when token is valid", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -136,6 +179,7 @@ describe("UserStatusBar component", () => {
   it("shows warning status indicator when token is expiring soon", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -167,6 +211,7 @@ describe("UserStatusBar component", () => {
   it("shows expired status indicator when token has expired", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -198,6 +243,7 @@ describe("UserStatusBar component", () => {
   it("shows countdown time in trigger button", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,
@@ -227,6 +273,7 @@ describe("UserStatusBar component", () => {
   it("renders dropdown trigger with proper aria-label", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
+        ok: true,
         json: () =>
           Promise.resolve({
             authenticated: true,

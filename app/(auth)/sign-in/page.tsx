@@ -1,11 +1,35 @@
+/**
+ * Sign-in page with options to sign in with existing account or self-enroll.
+ */
+
 "use client";
 
 import { track } from "@vercel/analytics";
+import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
-import { useCallback } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 
+import { enrollUser, type EnrollmentResult } from "@/app/gimme/actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { signIn } from "@/lib/auth-client";
+
+/**
+ * Form state type for useActionState.
+ */
+type FormState = EnrollmentResult | null;
+
+/**
+ * Wrapper for the enrollUser action to work with useActionState.
+ */
+function enrollAction(
+  _prevState: FormState,
+  formData: FormData
+): Promise<FormState> {
+  return enrollUser(formData);
+}
 
 /**
  * Handle sign-in button click.
@@ -16,36 +40,8 @@ function handleSignIn() {
 }
 
 /**
- * Sign-in page component.
+ * Google icon SVG component.
  */
-export default function SignInPage() {
-  const onSignIn = useCallback(handleSignIn, []);
-
-  return (
-    <main className="flex min-h-screen items-center justify-center px-4">
-      <div className="w-full max-w-sm text-center">
-        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
-          <Image src="/icon.png" alt="CEP Hero" height={50} width={50} />
-        </div>
-        <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
-          Chrome Enterprise Premium diagnostics
-        </p>
-
-        <Button className="mt-8 w-full" size="lg" onClick={onSignIn}>
-          <GoogleIcon />
-          Continue with Google
-        </Button>
-
-        <p className="mt-6 text-xs text-muted-foreground">
-          Requires a Google Workspace admin account with Chrome management
-          permissions.
-        </p>
-      </div>
-    </main>
-  );
-}
-
 function GoogleIcon() {
   return (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
@@ -66,5 +62,211 @@ function GoogleIcon() {
         d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
       />
     </svg>
+  );
+}
+
+/**
+ * Check email notification component - shown after enrollment request is processed.
+ */
+function CheckEmailNotice({
+  email,
+  onReset,
+}: {
+  email: string;
+  onReset: () => void;
+}) {
+  return (
+    <Card>
+      <CardContent className="pt-6">
+        <div className="space-y-4">
+          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+            <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <AlertTitle className="text-blue-800 dark:text-blue-200">
+              Check Your Email
+            </AlertTitle>
+            <AlertDescription className="text-blue-700 dark:text-blue-300">
+              We&apos;ve sent a notification to <strong>{email}</strong> with
+              the details of your request.
+            </AlertDescription>
+          </Alert>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            onClick={onReset}
+          >
+            Submit Another Request
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Registration form component.
+ */
+function RegistrationForm() {
+  const [state, formAction, isPending] = useActionState<FormState, FormData>(
+    enrollAction,
+    null
+  );
+  const [formKey, setFormKey] = useState(0);
+  // Track success state separately to allow proper reset
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [successEmail, setSuccessEmail] = useState<string | null>(null);
+
+  // Update success state when action completes
+  useEffect(() => {
+    if (state?.notificationSentTo) {
+      setShowSuccess(true);
+      setSuccessEmail(state.notificationSentTo);
+    }
+  }, [state?.notificationSentTo]);
+
+  const handleReset = useCallback(() => {
+    setShowSuccess(false);
+    setSuccessEmail(null);
+    setFormKey((prev) => prev + 1);
+  }, []);
+
+  if (showSuccess && successEmail) {
+    return <CheckEmailNotice email={successEmail} onReset={handleReset} />;
+  }
+
+  return (
+    <Card key={formKey}>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-lg">Create an Account</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form action={formAction} className="space-y-4">
+          {state?.error && (
+            <Alert variant="destructive">
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Error</AlertTitle>
+              <AlertDescription>{state.error}</AlertDescription>
+            </Alert>
+          )}
+
+          <div className="space-y-2">
+            <label htmlFor="name" className="text-sm font-medium">
+              Full Name
+            </label>
+            <Input
+              id="name"
+              name="name"
+              type="text"
+              placeholder="John Doe"
+              required
+              disabled={isPending}
+              autoComplete="name"
+              className="border-border bg-background"
+            />
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="email" className="text-sm font-medium">
+              Google Email
+            </label>
+            <Input
+              id="email"
+              name="email"
+              type="email"
+              placeholder="username@google.com"
+              required
+              disabled={isPending}
+              autoComplete="email"
+              className="border-border bg-background"
+            />
+            <p className="text-xs text-muted-foreground">
+              Must end with @google.com
+            </p>
+          </div>
+
+          <div className="space-y-2">
+            <label htmlFor="password" className="text-sm font-medium">
+              Enrollment Password
+            </label>
+            <Input
+              id="password"
+              name="password"
+              type="password"
+              placeholder="Enter enrollment password"
+              required
+              disabled={isPending}
+              autoComplete="off"
+              className="border-border bg-background"
+            />
+            <p className="text-xs text-muted-foreground">
+              Contact your team lead for the enrollment password.
+            </p>
+          </div>
+
+          <Button type="submit" className="w-full" disabled={isPending}>
+            {isPending ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              "Create Account"
+            )}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+/**
+ * Sign-in page component with sign-in button and registration form.
+ */
+export default function SignInPage() {
+  const onSignIn = useCallback(handleSignIn, []);
+
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4 py-8">
+      <div className="w-full max-w-md space-y-6">
+        {/* Branding */}
+        <div className="text-center">
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
+            <Image src="/icon.png" alt="CEP Hero" height={50} width={50} />
+          </div>
+          <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Agentic CEP assistant demo
+          </p>
+        </div>
+
+        {/* Sign In Button */}
+        <div className="space-y-3">
+          <Button className="w-full" size="lg" onClick={onSignIn}>
+            <GoogleIcon />
+            Sign in with Google
+          </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            Requires a Google Workspace admin account with Chrome management
+            permissions.
+          </p>
+        </div>
+
+        {/* Divider */}
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-background px-2 text-muted-foreground">
+              Or register for access
+            </span>
+          </div>
+        </div>
+
+        {/* Registration Form */}
+        <RegistrationForm />
+      </div>
+    </main>
   );
 }
