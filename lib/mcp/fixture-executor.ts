@@ -254,7 +254,7 @@ function buildConnectorConfig(fixtures: FixtureData): ConnectorConfigResult {
 
   return {
     status: "Resolved",
-    policySchemas: CONNECTOR_POLICY_SCHEMAS,
+    policySchemas: [...CONNECTOR_POLICY_SCHEMAS],
     value: fixtures.connectorPolicies ?? [],
     targetResource,
     targetResourceName,
