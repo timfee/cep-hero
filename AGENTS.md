@@ -60,7 +60,7 @@ export type ChromeEventsResult = { ... }
  * Contract for CEP tool execution. Implementations include CepToolExecutor
  * for production API calls and FixtureToolExecutor for deterministic testing.
  */
-export interface IToolExecutor { ... }
+export interface ToolExecutor { ... }
 ```
 
 ### What NOT to Document
@@ -234,7 +234,7 @@ The eval framework tests AI diagnostic capabilities using fixture injection for 
 
 The system uses dependency injection to swap between production and eval modes:
 
-- **`IToolExecutor`** interface (`lib/mcp/types.ts`) - Contract for tool execution
+- **`ToolExecutor`** interface (`lib/mcp/types.ts`) - Contract for tool execution
 - **`CepToolExecutor`** (`lib/mcp/registry.ts`) - Production implementation calling Google APIs
 - **`FixtureToolExecutor`** (`lib/mcp/fixture-executor.ts`) - Eval implementation returning fixture data
 - **Eval Runner** (`evals/lib/runner.ts`) - Standalone eval execution engine (no bun:test dependency)

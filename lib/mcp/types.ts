@@ -1,9 +1,12 @@
 /**
- * Core type definitions for MCP tool executor results and interfaces.
+ * Core type definitions for MCP tool executor interface.
  *
- * Result types are imported from their canonical definitions in executor files.
- * This provides a single import point for consumers while keeping definitions
- * close to their implementation.
+ * Result types are defined in their respective executor files:
+ * - ChromeEventsResult: ./executor/chrome-events
+ * - ConnectorConfigResult: ./executor/connector
+ * - ListDLPRulesResult: ./executor/dlp-list
+ * - EnrollBrowserResult: ./executor/enrollment
+ * - ListOrgUnitsResult: ./executor/org-units-api
  */
 
 import { type z } from "zod";
@@ -23,17 +26,6 @@ import {
   type GetFleetOverviewSchema,
   type ListDLPRulesSchema,
 } from "./registry";
-
-/**
- * Re-export result types from their canonical executor definitions.
- */
-export type {
-  ChromeEventsResult,
-  ConnectorConfigResult,
-  EnrollBrowserResult,
-  ListDLPRulesResult,
-  ListOrgUnitsResult,
-};
 
 /**
  * Result from debug authentication check.
@@ -100,7 +92,7 @@ export interface CreateDLPRuleResult {
  * Contract for CEP tool execution. Implementations include CepToolExecutor
  * for production API calls and FixtureToolExecutor for deterministic testing.
  */
-export interface IToolExecutor {
+export interface ToolExecutor {
   getChromeEvents(
     args: z.infer<typeof GetChromeEventsSchema>
   ): Promise<ChromeEventsResult>;

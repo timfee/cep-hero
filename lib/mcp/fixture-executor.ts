@@ -27,7 +27,7 @@ import {
   type DebugAuthResult,
   type DraftPolicyChangeResult,
   type FixtureData,
-  type IToolExecutor,
+  type ToolExecutor,
 } from "./types";
 
 export { loadFixtureData } from "./fixture-loader";
@@ -36,7 +36,7 @@ export { loadFixtureData } from "./fixture-loader";
  * Returns fixture data instead of calling real Google APIs.
  * Used for deterministic evaluation testing.
  */
-export class FixtureToolExecutor implements IToolExecutor {
+export class FixtureToolExecutor implements ToolExecutor {
   private fixtures: FixtureData;
 
   constructor(fixtures: FixtureData) {
