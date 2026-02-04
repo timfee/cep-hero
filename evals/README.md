@@ -29,8 +29,7 @@ evals/
 │   ├── base/           # Shared API snapshot (api-base.json)
 │   └── EC-###/         # Per-case overrides (overrides.json)
 ├── lib/                # Runner implementation
-├── comprehensive/      # Multi-iteration runner with analysis
-└── reports/            # JSON output (gitignored)
+└── reports/            # JSON + HTML output (gitignored)
 ```
 
 ## Environment Variables
@@ -120,25 +119,34 @@ User: "The exact prompt"
 EVAL_IDS=EC-086 EVAL_FIXTURES=1 bun run evals
 ```
 
-## Comprehensive Runner
+## CLI Options
 
-For multi-iteration runs with aggregated results:
+The eval runner supports CLI flags for advanced features:
 
 ```bash
-# Basic run (skip Gemini analysis)
-bun run evals:comprehensive --skip-analysis
+# Show help
+bun run evals --help
 
-# With LLM judge scoring
-bun run evals:comprehensive --with-judge
+# Generate HTML report
+EVAL_FIXTURES=1 bun run evals --html
+
+# Run with LLM judge
+EVAL_FIXTURES=1 bun run evals --with-judge
 
 # Multiple iterations (detects flaky tests)
-bun run evals:comprehensive --iterations 3
+EVAL_FIXTURES=1 bun run evals --iterations 3
 
-# Full run
-bun run evals:comprehensive:full
+# Run Gemini analysis on results
+EVAL_FIXTURES=1 bun run evals --analyze
+
+# Full run (judge + 3 iterations + HTML + analysis)
+EVAL_FIXTURES=1 bun run evals:full
+
+# Filter to specific cases via CLI
+bun run evals --cases EC-001,EC-002
 ```
 
-Outputs JSON and HTML reports to `evals/comprehensive/reports/`.
+Reports are saved to `evals/reports/`.
 
 ## Evidence Matching
 
