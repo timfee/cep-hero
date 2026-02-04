@@ -7,6 +7,10 @@ import { google as googleApis } from "googleapis";
 import { z } from "zod";
 
 import {
+  DEFAULT_CUSTOMER_TARGET,
+  ENROLLMENT_TOKEN_POLICY_SCHEMA,
+} from "@/lib/mcp/constants";
+import {
   type ApiErrorResponse,
   createApiError,
   logApiError,
@@ -55,9 +59,6 @@ type EnrollmentCreateFn = (args: {
     policyTargetKey: { targetResource: string };
   };
 }) => Promise<EnrollmentResponse>;
-
-const DEFAULT_TARGET = "customers/my_customer";
-const POLICY_SCHEMA_ID = "chrome.users.EnrollmentToken";
 
 const SERVICE_UNAVAILABLE: ApiErrorResponse = {
   error: "Chrome Management enrollment client unavailable",
@@ -135,7 +136,7 @@ async function executeEnrollment(
     const res = await createFn({
       parent: `customers/${customerId}`,
       requestBody: {
-        policySchemaId: POLICY_SCHEMA_ID,
+        policySchemaId: ENROLLMENT_TOKEN_POLICY_SCHEMA,
         policyTargetKey: { targetResource },
       },
     });
@@ -160,11 +161,11 @@ async function executeEnrollment(
  */
 function resolveTargetResource(orgUnitId: string | undefined) {
   if (orgUnitId === undefined) {
-    return DEFAULT_TARGET;
+    return DEFAULT_CUSTOMER_TARGET;
   }
   const normalized = buildOrgUnitTargetResource(orgUnitId);
   if (normalized.length === 0) {
-    return DEFAULT_TARGET;
+    return DEFAULT_CUSTOMER_TARGET;
   }
   return normalized;
 }

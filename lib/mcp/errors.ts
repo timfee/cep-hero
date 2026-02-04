@@ -236,7 +236,7 @@ export function logApiResponse(tag: string, data: Record<string, unknown>) {
  */
 export function logApiRequest(tag: string, data?: Record<string, unknown>) {
   if (data) {
-    console.log(`[${tag}] request`, data);
+    console.log(`[${tag}] request`, JSON.stringify(data));
   } else {
     console.log(`[${tag}] request`);
   }
