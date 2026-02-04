@@ -7,7 +7,7 @@
 import { track } from "@vercel/analytics";
 import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
-import { useCallback, useRef, useState, useTransition } from "react";
+import { useCallback, useState, useTransition } from "react";
 
 import { enrollUser } from "@/app/gimme/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -136,7 +136,6 @@ function validateFields(
  * Registration form component with client-side validation and value persistence.
  */
 function RegistrationForm() {
-  const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
 
   // Controlled form values - persist across submissions
@@ -235,7 +234,7 @@ function RegistrationForm() {
         <CardTitle className="text-lg">Create an Account</CardTitle>
       </CardHeader>
       <CardContent>
-        <form ref={formRef} onSubmit={handleSubmit} className="space-y-3">
+        <form onSubmit={handleSubmit} className="space-y-3">
           {serverError && (
             <Alert variant="destructive" className="py-2">
               <AlertCircle className="h-4 w-4" />
