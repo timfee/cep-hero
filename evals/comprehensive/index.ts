@@ -17,7 +17,14 @@ import {
 const REPORTS_DIR = "evals/reports";
 const OUTPUT_DIR = "evals/comprehensive/reports";
 
-/** Width of the display boxes in characters (excluding box characters). */
+/**
+ * Width of the display boxes in characters (excluding box characters).
+ *
+ * NOTE: Other layout values in this file (header spacing, word-wrap
+ * thresholds, and padEnd widths) are tuned for this value. If you change
+ * DISPLAY_BOX_WIDTH, you must adjust those related values to keep the
+ * boxes aligned.
+ */
 const DISPLAY_BOX_WIDTH = 58;
 
 interface Summary {
