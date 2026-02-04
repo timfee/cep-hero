@@ -3,6 +3,8 @@
  * This allows the eval runner to collect and report on all assertions without test framework dependency.
  */
 
+import { isPlainObject, normalizeForMatching } from "./utils";
+
 export interface AssertionResult {
   passed: boolean;
   message: string;
@@ -16,26 +18,6 @@ const schemaKeyMap: Record<string, string> = {
   next_steps: "nextSteps",
   reference: "reference",
 };
-
-/**
- * Type guard for checking if a value is a plain object.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-/**
- * Normalize text for fuzzy matching by lowercasing, removing punctuation, and collapsing whitespace.
- * Allows "Wi-Fi" to match "wifi", "de-auth" to match "deauth", etc.
- */
-function normalizeForMatching(text: string) {
-  return text
-    .toLowerCase()
-    .replaceAll(/[-_]/g, "")
-    .replaceAll(/[^\w\s]/g, " ")
-    .replaceAll(/\s+/g, " ")
-    .trim();
-}
 
 /**
  * Check if response metadata contains expected schema keys.
@@ -78,7 +60,7 @@ export function checkStructuredResponse({
  * Check if metadata object has all expected schema keys.
  */
 function hasExpectedSchema(metadata: unknown, expected: string[]) {
-  if (!isRecord(metadata)) {
+  if (!isPlainObject(metadata)) {
     return false;
   }
   return expected.every((key) => {

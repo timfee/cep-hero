@@ -5,6 +5,8 @@
 import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 
+import { isNonEmptyString, isPlainObject } from "./utils";
+
 export interface EvalRubric {
   min_score: number;
   criteria: string[];
@@ -37,8 +39,6 @@ export interface EvalCase {
   required_evidence?: string[];
   required_tool_calls?: string[];
   rubric?: EvalRubric;
-  assertions: unknown[];
-  cleanup: unknown[];
 }
 
 export interface EvalRegistry {
@@ -54,24 +54,10 @@ export interface FilterOptions {
 }
 
 /**
- * Type guard for non-empty strings.
- */
-function isNonEmptyString(value: string | undefined): value is string {
-  return typeof value === "string" && value.trim().length > 0;
-}
-
-/**
- * Type guard for plain objects.
- */
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-/**
  * Type guard for valid eval registry structure.
  */
 function isEvalRegistry(value: unknown): value is EvalRegistry {
-  if (!isRecord(value)) {
+  if (!isPlainObject(value)) {
     return false;
   }
   return typeof value.version === "string" && Array.isArray(value.cases);
