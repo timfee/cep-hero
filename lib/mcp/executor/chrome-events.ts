@@ -6,7 +6,13 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type admin_reports_v1 } from "googleapis";
 import { type z } from "zod";
 
-import { createApiError, getErrorDetails } from "@/lib/mcp/errors";
+import { MS_PER_DAY } from "@/lib/mcp/constants";
+import {
+  createApiError,
+  logApiError,
+  logApiRequest,
+  logApiResponse,
+} from "@/lib/mcp/errors";
 import { type GetChromeEventsSchema } from "@/lib/mcp/schemas";
 
 /**
@@ -41,17 +47,9 @@ export async function getChromeEvents(
 ): Promise<ChromeEventsResult> {
   const { maxResults = 50, startTime, endTime, pageToken } = args;
 
-  console.log("[chrome-events] request", {
-    maxResults,
-    pageToken,
-    startTime,
-    endTime,
-  });
+  logApiRequest("chrome-events", { maxResults, pageToken, startTime, endTime });
 
-  const service = googleApis.admin({
-    version: "reports_v1",
-    auth,
-  });
+  const service = googleApis.admin({ version: "reports_v1", auth });
 
   try {
     const res = await service.activities.list({
@@ -64,25 +62,18 @@ export async function getChromeEvents(
       endTime,
     });
 
-    console.log(
-      "[chrome-events] response",
-      JSON.stringify({
-        count: res.data.items?.length ?? 0,
-        sample: res.data.items?.[0]?.id,
-        nextPageToken: res.data.nextPageToken ?? null,
-      })
-    );
+    logApiResponse("chrome-events", {
+      count: res.data.items?.length ?? 0,
+      sample: res.data.items?.[0]?.id,
+      nextPageToken: res.data.nextPageToken ?? null,
+    });
 
     return {
       events: res.data.items ?? [],
       nextPageToken: res.data.nextPageToken ?? null,
     };
   } catch (error: unknown) {
-    const { code, message, errors } = getErrorDetails(error);
-    console.log(
-      "[chrome-events] error",
-      JSON.stringify({ code, message, errors })
-    );
+    logApiError("chrome-events", error);
     return createApiError(error, "chrome-events");
   }
 }
@@ -118,7 +109,7 @@ export async function getChromeEventsWindowSummary(
   } = config;
 
   const windowEnd = new Date();
-  const windowStart = new Date(windowEnd.getTime() - windowDays * 86_400_000);
+  const windowStart = new Date(windowEnd.getTime() - windowDays * MS_PER_DAY);
   const dayBuckets = buildDayBuckets(windowEnd, windowDays);
 
   const dayResults = await Promise.all(
@@ -147,8 +138,8 @@ interface DayBucket {
  */
 function buildDayBuckets(windowEnd: Date, windowDays: number) {
   return Array.from({ length: windowDays }, (_, index) => {
-    const dayEnd = new Date(windowEnd.getTime() - index * 86_400_000);
-    const dayStart = new Date(dayEnd.getTime() - 86_400_000);
+    const dayEnd = new Date(windowEnd.getTime() - index * MS_PER_DAY);
+    const dayStart = new Date(dayEnd.getTime() - MS_PER_DAY);
     return { dayStart, dayEnd };
   }).toSorted((a, b) => a.dayStart.getTime() - b.dayStart.getTime());
 }

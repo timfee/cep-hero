@@ -1,11 +1,65 @@
 /**
  * Standardized error handling and formatting for API operations.
+ * Provides unified ApiResult<T> discriminated union for consistent error handling.
  */
 
 import { StatusCodes } from "http-status-codes";
 
 /**
+ * Discriminated union for API results. Use `success` field as the discriminant.
+ * This replaces the previous pattern of checking `"error" in result`.
+ */
+export type ApiResult<T> =
+  | { success: true; data: T }
+  | {
+      success: false;
+      error: string;
+      suggestion: string;
+      requiresReauth: boolean;
+    };
+
+/**
+ * Type guard for successful API results.
+ */
+export function isSuccess<T>(
+  result: ApiResult<T>
+): result is { success: true; data: T } {
+  return result.success;
+}
+
+/**
+ * Type guard for failed API results.
+ */
+export function isError<T>(result: ApiResult<T>): result is {
+  success: false;
+  error: string;
+  suggestion: string;
+  requiresReauth: boolean;
+} {
+  return !result.success;
+}
+
+/**
+ * Wraps a successful value in an ApiResult.
+ */
+export function ok<T>(data: T): ApiResult<T> {
+  return { success: true, data };
+}
+
+/**
+ * Wraps an error in an ApiResult.
+ */
+export function err<T>(
+  error: string,
+  suggestion: string,
+  requiresReauth = false
+): ApiResult<T> {
+  return { success: false, error, suggestion, requiresReauth };
+}
+
+/**
  * Standardized API error response with reauth detection.
+ * @deprecated Use ApiResult<T> discriminated union instead.
  */
 export interface ApiErrorResult {
   error: string;
@@ -144,4 +198,31 @@ export function createApiError(error: unknown, contextKey: ApiContextKey) {
       : context.defaultSuggestion,
     requiresReauth,
   };
+}
+
+/**
+ * Logs structured API errors with consistent formatting.
+ * Consolidates the repeated logging pattern across executor files.
+ */
+export function logApiError(tag: string, error: unknown) {
+  const details = getErrorDetails(error);
+  console.log(`[${tag}] error`, JSON.stringify(details));
+}
+
+/**
+ * Logs structured API responses with consistent formatting.
+ */
+export function logApiResponse(tag: string, data: Record<string, unknown>) {
+  console.log(`[${tag}] response`, JSON.stringify(data));
+}
+
+/**
+ * Logs structured API requests with consistent formatting.
+ */
+export function logApiRequest(tag: string, data?: Record<string, unknown>) {
+  if (data) {
+    console.log(`[${tag}] request`, data);
+  } else {
+    console.log(`[${tag}] request`);
+  }
 }
