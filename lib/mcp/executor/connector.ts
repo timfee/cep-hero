@@ -7,6 +7,7 @@ import { google as googleApis, type chromepolicy_v1 } from "googleapis";
 
 import { CONNECTOR_POLICY_SCHEMAS } from "@/lib/mcp/constants";
 import {
+  type ApiErrorResponse,
   createApiError,
   getErrorMessage,
   logApiError,
@@ -35,10 +36,7 @@ interface ConnectorConfigSuccess {
   errors?: { targetResource: string; message: string }[];
 }
 
-interface ConnectorConfigError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
+interface ConnectorConfigError extends ApiErrorResponse {
   policySchemas?: string[];
   targetResource?: string;
   targetResourceName?: string | null;

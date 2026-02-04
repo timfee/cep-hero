@@ -8,7 +8,9 @@ import { type z } from "zod";
 
 import { MS_PER_DAY } from "@/lib/mcp/constants";
 import {
+  type ApiErrorResponse,
   createApiError,
+  isApiError,
   logApiError,
   logApiRequest,
   logApiResponse,
@@ -26,25 +28,10 @@ interface ChromeEventsSuccess {
   nextPageToken: string | null;
 }
 
-interface ChromeEventsError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
 /**
  * Result of fetching Chrome audit events, either a list of events or an error.
  */
-export type ChromeEventsResult = ChromeEventsSuccess | ChromeEventsError;
-
-/**
- * Type guard for Chrome events error results.
- */
-function isChromeEventsError(
-  result: ChromeEventsResult
-): result is ChromeEventsError {
-  return "error" in result;
-}
+export type ChromeEventsResult = ChromeEventsSuccess | ApiErrorResponse;
 
 /**
  * Fetch recent Chrome audit events from the Admin SDK Reports API.
@@ -154,7 +141,7 @@ function buildDayBuckets(windowEnd: Date, windowDays: number) {
 }
 
 interface DayResult {
-  error?: ChromeEventsError;
+  error?: ApiErrorResponse;
   events?: Activity[];
   dayCount: number;
   daySampled: boolean;
@@ -182,7 +169,7 @@ async function fetchDayEvents(
       endTime: bucket.dayEnd.toISOString(),
     });
 
-    if (isChromeEventsError(result)) {
+    if (isApiError(result)) {
       return { error: result, dayCount: 0, daySampled: false };
     }
 

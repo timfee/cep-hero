@@ -6,6 +6,7 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis, type admin_directory_v1 } from "googleapis";
 
 import {
+  type ApiErrorResponse,
   createApiError,
   logApiError,
   logApiRequest,
@@ -24,18 +25,12 @@ interface ListOrgUnitsSuccess {
   orgUnits: OrgUnitItem[];
 }
 
-interface ListOrgUnitsError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
 /**
  * Result of listing organizational units, either a list of units or an error.
  */
-export type ListOrgUnitsResult = ListOrgUnitsSuccess | ListOrgUnitsError;
+export type ListOrgUnitsResult = ListOrgUnitsSuccess | ApiErrorResponse;
 
-const SERVICE_UNAVAILABLE: ListOrgUnitsError = {
+const SERVICE_UNAVAILABLE: ApiErrorResponse = {
   error: "Directory orgunit client unavailable",
   suggestion: "Confirm Admin SDK is enabled and has correct scopes.",
   requiresReauth: false,

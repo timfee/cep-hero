@@ -7,6 +7,7 @@ import { google as googleApis } from "googleapis";
 import { z } from "zod";
 
 import {
+  type ApiErrorResponse,
   createApiError,
   logApiError,
   logApiRequest,
@@ -38,16 +39,10 @@ interface EnrollBrowserSuccess {
   expiresAt: string | null;
 }
 
-interface EnrollBrowserError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
 /**
  * Result of generating an enrollment token, either a token or an error.
  */
-export type EnrollBrowserResult = EnrollBrowserSuccess | EnrollBrowserError;
+export type EnrollBrowserResult = EnrollBrowserSuccess | ApiErrorResponse;
 
 interface EnrollmentResponse {
   data: { name?: string | null; expirationTime?: string | null };

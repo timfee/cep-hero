@@ -58,13 +58,28 @@ export function err<T>(
 }
 
 /**
- * Standardized API error response with reauth detection.
- * @deprecated Use ApiResult<T> discriminated union instead.
+ * Standardized API error response shape.
+ * Used by all executor result types as the error branch of their union.
  */
-export interface ApiErrorResult {
+export interface ApiErrorResponse {
   error: string;
   suggestion: string;
   requiresReauth: boolean;
+}
+
+/**
+ * Type guard for checking if a result is an API error response.
+ * Works with any result type that uses the ApiErrorResponse shape.
+ */
+export function isApiError<T>(
+  result: T | ApiErrorResponse
+): result is ApiErrorResponse {
+  return (
+    typeof result === "object" &&
+    result !== null &&
+    "error" in result &&
+    typeof (result as ApiErrorResponse).error === "string"
+  );
 }
 
 /**

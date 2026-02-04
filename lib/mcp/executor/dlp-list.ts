@@ -6,7 +6,12 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
-import { createApiError, logApiError, logApiResponse } from "@/lib/mcp/errors";
+import {
+  type ApiErrorResponse,
+  createApiError,
+  logApiError,
+  logApiResponse,
+} from "@/lib/mcp/errors";
 import { formatSettingType, formatSettingValue } from "@/lib/mcp/formatters";
 import { resolveOrgUnitDisplay } from "@/lib/mcp/org-units";
 import { type ListDLPRulesSchema } from "@/lib/mcp/schemas";
@@ -35,16 +40,10 @@ interface ListDLPRulesSuccess {
   help?: unknown;
 }
 
-interface ListDLPRulesError {
-  error: string;
-  suggestion: string;
-  requiresReauth: boolean;
-}
-
 /**
  * Result of listing DLP rules, either a list of rules or an error.
  */
-export type ListDLPRulesResult = ListDLPRulesSuccess | ListDLPRulesError;
+export type ListDLPRulesResult = ListDLPRulesSuccess | ApiErrorResponse;
 
 interface CloudIdentityPolicy {
   name?: string | null;
@@ -61,7 +60,7 @@ interface CloudIdentityPolicy {
   } | null;
 }
 
-const DLP_SERVICE_UNAVAILABLE: ListDLPRulesError = {
+const DLP_SERVICE_UNAVAILABLE: ApiErrorResponse = {
   error: "Cloud Identity policy client unavailable",
   suggestion: "Confirm Cloud Identity API is enabled for this project.",
   requiresReauth: false,
