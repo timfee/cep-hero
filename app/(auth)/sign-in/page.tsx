@@ -224,10 +224,19 @@ function RegistrationForm() {
  * Sign-in page component with sign-in button and registration form.
  */
 export default function SignInPage() {
-  const onSignIn = useCallback(handleSignIn, []);
+  const [isSigningIn, setIsSigningIn] = useState(false);
+
+  const onSignIn = useCallback(() => {
+    setIsSigningIn(true);
+    handleSignIn();
+  }, []);
 
   return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-8">
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
+      {/* Animated gradient background */}
+      <div className="animate-gradient-shift absolute inset-0 -z-10 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.12_0.02_250),oklch(0.15_0.04_260),oklch(0.10_0.03_240),oklch(0.14_0.02_255),oklch(0.12_0.02_250))]" />
+      <div className="animate-gradient-shift-reverse absolute inset-0 -z-10 bg-[length:300%_300%] bg-[radial-gradient(ellipse_at_top_right,oklch(0.20_0.08_250/0.5),transparent_50%),radial-gradient(ellipse_at_bottom_left,oklch(0.18_0.06_270/0.4),transparent_50%)]" />
+
       <div className="w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center">
@@ -242,9 +251,23 @@ export default function SignInPage() {
 
         {/* Sign In Button */}
         <div className="space-y-3">
-          <Button className="w-full" size="lg" onClick={onSignIn}>
-            <GoogleIcon />
-            Sign in with Google
+          <Button
+            className="w-full"
+            size="lg"
+            onClick={onSignIn}
+            disabled={isSigningIn}
+          >
+            {isSigningIn ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Signing in...
+              </>
+            ) : (
+              <>
+                <GoogleIcon />
+                Sign in with Google
+              </>
+            )}
           </Button>
           <p className="text-center text-xs text-muted-foreground">
             Requires a Google Workspace admin account with Chrome management
