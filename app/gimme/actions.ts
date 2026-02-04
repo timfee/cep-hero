@@ -15,7 +15,6 @@ import {
   type EnrollmentResult,
   generatePassword,
   makeUserSuperAdmin,
-  MAX_NAME_LENGTH,
   parseName,
   RATE_LIMIT_MAX_REQUESTS,
   RATE_LIMIT_WINDOW_MS,
@@ -24,6 +23,7 @@ import {
   stripQuotes,
   userExists,
   validateEmail,
+  validateName,
 } from "@/lib/gimme";
 import { checkRateLimit, timingSafeEqual } from "@/lib/rate-limit";
 
@@ -81,15 +81,12 @@ function validateFormInputs(
   email: string,
   password: string
 ): EnrollmentResult | null {
-  if (!name) {
-    return { notificationSentTo: "", error: "Name is required" };
+  // Use validateName which also checks for email addresses in name field
+  const nameResult = validateName(name);
+  if (!nameResult.valid) {
+    return { notificationSentTo: "", error: nameResult.error };
   }
-  if (name.length > MAX_NAME_LENGTH) {
-    return {
-      notificationSentTo: "",
-      error: `Name must be ${MAX_NAME_LENGTH} characters or less`,
-    };
-  }
+
   const emailResult = validateEmail(email);
   if (!emailResult.valid) {
     return { notificationSentTo: "", error: emailResult.error };
