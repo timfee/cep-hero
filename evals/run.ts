@@ -16,7 +16,7 @@
  *   --verbose         Detailed output
  *   --help            Show this help
  *
- * Environment variables (override CLI):
+ * Environment variables (CLI flags override these):
  *   EVAL_FIXTURES=1   Enable fixture data
  *   EVAL_IDS          Comma-separated case IDs
  *   EVAL_CATEGORY     Filter by category
@@ -70,7 +70,15 @@ Environment variables can also be used:
 
   const getValue = (flag: string): string | undefined => {
     const idx = args.indexOf(flag);
-    return idx !== -1 && idx + 1 < args.length ? args[idx + 1] : undefined;
+    if (idx === -1 || idx + 1 >= args.length) {
+      return undefined;
+    }
+    const value = args[idx + 1];
+    if (value.startsWith("-")) {
+      console.error(`Error: ${flag} requires a value, got "${value}"`);
+      process.exit(1);
+    }
+    return value;
   };
 
   const iterationsStr = getValue("--iterations");

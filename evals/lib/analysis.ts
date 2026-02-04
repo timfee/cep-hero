@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import { mkdir, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
-import type { EvalSummary } from "./reporter";
+import { type EvalSummary } from "./reporter";
 
 const OUTPUT_DIR = "evals/reports";
 const DISPLAY_BOX_WIDTH = 58;
@@ -33,9 +33,10 @@ interface CategoryData {
 /**
  * Aggregated totals across iterations.
  */
-interface AggregatedTotals {
+export interface AggregatedTotals {
   passed: number;
   failed: number;
+  errors: number;
   total: number;
   durationMs: number;
 }
@@ -47,6 +48,7 @@ export function aggregateSummaries(summaries: EvalSummary[]): AggregatedTotals {
   return {
     passed: summaries.reduce((sum, s) => sum + s.passed, 0),
     failed: summaries.reduce((sum, s) => sum + s.failed, 0),
+    errors: summaries.reduce((sum, s) => sum + s.errors, 0),
     total: summaries.reduce((sum, s) => sum + s.totalCases, 0),
     durationMs: summaries.reduce((sum, s) => sum + s.durationMs, 0),
   };
@@ -122,6 +124,9 @@ export function printComprehensiveSummary(
 
   console.log(
     `║  Failed:         ${String(totals.failed).padStart(6)}                                 ║`
+  );
+  console.log(
+    `║  Errors:         ${String(totals.errors).padStart(6)}                                 ║`
   );
   console.log(
     `║  Pass Rate:      ${passRate.toFixed(1).padStart(5)}%                                 ║`
