@@ -5,9 +5,11 @@
 
 "use client";
 
+import { SkeletonShimmer } from "@/components/ai-elements/shimmer";
+
 /**
  * Skeleton placeholder matching the DashboardOverview layout.
- * Displays animated pulse effects while content loads.
+ * Displays prominent shimmer effects while content loads.
  */
 export function DashboardSkeleton() {
   return (
@@ -15,25 +17,28 @@ export function DashboardSkeleton() {
       <div className="mx-auto max-w-3xl px-8 py-16">
         <header className="mb-16">
           <div className="flex items-start justify-between gap-4">
-            <div className="h-10 w-3/4 animate-pulse rounded-lg bg-muted" />
-            <div className="h-10 w-24 flex-shrink-0 animate-pulse rounded-lg bg-muted" />
+            <SkeletonShimmer height={40} width="75%" className="rounded-lg" />
+            <SkeletonShimmer
+              height={40}
+              width={96}
+              className="flex-shrink-0 rounded-lg"
+            />
           </div>
-          <div className="mt-5 space-y-2">
-            <div className="h-5 w-full animate-pulse rounded bg-muted" />
-            <div className="h-5 w-4/5 animate-pulse rounded bg-muted" />
+          <div className="mt-5 space-y-3">
+            <SkeletonShimmer height={20} width="100%" className="rounded" />
+            <SkeletonShimmer height={20} width="92%" className="rounded" />
+            <SkeletonShimmer height={20} width="80%" className="rounded" />
           </div>
         </header>
 
         <section>
-          <div className="mb-6 h-4 w-24 animate-pulse rounded bg-muted" />
+          <SkeletonShimmer height={16} width={96} className="mb-6 rounded" />
           <div className="space-y-3">
             {[0, 1, 2].map((i) => (
-              <div
+              <SkeletonShimmer
                 key={i}
-                className="h-24 animate-pulse rounded-2xl border border-white/10 bg-muted"
-                style={{
-                  animationDelay: `${i * 100}ms`,
-                }}
+                height={96}
+                className="rounded-2xl border border-white/10"
               />
             ))}
           </div>

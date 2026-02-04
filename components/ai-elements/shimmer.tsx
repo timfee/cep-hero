@@ -86,3 +86,40 @@ export const PulseShimmer = memo(
 );
 
 PulseShimmer.displayName = "PulseShimmer";
+
+/**
+ * Props for the prominent skeleton shimmer effect.
+ */
+export interface SkeletonShimmerProps {
+  className?: string;
+  width?: string | number;
+  height?: string | number;
+}
+
+/**
+ * Prominent skeleton shimmer with a sweeping gradient animation.
+ * Used for initial loading states where visibility is important.
+ */
+export const SkeletonShimmer = memo(
+  ({ className, width = "100%", height = 16 }: SkeletonShimmerProps) => (
+    <div
+      className={cn("relative overflow-hidden rounded bg-muted/50", className)}
+      style={{ width, height }}
+    >
+      <motion.div
+        className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent"
+        animate={{
+          x: ["-100%", "100%"],
+        }}
+        transition={{
+          duration: 1.5,
+          repeat: Infinity,
+          ease: "easeInOut",
+          repeatDelay: 0.5,
+        }}
+      />
+    </div>
+  )
+);
+
+SkeletonShimmer.displayName = "SkeletonShimmer";
