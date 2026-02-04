@@ -56,7 +56,7 @@ describe("SignInStatusPage component", () => {
     });
   });
 
-  it("redirects to sign-in when there is an auth error", async () => {
+  it("shows error status when there is an auth error", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
         json: () =>
@@ -68,22 +68,26 @@ describe("SignInStatusPage component", () => {
       })
     ) as typeof fetch;
 
-    render(<SignInStatusPage />);
+    const { getByText } = render(<SignInStatusPage />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      // Error should be displayed, not redirected
+      expect(getByText("Token validation failed")).toBeInTheDocument();
+      expect(getByText("Error")).toBeInTheDocument();
     });
   });
 
-  it("redirects to sign-in when fetch throws an error", async () => {
+  it("shows connection error when fetch throws an error", async () => {
     globalThis.fetch = mock(() =>
       Promise.reject(new Error("Network error"))
     ) as typeof fetch;
 
-    render(<SignInStatusPage />);
+    const { getByText } = render(<SignInStatusPage />);
 
     await waitFor(() => {
-      expect(mockPush).toHaveBeenCalledWith("/sign-in");
+      // Should show error UI instead of redirecting
+      expect(getByText("Connection Error")).toBeInTheDocument();
+      expect(getByText("Network error")).toBeInTheDocument();
     });
   });
 

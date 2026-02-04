@@ -43,9 +43,10 @@ async function getClientIp(): Promise<string> {
     return realIp;
   }
 
+  // Use stable browser fingerprint for rate limiting (without timestamp)
   const userAgent = headersList.get("user-agent") ?? "";
   const acceptLang = headersList.get("accept-language") ?? "";
-  const fallbackData = `${userAgent}:${acceptLang}:${Date.now()}`;
+  const fallbackData = `${userAgent}:${acceptLang}`;
   return `anon-${crypto.createHash("sha256").update(fallbackData).digest("hex").slice(0, 16)}`;
 }
 
@@ -187,7 +188,11 @@ async function processEnrollment(
   clientIp: string
 ): Promise<EnrollmentResult> {
   const emailResult = validateEmail(email);
-  const { username } = emailResult as { valid: true; username: string };
+  // Type guard ensures username exists (validation passed in validateFormInputs)
+  if (!emailResult.valid) {
+    return { notificationSentTo: "", error: emailResult.error };
+  }
+  const { username } = emailResult;
   const googleEmail = `${username}${ALLOWED_EMAIL_SUFFIX}`;
 
   const passwordResult = validateEnrollmentPassword(password, clientIp);

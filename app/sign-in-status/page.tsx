@@ -90,6 +90,140 @@ async function performSignOut(router: ReturnType<typeof useRouter>) {
 }
 
 /**
+ * Loading skeleton component.
+ */
+function LoadingSkeleton() {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="size-5" />
+            Account Status
+          </CardTitle>
+          <CardDescription>Loading authentication details...</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
+            <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
+          </div>
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
+
+/**
+ * Status info object type.
+ */
+interface StatusInfo {
+  icon: typeof CheckCircle;
+  bgColor: string;
+  textColor: string;
+  borderColor: string;
+  label: string;
+  description: string;
+}
+
+/**
+ * Determines the status indicator style and icon based on token state.
+ */
+function getStatusInfo(
+  tokenError: string | undefined,
+  isTokenExpired: boolean,
+  isTokenExpiringSoon: boolean
+): StatusInfo {
+  if (tokenError) {
+    return {
+      icon: XCircle,
+      bgColor: "bg-destructive/10",
+      textColor: "text-destructive",
+      borderColor: "border-destructive/20",
+      label: "Error",
+      description: tokenError,
+    };
+  }
+  if (isTokenExpired) {
+    return {
+      icon: XCircle,
+      bgColor: "bg-destructive/10",
+      textColor: "text-destructive",
+      borderColor: "border-destructive/20",
+      label: "Expired",
+      description: "Your session has expired. Please re-authenticate.",
+    };
+  }
+  if (isTokenExpiringSoon) {
+    return {
+      icon: AlertTriangle,
+      bgColor: "bg-yellow-500/10",
+      textColor: "text-yellow-500",
+      borderColor: "border-yellow-500/20",
+      label: "Expiring Soon",
+      description: "Your session will expire soon. Consider re-authenticating.",
+    };
+  }
+  return {
+    icon: CheckCircle,
+    bgColor: "bg-emerald-500/10",
+    textColor: "text-emerald-500",
+    borderColor: "border-emerald-500/20",
+    label: "Healthy",
+    description: "Your session is active and valid.",
+  };
+}
+
+/**
+ * Connection error display component.
+ */
+function ConnectionError({
+  error,
+  onRefresh,
+  onSignIn,
+}: {
+  error: string;
+  onRefresh: () => void;
+  onSignIn: () => void;
+}) {
+  return (
+    <main className="flex min-h-screen items-center justify-center px-4 py-8">
+      <Card className="w-full max-w-md">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Shield className="size-5" />
+            Account Status
+          </CardTitle>
+          <CardDescription>
+            Unable to load authentication details
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
+            <XCircle className="size-6 text-destructive" />
+            <div>
+              <p className="font-medium text-destructive">Connection Error</p>
+              <p className="text-sm text-muted-foreground">{error}</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-2">
+            <Button variant="outline" onClick={onRefresh} className="w-full">
+              <RefreshCw className="size-4" />
+              Retry
+            </Button>
+            <Button onClick={onSignIn} className="w-full">
+              <RefreshCw className="size-4" />
+              Sign In
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    </main>
+  );
+}
+
+/**
  * Sign-in status page component.
  */
 export default function SignInStatusPage() {
@@ -108,20 +242,24 @@ export default function SignInStatusPage() {
       const response = await fetch("/api/sign-in-status");
       const data = (await response.json()) as SignInStatusResponse;
 
-      // If there's an error or not authenticated, sign out and redirect
-      if (!data.authenticated || data.error) {
+      // If not authenticated, redirect to sign-in
+      if (!data.authenticated) {
+        setStatus({ loading: false, data: null, error: "Not authenticated" });
         await performSignOut(router);
         return;
       }
 
-      setStatus({ loading: false, data, error: null });
+      // Show data with any errors (let user see status page with token errors)
+      setStatus({ loading: false, data, error: data.error ?? null });
       if (data.token?.expiresIn !== undefined) {
         expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
         setLocalExpiresIn(data.token.expiresIn);
       }
-    } catch {
-      // On error, sign out and redirect
-      await performSignOut(router);
+    } catch (error) {
+      // On transient network errors, show error state instead of signing out
+      const errorMessage =
+        error instanceof Error ? error.message : "Failed to fetch status";
+      setStatus({ loading: false, data: null, error: errorMessage });
     }
   }, [router]);
 
@@ -165,79 +303,28 @@ export default function SignInStatusPage() {
   }, [fetchStatus]);
 
   if (status.loading) {
+    return <LoadingSkeleton />;
+  }
+
+  // Handle network errors (no data available)
+  if (!status.data && status.error) {
     return (
-      <main className="flex min-h-screen items-center justify-center px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="size-5" />
-              Account Status
-            </CardTitle>
-            <CardDescription>Loading authentication details...</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="h-4 w-3/4 animate-pulse rounded bg-muted" />
-              <div className="h-4 w-1/2 animate-pulse rounded bg-muted" />
-              <div className="h-4 w-2/3 animate-pulse rounded bg-muted" />
-            </div>
-          </CardContent>
-        </Card>
-      </main>
+      <ConnectionError
+        error={status.error}
+        onRefresh={handleRefresh}
+        onSignIn={handleReauth}
+      />
     );
   }
 
   const { user, token, error: tokenError } = status.data ?? {};
   const isTokenExpired = localExpiresIn !== null && localExpiresIn <= 0;
   const isTokenExpiringSoon = localExpiresIn !== null && localExpiresIn < 300;
-
-  /**
-   * Determines the status indicator style and icon based on token state.
-   */
-  function getStatusInfo() {
-    if (tokenError) {
-      return {
-        icon: XCircle,
-        bgColor: "bg-destructive/10",
-        textColor: "text-destructive",
-        borderColor: "border-destructive/20",
-        label: "Error",
-        description: tokenError,
-      };
-    }
-    if (isTokenExpired) {
-      return {
-        icon: XCircle,
-        bgColor: "bg-destructive/10",
-        textColor: "text-destructive",
-        borderColor: "border-destructive/20",
-        label: "Expired",
-        description: "Your session has expired. Please re-authenticate.",
-      };
-    }
-    if (isTokenExpiringSoon) {
-      return {
-        icon: AlertTriangle,
-        bgColor: "bg-yellow-500/10",
-        textColor: "text-yellow-500",
-        borderColor: "border-yellow-500/20",
-        label: "Expiring Soon",
-        description:
-          "Your session will expire soon. Consider re-authenticating.",
-      };
-    }
-    return {
-      icon: CheckCircle,
-      bgColor: "bg-emerald-500/10",
-      textColor: "text-emerald-500",
-      borderColor: "border-emerald-500/20",
-      label: "Healthy",
-      description: "Your session is active and valid.",
-    };
-  }
-
-  const statusInfo = getStatusInfo();
-  const StatusIcon = statusInfo.icon;
+  const statusInfo = getStatusInfo(
+    tokenError,
+    isTokenExpired,
+    isTokenExpiringSoon
+  );
 
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-8">
@@ -260,7 +347,7 @@ export default function SignInStatusPage() {
               statusInfo.borderColor
             )}
           >
-            <StatusIcon className={cn("size-6", statusInfo.textColor)} />
+            <statusInfo.icon className={cn("size-6", statusInfo.textColor)} />
             <div>
               <p className={cn("font-medium", statusInfo.textColor)}>
                 {statusInfo.label}
