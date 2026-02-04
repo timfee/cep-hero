@@ -10,6 +10,15 @@ import {
 } from "@/lib/test-helpers/eval-server";
 
 import {
+  aggregateCategories,
+  aggregateSummaries,
+  collectFailures,
+  printComprehensiveSummary,
+  printIterationHeader,
+  runGeminiAnalysis,
+  writeComprehensiveReports,
+} from "./analysis";
+import {
   checkForbiddenEvidence,
   checkRequiredEvidence,
   checkRequiredToolCalls,
@@ -935,12 +944,50 @@ export async function runEvals(
 }
 
 /**
- * CLI entry point.
+ * Options for the main entry point.
  */
-export async function main() {
+export interface MainOptions {
+  iterations?: number;
+  html?: boolean;
+  analyze?: boolean;
+}
+
+/**
+ * CLI entry point with support for iterations, HTML reports, and analysis.
+ */
+export async function main(options: MainOptions = {}) {
+  const { iterations = 1, html = false, analyze = false } = options;
+  const summaries: EvalSummary[] = [];
+
   try {
-    const { summary } = await runEvals();
-    process.exit(summary.failed + summary.errors > 0 ? 1 : 0);
+    for (let i = 0; i < iterations; i++) {
+      printIterationHeader(i + 1, iterations);
+      const { summary } = await runEvals();
+      summaries.push(summary);
+    }
+
+    // For multiple iterations, print comprehensive summary
+    if (iterations > 1 || html || analyze) {
+      const totals = aggregateSummaries(summaries);
+      const categories = aggregateCategories(summaries);
+      const failures = collectFailures(summaries);
+
+      printComprehensiveSummary(totals, categories, failures);
+
+      if (html) {
+        await writeComprehensiveReports(totals, categories, failures);
+      }
+
+      if (analyze) {
+        await runGeminiAnalysis(totals, categories, failures);
+      }
+
+      process.exit(totals.failed > 0 ? 1 : 0);
+    } else {
+      // Single iteration without extra features
+      const summary = summaries[0];
+      process.exit(summary.failed + summary.errors > 0 ? 1 : 0);
+    }
   } catch (error) {
     console.error("[eval] Fatal error:", error);
     process.exit(1);
