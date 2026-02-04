@@ -240,6 +240,17 @@ export default function SignInStatusPage() {
   const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/sign-in-status");
+
+      // Check for server errors before parsing
+      if (!response.ok) {
+        setStatus({
+          loading: false,
+          data: null,
+          error: `Server error: ${response.status}`,
+        });
+        return;
+      }
+
       const data = (await response.json()) as SignInStatusResponse;
 
       // If not authenticated, redirect to sign-in
