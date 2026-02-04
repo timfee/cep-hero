@@ -249,12 +249,12 @@ export default function SignInPage() {
   }, [isSigningIn]);
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
+    <main className="isolate relative flex min-h-screen items-center justify-center overflow-hidden px-4 py-8">
       {/* Animated gradient background */}
-      <div className="animate-gradient-shift absolute inset-0 -z-10 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.12_0.02_250),oklch(0.15_0.04_260),oklch(0.10_0.03_240),oklch(0.14_0.02_255),oklch(0.12_0.02_250))]" />
-      <div className="animate-gradient-shift-reverse absolute inset-0 -z-10 bg-[length:300%_300%] bg-[radial-gradient(ellipse_at_top_right,oklch(0.20_0.08_250/0.5),transparent_50%),radial-gradient(ellipse_at_bottom_left,oklch(0.18_0.06_270/0.4),transparent_50%)]" />
+      <div className="animate-gradient-shift absolute inset-0 z-0 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.12_0.02_250),oklch(0.15_0.04_260),oklch(0.10_0.03_240),oklch(0.14_0.02_255),oklch(0.12_0.02_250))]" />
+      <div className="animate-gradient-shift-reverse absolute inset-0 z-0 bg-[length:300%_300%] bg-[radial-gradient(ellipse_at_top_right,oklch(0.20_0.08_250/0.5),transparent_50%),radial-gradient(ellipse_at_bottom_left,oklch(0.18_0.06_270/0.4),transparent_50%)]" />
 
-      <div className="w-full max-w-md space-y-6">
+      <div className="relative z-10 w-full max-w-md space-y-6">
         {/* Branding */}
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
