@@ -953,6 +953,30 @@ export interface MainOptions {
 }
 
 /**
+ * Process summaries and generate reports if requested.
+ */
+async function processResults(
+  summaries: EvalSummary[],
+  options: { html: boolean; analyze: boolean }
+): Promise<number> {
+  const totals = aggregateSummaries(summaries);
+  const categories = aggregateCategories(summaries);
+  const failures = collectFailures(summaries);
+
+  printComprehensiveSummary(totals, categories, failures);
+
+  if (options.html) {
+    await writeComprehensiveReports(totals, categories, failures);
+  }
+
+  if (options.analyze) {
+    await runGeminiAnalysis(totals, categories, failures);
+  }
+
+  return totals.failed + totals.errors > 0 ? 1 : 0;
+}
+
+/**
  * CLI entry point with support for iterations, HTML reports, and analysis.
  */
 export async function main(options: MainOptions = {}) {
@@ -960,32 +984,17 @@ export async function main(options: MainOptions = {}) {
   const summaries: EvalSummary[] = [];
 
   try {
-    for (let i = 0; i < iterations; i++) {
+    for (let i = 0; i < iterations; i += 1) {
       printIterationHeader(i + 1, iterations);
       const { summary } = await runEvals();
       summaries.push(summary);
     }
 
-    // For multiple iterations, print comprehensive summary
     if (iterations > 1 || html || analyze) {
-      const totals = aggregateSummaries(summaries);
-      const categories = aggregateCategories(summaries);
-      const failures = collectFailures(summaries);
-
-      printComprehensiveSummary(totals, categories, failures);
-
-      if (html) {
-        await writeComprehensiveReports(totals, categories, failures);
-      }
-
-      if (analyze) {
-        await runGeminiAnalysis(totals, categories, failures);
-      }
-
-      process.exit(totals.failed + totals.errors > 0 ? 1 : 0);
+      const exitCode = await processResults(summaries, { html, analyze });
+      process.exit(exitCode);
     } else {
-      // Single iteration without extra features
-      const summary = summaries[0];
+      const [summary] = summaries;
       process.exit(summary.failed + summary.errors > 0 ? 1 : 0);
     }
   } catch (error) {

@@ -99,19 +99,19 @@ export function printIterationHeader(iteration: number, total: number): void {
 }
 
 /**
- * Print comprehensive summary with box drawing.
+ * Print the summary header box.
  */
-export function printComprehensiveSummary(
-  totals: AggregatedTotals,
-  categories: Record<string, CategoryData>,
-  failures: FailureData[]
-): void {
-  const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
-
+function printSummaryHeader(): void {
   console.log("\n");
   console.log(`╔${"═".repeat(DISPLAY_BOX_WIDTH)}╗`);
   console.log(`║${" ".repeat(20)}RESULTS SUMMARY${" ".repeat(23)}║`);
   console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
+}
+
+/**
+ * Print totals section with pass rate bar.
+ */
+function printTotalsSection(totals: AggregatedTotals, passRate: number): void {
   console.log(
     `║  Total Cases:    ${String(totals.total).padStart(6)}                                 ║`
   );
@@ -134,6 +134,14 @@ export function printComprehensiveSummary(
   console.log(
     `║  Duration:       ${(totals.durationMs / 1000).toFixed(1).padStart(5)}s                                 ║`
   );
+}
+
+/**
+ * Print categories section.
+ */
+function printCategoriesSection(
+  categories: Record<string, CategoryData>
+): void {
   console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
   console.log("║  BY CATEGORY                                             ║");
   console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
@@ -145,23 +153,103 @@ export function printComprehensiveSummary(
       `║  ${cat.padEnd(15)} ${String(data.passed).padStart(3)}/${String(data.total).padStart(3)}  ${bar}  ${catRate.toFixed(0).padStart(3)}%  ║`
     );
   }
+}
 
-  if (failures.length > 0) {
-    console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
-    console.log("║  FAILURES                                                ║");
-    console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
+/**
+ * Print failures section if any exist.
+ */
+function printFailuresSection(failures: FailureData[]): void {
+  if (failures.length === 0) {
+    return;
+  }
 
-    for (const f of failures.slice(0, 10)) {
-      const title =
-        f.title.length > 40 ? `${f.title.slice(0, 37)}...` : f.title;
-      console.log(`║  ${f.id.padEnd(8)} ${title.padEnd(42)}  ║`);
+  console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
+  console.log("║  FAILURES                                                ║");
+  console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
+
+  for (const f of failures.slice(0, 10)) {
+    const title = f.title.length > 40 ? `${f.title.slice(0, 37)}...` : f.title;
+    console.log(`║  ${f.id.padEnd(8)} ${title.padEnd(42)}  ║`);
+  }
+
+  if (failures.length > 10) {
+    console.log(
+      `║  ... and ${failures.length - 10} more                                       ║`
+    );
+  }
+}
+
+/**
+ * Print comprehensive summary with box drawing.
+ */
+export function printComprehensiveSummary(
+  totals: AggregatedTotals,
+  categories: Record<string, CategoryData>,
+  failures: FailureData[]
+): void {
+  const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
+
+  printSummaryHeader();
+  printTotalsSection(totals, passRate);
+  printCategoriesSection(categories);
+  printFailuresSection(failures);
+  console.log(`╚${"═".repeat(DISPLAY_BOX_WIDTH)}╝`);
+}
+
+/**
+ * Schema for Gemini analysis output.
+ */
+const AnalysisSchema = z.object({
+  summary: z.string().describe("2-3 sentence executive summary"),
+  insights: z.array(z.string()).describe("3-5 key insights"),
+  recommendations: z
+    .array(z.string())
+    .describe("3-5 actionable recommendations"),
+});
+
+type AnalysisResult = z.infer<typeof AnalysisSchema>;
+
+/**
+ * Print wrapped text in a box line.
+ */
+function printWrappedSummary(summary: string): void {
+  const words = summary.split(" ");
+  let line = "║  ";
+  for (const word of words) {
+    if (line.length + word.length > 56) {
+      console.log(`${line.padEnd(59)}║`);
+      line = `║  ${word} `;
+    } else {
+      line += `${word} `;
     }
+  }
+  if (line.length > 4) {
+    console.log(`${line.padEnd(59)}║`);
+  }
+}
 
-    if (failures.length > 10) {
-      console.log(
-        `║  ... and ${failures.length - 10} more                                       ║`
-      );
-    }
+/**
+ * Print analysis result box.
+ */
+function printAnalysisBox(analysis: AnalysisResult): void {
+  console.log(`╔${"═".repeat(DISPLAY_BOX_WIDTH)}╗`);
+  console.log(`║${" ".repeat(18)}GEMINI 2.5 PRO ANALYSIS${" ".repeat(17)}║`);
+  console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
+
+  printWrappedSummary(analysis.summary);
+
+  console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
+  console.log("║  KEY INSIGHTS                                            ║");
+  for (const insight of analysis.insights) {
+    const short = insight.length > 52 ? `${insight.slice(0, 49)}...` : insight;
+    console.log(`║  • ${short.padEnd(53)} ║`);
+  }
+
+  console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
+  console.log("║  RECOMMENDATIONS                                         ║");
+  for (const rec of analysis.recommendations) {
+    const short = rec.length > 52 ? `${rec.slice(0, 49)}...` : rec;
+    console.log(`║  → ${short.padEnd(53)} ║`);
   }
 
   console.log(`╚${"═".repeat(DISPLAY_BOX_WIDTH)}╝`);
@@ -179,14 +267,6 @@ export async function runGeminiAnalysis(
 
   console.log("\n⏳ Running Gemini analysis...\n");
 
-  const AnalysisSchema = z.object({
-    summary: z.string().describe("2-3 sentence executive summary"),
-    insights: z.array(z.string()).describe("3-5 key insights"),
-    recommendations: z
-      .array(z.string())
-      .describe("3-5 actionable recommendations"),
-  });
-
   try {
     const { object: analysis } = await generateObject({
       model: google("gemini-2.5-pro-preview-05-06"),
@@ -200,40 +280,7 @@ Results:
 - Failures: ${JSON.stringify(failures.slice(0, 20))}`,
     });
 
-    console.log(`╔${"═".repeat(DISPLAY_BOX_WIDTH)}╗`);
-    console.log(`║${" ".repeat(18)}GEMINI 2.5 PRO ANALYSIS${" ".repeat(17)}║`);
-    console.log(`╠${"═".repeat(DISPLAY_BOX_WIDTH)}╣`);
-
-    const words = analysis.summary.split(" ");
-    let line = "║  ";
-    for (const word of words) {
-      if (line.length + word.length > 56) {
-        console.log(`${line.padEnd(59)}║`);
-        line = `║  ${word} `;
-      } else {
-        line += `${word} `;
-      }
-    }
-    if (line.length > 4) {
-      console.log(`${line.padEnd(59)}║`);
-    }
-
-    console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
-    console.log("║  KEY INSIGHTS                                            ║");
-    for (const insight of analysis.insights) {
-      const short =
-        insight.length > 52 ? `${insight.slice(0, 49)}...` : insight;
-      console.log(`║  • ${short.padEnd(53)} ║`);
-    }
-
-    console.log(`╟${"─".repeat(DISPLAY_BOX_WIDTH)}╢`);
-    console.log("║  RECOMMENDATIONS                                         ║");
-    for (const rec of analysis.recommendations) {
-      const short = rec.length > 52 ? `${rec.slice(0, 49)}...` : rec;
-      console.log(`║  → ${short.padEnd(53)} ║`);
-    }
-
-    console.log(`╚${"═".repeat(DISPLAY_BOX_WIDTH)}╝`);
+    printAnalysisBox(analysis);
   } catch (error) {
     console.log(
       "⚠️  Gemini analysis failed:",

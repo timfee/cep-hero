@@ -24,72 +24,13 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {
+  formatTimeRemaining,
+  performSignOut,
+  type SignInStatusResponse,
+  type StatusState,
+} from "@/lib/auth/status";
 import { cn } from "@/lib/utils";
-
-/**
- * Response from the sign-in status API endpoint.
- */
-interface SignInStatusResponse {
-  authenticated: boolean;
-  user?: {
-    name: string | null;
-    email: string | null;
-    image: string | null;
-  };
-  token?: {
-    expiresIn: number;
-    expiresAt: string;
-    scopes: string[];
-  };
-  error?: string;
-}
-
-/**
- * Internal state for tracking authentication status.
- */
-interface StatusState {
-  loading: boolean;
-  data: SignInStatusResponse | null;
-  error: string | null;
-}
-
-/**
- * Formats remaining seconds into a human-readable time string.
- */
-function formatTimeRemaining(seconds: number): string {
-  if (seconds <= 0) {
-    return "Expired";
-  }
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m ${secs}s`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-}
-
-/**
- * Signs out the user and redirects to sign-in page.
- * Uses window.location for hard redirect to ensure cookies are cleared.
- */
-async function performSignOut() {
-  try {
-    await fetch("/api/sign-out", { method: "POST" });
-  } catch (error) {
-    console.log(
-      "[sign-in-status] Sign out error:",
-      error instanceof Error ? error.message : "Unknown error"
-    );
-  }
-  // Hard redirect to ensure server sees cleared cookies
-  window.location.href = "/sign-in";
-}
 
 /**
  * Loading skeleton component.
@@ -178,54 +119,6 @@ function getStatusInfo(
 }
 
 /**
- * Connection error display component.
- */
-function ConnectionError({
-  error,
-  onRefresh,
-  onSignIn,
-}: {
-  error: string;
-  onRefresh: () => void;
-  onSignIn: () => void;
-}) {
-  return (
-    <main className="flex min-h-screen items-center justify-center px-4 py-8">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="size-5" />
-            Account Status
-          </CardTitle>
-          <CardDescription>
-            Unable to load authentication details
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="flex items-center gap-3 rounded-lg border border-destructive/20 bg-destructive/10 p-4">
-            <XCircle className="size-6 text-destructive" />
-            <div>
-              <p className="font-medium text-destructive">Connection Error</p>
-              <p className="text-sm text-muted-foreground">{error}</p>
-            </div>
-          </div>
-          <div className="flex flex-col gap-2">
-            <Button variant="outline" onClick={onRefresh} className="w-full">
-              <RefreshCw className="size-4" />
-              Retry
-            </Button>
-            <Button onClick={onSignIn} className="w-full">
-              <RefreshCw className="size-4" />
-              Sign In
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    </main>
-  );
-}
-
-/**
  * Sign-in status page component.
  */
 export default function SignInStatusPage() {
@@ -245,7 +138,7 @@ export default function SignInStatusPage() {
 
       // Server error - sign out
       if (!response.ok) {
-        await performSignOut();
+        await performSignOut("sign-in-status");
         return;
       }
 
@@ -253,7 +146,7 @@ export default function SignInStatusPage() {
 
       // If not authenticated or there's an error, sign out and redirect
       if (!data.authenticated || data.error) {
-        await performSignOut();
+        await performSignOut("sign-in-status");
         return;
       }
 
@@ -264,9 +157,9 @@ export default function SignInStatusPage() {
       }
     } catch {
       // On any error, sign out and redirect
-      await performSignOut();
+      await performSignOut("sign-in-status");
     }
-  }, [router]);
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -295,8 +188,8 @@ export default function SignInStatusPage() {
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
-    await performSignOut();
-  }, [router]);
+    await performSignOut("sign-in-status");
+  }, []);
 
   const handleReauth = useCallback(() => {
     router.push("/sign-in");

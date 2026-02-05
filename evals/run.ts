@@ -68,7 +68,7 @@ Environment variables can also be used:
     return null;
   }
 
-  const getValue = (flag: string): string | undefined => {
+  function getValue(flag: string): string | undefined {
     const idx = args.indexOf(flag);
     if (idx === -1 || idx + 1 >= args.length) {
       return undefined;
@@ -79,7 +79,7 @@ Environment variables can also be used:
       process.exit(1);
     }
     return value;
-  };
+  }
 
   const iterationsStr = getValue("--iterations");
   const iterations = iterationsStr ? Number.parseInt(iterationsStr, 10) : 1;
