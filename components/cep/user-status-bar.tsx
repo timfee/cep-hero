@@ -21,55 +21,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  formatTimeRemaining,
+  performSignOut,
+  type SignInStatusResponse,
+  type StatusState,
+} from "@/lib/auth/status";
 import { cn } from "@/lib/utils";
-
-/**
- * Response from the sign-in status API endpoint.
- */
-interface SignInStatusResponse {
-  authenticated: boolean;
-  user?: {
-    name: string | null;
-    email: string | null;
-    image: string | null;
-  };
-  token?: {
-    expiresIn: number;
-    expiresAt: string;
-    scopes: string[];
-  };
-  error?: string;
-}
-
-/**
- * Internal state for tracking authentication status.
- */
-interface StatusState {
-  loading: boolean;
-  data: SignInStatusResponse | null;
-  error: string | null;
-}
-
-/**
- * Formats remaining seconds into a human-readable time string.
- */
-function formatTimeRemaining(seconds: number): string {
-  if (seconds <= 0) {
-    return "Expired";
-  }
-
-  const hours = Math.floor(seconds / 3600);
-  const minutes = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-
-  if (hours > 0) {
-    return `${hours}h ${minutes}m`;
-  }
-  if (minutes > 0) {
-    return `${minutes}m ${secs}s`;
-  }
-  return `${secs}s`;
-}
 
 export function UserStatusBar() {
   const router = useRouter();
@@ -82,30 +40,13 @@ export function UserStatusBar() {
   const [signingOut, setSigningOut] = useState(false);
   const expiresAtRef = useRef<number | null>(null);
 
-  /**
-   * Signs out the user and redirects to sign-in page.
-   * Uses window.location for hard redirect to ensure cookies are cleared.
-   */
-  const performSignOut = useCallback(async () => {
-    try {
-      await fetch("/api/sign-out", { method: "POST" });
-    } catch (err) {
-      console.log(
-        "[user-status-bar] Sign out error:",
-        err instanceof Error ? err.message : "Unknown error"
-      );
-    }
-    // Hard redirect to ensure server sees cleared cookies
-    window.location.href = "/sign-in";
-  }, []);
-
   const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/sign-in-status");
 
       // Server error - sign out
       if (!response.ok) {
-        await performSignOut();
+        await performSignOut("user-status-bar");
         return;
       }
 
@@ -113,7 +54,7 @@ export function UserStatusBar() {
 
       // If not authenticated or there's an error, sign out and redirect
       if (!data.authenticated || data.error) {
-        await performSignOut();
+        await performSignOut("user-status-bar");
         return;
       }
 
@@ -124,9 +65,9 @@ export function UserStatusBar() {
       }
     } catch {
       // On any error, sign out and redirect
-      await performSignOut();
+      await performSignOut("user-status-bar");
     }
-  }, [performSignOut]);
+  }, []);
 
   useEffect(() => {
     void fetchStatus();
@@ -157,8 +98,8 @@ export function UserStatusBar() {
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
-    await performSignOut();
-  }, [performSignOut]);
+    await performSignOut("user-status-bar");
+  }, []);
 
   const handleReauth = useCallback(() => {
     router.push("/sign-in");
@@ -235,13 +176,13 @@ export function UserStatusBar() {
       return {
         bgColor: "bg-yellow-500/10",
         textColor: "text-yellow-500",
-        text: formatTimeRemaining(localExpiresIn ?? 0),
+        text: formatTimeRemaining(localExpiresIn ?? 0, true),
       };
     }
     return {
       bgColor: "bg-emerald-500/10",
       textColor: "text-emerald-400",
-      text: formatTimeRemaining(localExpiresIn ?? 0),
+      text: formatTimeRemaining(localExpiresIn ?? 0, true),
     };
   };
 

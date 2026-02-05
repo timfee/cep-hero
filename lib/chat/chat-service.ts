@@ -106,7 +106,12 @@ When mentioning org units in your responses:
 # Response Structure
 When troubleshooting, structure your response with clear sections:
 - **Diagnosis**: What is the root cause or likely issue
-- **Evidence**: What data/logs/events support this conclusion. IMPORTANT: Cite exact error codes (e.g., ERR_NAME_NOT_RESOLVED, ERR_CONNECTION_TIMED_OUT), log entries, and technical identifiers from the data. Don't paraphrase - quote the actual values.
+- **Evidence**: What data/logs/events support this conclusion. CRITICAL REQUIREMENTS:
+  1. Cite EXACT field values from tool results (e.g., "SOURCE_APP: Salesforce", "DESTINATION_APP: Personal Gmail")
+  2. Quote error codes verbatim (e.g., ERR_NAME_NOT_RESOLVED, CLIPBOARD_OPERATION_BLOCKED)
+  3. Mention specific counts (e.g., "0 browsers enrolled", "3 DLP rules configured")
+  4. Reference policy scopes exactly (e.g., "applied at customers/C00000000 level" or "scoped to /Engineering OU")
+  5. Include token/enrollment status when relevant (e.g., "enrollment token status: valid")
 - **Hypotheses**: Alternative explanations if the diagnosis is uncertain
 - **Next Steps**: Specific actions the admin should take. Include standard remediation steps like sysprep for VM cloning issues, license verification for enrollment issues, etc.
 
@@ -259,6 +264,8 @@ interface StepAnalysis {
   hasSuggestActionsCall: boolean;
   hasDlpProposalCall: boolean;
   recommendsDlpProposal: boolean;
+  hasShortResponse: boolean;
+  textLength: number;
 }
 
 interface LastStep {
@@ -284,12 +291,17 @@ function analyzeLastStep(lastStep: LastStep): StepAnalysis {
     /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
     /(rule|policy)/i.test(lastStep.text);
 
+  const textLength = lastStep.text.trim().length;
+  const hasShortResponse = hasToolResults && hasText && textLength < 200;
+
   return {
     hasToolResults,
     hasText,
     hasSuggestActionsCall,
     hasDlpProposalCall,
     recommendsDlpProposal,
+    hasShortResponse,
+    textLength,
   };
 }
 
@@ -345,6 +357,29 @@ If you add any text, keep it to one short sentence.`,
 }
 
 /**
+ * Build guard instructions for expanding short/truncated responses.
+ */
+function buildShortResponseGuard(enhancedSystemPrompt: string) {
+  return {
+    system: `${enhancedSystemPrompt}
+
+# Response Expansion Guard
+Your response was too brief. You MUST provide a complete response with ALL sections:
+
+1. **Diagnosis**: 2-3 sentences explaining the root cause
+2. **Evidence**: Quote SPECIFIC values from tool results:
+   - Event types (e.g., CLIPBOARD_OPERATION_BLOCKED)
+   - Field values (e.g., SOURCE_APP: Salesforce, DESTINATION_APP: Gmail)
+   - Counts (e.g., "0 browsers enrolled", "2 DLP rules found")
+   - Scope info (e.g., "applied at customer level")
+3. **Next Steps**: Numbered list with Admin Console links
+
+Do NOT just say "OK" or "I will do X". Explain the situation fully, then call suggestActions.`,
+    activeTools: ["suggestActions"],
+  };
+}
+
+/**
  * Compute the step response configuration based on analysis.
  */
 function computeStepResponse(
@@ -356,6 +391,10 @@ function computeStepResponse(
   }
   if (analysis.hasToolResults && !analysis.hasText) {
     return buildResponseCompletionGuard(enhancedSystemPrompt);
+  }
+  // Guard against short/truncated responses after tool calls (even if suggestActions was called)
+  if (analysis.hasShortResponse) {
+    return buildShortResponseGuard(enhancedSystemPrompt);
   }
   if (analysis.hasToolResults && !analysis.hasSuggestActionsCall) {
     return buildActionCompletionGuard(enhancedSystemPrompt);
@@ -392,8 +431,8 @@ export async function createChatStream({
         const hasSuggestActions = lastStep.toolCalls.some(
           (call) => call.toolName === "suggestActions"
         );
-        const hasText = lastStep.text.trim().length > 0;
-        return hasSuggestActions && hasText;
+        const hasSubstantialText = lastStep.text.trim().length >= 200;
+        return hasSuggestActions && hasSubstantialText;
       },
     ],
     prepareStep: ({ steps }) => {

@@ -26,18 +26,19 @@ describe("SignInStatusPage component", () => {
   beforeEach(() => {
     mockPush.mockClear();
     locationHref = "";
-    // Mock window.location.href
-    Object.defineProperty(globalThis, "location", {
-      value: {
-        ...originalLocation,
-        href: "",
-        set href(value: string) {
-          locationHref = value;
-        },
-        get href() {
-          return locationHref;
-        },
+    // Mock window.location.href with only getter/setter (no duplicate property)
+    const locationMock = { ...originalLocation };
+    Object.defineProperty(locationMock, "href", {
+      get() {
+        return locationHref;
       },
+      set(value: string) {
+        locationHref = value;
+      },
+      configurable: true,
+    });
+    Object.defineProperty(globalThis, "location", {
+      value: locationMock,
       writable: true,
     });
   });
@@ -56,7 +57,7 @@ describe("SignInStatusPage component", () => {
         ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const { container, getByText } = render(<SignInStatusPage />);
     const skeleton = container.querySelector(".animate-pulse");
@@ -70,7 +71,7 @@ describe("SignInStatusPage component", () => {
         ok: true,
         json: () => Promise.resolve({ authenticated: false }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     render(<SignInStatusPage />);
 
@@ -90,7 +91,7 @@ describe("SignInStatusPage component", () => {
             error: "Token validation failed",
           }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     render(<SignInStatusPage />);
 
@@ -102,7 +103,7 @@ describe("SignInStatusPage component", () => {
   it("redirects to sign-in when fetch throws an error", async () => {
     globalThis.fetch = mock(() =>
       Promise.reject(new Error("Network error"))
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     render(<SignInStatusPage />);
 
@@ -130,7 +131,7 @@ describe("SignInStatusPage component", () => {
             },
           }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const { getByText } = render(<SignInStatusPage />);
 
@@ -160,7 +161,7 @@ describe("SignInStatusPage component", () => {
             },
           }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const { getByText } = render(<SignInStatusPage />);
 
@@ -188,7 +189,7 @@ describe("SignInStatusPage component", () => {
             },
           }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const { container, getByText } = render(<SignInStatusPage />);
 
@@ -223,7 +224,7 @@ describe("SignInStatusPage component", () => {
             },
           }),
       })
-    ) as typeof fetch;
+    ) as unknown as typeof fetch;
 
     const { getByRole } = render(<SignInStatusPage />);
 

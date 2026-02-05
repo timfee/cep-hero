@@ -7,6 +7,7 @@ import type { chromepolicy_v1 } from "googleapis";
 import { describe, expect, it } from "bun:test";
 
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
+import { CONNECTOR_POLICY_SCHEMAS } from "@/lib/mcp/constants";
 import { buildEvidenceForTest } from "@/lib/test-helpers/diagnose-evidence";
 
 type ResolvedPolicy =
@@ -36,7 +37,7 @@ describe("buildEvidence connector handling", () => {
       dlpResult: { rules: [] },
       connectorResult: {
         status: "Resolved",
-        policySchemas: [],
+        policySchemas: CONNECTOR_POLICY_SCHEMAS,
         value: connectorPolicies,
         targetResource: "orgunits/root",
         targetResourceName: null,
@@ -71,7 +72,7 @@ describe("buildEvidence connector handling", () => {
       dlpResult: { rules: [] },
       connectorResult: {
         status: "Resolved",
-        policySchemas: [],
+        policySchemas: CONNECTOR_POLICY_SCHEMAS,
         value: connectorPolicies,
         targetResource: "orgunits/root",
         targetResourceName: null,
@@ -93,7 +94,7 @@ describe("buildEvidence connector handling", () => {
       dlpResult: { rules: [] },
       connectorResult: {
         status: "Resolved",
-        policySchemas: [],
+        policySchemas: CONNECTOR_POLICY_SCHEMAS,
         value: makeConnectorPolicies(["orgunits/root"]),
         targetResource: "orgunits/root",
         targetResourceName: null,
@@ -102,6 +103,8 @@ describe("buildEvidence connector handling", () => {
       authDebugResult: {
         scopes: ["https://www.googleapis.com/auth/admin.directory.user"],
         expiresIn: 1000,
+        email: undefined,
+        accessType: undefined,
       },
     });
 
@@ -122,7 +125,7 @@ describe("buildEvidence connector handling", () => {
         error: "Could not determine policy target (root org unit).",
         suggestion: "Re-authenticate",
         requiresReauth: false,
-        policySchemas: [],
+        policySchemas: CONNECTOR_POLICY_SCHEMAS,
         targetResource: "orgunits/root",
         targetResourceName: null,
         attemptedTargets: ["orgunits/root"],
