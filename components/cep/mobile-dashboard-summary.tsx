@@ -161,7 +161,7 @@ export function MobileDashboardSummary({
                 Analyzing fleet...
               </Shimmer>
             ) : (
-              <span className="truncate text-sm font-medium text-foreground">
+              <span className="block truncate text-sm font-medium text-foreground">
                 {data?.headline}
               </span>
             )}
@@ -255,8 +255,8 @@ export function MobileDashboardSummary({
                             />
                           </div>
                           <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2">
-                              <span className="truncate text-sm font-medium text-foreground">
+                            <div className="flex min-w-0 items-center gap-2">
+                              <span className="min-w-0 flex-1 truncate text-sm font-medium text-foreground">
                                 {card.label}
                               </span>
                               <span
