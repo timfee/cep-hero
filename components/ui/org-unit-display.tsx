@@ -38,8 +38,8 @@ function extractOrgUnitId(value: string | null | undefined): string | null {
   if (value.startsWith("/")) {
     return null;
   }
-  // Return as-is if it looks like an ID (alphanumeric)
-  if (/^[a-zA-Z0-9]+$/.test(value)) {
+  // Return as-is if it looks like an ID (alphanumeric with hyphens/underscores)
+  if (/^[a-zA-Z0-9_-]+$/.test(value)) {
     return value;
   }
   return null;
@@ -68,6 +68,8 @@ function formatDisplayName(
     if (targetResource.startsWith("customers/")) {
       return "Organization";
     }
+    // Return original value for unrecognized patterns
+    return targetResource;
   }
   return "/";
 }
