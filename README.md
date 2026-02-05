@@ -196,7 +196,8 @@ bun run fixtures:capture
 
 ## Project Structure
 
-- **`lib/mcp/registry.ts`**: Deterministic tools + evidence extraction + structured AI summaries.
+- **`lib/mcp/registry.ts`**: Central re-export hub for MCP schemas and executor.
+- **`lib/mcp/executor/`**: CepToolExecutor implementation with Google API integrations.
 - **`lib/mcp/server-factory.ts`**: MCP tool registrations and Streamable HTTP transport.
 - **`lib/mcp/errors.ts`**: Unified `ApiResult<T>` type, type guards, and logging utilities.
 - **`lib/mcp/constants.ts`**: Shared constants (MS_PER_DAY, CONNECTOR_POLICY_SCHEMAS).
