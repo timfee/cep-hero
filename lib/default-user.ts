@@ -28,29 +28,35 @@ const DEFAULT_USER_SCOPES = [
 
 /**
  * Whether the default user mode is enabled via environment variable.
+ * Returns false if GOOGLE_TOKEN_EMAIL is not set, since the feature
+ * requires a delegation target to obtain access tokens.
  */
 export function isDefaultUserEnabled(): boolean {
   const value = process.env.USE_DEFAULT_USER;
-  return value === "true" || value === "1";
+  if (value !== "true" && value !== "1") {
+    return false;
+  }
+
+  if (!process.env.GOOGLE_TOKEN_EMAIL) {
+    console.error(
+      "[default-user] USE_DEFAULT_USER is enabled but GOOGLE_TOKEN_EMAIL is not set. Falling back to OAuth."
+    );
+    return false;
+  }
+
+  return true;
 }
 
 /**
  * Get the default user's email address from GOOGLE_TOKEN_EMAIL.
- * Returns null if USE_DEFAULT_USER is not enabled or email is not configured.
+ * Returns null if default user mode is not enabled.
  */
 export function getDefaultUserEmail(): string | null {
   if (!isDefaultUserEnabled()) {
     return null;
   }
 
-  const email = process.env.GOOGLE_TOKEN_EMAIL;
-  if (!email) {
-    console.error(
-      "[default-user] USE_DEFAULT_USER is enabled but GOOGLE_TOKEN_EMAIL is not set"
-    );
-    return null;
-  }
-
+  const email = process.env.GOOGLE_TOKEN_EMAIL ?? "";
   return email.replaceAll(/^['"]|['"]$/g, "");
 }
 
