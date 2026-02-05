@@ -16,6 +16,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
 import { cn } from "@/lib/utils";
 
 export interface PolicyValue {
@@ -119,9 +120,9 @@ export const PolicyCard = memo(function PolicyCard({
               {policyName}
             </p>
             {targetResource && (
-              <p className="text-xs text-muted-foreground truncate">
-                {targetResource}
-              </p>
+              <div className="truncate">
+                <OrgUnitDisplay targetResource={targetResource} size="sm" />
+              </div>
             )}
           </div>
           <Badge

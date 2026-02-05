@@ -12,6 +12,7 @@ import { useState, memo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
 import { cn } from "@/lib/utils";
 
 export interface PolicyChangeProposal {
@@ -141,15 +142,16 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
             <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
               Target Org Unit
             </span>
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-foreground">
-                {targetDisplay.startsWith("orgunits/") ? "/" : targetDisplay}
-              </span>
-              {targetResource && (
-                <span className="text-[10px] text-muted-foreground font-mono bg-muted px-1.5 py-0.5 rounded">
-                  {targetResource.replace("orgunits/", "")}
-                </span>
-              )}
+            <div>
+              <OrgUnitDisplay
+                name={
+                  targetDisplay.startsWith("orgunits/")
+                    ? undefined
+                    : targetDisplay
+                }
+                targetResource={targetResource}
+                size="sm"
+              />
             </div>
           </div>
         )}
