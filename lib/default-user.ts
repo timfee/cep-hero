@@ -10,20 +10,20 @@
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
 /**
- * OAuth scopes matching those configured in the BetterAuth Google provider.
- * Used by the service account for domain-wide delegation when in default user mode.
+ * Scopes authorized for domain-wide delegation in the Admin Console.
+ * These must match the scopes configured under Security > API controls >
+ * Domain-wide Delegation. Requesting any unauthorized scope causes the
+ * entire token request to fail with unauthorized_client.
+ *
+ * See README.md "Authorize in Admin Console" for the canonical list.
  */
 const DEFAULT_USER_SCOPES = [
-  "https://www.googleapis.com/auth/chrome.management.reports.readonly",
-  "https://www.googleapis.com/auth/cloud-platform",
-  "https://www.googleapis.com/auth/chrome.management.profiles.readonly",
-  "https://www.googleapis.com/auth/chrome.management.policy",
-  "https://www.googleapis.com/auth/cloud-identity.policies",
-  "https://www.googleapis.com/auth/admin.reports.audit.readonly",
-  "https://www.googleapis.com/auth/ediscovery",
-  "https://www.googleapis.com/auth/admin.directory.orgunit",
-  "https://www.googleapis.com/auth/admin.directory.group",
   "https://www.googleapis.com/auth/admin.directory.user",
+  "https://www.googleapis.com/auth/admin.directory.orgunit",
+  "https://www.googleapis.com/auth/chrome.management.policy",
+  "https://www.googleapis.com/auth/chrome.management.policy.readonly",
+  "https://www.googleapis.com/auth/cloud-identity.policies",
+  "https://www.googleapis.com/auth/cloud-identity.policies.readonly",
 ];
 
 /**
