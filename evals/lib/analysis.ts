@@ -7,7 +7,7 @@ import { generateObject } from "ai";
 import { mkdir, writeFile } from "node:fs/promises";
 import { z } from "zod";
 
-import { type EvalSummary } from "./reporter";
+import { type EvalReport, type EvalSummary } from "./reporter";
 
 const OUTPUT_DIR = "evals/reports";
 const DISPLAY_BOX_WIDTH = 58;
@@ -290,12 +290,84 @@ Results:
 }
 
 /**
- * Generate HTML report.
+ * Escape HTML special characters.
+ */
+function escapeHtml(text: string): string {
+  return text
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;");
+}
+
+/**
+ * Generate detailed case HTML section.
+ */
+function generateCaseDetailHtml(report: EvalReport): string {
+  const statusClass = report.status === "pass" ? "pass" : "fail";
+  const statusIcon = report.status === "pass" ? "✓" : "✗";
+
+  const toolCallsHtml =
+    report.toolCalls && report.toolCalls.length > 0
+      ? `<div class="detail-row"><span class="detail-label">Tool Calls:</span><span class="tool-calls">${report.toolCalls.map((t) => `<code>${t}</code>`).join(" ")}</span></div>`
+      : "";
+
+  const schemaStatus = report.schemaResult.passed ? "pass" : "fail";
+  const evidenceStatus = report.evidenceResult.passed ? "pass" : "fail";
+
+  const missingEvidence =
+    !report.evidenceResult.passed && report.evidenceResult.details?.missing
+      ? `<div class="missing">Missing: ${(report.evidenceResult.details.missing as string[]).join(", ")}</div>`
+      : "";
+
+  return `
+    <div class="case-card ${statusClass}">
+      <div class="case-header">
+        <span class="status-icon ${statusClass}">${statusIcon}</span>
+        <span class="case-id">${report.caseId}</span>
+        <span class="case-title">${escapeHtml(report.title)}</span>
+        <span class="case-category">${report.category}</span>
+        <span class="case-duration">${report.durationMs}ms</span>
+      </div>
+      <div class="case-body">
+        <div class="case-section">
+          <div class="section-title">Prompt</div>
+          <div class="prompt-text">${escapeHtml(report.prompt)}</div>
+        </div>
+        <div class="case-section">
+          <div class="section-title">Response</div>
+          <div class="response-text">${escapeHtml(report.responseText || "(empty)")}</div>
+        </div>
+        <div class="case-section">
+          <div class="section-title">Assertions</div>
+          <div class="assertions">
+            <div class="assertion ${schemaStatus}">
+              <span class="assertion-name">Schema</span>
+              <span class="assertion-result">${report.schemaResult.passed ? "Pass" : "Fail"}</span>
+              <span class="assertion-msg">${escapeHtml(report.schemaResult.message)}</span>
+            </div>
+            <div class="assertion ${evidenceStatus}">
+              <span class="assertion-name">Evidence</span>
+              <span class="assertion-result">${report.evidenceResult.passed ? "Pass" : "Fail"}</span>
+              <span class="assertion-msg">${escapeHtml(report.evidenceResult.message)}</span>
+              ${missingEvidence}
+            </div>
+            ${toolCallsHtml}
+          </div>
+        </div>
+        ${report.error ? `<div class="case-error">Error: ${escapeHtml(report.error)}</div>` : ""}
+      </div>
+    </div>`;
+}
+
+/**
+ * Generate HTML report with detailed per-case information.
  */
 export function generateHtmlReport(
   totals: AggregatedTotals,
   categories: Record<string, CategoryData>,
-  failures: FailureData[]
+  failures: FailureData[],
+  reports: EvalReport[] = []
 ): string {
   const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
 
@@ -310,11 +382,33 @@ export function generateHtmlReport(
   const failureRows =
     failures.length > 0
       ? `
-  <h2>Failures</h2>
+  <h2>Failures Summary</h2>
   <table>
     <tr><th>Case</th><th>Title</th><th>Reason</th></tr>
-    ${failures.map((f) => `<tr><td>${f.id}</td><td>${f.title}</td><td style="color:#94a3b8;font-size:0.9rem">${f.reason.slice(0, 60)}...</td></tr>`).join("")}
+    ${failures.map((f) => `<tr><td>${f.id}</td><td>${f.title}</td><td style="color:#94a3b8;font-size:0.9rem">${escapeHtml(f.reason)}</td></tr>`).join("")}
   </table>
+  `
+      : "";
+
+  const sortedReports = [...reports].toSorted((a, b) => {
+    if (a.status !== b.status) {
+      return a.status === "fail" ? -1 : 1;
+    }
+    return a.caseId.localeCompare(b.caseId);
+  });
+
+  const caseDetailsHtml =
+    sortedReports.length > 0
+      ? `
+  <h2>Detailed Results</h2>
+  <div class="filter-controls">
+    <button class="filter-btn active" data-filter="all">All (${reports.length})</button>
+    <button class="filter-btn" data-filter="pass">Passed (${reports.filter((r) => r.status === "pass").length})</button>
+    <button class="filter-btn" data-filter="fail">Failed (${reports.filter((r) => r.status === "fail").length})</button>
+  </div>
+  <div class="cases-list">
+    ${sortedReports.map((r) => generateCaseDetailHtml(r)).join("")}
+  </div>
   `
       : "";
 
@@ -323,7 +417,7 @@ export function generateHtmlReport(
 <head>
   <title>Eval Report - ${new Date().toLocaleDateString()}</title>
   <style>
-    body { font-family: system-ui; background: #0f172a; color: #f1f5f9; padding: 2rem; max-width: 900px; margin: 0 auto; }
+    body { font-family: system-ui; background: #0f172a; color: #f1f5f9; padding: 2rem; max-width: 1200px; margin: 0 auto; }
     h1 { color: #38bdf8; border-bottom: 2px solid #334155; padding-bottom: 1rem; }
     .stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 2rem 0; }
     .stat { background: #1e293b; padding: 1.5rem; border-radius: 8px; text-align: center; }
@@ -337,6 +431,42 @@ export function generateHtmlReport(
     th { color: #94a3b8; font-weight: 500; }
     .bar { background: #334155; border-radius: 4px; height: 8px; overflow: hidden; }
     .bar-fill { background: linear-gradient(90deg, #4ade80, #38bdf8); height: 100%; }
+
+    /* Case card styles */
+    .filter-controls { margin: 1rem 0; display: flex; gap: 0.5rem; }
+    .filter-btn { background: #1e293b; border: 1px solid #334155; color: #94a3b8; padding: 0.5rem 1rem; border-radius: 4px; cursor: pointer; }
+    .filter-btn:hover, .filter-btn.active { background: #334155; color: #f1f5f9; }
+    .case-card { background: #1e293b; border-radius: 8px; margin: 1rem 0; border-left: 4px solid #334155; overflow: hidden; }
+    .case-card.pass { border-left-color: #4ade80; }
+    .case-card.fail { border-left-color: #f87171; }
+    .case-header { display: flex; align-items: center; gap: 1rem; padding: 1rem; background: #0f172a; cursor: pointer; }
+    .case-header:hover { background: #1e293b; }
+    .status-icon { font-size: 1.2rem; width: 1.5rem; text-align: center; }
+    .status-icon.pass { color: #4ade80; }
+    .status-icon.fail { color: #f87171; }
+    .case-id { font-family: monospace; color: #38bdf8; min-width: 5rem; }
+    .case-title { flex: 1; }
+    .case-category { background: #334155; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.8rem; color: #94a3b8; }
+    .case-duration { color: #64748b; font-size: 0.85rem; }
+    .case-body { padding: 1rem; display: none; }
+    .case-card.expanded .case-body { display: block; }
+    .case-section { margin: 1rem 0; }
+    .section-title { color: #94a3b8; font-size: 0.85rem; margin-bottom: 0.5rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .prompt-text, .response-text { background: #0f172a; padding: 1rem; border-radius: 4px; white-space: pre-wrap; font-family: monospace; font-size: 0.9rem; max-height: 300px; overflow-y: auto; }
+    .assertions { display: flex; flex-direction: column; gap: 0.5rem; }
+    .assertion { display: flex; align-items: center; gap: 1rem; padding: 0.5rem; background: #0f172a; border-radius: 4px; }
+    .assertion.pass { border-left: 3px solid #4ade80; }
+    .assertion.fail { border-left: 3px solid #f87171; }
+    .assertion-name { font-weight: 500; min-width: 6rem; }
+    .assertion-result { font-size: 0.85rem; padding: 0.125rem 0.5rem; border-radius: 3px; }
+    .assertion.pass .assertion-result { background: rgba(74, 222, 128, 0.2); color: #4ade80; }
+    .assertion.fail .assertion-result { background: rgba(248, 113, 113, 0.2); color: #f87171; }
+    .assertion-msg { color: #94a3b8; font-size: 0.85rem; flex: 1; }
+    .missing { color: #f87171; font-size: 0.85rem; margin-top: 0.25rem; }
+    .detail-row { display: flex; gap: 1rem; align-items: center; padding: 0.5rem 0; }
+    .detail-label { color: #94a3b8; min-width: 6rem; }
+    .tool-calls code { background: #334155; padding: 0.25rem 0.5rem; border-radius: 3px; margin-right: 0.5rem; font-size: 0.85rem; }
+    .case-error { background: rgba(248, 113, 113, 0.1); border: 1px solid #f87171; padding: 0.75rem; border-radius: 4px; color: #f87171; margin-top: 1rem; }
   </style>
 </head>
 <body>
@@ -357,6 +487,32 @@ export function generateHtmlReport(
   </table>
 
   ${failureRows}
+  ${caseDetailsHtml}
+
+  <script>
+    // Toggle case expansion
+    document.querySelectorAll('.case-header').forEach(header => {
+      header.addEventListener('click', () => {
+        header.closest('.case-card').classList.toggle('expanded');
+      });
+    });
+
+    // Filter controls
+    document.querySelectorAll('.filter-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const filter = btn.dataset.filter;
+        document.querySelectorAll('.case-card').forEach(card => {
+          if (filter === 'all') {
+            card.style.display = 'block';
+          } else {
+            card.style.display = card.classList.contains(filter) ? 'block' : 'none';
+          }
+        });
+      });
+    });
+  </script>
 </body>
 </html>`;
 }
@@ -367,20 +523,21 @@ export function generateHtmlReport(
 export async function writeComprehensiveReports(
   totals: AggregatedTotals,
   categories: Record<string, CategoryData>,
-  failures: FailureData[]
+  failures: FailureData[],
+  reports: EvalReport[] = []
 ): Promise<void> {
   const passRate = totals.total > 0 ? (totals.passed / totals.total) * 100 : 0;
 
   await mkdir(OUTPUT_DIR, { recursive: true });
   const timestamp = new Date().toISOString().replaceAll(/[:.]/g, "-");
-  const report = { timestamp, totals, categories, failures, passRate };
+  const reportData = { timestamp, totals, categories, failures, passRate };
 
   await writeFile(
     `${OUTPUT_DIR}/comprehensive-${timestamp}.json`,
-    JSON.stringify(report, null, 2)
+    JSON.stringify(reportData, null, 2)
   );
 
-  const html = generateHtmlReport(totals, categories, failures);
+  const html = generateHtmlReport(totals, categories, failures, reports);
   await writeFile(`${OUTPUT_DIR}/comprehensive-${timestamp}.html`, html);
 
   console.log(`\n📄 Reports saved to ${OUTPUT_DIR}/`);

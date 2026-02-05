@@ -41,8 +41,8 @@ yarn-error.log*
 next-env.d.ts
 .env*.local
 
-# eval outputs
-/evals/reports/
+# eval outputs (keep HTML reports, ignore JSON)
+/evals/reports/*.json
 
 debug.log
 .opencode

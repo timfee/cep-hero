@@ -957,6 +957,7 @@ export interface MainOptions {
  */
 async function processResults(
   summaries: EvalSummary[],
+  reports: EvalReport[],
   options: { html: boolean; analyze: boolean }
 ): Promise<number> {
   const totals = aggregateSummaries(summaries);
@@ -966,7 +967,7 @@ async function processResults(
   printComprehensiveSummary(totals, categories, failures);
 
   if (options.html) {
-    await writeComprehensiveReports(totals, categories, failures);
+    await writeComprehensiveReports(totals, categories, failures, reports);
   }
 
   if (options.analyze) {
@@ -982,16 +983,21 @@ async function processResults(
 export async function main(options: MainOptions = {}) {
   const { iterations = 1, html = false, analyze = false } = options;
   const summaries: EvalSummary[] = [];
+  const allReports: EvalReport[] = [];
 
   try {
     for (let i = 0; i < iterations; i += 1) {
       printIterationHeader(i + 1, iterations);
-      const { summary } = await runEvals();
+      const { summary, reports } = await runEvals();
       summaries.push(summary);
+      allReports.push(...reports);
     }
 
     if (iterations > 1 || html || analyze) {
-      const exitCode = await processResults(summaries, { html, analyze });
+      const exitCode = await processResults(summaries, allReports, {
+        html,
+        analyze,
+      });
       process.exit(exitCode);
     } else {
       const [summary] = summaries;
