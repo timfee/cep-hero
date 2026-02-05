@@ -118,10 +118,15 @@ Integration tests require a service account with **domain-wide delegation** to c
    ```
    https://www.googleapis.com/auth/admin.directory.user,
    https://www.googleapis.com/auth/admin.directory.orgunit,
+   https://www.googleapis.com/auth/admin.directory.group,
+   https://www.googleapis.com/auth/admin.reports.audit.readonly,
    https://www.googleapis.com/auth/chrome.management.policy,
    https://www.googleapis.com/auth/chrome.management.policy.readonly,
+   https://www.googleapis.com/auth/chrome.management.reports.readonly,
+   https://www.googleapis.com/auth/chrome.management.profiles.readonly,
    https://www.googleapis.com/auth/cloud-identity.policies,
-   https://www.googleapis.com/auth/cloud-identity.policies.readonly
+   https://www.googleapis.com/auth/cloud-identity.policies.readonly,
+   https://www.googleapis.com/auth/cloud-platform
    ```
 6. Click **Authorize**
 
