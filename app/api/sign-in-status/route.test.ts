@@ -55,6 +55,34 @@ function buildSuccessResponse(
   };
 }
 
+/**
+ * Mirrors buildNoSessionResponse from the route module.
+ */
+function buildNoSessionResponse() {
+  return { authenticated: false as const, error: "No active session" };
+}
+
+/**
+ * Mirrors buildAuthenticatedErrorResponse from the route module.
+ */
+function buildAuthenticatedErrorResponse(
+  user: { name: string | null; email: string | null; image: string | null },
+  error: string
+) {
+  return { authenticated: true as const, user, error };
+}
+
+/**
+ * Mirrors buildDefaultUserResponse from the route module.
+ */
+function buildDefaultUserResponse(email: string) {
+  return {
+    authenticated: true as const,
+    isDefaultUser: true as const,
+    user: { name: "Default Admin", email, image: null },
+  };
+}
+
 describe("sign-in-status API route", () => {
   describe("buildUserInfo", () => {
     it("normalizes session user with all fields", () => {
@@ -138,31 +166,69 @@ describe("sign-in-status API route", () => {
     });
   });
 
-  describe("no-session response", () => {
+  describe("buildNoSessionResponse", () => {
     it("returns unauthenticated with error message", () => {
-      const response = { authenticated: false, error: "No active session" };
+      const response = buildNoSessionResponse();
 
       expect(response.authenticated).toBe(false);
       expect(response.error).toBe("No active session");
     });
   });
 
-  describe("error response", () => {
+  describe("buildAuthenticatedErrorResponse", () => {
     it("includes user info alongside error", () => {
       const user = {
         name: "Test User",
         email: "test@example.com",
         image: null,
       };
-      const response = {
-        authenticated: true,
+      const response = buildAuthenticatedErrorResponse(
         user,
-        error: "Token has been expired or revoked",
-      };
+        "Token has been expired or revoked"
+      );
 
       expect(response.authenticated).toBe(true);
       expect(response.user.email).toBe("test@example.com");
       expect(response.error).toContain("expired");
+    });
+
+    it("returns 'No access token available' when token is missing", () => {
+      const user = { name: "Test", email: "t@e.com", image: null };
+      const response = buildAuthenticatedErrorResponse(
+        user,
+        "No access token available"
+      );
+
+      expect(response.authenticated).toBe(true);
+      expect(response.error).toBe("No access token available");
+    });
+
+    it("returns 'Token validation failed' as default error", () => {
+      const user = { name: "Test", email: "t@e.com", image: null };
+      const response = buildAuthenticatedErrorResponse(
+        user,
+        "Token validation failed"
+      );
+
+      expect(response.error).toBe("Token validation failed");
+    });
+  });
+
+  describe("buildDefaultUserResponse", () => {
+    it("returns authenticated response with default admin user", () => {
+      const response = buildDefaultUserResponse("admin@corp.com");
+
+      expect(response.authenticated).toBe(true);
+      expect(response.isDefaultUser).toBe(true);
+      expect(response.user.name).toBe("Default Admin");
+      expect(response.user.email).toBe("admin@corp.com");
+      expect(response.user.image).toBeNull();
+    });
+
+    it("does not include token info", () => {
+      const response = buildDefaultUserResponse("admin@corp.com");
+
+      expect(response).not.toHaveProperty("token");
     });
   });
 

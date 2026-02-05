@@ -180,6 +180,13 @@ Colocated unit tests in `lib/mcp/` test core business logic with inline fixtures
 | `fixture-enrollment.test.ts` | 7     | `resolveEnrollmentToken` all 5 code paths                                                         |
 | `connector-analysis.test.ts` | 3     | `analyzeConnectorPolicies` target classification                                                  |
 
+### Other Colocated Unit Tests
+
+| File                       | Tests | What it covers                                              |
+| -------------------------- | ----- | ----------------------------------------------------------- |
+| `lib/default-user.test.ts` | 12    | `isDefaultUserEnabled`, `getDefaultUserEmail` env var logic |
+| `lib/auth/status.test.ts`  | 13    | `formatTimeRemaining` time formatting for UI display        |
+
 ### Writing Colocated Unit Tests
 
 Place `*.test.ts` files next to the source they test in `lib/mcp/`. Use inline fixtures — do not read files from disk. This keeps tests self-contained and fast.
