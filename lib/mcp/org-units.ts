@@ -135,11 +135,7 @@ export function buildOrgUnitTargetResource(value: string) {
     return normalizeResource(withoutLeading);
   }
   if (withoutLeading.startsWith("customers/")) {
-    const customerId = withoutLeading.slice("customers/".length);
-    if (!customerId) {
-      return "";
-    }
-    return normalizeResource(withoutLeading);
+    return "";
   }
 
   return normalizeResource(`orgunits/${withoutLeading}`);

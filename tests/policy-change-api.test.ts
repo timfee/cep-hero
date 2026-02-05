@@ -98,10 +98,8 @@ describe("buildOrgUnitTargetResource validation", () => {
     );
   });
 
-  it("preserves valid customers/ID format", () => {
-    expect(buildOrgUnitTargetResource("customers/C12345")).toBe(
-      "customers/C12345"
-    );
+  it("rejects customers/ prefixed values", () => {
+    expect(buildOrgUnitTargetResource("customers/C12345")).toBe("");
   });
 
   it("adds orgunits/ prefix to bare ID", () => {
