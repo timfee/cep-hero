@@ -14,7 +14,8 @@ See the root [AGENTS.md](../AGENTS.md) for project-wide coding standards.
     - `dlp-delete.ts` - DLP rule deletion
     - `context.ts` - Org unit context fetching
 - **`chat/`** - Chat service orchestration
-- **`gimme/`** - Self-enrollment module
+- **`gimme/`** - Self-enrollment module (includes server actions)
+- **`default-user.ts`** - Default user auto-sign-in configuration
 - **`fixtures/`** - Fixture context for testing
 - **`test-helpers/`** - Test utilities
 - **`google-service-account.ts`** - Service account auth with domain-wide delegation
