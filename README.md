@@ -83,6 +83,58 @@ GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 SELF_ENROLLMENT_PASSWORD=your_secret_enrollment_password
 ```
 
+### 5. Service Account Setup (For Integration Tests)
+
+Integration tests require a service account with **domain-wide delegation** to call Google Workspace Admin APIs.
+
+#### Create Service Account
+
+1. Go to **Google Cloud Console > IAM & Admin > Service Accounts**
+2. Click **Create Service Account**
+3. Name it (e.g., `cep-hero-testing`)
+4. Grant no roles (delegation provides access)
+5. Click **Done**, then click the service account
+6. Go to **Keys > Add Key > Create new key > JSON**
+7. Save the downloaded JSON file
+
+#### Enable Domain-Wide Delegation
+
+1. On the service account page, click **Show domain-wide delegation**
+2. Check **Enable Google Workspace Domain-wide Delegation**
+3. Copy the **Client ID** (numeric)
+
+#### Authorize in Admin Console
+
+1. Go to **Admin Console > Security > Access and data control > API controls**
+2. Click **Manage Domain-wide Delegation**
+3. Click **Add new**
+4. Enter the **Client ID** from above
+5. Add these **OAuth scopes** (comma-separated):
+   ```
+   https://www.googleapis.com/auth/admin.directory.user,
+   https://www.googleapis.com/auth/admin.directory.orgunit,
+   https://www.googleapis.com/auth/chrome.management.policy,
+   https://www.googleapis.com/auth/chrome.management.policy.readonly,
+   https://www.googleapis.com/auth/cloud-identity.policies,
+   https://www.googleapis.com/auth/cloud-identity.policies.readonly
+   ```
+6. Click **Authorize**
+
+#### Configure Environment
+
+Add to `.env.local`:
+
+```bash
+# Service account JSON (minified or pretty-printed both work)
+GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account","project_id":"...","private_key":"...","client_email":"..."}'
+
+# Admin email for impersonation (must be a super admin)
+GOOGLE_TOKEN_EMAIL=admin@your-domain.com
+
+# Optional: Customer ID (auto-detected if not set)
+GOOGLE_CUSTOMER_ID=C01234567
+```
+
 ---
 
 ## Usage Guide
@@ -154,12 +206,34 @@ CEP-Hero uses two types of quality assurance: **unit tests** for code correctnes
 # Run unit tests
 bun test
 
+# Run integration tests (requires service account)
+bun test tests/dlp-api.test.ts
+
 # Run evals (server auto-starts)
 EVAL_FIXTURES=1 bun run evals
 
 # Run a specific eval
 EVAL_IDS=EC-057 EVAL_FIXTURES=1 bun run evals
 ```
+
+### Integration Tests
+
+Integration tests validate live Google API behavior. They automatically skip when credentials are missing.
+
+```bash
+# DLP API tests (list, create, delete rules)
+bun test tests/dlp-api.test.ts
+
+# Validate DLP API directly
+bun scripts/validate-dlp-api.ts
+```
+
+Tests verify:
+
+- Cloud Identity API v1beta1 usage (required for DLP)
+- Customer ID resolution
+- DLP rule CRUD operations
+- Error handling for permission issues
 
 ### Understanding Evals
 
@@ -191,6 +265,30 @@ EVAL_SERIAL=1 EVAL_FIXTURES=1 bun run evals
 # Capture live fixtures
 bun run fixtures:capture
 ```
+
+---
+
+## Google API Notes
+
+### Cloud Identity API (DLP Rules)
+
+DLP rule operations require the **v1beta1** API version:
+
+```typescript
+const service = googleApis.cloudidentity({ version: "v1beta1", auth });
+```
+
+**Filter Limitations:** The Cloud Identity policies.list API only supports filtering by customer:
+
+```
+customer == "customers/{customerId}"
+```
+
+It does **NOT** support `setting.type.matches()` or other filter expressions. DLP rules are filtered client-side using the pattern `^rule\.dlp` on `setting.type`.
+
+### Chrome Policy API
+
+Uses **v1** for policy resolution and modification. The `my_customer` alias works for most operations.
 
 ---
 

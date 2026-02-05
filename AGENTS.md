@@ -226,6 +226,39 @@ Environment variables set via shell or `.env` files may contain surrounding quot
 - `GOOGLE_TOKEN_EMAIL` - Email for domain-wide delegation impersonation
 - `GOOGLE_CUSTOMER_ID` - Google Workspace customer ID
 
+**Bun env file behavior:**
+
+Bun's env parser converts `\n` escape sequences to actual newlines when loading `.env.local`. This breaks JSON parsing of service account credentials (the `private_key` field contains `\n`). The `lib/google-service-account.ts` handler tries parsing as-is first, then falls back to fixing newlines if parsing fails.
+
+## Google API Version Requirements
+
+Different Google APIs require specific versions:
+
+| API               | Version     | Notes                       |
+| ----------------- | ----------- | --------------------------- |
+| Chrome Policy     | v1          | Standard policy resolution  |
+| Chrome Management | v1          | Reports, profiles           |
+| Admin SDK         | reports_v1  | Audit events                |
+| Cloud Identity    | **v1beta1** | Required for DLP operations |
+
+**Cloud Identity DLP Quirks:**
+
+1. The v1 API does not support DLP rule operations properly
+2. Filter syntax only supports `customer == "customers/{id}"` - NOT `setting.type.matches()`
+3. DLP rules are filtered client-side using regex `^rule\.dlp` on `setting.type`
+4. The `my_customer` alias works in the customer filter
+
+```typescript
+// Correct usage for DLP
+const service = googleApis.cloudidentity({ version: "v1beta1", auth });
+const res = await service.policies.list({
+  filter: `customer == "customers/${customerId}"`,
+});
+const dlpRules = res.data.policies?.filter((p) =>
+  /^rule\.dlp/i.test(p.setting?.type)
+);
+```
+
 ## Evaluation Framework
 
 The eval framework tests AI diagnostic capabilities using fixture injection for deterministic, reproducible results.

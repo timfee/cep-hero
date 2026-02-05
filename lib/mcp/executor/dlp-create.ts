@@ -86,7 +86,7 @@ export async function createDLPRule(
   customerId: string,
   orgUnitContext: OrgUnitContext,
   args: CreateDLPRuleArgs
-) {
+): Promise<CreateDLPRuleResult> {
   logCreateRequest(args);
   const targetOrgUnitDisplay = resolveTargetDisplay(
     args.targetOrgUnit,
@@ -139,7 +139,7 @@ async function executeCreateRule(
   customerId: string,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-) {
+): Promise<CreateDLPRuleSuccess | CreateDLPRuleManualSteps> {
   const policyPayload = buildPolicyPayload(customerId, args);
   try {
     const result = await submitDLPRule(
@@ -174,7 +174,7 @@ function resolveTargetDisplay(targetOrgUnit: string, ctx: OrgUnitContext) {
 function buildNoTokenError(
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-) {
+): CreateDLPRuleError {
   return {
     _type: "ui.error",
     message: "No access token available",
@@ -243,7 +243,7 @@ async function submitDLPRule(
   payload: ReturnType<typeof buildPolicyPayload>,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-) {
+): Promise<CreateDLPRuleSuccess | CreateDLPRuleManualSteps> {
   const res = await fetch(
     "https://cloudidentity.googleapis.com/v1beta1/policies",
     {
@@ -306,7 +306,7 @@ function buildApiError(
   data: unknown,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-) {
+): CreateDLPRuleManualSteps {
   const errorMessage = extractApiErrorMessage(data);
   console.log("[create-dlp-rule] API error", JSON.stringify(data));
   return buildManualSteps(errorMessage, args, targetOrgUnitDisplay);
@@ -319,7 +319,7 @@ function buildCatchError(
   error: unknown,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-) {
+): CreateDLPRuleManualSteps {
   const message = error instanceof Error ? error.message : "Unknown error";
   console.log("[create-dlp-rule] error", JSON.stringify({ message }));
 
@@ -333,7 +333,7 @@ function buildManualSteps(
   errorMessage: string,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-) {
+): CreateDLPRuleManualSteps {
   return {
     _type: "ui.manual_steps",
     message: `Unable to create DLP rule: ${errorMessage}. Please create it manually.`,

@@ -95,6 +95,43 @@ runIt("integration test", async () => {
 });
 ```
 
+### DLP API Integration Tests
+
+The `tests/dlp-api.test.ts` file provides comprehensive Cloud Identity DLP testing:
+
+**Unit tests (no credentials):**
+
+- API version verification (v1beta1 required)
+- Client-side DLP rule filtering logic
+
+**Integration tests (credentials required):**
+
+- List DLP rules with resolved customer ID
+- Create → List → Verify → Delete lifecycle
+- Concurrent request handling
+- `my_customer` alias support
+
+**Required OAuth scopes for service account:**
+
+```
+https://www.googleapis.com/auth/cloud-identity.policies
+https://www.googleapis.com/auth/cloud-identity.policies.readonly
+https://www.googleapis.com/auth/admin.directory.orgunit
+https://www.googleapis.com/auth/chrome.management.policy.readonly
+```
+
+**API Quirks Discovered:**
+
+1. Cloud Identity requires **v1beta1** for DLP operations (v1 returns errors)
+2. Filter syntax only supports `customer == "customers/{id}"` - no `setting.type.matches()`
+3. DLP rules must be filtered client-side using regex `^rule\.dlp` on `setting.type`
+
+Run DLP tests:
+
+```bash
+bun test tests/dlp-api.test.ts
+```
+
 ## Environment Variables
 
 Environment variables may contain surrounding quotes that need stripping:
