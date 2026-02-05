@@ -149,10 +149,10 @@ export const DlpRulesCard = memo(function DlpRulesCard({
               />
             </div>
             {rule.orgUnit && rule.orgUnit !== "/" && (
-              <p className="text-xs text-muted-foreground flex items-center gap-1">
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
                 <span>Scope:</span>
                 <OrgUnitDisplay targetResource={rule.orgUnit} size="sm" />
-              </p>
+              </div>
             )}
             {rule.consoleUrl && (
               <a

@@ -58,6 +58,18 @@ describe("OrgUnitDisplay", () => {
       expect(container.textContent).toContain("simple123");
     });
 
+    it("handles hyphenated IDs like dlp-test-001", () => {
+      const { container } = render(<OrgUnitDisplay id="dlp-test-001" />);
+
+      expect(container.textContent).toContain("dlp-test-001");
+    });
+
+    it("handles underscored IDs", () => {
+      const { container } = render(<OrgUnitDisplay id="org_unit_123" />);
+
+      expect(container.textContent).toContain("org_unit_123");
+    });
+
     it("does not treat path as ID", () => {
       const { container } = render(
         <OrgUnitDisplay name="/Engineering" id="/Engineering" />
@@ -90,6 +102,14 @@ describe("OrgUnitDisplay", () => {
       );
 
       expect(container.textContent).toContain("/Engineering");
+    });
+
+    it("returns original value for unrecognized patterns", () => {
+      const { container } = render(
+        <OrgUnitDisplay targetResource="some-unknown-format" />
+      );
+
+      expect(container.textContent).toContain("some-unknown-format");
     });
   });
 
