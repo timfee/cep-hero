@@ -79,7 +79,11 @@ UPSTASH_VECTOR_REST_TOKEN=your_vector_token
 GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 
-# Self-enrollment password for /api/gimme endpoint
+# Optional: Auto-sign-in as the delegated admin (GOOGLE_TOKEN_EMAIL)
+# When enabled, skips OAuth and uses the service account directly
+USE_DEFAULT_USER=true
+
+# Self-enrollment password for the registration form
 SELF_ENROLLMENT_PASSWORD=your_secret_enrollment_password
 ```
 
