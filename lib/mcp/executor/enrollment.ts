@@ -6,7 +6,10 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { z } from "zod";
 
-import { ENROLLMENT_TOKEN_POLICY_SCHEMA } from "@/lib/mcp/constants";
+import {
+  DEFAULT_CUSTOMER_TARGET,
+  ENROLLMENT_TOKEN_POLICY_SCHEMA,
+} from "@/lib/mcp/constants";
 import {
   type ApiErrorResponse,
   createApiError,
@@ -16,8 +19,6 @@ import {
 } from "@/lib/mcp/errors";
 import { buildOrgUnitTargetResource } from "@/lib/mcp/org-units";
 import { type EnrollBrowserSchema } from "@/lib/mcp/schemas";
-
-import { type OrgUnitContext } from "./context";
 
 /**
  * Arguments for generating a Chrome Browser Cloud Management enrollment token.
@@ -66,13 +67,6 @@ const SERVICE_UNAVAILABLE: ApiErrorResponse = {
   requiresReauth: false,
 };
 
-const NO_VALID_TARGET: ApiErrorResponse = {
-  error: "No valid org unit target available for enrollment.",
-  suggestion:
-    "Provide an org unit ID or ensure the root org unit is accessible via the Admin SDK.",
-  requiresReauth: false,
-};
-
 /**
  * Generates a Chrome Browser Cloud Management enrollment token. Tokens allow
  * browsers to self-register with the organization's management policies.
@@ -80,7 +74,6 @@ const NO_VALID_TARGET: ApiErrorResponse = {
 export async function enrollBrowser(
   auth: OAuth2Client,
   customerId: string,
-  orgUnitContext: OrgUnitContext,
   args: EnrollBrowserArgs
 ) {
   const service = googleApis.chromemanagement({ version: "v1", auth });
@@ -90,15 +83,7 @@ export async function enrollBrowser(
     return SERVICE_UNAVAILABLE;
   }
 
-  const targetResource = resolveTargetResource(
-    args.orgUnitId,
-    orgUnitContext.rootOrgUnitId
-  );
-
-  if (targetResource === null) {
-    return NO_VALID_TARGET;
-  }
-
+  const targetResource = resolveTargetResource(args.orgUnitId);
   logApiRequest("enroll-browser", {
     orgUnitId: args.orgUnitId,
     targetResource,
@@ -172,26 +157,15 @@ async function executeEnrollment(
 }
 
 /**
- * Determines the target resource for enrollment, falling back to the root
- * org unit. Returns null when no valid org unit target is available.
+ * Determines the target resource for enrollment, defaulting to customer.
  */
-function resolveTargetResource(
-  orgUnitId: string | undefined,
-  rootOrgUnitId: string | null
-) {
-  if (orgUnitId !== undefined) {
-    const normalized = buildOrgUnitTargetResource(orgUnitId);
-    if (normalized.length > 0) {
-      return normalized;
-    }
+function resolveTargetResource(orgUnitId: string | undefined) {
+  if (orgUnitId === undefined) {
+    return DEFAULT_CUSTOMER_TARGET;
   }
-
-  if (rootOrgUnitId !== null) {
-    const rootTarget = buildOrgUnitTargetResource(rootOrgUnitId);
-    if (rootTarget.length > 0) {
-      return rootTarget;
-    }
+  const normalized = buildOrgUnitTargetResource(orgUnitId);
+  if (normalized.length === 0) {
+    return DEFAULT_CUSTOMER_TARGET;
   }
-
-  return null;
+  return normalized;
 }

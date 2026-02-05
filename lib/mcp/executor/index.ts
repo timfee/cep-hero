@@ -143,9 +143,8 @@ export class CepToolExecutor {
   /**
    * Generates a browser enrollment token for the specified org unit.
    */
-  async enrollBrowser(args: EnrollBrowserArgs) {
-    const orgUnitContext = await this.getOrgUnitContext();
-    return enrollBrowser(this.auth, this.customerId, orgUnitContext, args);
+  enrollBrowser(args: EnrollBrowserArgs) {
+    return enrollBrowser(this.auth, this.customerId, args);
   }
 
   /**
