@@ -76,7 +76,7 @@ export async function listDLPRules(
   orgUnitContext: OrgUnitContext,
   args: ListDLPRulesArgs = {}
 ) {
-  const service = googleApis.cloudidentity({ version: "v1", auth });
+  const service = googleApis.cloudidentity({ version: "v1beta1", auth });
   console.log("[dlp-rules] request");
 
   if (!service.policies?.list) {
