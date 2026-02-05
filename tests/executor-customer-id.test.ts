@@ -56,7 +56,7 @@ describe("CepToolExecutor customer ID resolution", () => {
 
     const originalChromepolicy = googleApis.chromepolicy;
     googleApis.chromepolicy =
-      mockChromepolicy as typeof googleApis.chromepolicy;
+      mockChromepolicy as unknown as typeof googleApis.chromepolicy;
 
     try {
       const executor = new CepToolExecutor("fake-token", "my_customer");
@@ -92,7 +92,7 @@ describe("CepToolExecutor customer ID resolution", () => {
 
     const originalChromepolicy = googleApis.chromepolicy;
     googleApis.chromepolicy =
-      mockChromepolicy as typeof googleApis.chromepolicy;
+      mockChromepolicy as unknown as typeof googleApis.chromepolicy;
 
     try {
       const executor = new CepToolExecutor("fake-token", "my_customer");
@@ -132,7 +132,7 @@ describe("CepToolExecutor customer ID resolution", () => {
 
     const originalChromepolicy = googleApis.chromepolicy;
     googleApis.chromepolicy =
-      mockChromepolicy as typeof googleApis.chromepolicy;
+      mockChromepolicy as unknown as typeof googleApis.chromepolicy;
 
     try {
       const executor = new CepToolExecutor("fake-token", "my_customer");
@@ -175,7 +175,7 @@ describe("CepToolExecutor customer ID resolution", () => {
 
     const originalChromepolicy = googleApis.chromepolicy;
     googleApis.chromepolicy =
-      mockChromepolicy as typeof googleApis.chromepolicy;
+      mockChromepolicy as unknown as typeof googleApis.chromepolicy;
 
     try {
       const executor = new CepToolExecutor("fake-token", "my_customer");
