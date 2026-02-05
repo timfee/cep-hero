@@ -29,6 +29,23 @@ import {
 } from "@/lib/auth/status";
 import { cn } from "@/lib/utils";
 
+/**
+ * Branding component displayed on the left side of the header.
+ * Defined outside UserStatusBar to prevent re-creation on every render.
+ */
+const Branding = () => (
+  <div className="flex items-center gap-2">
+    <Image
+      src="/icon.png"
+      alt="CEP Hero"
+      width={24}
+      height={24}
+      className="rounded"
+    />
+    <span className="text-lg font-semibold text-foreground">CEP Hero</span>
+  </div>
+);
+
 export function UserStatusBar() {
   const router = useRouter();
   const [status, setStatus] = useState<StatusState>({
@@ -104,22 +121,6 @@ export function UserStatusBar() {
   const handleReauth = useCallback(() => {
     router.push("/sign-in");
   }, [router]);
-
-  /**
-   * Branding component displayed on the left side of the header.
-   */
-  const Branding = () => (
-    <div className="flex items-center gap-2">
-      <Image
-        src="/icon.png"
-        alt="CEP Hero"
-        width={24}
-        height={24}
-        className="rounded"
-      />
-      <span className="text-lg font-semibold text-foreground">CEP Hero</span>
-    </div>
-  );
 
   if (status.loading) {
     return (
