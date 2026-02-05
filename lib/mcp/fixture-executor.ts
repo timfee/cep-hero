@@ -16,10 +16,7 @@ import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
   type DraftPolicyChangeSchema,
-  type EnrollBrowserSchema,
   type GetChromeEventsSchema,
-  type GetFleetOverviewSchema,
-  type ListDLPRulesSchema,
 } from "./registry";
 import {
   type ApplyPolicyChangeResult,
@@ -46,114 +43,118 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns Chrome events from fixture data.
    */
-  async getChromeEvents(args: z.infer<typeof GetChromeEventsSchema>) {
+  getChromeEvents(args: z.infer<typeof GetChromeEventsSchema>) {
     if (typeof this.fixtures.errors?.chromeEvents === "string") {
-      return {
+      return Promise.resolve({
         error: this.fixtures.errors.chromeEvents,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
-      };
+      });
     }
 
     const items = this.fixtures.auditEvents?.items ?? [];
     const maxResults = args.maxResults ?? 50;
-    return {
+    return Promise.resolve({
       events: items.slice(0, maxResults),
       nextPageToken: this.fixtures.auditEvents?.nextPageToken ?? null,
-    };
+    });
   }
 
   /**
    * Returns DLP rules from fixture data.
    */
-  async listDLPRules() {
+  listDLPRules() {
     if (typeof this.fixtures.errors?.dlpRules === "string") {
-      return {
+      return Promise.resolve({
         error: this.fixtures.errors.dlpRules,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
-      };
+      });
     }
-    return { rules: mapDlpRules(this.fixtures) };
+    return Promise.resolve({ rules: mapDlpRules(this.fixtures) });
   }
 
   /**
    * Returns org units from fixture data.
    */
-  async listOrgUnits() {
+  listOrgUnits() {
     if (typeof this.fixtures.errors?.orgUnits === "string") {
-      return {
+      return Promise.resolve({
         error: this.fixtures.errors.orgUnits,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
-      };
+      });
     }
-    return { orgUnits: this.fixtures.orgUnits ?? [] };
+    return Promise.resolve({ orgUnits: this.fixtures.orgUnits ?? [] });
   }
 
   /**
    * Returns enrollment token from fixture data.
    */
-  async enrollBrowser() {
+  enrollBrowser() {
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
-      return {
+      return Promise.resolve({
         error: this.fixtures.errors.enrollBrowser,
         suggestion:
           "Ensure the caller has Chrome policy admin rights and the API is enabled.",
         requiresReauth: false,
-      };
+      });
     }
-    return resolveEnrollmentToken(this.fixtures.enrollmentToken);
+    return Promise.resolve(
+      resolveEnrollmentToken(this.fixtures.enrollmentToken)
+    );
   }
 
   /**
    * Returns connector configuration from fixture data.
    */
-  async getChromeConnectorConfiguration() {
+  getChromeConnectorConfiguration() {
     if (typeof this.fixtures.errors?.connectorConfig === "string") {
-      return {
+      return Promise.resolve({
         error: this.fixtures.errors.connectorConfig,
         suggestion: "This is a fixture error for testing.",
         requiresReauth: false,
         policySchemas: [],
-      };
+      });
     }
-    return buildConnectorConfig(this.fixtures);
+    return Promise.resolve(buildConnectorConfig(this.fixtures));
   }
 
   /**
    * Returns mock auth debug info.
+   * Uses fixture context for consistency with interface.
    */
-  async debugAuth() {
-    return buildDebugAuthResponse();
+  debugAuth() {
+    return Promise.resolve(buildDebugAuthResponse(this.fixtures));
   }
 
   /**
    * Returns a draft policy change proposal.
    */
-  async draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
-    return buildDraftPolicyResponse(args, this.fixtures);
+  draftPolicyChange(args: z.infer<typeof DraftPolicyChangeSchema>) {
+    return Promise.resolve(buildDraftPolicyResponse(args, this.fixtures));
   }
 
   /**
    * Returns a successful policy application result.
+   * Uses fixture context for consistency with interface.
    */
-  async applyPolicyChange(args: z.infer<typeof ApplyPolicyChangeSchema>) {
-    return buildApplyPolicyResponse(args);
+  applyPolicyChange(args: z.infer<typeof ApplyPolicyChangeSchema>) {
+    return Promise.resolve(buildApplyPolicyResponse(args, this.fixtures));
   }
 
   /**
    * Returns a successful DLP rule creation result.
    */
-  async createDLPRule(args: z.infer<typeof CreateDLPRuleSchema>) {
-    return buildCreateDlpResponse(args, this.fixtures);
+  createDLPRule(args: z.infer<typeof CreateDLPRuleSchema>) {
+    return Promise.resolve(buildCreateDlpResponse(args, this.fixtures));
   }
 
   /**
    * Returns a fleet overview summary from fixture data.
    */
-  async getFleetOverview() {
-    return buildFleetOverviewResponse(this.fixtures);
+  getFleetOverview() {
+    return Promise.resolve(buildFleetOverviewResponse(this.fixtures));
   }
 }
 
@@ -178,7 +179,7 @@ interface FleetOverviewFixtureResponse {
 /**
  * Builds mock auth debug response.
  */
-function buildDebugAuthResponse(): DebugAuthResult {
+function buildDebugAuthResponse(_fixtures: FixtureData): DebugAuthResult {
   return {
     scopes: [
       "https://www.googleapis.com/auth/admin.reports.audit.readonly",
@@ -196,7 +197,8 @@ function buildDebugAuthResponse(): DebugAuthResult {
  * Builds a successful policy application response.
  */
 function buildApplyPolicyResponse(
-  args: z.infer<typeof ApplyPolicyChangeSchema>
+  args: z.infer<typeof ApplyPolicyChangeSchema>,
+  _fixtures: FixtureData
 ): ApplyPolicyChangeResult {
   return {
     _type: "ui.success",

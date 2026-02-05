@@ -8,6 +8,7 @@
 import { Building2 } from "lucide-react";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
 
 interface OrgUnit {
   orgUnitId?: string;
@@ -49,12 +50,14 @@ export function OrgUnitsList({ data }: OrgUnitsListProps) {
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4 pt-0">
-            <div className="grid gap-1 text-xs text-muted-foreground">
-              <div className="flex justify-between">
+            <div className="grid gap-1.5 text-xs text-muted-foreground">
+              <div className="flex items-center justify-between">
                 <span>Path:</span>
-                <span className="font-mono text-foreground">
-                  {ou.orgUnitPath}
-                </span>
+                <OrgUnitDisplay
+                  name={ou.orgUnitPath}
+                  id={ou.orgUnitId}
+                  size="sm"
+                />
               </div>
               {ou.description && (
                 <div className="mt-1 line-clamp-2">{ou.description}</div>
