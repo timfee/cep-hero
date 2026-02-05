@@ -9,12 +9,12 @@ import { AlertCircle, Loader2, Mail } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
-import { enrollUser } from "@/app/gimme/actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { signIn } from "@/lib/auth-client";
+import { enrollUser } from "@/lib/gimme/actions";
 import { ALLOWED_EMAIL_SUFFIX, MAX_NAME_LENGTH } from "@/lib/gimme/constants";
 
 /**

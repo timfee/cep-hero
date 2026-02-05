@@ -79,7 +79,12 @@ UPSTASH_VECTOR_REST_TOKEN=your_vector_token
 GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 
-# Self-enrollment password for /api/gimme endpoint
+# Optional: Auto-sign-in as the delegated admin (GOOGLE_TOKEN_EMAIL)
+# When enabled, skips OAuth and uses the service account directly.
+# WARNING: Disables authentication entirely. For development/demo only.
+USE_DEFAULT_USER=true
+
+# Self-enrollment password for the registration form
 SELF_ENROLLMENT_PASSWORD=your_secret_enrollment_password
 ```
 
@@ -113,10 +118,15 @@ Integration tests require a service account with **domain-wide delegation** to c
    ```
    https://www.googleapis.com/auth/admin.directory.user,
    https://www.googleapis.com/auth/admin.directory.orgunit,
+   https://www.googleapis.com/auth/admin.directory.group,
+   https://www.googleapis.com/auth/admin.reports.audit.readonly,
    https://www.googleapis.com/auth/chrome.management.policy,
    https://www.googleapis.com/auth/chrome.management.policy.readonly,
+   https://www.googleapis.com/auth/chrome.management.reports.readonly,
+   https://www.googleapis.com/auth/chrome.management.profiles.readonly,
    https://www.googleapis.com/auth/cloud-identity.policies,
-   https://www.googleapis.com/auth/cloud-identity.policies.readonly
+   https://www.googleapis.com/auth/cloud-identity.policies.readonly,
+   https://www.googleapis.com/auth/cloud-platform
    ```
 6. Click **Authorize**
 

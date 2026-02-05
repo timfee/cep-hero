@@ -1,5 +1,14 @@
-import { auth } from "@/lib/auth";
+/**
+ * API route that returns the current user's authentication status.
+ * Supports both OAuth sessions and default user mode.
+ */
 
+import { auth } from "@/lib/auth";
+import { getDefaultUserEmail, isDefaultUserEnabled } from "@/lib/default-user";
+
+/**
+ * Token info response from Google's tokeninfo endpoint.
+ */
 interface GoogleTokenInfo {
   expires_in?: string;
   access_type?: string;
@@ -9,14 +18,21 @@ interface GoogleTokenInfo {
   error_description?: string;
 }
 
+/**
+ * User identity information.
+ */
 interface UserInfo {
   name: string | null;
   email: string | null;
   image: string | null;
 }
 
+/**
+ * Full sign-in status response shape.
+ */
 interface SignInStatusResponse {
   authenticated: boolean;
+  isDefaultUser?: boolean;
   user?: UserInfo;
   token?: {
     expiresIn: number;
@@ -26,12 +42,18 @@ interface SignInStatusResponse {
   error?: string;
 }
 
+/**
+ * Session user shape from BetterAuth.
+ */
 interface SessionUser {
   name?: string | null;
   email?: string | null;
   image?: string | null;
 }
 
+/**
+ * Fetch token info from Google's tokeninfo endpoint.
+ */
 async function getGoogleTokenInfo(
   accessToken: string
 ): Promise<GoogleTokenInfo | null> {
@@ -46,6 +68,9 @@ async function getGoogleTokenInfo(
   }
 }
 
+/**
+ * Build a UserInfo object from a session user.
+ */
 function buildUserInfo(user: SessionUser): UserInfo {
   return {
     name: user.name ?? null,
@@ -54,10 +79,16 @@ function buildUserInfo(user: SessionUser): UserInfo {
   };
 }
 
+/**
+ * Build an unauthenticated response.
+ */
 function buildNoSessionResponse(): SignInStatusResponse {
   return { authenticated: false, error: "No active session" };
 }
 
+/**
+ * Build an authenticated response with a token error.
+ */
 function buildAuthenticatedErrorResponse(
   user: UserInfo,
   error: string
@@ -65,6 +96,9 @@ function buildAuthenticatedErrorResponse(
   return { authenticated: true, user, error };
 }
 
+/**
+ * Build a successful authenticated response with token details.
+ */
 function buildSuccessResponse(
   user: UserInfo,
   tokenInfo: GoogleTokenInfo
@@ -81,6 +115,26 @@ function buildSuccessResponse(
   };
 }
 
+/**
+ * Build a response for the default user. No token info is included because
+ * service account tokens are short-lived and managed on-demand per API call,
+ * so reporting a static expiry would be misleading.
+ */
+function buildDefaultUserResponse(email: string): SignInStatusResponse {
+  return {
+    authenticated: true,
+    isDefaultUser: true,
+    user: {
+      name: "Default Admin",
+      email,
+      image: null,
+    },
+  };
+}
+
+/**
+ * Validate a Google access token and build the status response.
+ */
 async function validateAndBuildTokenResponse(
   accessToken: string,
   userInfo: UserInfo
@@ -95,30 +149,46 @@ async function validateAndBuildTokenResponse(
   return buildSuccessResponse(userInfo, tokenInfo);
 }
 
+/**
+ * Process the sign-in status for a request. Checks for an active BetterAuth
+ * session first, then falls back to default user mode if enabled.
+ */
 async function processSignInStatus(
   req: Request
 ): Promise<SignInStatusResponse> {
   const session = await auth.api.getSession({ headers: req.headers });
-  if (!session?.user) {
-    return buildNoSessionResponse();
+
+  if (session?.user) {
+    const userInfo = buildUserInfo(session.user);
+    const tokenResponse = await auth.api.getAccessToken({
+      body: { providerId: "google" },
+      headers: req.headers,
+    });
+
+    if (!tokenResponse?.accessToken) {
+      return buildAuthenticatedErrorResponse(
+        userInfo,
+        "No access token available"
+      );
+    }
+
+    return validateAndBuildTokenResponse(tokenResponse.accessToken, userInfo);
   }
 
-  const userInfo = buildUserInfo(session.user);
-  const tokenResponse = await auth.api.getAccessToken({
-    body: { providerId: "google" },
-    headers: req.headers,
-  });
-
-  if (!tokenResponse?.accessToken) {
-    return buildAuthenticatedErrorResponse(
-      userInfo,
-      "No access token available"
-    );
+  // No BetterAuth session - check for default user mode
+  if (isDefaultUserEnabled()) {
+    const email = getDefaultUserEmail();
+    if (email) {
+      return buildDefaultUserResponse(email);
+    }
   }
 
-  return validateAndBuildTokenResponse(tokenResponse.accessToken, userInfo);
+  return buildNoSessionResponse();
 }
 
+/**
+ * GET handler for sign-in status checks.
+ */
 export async function GET(req: Request): Promise<Response> {
   try {
     return Response.json(await processSignInStatus(req));

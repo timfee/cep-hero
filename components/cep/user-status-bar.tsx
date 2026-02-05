@@ -1,11 +1,18 @@
+/**
+ * Header component with user authentication status and dropdown menu.
+ * Supports both OAuth sessions and default user mode.
+ */
+
 "use client";
 
 import {
   AlertTriangle,
+  ArrowRightLeft,
   Clock,
   LogIn,
   LogOut,
   RefreshCw,
+  Shield,
   User,
 } from "lucide-react";
 import Image from "next/image";
@@ -26,6 +33,7 @@ import {
   performSignOut,
   type SignInStatusResponse,
   type StatusState,
+  switchUser,
 } from "@/lib/auth/status";
 import { cn } from "@/lib/utils";
 
@@ -57,11 +65,12 @@ export function UserStatusBar() {
   const [signingOut, setSigningOut] = useState(false);
   const expiresAtRef = useRef<number | null>(null);
 
+  const isDefaultUser = status.data?.isDefaultUser === true;
+
   const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/sign-in-status");
 
-      // Server error - sign out
       if (!response.ok) {
         await performSignOut("user-status-bar");
         return;
@@ -69,7 +78,17 @@ export function UserStatusBar() {
 
       const data = (await response.json()) as SignInStatusResponse;
 
-      // If not authenticated or there's an error, sign out and redirect
+      // Default user mode: always accept the response even with errors
+      if (data.isDefaultUser) {
+        setStatus({ loading: false, data, error: null });
+        if (data.token?.expiresIn !== undefined) {
+          expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
+          setLocalExpiresIn(data.token.expiresIn);
+        }
+        return;
+      }
+
+      // OAuth mode: sign out if not authenticated or there's an error
       if (!data.authenticated || data.error) {
         await performSignOut("user-status-bar");
         return;
@@ -81,7 +100,6 @@ export function UserStatusBar() {
         setLocalExpiresIn(data.token.expiresIn);
       }
     } catch {
-      // On any error, sign out and redirect
       await performSignOut("user-status-bar");
     }
   }, []);
@@ -99,6 +117,11 @@ export function UserStatusBar() {
       return undefined;
     }
 
+    // Default users don't need a countdown timer
+    if (isDefaultUser) {
+      return undefined;
+    }
+
     const timer = setInterval(() => {
       if (expiresAtRef.current === null) {
         return;
@@ -111,11 +134,15 @@ export function UserStatusBar() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [status.data?.token?.expiresIn]);
+  }, [status.data?.token?.expiresIn, isDefaultUser]);
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     await performSignOut("user-status-bar");
+  }, []);
+
+  const handleSwitchUser = useCallback(() => {
+    switchUser();
   }, []);
 
   const handleReauth = useCallback(() => {
@@ -159,6 +186,15 @@ export function UserStatusBar() {
    * Determines the status indicator style and text based on token state.
    */
   const getStatusIndicator = () => {
+    // Default user always shows a healthy "Service Account" indicator
+    if (isDefaultUser) {
+      return {
+        bgColor: "bg-blue-500/10",
+        textColor: "text-blue-400",
+        text: "Service Account",
+      };
+    }
+
     if (tokenError) {
       return {
         bgColor: "bg-destructive/10",
@@ -187,8 +223,12 @@ export function UserStatusBar() {
     };
   };
 
+  // Default users always show a status badge (no token/expiry to check).
+  // OAuth users only show one when token info is available.
   const statusIndicator =
-    token && localExpiresIn !== null ? getStatusIndicator() : null;
+    isDefaultUser || (token && localExpiresIn !== null)
+      ? getStatusIndicator()
+      : null;
 
   return (
     <div className="flex h-12 items-center justify-between border-b border-white/[0.06] bg-card/50 px-4">
@@ -209,7 +249,7 @@ export function UserStatusBar() {
                 </span>
               )}
             </div>
-            {/* Countdown timer with time displayed */}
+            {/* Status indicator badge */}
             <div
               className={cn(
                 "flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
@@ -220,7 +260,11 @@ export function UserStatusBar() {
             >
               {statusIndicator ? (
                 <>
-                  <Clock className="size-3.5" />
+                  {isDefaultUser ? (
+                    <Shield className="size-3.5" />
+                  ) : (
+                    <Clock className="size-3.5" />
+                  )}
                   <span>{statusIndicator.text}</span>
                 </>
               ) : (
@@ -239,28 +283,39 @@ export function UserStatusBar() {
               Account status
             </Link>
           </DropdownMenuItem>
-          {(isTokenExpired || isTokenExpiringSoon || tokenError) && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={handleReauth}
-                className="cursor-pointer"
-              >
-                <RefreshCw className="size-4" />
-                Re-authenticate
-              </DropdownMenuItem>
-            </>
-          )}
+          {!isDefaultUser &&
+            (isTokenExpired || isTokenExpiringSoon || tokenError) && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={handleReauth}
+                  className="cursor-pointer"
+                >
+                  <RefreshCw className="size-4" />
+                  Re-authenticate
+                </DropdownMenuItem>
+              </>
+            )}
           <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={handleSignOut}
-            disabled={signingOut}
-            className="cursor-pointer"
-          >
-            <LogOut className="size-4" />
-            {signingOut ? "Signing out..." : "Sign out"}
-          </DropdownMenuItem>
+          {isDefaultUser ? (
+            <DropdownMenuItem
+              onClick={handleSwitchUser}
+              className="cursor-pointer"
+            >
+              <ArrowRightLeft className="size-4" />
+              Switch user
+            </DropdownMenuItem>
+          ) : (
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="cursor-pointer"
+            >
+              <LogOut className="size-4" />
+              {signingOut ? "Signing out..." : "Sign out"}
+            </DropdownMenuItem>
+          )}
         </DropdownMenuContent>
       </DropdownMenu>
     </div>
