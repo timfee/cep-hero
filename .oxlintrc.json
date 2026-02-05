@@ -2,6 +2,7 @@
   "ignorePatterns": [
     "components/",
     "scripts/",
+    "evals/reports/",
     "**/*.test.ts",
     "**/*.test.tsx"
   ],
