@@ -37,14 +37,23 @@ function getServiceAccountJson() {
  * which breaks JSON parsing of the private_key field.
  */
 function parseServiceAccountJson(json: string) {
-  // Bun's env parser converts \n to actual newlines, breaking JSON parsing.
-  // Convert newlines back to \n escape sequences before parsing.
-  const fixedJson = json.replaceAll("\n", String.raw`\n`);
-  const parsed: unknown = JSON.parse(fixedJson);
-  if (!isPlainObject(parsed)) {
-    throw new Error("Service account JSON must be an object");
+  // First try parsing as-is (works for pretty-printed and properly escaped JSON)
+  try {
+    const parsed: unknown = JSON.parse(json);
+    if (!isPlainObject(parsed)) {
+      throw new Error("Service account JSON must be an object");
+    }
+    return parsed;
+  } catch {
+    // If parsing fails, it might be because Bun's env parser converted \n to
+    // actual newlines inside the private_key string. Convert them back.
+    const fixedJson = json.replaceAll("\n", String.raw`\n`);
+    const parsed: unknown = JSON.parse(fixedJson);
+    if (!isPlainObject(parsed)) {
+      throw new Error("Service account JSON must be an object");
+    }
+    return parsed;
   }
-  return parsed;
 }
 
 /**
