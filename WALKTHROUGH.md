@@ -1,225 +1,139 @@
 # CEP Hero Architecture Walkthrough
 
-CEP Hero is an AI-powered troubleshooting assistant for Chrome Enterprise Premium. It combines real-time data from Google Workspace APIs with an LLM to diagnose issues and guide administrators through solutions.
-
-This document explains how everything fits together, from authentication to AI reasoning to policy changes.
-
----
+CEP Hero is an AI-powered troubleshooting assistant for Chrome Enterprise Premium. This document explains how the system works, why it's designed the way it is, and how the pieces fit together.
 
 ## Table of Contents
 
-1. [The Big Picture](#the-big-picture)
-2. [Technology Stack](#technology-stack)
-3. [Project Structure](#project-structure)
-4. [Authentication Flow](#authentication-flow)
-5. [The MCP Tool System](#the-mcp-tool-system)
-6. [How the Chat Works](#how-the-chat-works)
-7. [The Fleet Overview Dashboard](#the-fleet-overview-dashboard)
-8. [The Draft-and-Apply Pattern](#the-draft-and-apply-pattern)
-9. [Testing with Fixtures](#testing-with-fixtures)
-10. [The Evaluation Framework](#the-evaluation-framework)
-11. [Data Flow: End-to-End Example](#data-flow-end-to-end-example)
-12. [Key Architectural Decisions](#key-architectural-decisions)
+1. [What Problem Does This Solve?](#what-problem-does-this-solve)
+2. [The Core Architecture](#the-core-architecture)
+3. [Authentication: Getting Access to Google APIs](#authentication-getting-access-to-google-apis)
+4. [The Tool System: How the AI Gathers Data](#the-tool-system-how-the-ai-gathers-data)
+5. [The Chat System: Orchestrating AI Conversations](#the-chat-system-orchestrating-ai-conversations)
+6. [The Dashboard: Evidence-First Summarization](#the-dashboard-evidence-first-summarization)
+7. [Policy Changes: The Draft-and-Apply Pattern](#policy-changes-the-draft-and-apply-pattern)
+8. [Testing: Fixtures and Determinism](#testing-fixtures-and-determinism)
+9. [Evaluation: Measuring AI Quality](#evaluation-measuring-ai-quality)
+10. [Project Structure Reference](#project-structure-reference)
 
----
+## What Problem Does This Solve?
 
-## The Big Picture
+Chrome Enterprise Premium administrators face a difficult challenge. When something goes wrong—browsers not enrolling, DLP rules blocking legitimate work, policies not applying correctly—the data needed to diagnose the problem exists across multiple Google APIs. Chrome events live in the Admin SDK. Policy configurations live in the Chrome Policy API. DLP rules live in Cloud Identity. Organizational unit hierarchies live in the Directory API.
 
-CEP Hero solves a specific problem: Chrome Enterprise Premium administrators need to troubleshoot complex issues across browsers, devices, policies, and security rules. The data exists in various Google APIs, but correlating it and understanding what's wrong requires expertise.
+An experienced administrator might spend 30 minutes clicking through the Admin Console, cross-referencing timestamps, checking policy inheritance, and piecing together what happened. CEP Hero automates this process. It connects to the same APIs, gathers the relevant data, and uses an LLM to correlate the evidence and explain what's wrong.
 
-The application:
+The key insight is that the AI doesn't guess. Every diagnosis must be grounded in actual data from the APIs. If the AI says "your enrollment is failing because of a network error," it's because it found `ERR_NAME_NOT_RESOLVED` in the Chrome events. This evidence-first approach makes the system trustworthy.
 
-1. **Authenticates** the administrator via Google OAuth with Chrome Enterprise scopes
-2. **Gathers evidence** from multiple Google APIs (Chrome events, DLP rules, policies, org units)
-3. **Reasons** over that evidence using an LLM (Gemini 2.0 Flash)
-4. **Proposes actions** with a confirmation workflow before making changes
-5. **Applies changes** to Chrome policies when the administrator confirms
+## The Core Architecture
 
-The AI never guesses. Every recommendation is grounded in real data from the APIs.
+The application follows a three-tier architecture, but with an interesting twist: the AI acts as an orchestration layer that decides what data to fetch and how to interpret it.
 
----
+**Tier 1: The Frontend** renders a dashboard and chat interface. The dashboard shows a high-level overview of the Chrome Enterprise deployment. The chat lets administrators ask questions and receive AI-powered diagnoses.
 
-## Technology Stack
+**Tier 2: The API Layer** handles authentication, routes requests, and manages the conversation state. When a user sends a message, this layer validates their session, retrieves their Google OAuth token, and passes the conversation to the AI.
 
-| Layer        | Technology                               | Purpose                                              |
-| ------------ | ---------------------------------------- | ---------------------------------------------------- |
-| Framework    | Next.js 16 (App Router)                  | Server-side rendering, API routes, React integration |
-| Language     | TypeScript 5.9                           | Type safety across the entire codebase               |
-| AI/LLM       | Vercel AI SDK + Google Gemini            | Streaming chat, tool calling, structured output      |
-| Auth         | Better Auth                              | OAuth 2.0 with Google, session management            |
-| Google APIs  | Admin SDK, Chrome Policy, Cloud Identity | Events, policies, DLP rules, org units               |
-| Search       | Upstash Vector                           | Semantic search over documentation and policies      |
-| UI           | React 19, Radix UI, Tailwind CSS         | Components, accessibility, styling                   |
-| Animation    | Framer Motion                            | Smooth transitions in the dashboard                  |
-| Testing      | Bun test runner, happy-dom               | Unit tests, React component tests                    |
-| Code Quality | Ultracite (Oxlint + Oxfmt)               | Linting and formatting                               |
+**Tier 3: The Tool Executors** actually call the Google APIs. This is where Chrome events get fetched, DLP rules get listed, and policies get resolved. The executors are abstracted behind an interface, which becomes important for testing.
 
----
+The AI sits between tiers 2 and 3. It receives the user's question, decides which tools to call, interprets the results, and formulates a response. The Vercel AI SDK handles this orchestration automatically—when the AI decides to call a tool, the SDK pauses the response, executes the tool, feeds the result back to the AI, and continues.
 
-## Project Structure
+## Authentication: Getting Access to Google APIs
 
-```
-cep-hero/
-├── app/                    # Next.js App Router
-│   ├── api/               # Backend API routes
-│   │   ├── auth/          # OAuth endpoints (Better Auth)
-│   │   ├── chat/          # AI chat streaming endpoint
-│   │   └── overview/      # Fleet dashboard data
-│   ├── (auth)/            # Auth-related pages (sign-in)
-│   └── page.tsx           # Home page (redirects if unauthenticated)
-│
-├── components/            # React components
-│   ├── chat/              # Chat console and context
-│   ├── cep/               # Dashboard and app shell
-│   ├── ai-elements/       # Tool output renderers
-│   ├── fixtures/          # Demo mode UI
-│   └── ui/                # Shared UI primitives (Radix-based)
-│
-├── lib/                   # Core business logic
-│   ├── auth.ts            # Better Auth configuration
-│   ├── auth/              # Shared auth utilities
-│   ├── chat/              # AI chat service
-│   ├── mcp/               # Tool system (executors, schemas, types)
-│   │   ├── executor/      # Google API implementations
-│   │   ├── fleet-overview/# Dashboard data extraction
-│   │   └── types.ts       # ToolExecutor interface
-│   └── upstash/           # Vector search integration
-│
-├── evals/                 # Evaluation framework
-│   ├── cases/             # Test scenarios (markdown)
-│   ├── fixtures/          # Test data overrides
-│   ├── lib/               # Eval runner, assertions, reporting
-│   └── registry.json      # Test case definitions
-│
-└── tests/                 # Unit and integration tests
-```
+### Why OAuth Matters
 
-### What's an "App Router"?
+CEP Hero doesn't store Google credentials. Instead, it uses OAuth 2.0 to get temporary access tokens that let it call APIs on behalf of the signed-in administrator. This is both more secure (no passwords stored) and more appropriate (the app acts with the user's permissions, not its own).
 
-Next.js uses file-based routing. Every folder under `app/` becomes a URL path:
+When an administrator signs in, Google shows a consent screen listing the permissions the app is requesting. These permissions are called "scopes," and each one unlocks specific API capabilities:
 
-- `app/page.tsx` → `/`
-- `app/sign-in/page.tsx` → `/sign-in`
-- `app/api/chat/route.ts` → `/api/chat`
+- `chrome.management.reports.readonly` lets the app read Chrome audit events—the log of everything that happens in managed browsers
+- `chrome.management.policy` lets the app read and write Chrome policies
+- `cloud-identity.policies` lets the app manage DLP rules
+- `admin.directory.orgunit` lets the app see the organizational unit hierarchy
 
-Files named `page.tsx` render HTML. Files named `route.ts` handle HTTP requests (like a REST API). This convention eliminates manual route configuration.
+The app requests offline access, which means Google provides a refresh token in addition to the access token. Access tokens expire after an hour, but the refresh token lets the app get new access tokens without requiring the user to sign in again. This is important because diagnostic sessions can be long.
 
----
+### How Sessions Work
 
-## Authentication Flow
+Better Auth, the authentication library, manages the session lifecycle. When a user completes the OAuth flow, Better Auth stores the tokens in a session cookie. The cookie is HTTP-only (JavaScript can't read it) and signed (tampering is detected).
 
-### Why OAuth?
-
-CEP Hero needs to call Google APIs on behalf of the administrator. OAuth 2.0 lets the user grant specific permissions (called "scopes") without sharing their password.
-
-### The Scopes
-
-When a user signs in, they authorize these permissions:
+When an API route needs to call Google APIs, it retrieves the access token from the session:
 
 ```typescript
-scope: [
-  "https://www.googleapis.com/auth/chrome.management.reports.readonly",
-  "https://www.googleapis.com/auth/chrome.management.policy",
-  "https://www.googleapis.com/auth/cloud-identity.policies",
-  "https://www.googleapis.com/auth/admin.directory.orgunit",
-  // ... more scopes
-];
-```
-
-Each scope unlocks specific API capabilities:
-
-- **chrome.management.reports.readonly** — Read Chrome audit events
-- **chrome.management.policy** — Read and write Chrome policies
-- **cloud-identity.policies** — Manage DLP rules
-- **admin.directory.orgunit** — List organizational units
-
-### How It Works
-
-1. User visits `/sign-in`
-2. Better Auth redirects to Google's OAuth consent screen
-3. User grants permissions
-4. Google redirects back with an authorization code
-5. Better Auth exchanges the code for access and refresh tokens
-6. Tokens are stored in a session cookie
-
-The access token is then used for all Google API calls:
-
-```typescript
-// In an API route
 const session = await auth.api.getSession({ headers: req.headers });
 const { accessToken } = await auth.api.getAccessToken({
   body: { providerId: "google" },
   headers: req.headers,
 });
-
-// Use accessToken to call Google APIs
-const executor = new CepToolExecutor(accessToken);
 ```
 
-### Configuration
+If the access token has expired, Better Auth automatically uses the refresh token to get a new one. This happens transparently—the API route just gets a valid token.
 
-Authentication is configured in `lib/auth.ts`:
+### The Scopes in Detail
 
-```typescript
-export const auth = betterAuth({
-  socialProviders: {
-    google: {
-      clientId: getRequiredEnv("GOOGLE_CLIENT_ID"),
-      clientSecret: getRequiredEnv("GOOGLE_CLIENT_SECRET"),
-      accessType: "offline", // Get refresh token
-      prompt: "consent", // Always show consent screen
-      scope: [
-        /* ... */
-      ],
-    },
-  },
-  session: {
-    cookieCache: { enabled: true, maxAge: 12 * 60 * 60 },
-  },
-});
-```
+The choice of scopes represents a balance between functionality and least-privilege. The app requests only what it needs:
 
-The `accessType: "offline"` is important—it ensures we get a refresh token so the app can continue working even after the access token expires.
+**Read-only scopes** for gathering diagnostic data: Chrome events, audit logs, directory information. The app needs to see what's happening but doesn't need to modify these resources.
 
----
+**Read-write scopes** for Chrome policies and DLP rules. The app can propose and apply configuration changes, but only with explicit user confirmation (more on this later).
 
-## The MCP Tool System
+If an administrator's Google account doesn't have permission to perform an action (for example, they're not a super admin), the API call will fail even though the app requested the scope. OAuth scopes define what the app _can ask for_, not what the user _can do_.
 
-MCP stands for "Model Context Protocol." In this codebase, it refers to the tools that the AI can invoke to gather data or take actions.
+## The Tool System: How the AI Gathers Data
 
 ### The ToolExecutor Interface
 
-Every tool is defined in a single interface (`lib/mcp/types.ts`):
+The tool system is built around a TypeScript interface called `ToolExecutor`. This interface defines every operation the AI can perform:
 
 ```typescript
 export interface ToolExecutor {
-  getChromeEvents(args: GetChromeEventsArgs): Promise<ChromeEventsResult>;
-  listDLPRules(args?: ListDLPRulesArgs): Promise<ListDLPRulesResult>;
+  getChromeEvents(args): Promise<ChromeEventsResult>;
+  listDLPRules(args): Promise<ListDLPRulesResult>;
   listOrgUnits(): Promise<ListOrgUnitsResult>;
   getChromeConnectorConfiguration(): Promise<ConnectorConfigResult>;
-  draftPolicyChange(
-    args: DraftPolicyChangeArgs
-  ): Promise<DraftPolicyChangeResult>;
-  applyPolicyChange(
-    args: ApplyPolicyChangeArgs
-  ): Promise<ApplyPolicyChangeResult>;
-  createDLPRule(args: CreateDLPRuleArgs): Promise<CreateDLPRuleResult>;
-  getFleetOverview(args: GetFleetOverviewArgs): Promise<FleetOverviewResponse>;
-  enrollBrowser(args: EnrollBrowserArgs): Promise<EnrollBrowserResult>;
-  debugAuth(): Promise<DebugAuthResult>;
+  draftPolicyChange(args): Promise<DraftPolicyChangeResult>;
+  applyPolicyChange(args): Promise<ApplyPolicyChangeResult>;
+  // ... more methods
 }
 ```
 
-This interface is implemented twice:
+The interface is implemented twice. `CepToolExecutor` is the production implementation that calls real Google APIs. `FixtureToolExecutor` is the test implementation that returns predetermined data. The chat service doesn't know which implementation it's using—it just calls the interface methods. This pattern, called dependency injection, makes the system testable without mocking.
 
-1. **`CepToolExecutor`** — Calls real Google APIs (production)
-2. **`FixtureToolExecutor`** — Returns predetermined data (testing)
+### How Tools Map to Google APIs
 
-This pattern is called **dependency injection**. The chat service doesn't know which implementation it's using; it just calls the interface methods.
+Each tool method corresponds to one or more Google API calls. Let's trace through `getChromeEvents` to see how this works.
+
+When the AI calls `getChromeEvents({ maxResults: 50 })`, the executor calls the Admin SDK's Reports API:
+
+```typescript
+const admin = google.admin({ version: "reports_v1", auth: this.auth });
+const response = await admin.activities.list({
+  userKey: "all",
+  applicationName: "chrome",
+  maxResults: args.maxResults,
+  startTime: args.startTime,
+  endTime: args.endTime,
+});
+```
+
+The raw API response contains nested objects with Google's internal field names. The executor transforms this into a cleaner structure that's easier for the AI to understand:
+
+```typescript
+return {
+  events:
+    response.data.items?.map((item) => ({
+      time: item.id?.time,
+      actor: item.actor?.email,
+      eventType: item.events?.[0]?.type,
+      eventName: item.events?.[0]?.name,
+      parameters: item.events?.[0]?.parameters,
+    })) ?? [],
+  nextPageToken: response.data.nextPageToken,
+};
+```
+
+This transformation is important. The AI works better with clean, consistent data structures than with deeply nested API responses.
 
 ### Input Validation with Zod
 
-Each tool has a schema that validates its inputs (`lib/mcp/schemas.ts`):
+Every tool has a schema that defines its valid inputs. These schemas use Zod, a TypeScript-first validation library:
 
 ```typescript
 export const GetChromeEventsSchema = z.object({
@@ -230,164 +144,52 @@ export const GetChromeEventsSchema = z.object({
 });
 ```
 
-Zod schemas serve three purposes:
+The schema serves three purposes. First, it validates inputs at runtime—if the AI tries to pass invalid arguments, the call fails with a clear error. Second, it generates TypeScript types automatically via `z.infer<typeof GetChromeEventsSchema>`. Third, it tells the AI what parameters each tool accepts, because the AI SDK converts Zod schemas into the JSON Schema format that LLMs understand.
 
-1. **Runtime validation** — Reject invalid inputs before calling APIs
-2. **TypeScript types** — `z.infer<typeof GetChromeEventsSchema>` generates the type
-3. **AI tool definitions** — The schema tells the LLM what parameters each tool accepts
+### The Connector Configuration Tool
 
-### The Production Executor
+Some tools are more complex than a single API call. `getChromeConnectorConfiguration` demonstrates this. It needs to:
 
-`CepToolExecutor` (`lib/mcp/executor/index.ts`) coordinates all Google API calls:
+1. Determine which organizational units to check
+2. Call the Chrome Policy API's resolve endpoint for each policy schema
+3. Aggregate the results across multiple schemas
 
-```typescript
-export class CepToolExecutor implements ToolExecutor {
-  private auth: OAuth2Client;
-  private customerId: string;
-  private orgUnitContext: OrgUnitContext | null = null;
-
-  constructor(accessToken: string, customerId?: string) {
-    this.auth = new OAuth2Client();
-    this.auth.setCredentials({ access_token: accessToken });
-    this.customerId = customerId ?? "my_customer";
-  }
-
-  async getChromeEvents(args: GetChromeEventsArgs) {
-    return fetchChromeEvents(this.auth, this.customerId, args);
-  }
-
-  // Each method delegates to a specialized module
-}
-```
-
-Each tool has its own implementation file in `lib/mcp/executor/`:
-
-| File               | Purpose                                           |
-| ------------------ | ------------------------------------------------- |
-| `chrome-events.ts` | Queries Chrome audit events from Admin SDK        |
-| `connector.ts`     | Resolves connector policies via Chrome Policy API |
-| `dlp-list.ts`      | Lists DLP rules from Cloud Identity API           |
-| `policy.ts`        | Drafts and applies policy changes                 |
-| `enrollment.ts`    | Generates browser enrollment tokens               |
-| `org-units-api.ts` | Lists organizational units                        |
-
----
-
-## How the Chat Works
-
-The chat system has three layers: the API route, the chat service, and the React context.
-
-### Layer 1: The API Route
-
-`app/api/chat/route.ts` handles HTTP POST requests:
+The Chrome connector has several policy schemas that control different features: `SafeBrowsingExt` for malware protection, `EventReportingSettings` for telemetry, `CookieEncryption` for security, and `IncognitoModeAvailability` for browser restrictions. The tool resolves all of these and returns a unified view:
 
 ```typescript
-export async function POST(req: Request) {
-  // 1. Authenticate
-  const session = await auth.api.getSession({ headers: req.headers });
-  if (!session) {
-    return Response.json({ error: "Unauthorized" }, { status: 401 });
-  }
+const schemas = [
+  "chrome.users.SafeBrowsingExt",
+  "chrome.users.EventReportingSettings",
+  "chrome.users.CookieEncryption",
+  "chrome.users.IncognitoModeAvailability",
+];
 
-  // 2. Get access token
-  const { accessToken } = await auth.api.getAccessToken({ ... });
-
-  // 3. Parse request body
-  const body = await req.json();
-  const messages = body.messages;
-
-  // 4. Create executor (production or fixture-based)
-  const isTestMode = req.headers.get("x-eval-test-mode") === "1";
-  const executor = isTestMode
-    ? new FixtureToolExecutor(body.fixtures)
-    : new CepToolExecutor(accessToken);
-
-  // 5. Stream response
-  const result = await createChatStream({ messages, executor });
-  return result.toDataStreamResponse();
-}
+const policies = await Promise.all(
+  schemas.map((schema) => resolvePolicy(auth, schema, targetOrgUnit))
+);
 ```
 
-### Layer 2: The Chat Service
+By parallelizing the API calls, the tool returns results faster than if it called each one sequentially.
 
-`lib/chat/chat-service.ts` orchestrates the AI conversation:
+## The Chat System: Orchestrating AI Conversations
 
-```typescript
-export async function createChatStream({ messages, executor }) {
-  const result = streamText({
-    model: google("gemini-2.0-flash-001"),
-    messages: [{ role: "system", content: systemPrompt }, ...messages],
-    tools: {
-      getChromeEvents: tool({
-        description: "Get recent Chrome events.",
-        inputSchema: GetChromeEventsSchema,
-        execute: (args) => executor.getChromeEvents(args),
-      }),
-      listDLPRules: tool({
-        description: "List DLP rules.",
-        inputSchema: ListDLPRulesSchema,
-        execute: (args) => executor.listDLPRules(args),
-      }),
-      // ... more tools
-    },
-  });
+### The Three Layers
 
-  return result;
-}
-```
+The chat system has three distinct layers, each with a specific responsibility.
 
-The `streamText` function from the Vercel AI SDK:
+**The API Route** (`app/api/chat/route.ts`) handles HTTP concerns. It validates the session, retrieves the access token, parses the request body, and returns a streaming response. It's the entry point for all chat requests.
 
-1. Sends the conversation to Gemini
-2. If Gemini wants to call a tool, it pauses and returns the tool call
-3. The SDK executes the tool via the `execute` function
-4. The tool result is sent back to Gemini
-5. Gemini continues reasoning
-6. The final response streams back to the client
+**The Chat Service** (`lib/chat/chat-service.ts`) orchestrates the AI conversation. It defines the system prompt, registers the available tools, and configures how the AI should behave. This is where the "personality" of CEP Hero is defined.
 
-### Layer 3: The React Context
-
-`components/chat/chat-context.tsx` provides chat state to the entire app:
-
-```typescript
-export function ChatProvider({ children }) {
-  const chat = useChat({
-    api: "/api/chat",
-    streamProtocol: "data",
-  });
-
-  return (
-    <ChatContext.Provider value={chat}>
-      {children}
-    </ChatContext.Provider>
-  );
-}
-```
-
-The `useChat` hook from the AI SDK handles:
-
-- Sending messages to the API
-- Streaming responses
-- Managing message history
-- Tracking loading state
-
-Components anywhere in the app can access chat state:
-
-```typescript
-function SomeComponent() {
-  const { messages, sendMessage, status } = useChatContext();
-  // ...
-}
-```
+**The React Context** (`components/chat/chat-context.tsx`) manages client-side state. It tracks the conversation history, handles message sending, and provides chat state to React components throughout the app.
 
 ### The System Prompt
 
-The system prompt (`lib/chat/chat-service.ts`) shapes how the AI behaves:
+The system prompt is a detailed instruction set that shapes how the AI behaves. It's not just "you are a helpful assistant"—it's a comprehensive guide covering capabilities, workflows, and response formatting.
 
-```typescript
-const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium.
+The prompt establishes what the AI can and cannot do:
 
-# Your Capabilities
+```
 You CAN:
 - Fetch and analyze Chrome events, DLP rules, and connector configurations
 - Diagnose policy scoping issues and configuration problems
@@ -396,140 +198,153 @@ You CAN:
 
 You CANNOT:
 - Execute changes without explicit user confirmation
-
-# Policy Change Workflow
-1. Explain the issue and what needs to change
-2. Use draftPolicyChange to propose the change
-3. Wait for user to say "Confirm"
-4. Call applyPolicyChange with exact values from the draft
-
-# Evidence Requirements
-- Cite EXACT field values from tool results
-- Quote error codes verbatim
-- Mention specific counts
-...`;
 ```
 
-This prompt establishes:
+It defines the policy change workflow in detail, explaining the draft-and-apply pattern and when to use each tool. It specifies how to format org unit references (friendly paths like "/Engineering" instead of raw IDs like "orgunits/03ph8a2z"). It requires the AI to cite specific evidence from tool results.
 
-- What the AI can and cannot do
-- The confirmation workflow for policy changes
-- How to cite evidence
-- How to format responses
+The prompt is long—several hundred lines—because the AI needs clear, specific guidance to behave consistently. Vague instructions lead to inconsistent behavior.
 
----
+### Tool Execution Flow
 
-## The Fleet Overview Dashboard
+When the AI decides to call a tool, the Vercel AI SDK handles the execution automatically. Here's what happens:
 
-The dashboard shows a high-level view of the Chrome Enterprise deployment.
+1. The AI generates a response that includes a tool call: "I'll check the Chrome events" followed by `getChromeEvents({ maxResults: 50 })`
 
-### Two-Layer Architecture
+2. The SDK intercepts this, pauses the response stream, and calls the tool's `execute` function
 
-The dashboard uses an **evidence-first** pattern:
+3. The execute function runs the actual API call via the executor
 
-**Layer 1: Deterministic Extraction** (`lib/mcp/fleet-overview/extract.ts`)
+4. The SDK feeds the result back to the AI as a "tool result" message
+
+5. The AI continues generating, now with access to the data
+
+This can happen multiple times in a single response. The AI might call `getChromeEvents`, see something suspicious, call `getChromeConnectorConfiguration` to investigate, and then synthesize both results into a diagnosis.
+
+### Response Streaming
+
+The chat uses streaming responses, which means the user sees text appear progressively rather than waiting for the complete response. This is important for UX—a diagnosis might take 10 seconds to generate, and streaming makes the wait feel shorter.
+
+The streaming protocol includes both text chunks and structured data for tool calls and results. The React components parse this stream and render tool outputs as rich UI elements (tables, cards, etc.) rather than raw JSON.
+
+### Conversation Guards
+
+The chat service includes "guards" that ensure response quality. These are implemented using the AI SDK's `prepareStep` callback, which runs between each step of the conversation.
+
+For example, the short response guard detects when the AI gives an incomplete answer:
 
 ```typescript
-export function extractFleetOverviewFacts(
-  data: RawApiData
-): FleetOverviewFacts {
+prepareStep: ({ steps }) => {
+  const lastStep = steps.at(-1);
+  if (lastStep?.text.length < 200 && lastStep?.toolResults.length > 0) {
+    return {
+      system: `Your response was too brief. Provide a complete diagnosis with:
+        1. What the evidence shows
+        2. What this means
+        3. Recommended next steps`,
+    };
+  }
+  return {};
+};
+```
+
+If the AI tries to say "I'll check the events" and stop, the guard injects additional instructions requiring a complete response.
+
+## The Dashboard: Evidence-First Summarization
+
+### The Two-Layer Pattern
+
+The dashboard demonstrates an important architectural pattern: separating evidence extraction from AI interpretation. This pattern appears throughout the codebase, but it's most visible here.
+
+**Layer 1: Deterministic Extraction**
+
+The first layer extracts facts from raw API data. This is pure computation with no AI involvement:
+
+```typescript
+function extractFleetOverviewFacts(data: RawApiData): FleetOverviewFacts {
   return {
     eventCount: data.events?.length ?? 0,
     blockedEventCount:
-      data.events?.filter((e) => e.type === "BLOCKED").length ?? 0,
+      data.events?.filter((e) => isBlockedEvent(e)).length ?? 0,
     dlpRuleCount: data.dlpRules?.length ?? 0,
-    connectorPolicyCount: data.connectorPolicies?.length ?? 0,
-    // ... more facts
+    hasConnectorPolicies: (data.connectorPolicies?.length ?? 0) > 0,
+    oldestEventAge: calculateEventAge(data.events),
   };
 }
 ```
 
-This function is pure—no AI, no side effects. Given the same input, it always returns the same output. This makes it easy to test and debug.
+Given the same input, this function always returns the same output. It's easy to test, easy to debug, and completely predictable.
 
-**Layer 2: AI Summarization** (`lib/mcp/fleet-overview/summarize.ts`)
+**Layer 2: AI Summarization**
 
-```typescript
-export async function summarizeFleetOverview(facts: FleetOverviewFacts) {
-  const result = await generateObject({
-    model: google("gemini-2.0-flash"),
-    schema: FleetOverviewResponseSchema,
-    prompt: `Given these facts about a Chrome Enterprise deployment:
-      - ${facts.eventCount} events in the last 24 hours
-      - ${facts.blockedEventCount} blocked events
-      - ${facts.dlpRuleCount} DLP rules configured
-
-      Generate a summary with status cards and recommendations.`,
-  });
-
-  return result.object;
-}
-```
-
-The AI receives structured facts, not raw API responses. This:
-
-- Reduces token usage
-- Makes prompts more predictable
-- Keeps the AI focused on summarization, not data parsing
-
-### The Dashboard Component
-
-`components/cep/dashboard-overview.tsx` renders the overview:
+The second layer uses the AI to generate human-readable summaries from the extracted facts:
 
 ```typescript
-export function DashboardOverview() {
-  const { data, isLoading } = useSWR("/api/overview", fetcher, {
-    revalidateOnFocus: false,
-    keepPreviousData: true,
-  });
+const summary = await generateObject({
+  model: google("gemini-2.0-flash"),
+  schema: FleetOverviewResponseSchema,
+  prompt: `Given these facts about a Chrome Enterprise deployment:
+    - ${facts.eventCount} Chrome events in the observation window
+    - ${facts.blockedEventCount} events were security blocks
+    - ${facts.dlpRuleCount} DLP rules are configured
 
-  if (isLoading) return <DashboardSkeleton />;
-
-  return (
-    <div>
-      <h1>{data.headline}</h1>
-      <p>{data.summary}</p>
-
-      <div className="cards">
-        {data.postureCards.map((card) => (
-          <PostureCard key={card.label} {...card} />
-        ))}
-      </div>
-
-      <Suggestions items={data.suggestions} />
-    </div>
-  );
-}
-```
-
-SWR is a data fetching library that handles caching, revalidation, and loading states.
-
----
-
-## The Draft-and-Apply Pattern
-
-Policy changes are destructive—they affect real users. CEP Hero uses a two-step confirmation pattern.
-
-### Step 1: Draft
-
-When the AI identifies a needed change, it calls `draftPolicyChange`:
-
-```typescript
-const draft = await executor.draftPolicyChange({
-  policyName: "Enable Cookie Encryption",
-  proposedValue: { cookieEncryptionEnabled: true },
-  targetUnit: "orgunits/03ph8a2z23yjui6",
-  reasoning: "Cookie encryption prevents session hijacking",
+    Generate a dashboard summary with status cards and recommendations.`,
 });
 ```
 
-The draft returns:
+The AI receives clean, structured facts rather than raw API responses. This makes the prompts more predictable and the outputs more consistent.
+
+### Why This Pattern Matters
+
+Separating extraction from interpretation has several benefits.
+
+**Testability**: The extraction function can be unit tested with known inputs and expected outputs. If a test fails, you know whether the problem is in extraction logic or AI interpretation.
+
+**Debuggability**: When something goes wrong, you can inspect the extracted facts to see what the AI received. This is much easier than debugging prompts with complex nested API responses.
+
+**Token Efficiency**: The AI receives only the relevant facts, not megabytes of raw API data. This reduces costs and improves response times.
+
+**Consistency**: The same facts always produce similar summaries. The AI isn't distracted by irrelevant fields or formatting differences in API responses.
+
+### Structured Output
+
+The dashboard summary uses structured output via Zod schemas. Instead of asking the AI to generate freeform text, we define exactly what shape the response should have:
+
+```typescript
+const FleetOverviewResponseSchema = z.object({
+  headline: z.string().describe("Welcoming headline, no sensitive data"),
+  summary: z.string().describe("2-3 sentence overview"),
+  postureCards: z.array(PostureCardSchema).min(3).max(5),
+  suggestions: z.array(SuggestionSchema).min(2).max(4),
+});
+```
+
+The AI SDK validates the output against this schema and retries if the AI produces invalid JSON. This guarantees that the dashboard receives data in the expected format.
+
+## Policy Changes: The Draft-and-Apply Pattern
+
+### Why Two Steps?
+
+Policy changes are dangerous. A misconfigured Chrome policy can lock users out of their browsers, disable security features, or break critical workflows. The draft-and-apply pattern ensures administrators know exactly what will change before it happens.
+
+The pattern works like this:
+
+1. **Draft**: The AI proposes a change but doesn't apply it. The proposal includes what will change, where it will apply, and why.
+
+2. **Review**: The UI renders a confirmation card showing the proposed change. The administrator can see the exact policy values.
+
+3. **Apply**: Only when the administrator explicitly confirms does the change actually happen.
+
+### The Draft Response
+
+When the AI calls `draftPolicyChange`, it receives a response designed for both the AI and the UI:
 
 ```typescript
 {
   ui: {
     type: "confirmation",
     title: "Enable Cookie Encryption",
-    description: "This will encrypt cookies for /Engineering",
+    description: "Encrypts cookies to prevent session hijacking",
+    targetDisplay: "/Engineering",
   },
   applyParams: {
     policySchemaId: "chrome.users.CookieEncryption",
@@ -540,93 +355,48 @@ The draft returns:
 }
 ```
 
-### Step 2: UI Confirmation
+The `ui` object contains human-readable information for the confirmation card. The `applyParams` object contains the exact parameters needed to apply the change later. The AI stores these parameters and uses them verbatim when the user confirms.
 
-The chat console renders a confirmation card:
+### Confirmation Detection
 
-```typescript
-function PolicyChangeConfirmation({ draft }) {
-  return (
-    <Card>
-      <h3>{draft.ui.title}</h3>
-      <p>{draft.ui.description}</p>
-      <p className="muted">Say "Confirm" to apply this change.</p>
-    </Card>
-  );
-}
-```
-
-### Step 3: Apply
-
-When the user says "Confirm", the chat console detects it:
+The chat console detects confirmation patterns in user messages:
 
 ```typescript
 const CONFIRM_PATTERN = /^confirm\b/i;
-
-function handleSubmit(message: string) {
-  if (CONFIRM_PATTERN.test(message)) {
-    // The AI will see this and call applyPolicyChange
-    // with the exact applyParams from the draft
-  }
-  sendMessage({ text: message });
-}
+const CANCEL_PATTERN = /^(cancel|no|nevermind)\b/i;
 ```
 
-The AI then calls `applyPolicyChange` with the stored parameters:
+When the user says "Confirm," the message goes to the AI, which recognizes this as approval to proceed. The AI then calls `applyPolicyChange` with the exact parameters from the draft—no modifications, no reinterpretation.
 
-```typescript
-const result = await executor.applyPolicyChange({
-  policySchemaId: "chrome.users.CookieEncryption",
-  targetResource: "orgunits/03ph8a2z23yjui6",
-  value: { cookieEncryptionEnabled: true },
-});
-```
+### Why This Works
 
-This pattern ensures:
+The pattern prevents several failure modes:
 
-- Users see exactly what will change before it happens
-- The AI cannot modify parameters between draft and apply
-- Accidental changes are prevented
+**Accidental changes**: Users must explicitly type "Confirm." There's no button that might be clicked accidentally.
 
----
+**Parameter drift**: The AI uses the stored `applyParams` exactly as provided. It can't "improve" or modify the change between draft and apply.
 
-## Testing with Fixtures
+**Misunderstanding**: The confirmation card shows exactly what will change, including the target org unit and policy values. Users can verify before proceeding.
 
-Real Google API calls are slow, flaky, and require authentication. Fixtures solve this.
+**Audit trail**: The conversation history shows the draft, the confirmation, and the result. This creates a clear record of what changed and why.
 
-### What's a Fixture?
+## Testing: Fixtures and Determinism
 
-A fixture is a predetermined API response:
+### The Testing Problem
 
-```json
-{
-  "auditEvents": {
-    "items": [
-      {
-        "kind": "admin#reports#activity",
-        "id": { "time": "2024-01-15T10:30:00Z" },
-        "events": [{ "type": "BLOCK", "name": "DLP_VIOLATION" }]
-      }
-    ]
-  },
-  "dlpRules": [{ "name": "Block PII uploads", "action": "BLOCK" }]
-}
-```
+Testing an AI application that calls external APIs is difficult. Real API calls are slow, require authentication, and return different data each time. The AI itself is non-deterministic—the same prompt might produce different outputs.
+
+Fixtures solve the API problem. By injecting predetermined responses instead of calling real APIs, tests become fast, reproducible, and independent of network state.
 
 ### The Fixture Executor
 
-`FixtureToolExecutor` returns fixture data instead of calling APIs:
+`FixtureToolExecutor` implements the same `ToolExecutor` interface as the production executor, but returns fixture data instead of calling APIs:
 
 ```typescript
 export class FixtureToolExecutor implements ToolExecutor {
-  private fixtures: FixtureData;
-
-  constructor(fixtures: FixtureData) {
-    this.fixtures = fixtures;
-  }
+  constructor(private fixtures: FixtureData) {}
 
   async getChromeEvents(args) {
-    // Return fixture data, not real API response
     return {
       events: this.fixtures.auditEvents?.items ?? [],
       nextPageToken: null,
@@ -635,13 +405,34 @@ export class FixtureToolExecutor implements ToolExecutor {
 }
 ```
 
+Because both executors implement the same interface, the chat service works identically with either one. The service doesn't know or care whether it's talking to Google's servers or a fixture file.
+
+### Fixture Structure
+
+Fixtures mirror the shape of real API responses:
+
+```typescript
+interface FixtureData {
+  orgUnits?: OrgUnit[];
+  auditEvents?: { items?: Activity[]; nextPageToken?: string };
+  dlpRules?: DLPRule[];
+  connectorPolicies?: ResolvedPolicy[];
+  errors?: {
+    chromeEvents?: string;
+    dlpRules?: string;
+  };
+}
+```
+
+The `errors` field is interesting—it lets tests simulate API failures. A fixture with `errors.chromeEvents: "PERMISSION_DENIED"` tests how the system handles authorization errors.
+
 ### Fixture Injection
 
-The chat API route checks for test mode:
+The chat API route checks for a special header to determine which executor to use:
 
 ```typescript
 const isTestMode = req.headers.get("x-eval-test-mode") === "1";
-const fixtures = body.fixtures;
+const fixtures = extractFixtureData(body);
 
 const executor =
   isTestMode && fixtures
@@ -649,73 +440,54 @@ const executor =
     : new CepToolExecutor(accessToken);
 ```
 
-The chat context can inject fixtures automatically in demo mode:
+In demo mode, the chat context automatically injects fixtures with every message, allowing the app to function without real Google credentials.
 
-```typescript
-const sendMessage = useCallback((message, options) => {
-  if (isFixtureMode && activeFixture) {
-    return originalSendMessage(message, {
-      ...options,
-      headers: { "x-eval-test-mode": "1" },
-      body: { fixtures: activeFixture.data },
-    });
-  }
-  return originalSendMessage(message, options);
-}, []);
-```
+## Evaluation: Measuring AI Quality
 
----
+### What Evals Measure
 
-## The Evaluation Framework
+Evals test whether the AI gives correct, complete, and well-grounded answers. Each eval case defines:
 
-Evals test whether the AI gives good answers. They're automated, reproducible, and measure specific quality criteria.
+- A user prompt (what the administrator asks)
+- Fixtures (what the tools return)
+- Assertions (what the response must contain)
 
-### Eval Structure
+For example, an eval for network enrollment issues might require the AI to:
 
-Each eval case has:
+- Call `getChromeEvents` (the relevant tool)
+- Mention `ERR_NAME_NOT_RESOLVED` (the actual error code)
+- Include a diagnosis, evidence, and next steps (the expected structure)
 
-1. **A prompt** (what the user asks)
-2. **Fixtures** (what data the tools return)
-3. **Assertions** (what the response must contain)
+### The Eval Registry
 
-Example case definition (`evals/registry.json`):
+Cases are defined in `evals/registry.json`:
 
 ```json
 {
   "id": "EC-001",
   "title": "Network connectivity during enrollment",
   "category": "enrollment",
-  "expected_schema": ["diagnosis", "evidence", "hypotheses", "next_steps"],
-  "required_evidence": ["ERR_NAME_NOT_RESOLVED", "connection"],
+  "expected_schema": ["diagnosis", "evidence", "next_steps"],
+  "required_evidence": ["ERR_NAME_NOT_RESOLVED", "network"],
   "required_tool_calls": ["getChromeEvents"]
 }
 ```
 
+The `required_evidence` field lists keywords that must appear in the response. The `required_tool_calls` field specifies which tools the AI should invoke. The `expected_schema` field checks for structural elements.
+
 ### Running Evals
 
+The eval runner executes cases in parallel, streaming each conversation through the same chat endpoint used in production:
+
 ```bash
-# Run all evals with fixture injection
 EVAL_FIXTURES=1 bun run evals
-
-# Run specific cases
-EVAL_FIXTURES=1 bun run evals --cases EC-001,EC-002
-
-# Generate HTML report
-EVAL_FIXTURES=1 bun run evals --html
 ```
 
-### Assertions
-
-The eval runner checks multiple criteria:
-
-1. **Schema** — Does the response contain required sections (diagnosis, evidence, etc.)?
-2. **Evidence** — Does the response cite specific keywords from the fixture data?
-3. **Tool Calls** — Did the AI call the expected tools?
-4. **Forbidden Evidence** — Does the response avoid mentioning things it shouldn't?
+Each case gets its own fixtures, isolated from other cases. The runner captures the AI's response and checks it against the assertions.
 
 ### The LLM Judge
 
-Some assertions are subjective. The LLM judge uses a second AI to evaluate responses:
+Some assertions are difficult to check programmatically. Did the AI adequately explain the issue? Is the evidence citation sufficient? The LLM judge handles these subjective evaluations:
 
 ```typescript
 const judgeResult = await generateObject({
@@ -723,294 +495,74 @@ const judgeResult = await generateObject({
   schema: JudgeResponseSchema,
   prompt: `Evaluate this diagnostic response:
 
-    Response: ${response}
-    Required evidence: ${requiredEvidence}
+    Response: "${response}"
+    Required evidence: ${requiredEvidence.join(", ")}
 
-    Did the response adequately address the evidence requirements?`,
+    Did the response adequately cite the required evidence?`,
 });
 ```
 
-This handles cases where the AI uses different wording than expected but still provides correct information.
+The judge uses a more capable model (Gemini 2.5 Pro) to evaluate responses from the faster model (Gemini 2.0 Flash). This catches cases where the AI uses different wording than expected but still provides correct information.
 
 ### HTML Reports
 
-Eval reports show detailed results for each case:
+Eval runs generate HTML reports with detailed results for each case. The reports show:
+
+- Overall pass rate and category breakdowns
+- For each case: the prompt, the response, which assertions passed or failed
+- Expandable details for debugging failures
+
+Reports are committed to the repository so you can track eval performance over time.
+
+## Project Structure Reference
 
 ```
-evals/reports/comprehensive-2026-02-05T03-02-45-755Z.html
+cep-hero/
+├── app/                          # Next.js pages and API routes
+│   ├── api/
+│   │   ├── auth/[...all]/       # OAuth endpoints via Better Auth
+│   │   ├── chat/                # AI chat streaming endpoint
+│   │   └── overview/            # Dashboard data endpoint
+│   ├── (auth)/sign-in/          # Sign-in page
+│   └── page.tsx                 # Home page (redirects if not authenticated)
+│
+├── components/
+│   ├── chat/                    # Chat console and context provider
+│   ├── cep/                     # Dashboard and app shell
+│   ├── ai-elements/             # Tool output renderers (tables, cards, etc.)
+│   └── ui/                      # Shared primitives (buttons, inputs, etc.)
+│
+├── lib/
+│   ├── auth.ts                  # Better Auth configuration
+│   ├── auth/                    # Shared auth utilities
+│   ├── chat/                    # Chat service and AI orchestration
+│   └── mcp/                     # Tool system
+│       ├── executor/            # Production executor (Google API calls)
+│       ├── fleet-overview/      # Dashboard extraction and summarization
+│       ├── schemas.ts           # Zod schemas for tool inputs
+│       ├── types.ts             # ToolExecutor interface
+│       └── fixture-executor.ts  # Test executor
+│
+├── evals/
+│   ├── cases/                   # Test scenarios (markdown files)
+│   ├── fixtures/                # Test data overrides
+│   ├── lib/                     # Runner, assertions, reporting
+│   ├── registry.json            # Case definitions
+│   └── run.ts                   # CLI entry point
+│
+└── tests/                       # Unit and integration tests
 ```
 
-Reports include:
+### Key Files to Start With
 
-- Pass/fail status with percentages
-- Category breakdowns
-- Expandable case details (prompt, response, assertions)
-- Filter controls for quick triage
+If you're new to the codebase, start with these files:
 
----
+1. **`lib/mcp/types.ts`** — The `ToolExecutor` interface defines every operation the AI can perform. This is the contract between the chat service and the data layer.
 
-## Data Flow: End-to-End Example
+2. **`lib/chat/chat-service.ts`** — The chat service configures the AI and registers tools. The system prompt here shapes the AI's behavior.
 
-Let's trace what happens when a user asks: "Why are users getting DLP blocks?"
+3. **`lib/mcp/executor/index.ts`** — The production executor implements the interface with real Google API calls. Trace through one method to see how API responses are transformed.
 
-### 1. User Submits Message
+4. **`app/api/chat/route.ts`** — The chat endpoint ties everything together: authentication, executor selection, and response streaming.
 
-The chat console captures the input and calls `sendMessage`:
-
-```typescript
-// components/chat/chat-console.tsx
-const handleSubmit = (text: string) => {
-  sendMessage({ text });
-};
-```
-
-### 2. Request Reaches API
-
-The message goes to `/api/chat`:
-
-```typescript
-// app/api/chat/route.ts
-export async function POST(req: Request) {
-  const session = await auth.api.getSession({ headers: req.headers });
-  const { accessToken } = await auth.api.getAccessToken({ ... });
-  const body = await req.json();
-
-  const executor = new CepToolExecutor(accessToken);
-  const result = await createChatStream({
-    messages: body.messages,
-    executor,
-  });
-
-  return result.toDataStreamResponse();
-}
-```
-
-### 3. AI Decides to Call Tools
-
-Gemini receives the conversation and decides to gather evidence:
-
-```
-AI thinks: "I need to see recent DLP events and current rules."
-AI calls: getChromeEvents({ maxResults: 50 })
-AI calls: listDLPRules()
-```
-
-### 4. Tools Execute
-
-The chat service runs the tool calls:
-
-```typescript
-// lib/chat/chat-service.ts
-tools: {
-  getChromeEvents: tool({
-    execute: (args) => executor.getChromeEvents(args),
-  }),
-}
-```
-
-The executor calls the Google Admin SDK:
-
-```typescript
-// lib/mcp/executor/chrome-events.ts
-export async function fetchChromeEvents(auth, customerId, args) {
-  const admin = google.admin({ version: "reports_v1", auth });
-  const response = await admin.activities.list({
-    userKey: "all",
-    applicationName: "chrome",
-    maxResults: args.maxResults,
-  });
-  return { events: response.data.items };
-}
-```
-
-### 5. AI Reasons Over Results
-
-Gemini receives the tool results and generates a response:
-
-```
-AI receives: { events: [{ type: "DLP_BLOCK", ... }], dlpRules: [...] }
-AI responds: "Based on the Chrome events, I can see 15 DLP blocks in the last 24 hours.
-             The blocks are triggered by the 'Block sensitive uploads' rule.
-             Evidence: EVENT_TYPE: DLP_BLOCK, DESTINATION: drive.google.com..."
-```
-
-### 6. Response Streams to Client
-
-The response streams back through the data stream protocol:
-
-```typescript
-// The AI SDK handles chunking and streaming
-return result.toDataStreamResponse();
-```
-
-### 7. UI Renders Response
-
-The chat console parses and renders the response:
-
-```typescript
-// components/chat/chat-console.tsx
-{messages.map((message) => (
-  <MessageBubble key={message.id}>
-    {message.role === "assistant" && (
-      <>
-        <StreamingText text={message.text} />
-        {message.toolCalls?.map((call) => (
-          <ToolOutput key={call.id} call={call} />
-        ))}
-      </>
-    )}
-  </MessageBubble>
-))}
-```
-
-Tool outputs get specialized renderers:
-
-```typescript
-function ToolOutput({ call }) {
-  switch (call.toolName) {
-    case "getChromeEvents":
-      return <ChromeEventsTable events={call.result.events} />;
-    case "listDLPRules":
-      return <DLPRulesList rules={call.result.rules} />;
-    // ...
-  }
-}
-```
-
----
-
-## Key Architectural Decisions
-
-### 1. Dependency Injection for Executors
-
-The `ToolExecutor` interface allows swapping implementations without changing the chat service:
-
-```typescript
-// Production
-const executor = new CepToolExecutor(accessToken);
-
-// Testing
-const executor = new FixtureToolExecutor(fixtures);
-
-// Both work identically with the chat service
-const result = await createChatStream({ messages, executor });
-```
-
-### 2. Evidence-First Reasoning
-
-The AI never invents data. Every claim must be grounded in tool results:
-
-```
-System prompt: "Cite EXACT field values from tool results (e.g., 'SOURCE_APP: Salesforce')"
-```
-
-This makes responses verifiable and trustworthy.
-
-### 3. Streaming Responses
-
-The AI SDK streams responses token-by-token:
-
-```typescript
-const result = streamText({ ... });
-return result.toDataStreamResponse();
-```
-
-Users see responses appear in real-time rather than waiting for the full response.
-
-### 4. Confirmation Before Mutation
-
-Policy changes require explicit confirmation:
-
-```
-1. AI: "I recommend enabling cookie encryption. [Draft created]"
-2. User: "Confirm"
-3. AI: [Applies change] "Done. Cookie encryption is now enabled."
-```
-
-This prevents accidental changes and gives users control.
-
-### 5. Structured AI Output
-
-AI responses are validated against Zod schemas:
-
-```typescript
-const result = await generateObject({
-  schema: FleetOverviewResponseSchema,
-  // ...
-});
-```
-
-This ensures consistent, typed output from the AI.
-
-### 6. Separation of Concerns
-
-Each layer has a single responsibility:
-
-| Layer        | Responsibility                                      |
-| ------------ | --------------------------------------------------- |
-| API Route    | Authentication, request parsing, executor selection |
-| Chat Service | AI orchestration, tool definitions, system prompt   |
-| Executor     | Google API calls                                    |
-| Components   | UI rendering, user interaction                      |
-
-### 7. Test Isolation via Fixtures
-
-Fixtures make tests deterministic:
-
-- Same input → Same output
-- No network dependencies
-- No authentication required
-- Fast execution
-
----
-
-## Appendix: File Reference
-
-### Core Files
-
-| Path                          | Purpose                                     |
-| ----------------------------- | ------------------------------------------- |
-| `lib/auth.ts`                 | Better Auth configuration with Google OAuth |
-| `lib/chat/chat-service.ts`    | AI orchestration with Gemini                |
-| `lib/mcp/types.ts`            | ToolExecutor interface and result types     |
-| `lib/mcp/executor/index.ts`   | Production executor (CepToolExecutor)       |
-| `lib/mcp/fixture-executor.ts` | Test executor (FixtureToolExecutor)         |
-
-### API Routes
-
-| Path                             | Purpose                 |
-| -------------------------------- | ----------------------- |
-| `app/api/auth/[...all]/route.ts` | OAuth endpoints         |
-| `app/api/chat/route.ts`          | Chat streaming endpoint |
-| `app/api/overview/route.ts`      | Fleet dashboard data    |
-
-### Components
-
-| Path                                    | Purpose                             |
-| --------------------------------------- | ----------------------------------- |
-| `components/cep/app-shell.tsx`          | Main layout with dashboard and chat |
-| `components/cep/dashboard-overview.tsx` | Fleet posture cards                 |
-| `components/chat/chat-console.tsx`      | Chat UI                             |
-| `components/chat/chat-context.tsx`      | Chat state management               |
-
-### Evaluation
-
-| Path                  | Purpose               |
-| --------------------- | --------------------- |
-| `evals/run.ts`        | CLI entry point       |
-| `evals/lib/runner.ts` | Eval execution engine |
-| `evals/registry.json` | Test case definitions |
-| `evals/cases/*.md`    | Test prompts          |
-
----
-
-## Next Steps
-
-To understand specific parts in more depth:
-
-1. **Authentication**: Start with `lib/auth.ts` and trace through `app/api/auth/`
-2. **Tools**: Read `lib/mcp/types.ts` then explore `lib/mcp/executor/`
-3. **Chat**: Follow `app/api/chat/route.ts` → `lib/chat/chat-service.ts`
-4. **Evals**: Run `EVAL_FIXTURES=1 bun run evals --html` and inspect the output
-
-For code standards and conventions, see `AGENTS.md`.
+5. **`evals/lib/runner.ts`** — The eval runner shows how cases are executed and assertions are checked. This is useful for understanding what "correct behavior" means.
