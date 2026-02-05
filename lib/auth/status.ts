@@ -8,6 +8,7 @@
  */
 export interface SignInStatusResponse {
   authenticated: boolean;
+  isDefaultUser?: boolean;
   user?: {
     name: string | null;
     email: string | null;
@@ -65,5 +66,13 @@ export async function performSignOut(context = "auth"): Promise<void> {
     );
   }
   // Hard redirect to ensure server sees cleared cookies
+  window.location.href = "/sign-in";
+}
+
+/**
+ * Navigates to the sign-in page so the user can authenticate manually.
+ * Used in default user mode where "Switch user" replaces "Sign out".
+ */
+export function switchUser(): void {
   window.location.href = "/sign-in";
 }
