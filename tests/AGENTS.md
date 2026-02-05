@@ -176,7 +176,7 @@ Colocated unit tests in `lib/mcp/` test core business logic with inline fixtures
 | `formatters.test.ts`         | 14    | `formatSettingType`, `formatSettingValue` branch coverage                                         |
 | `org-units.test.ts`          | 31    | `normalizeResource`, `buildOrgUnitNameMap`, `resolveOrgUnitDisplay`, `buildOrgUnitTargetResource` |
 | `fixture-loader.test.ts`     | 16    | `loadFixtureData` merge logic, type coercion, edge cases                                          |
-| `fixture-executor.test.ts`   | 19    | Full `ToolExecutor` interface via `FixtureToolExecutor`                                           |
+| `fixture-executor.test.ts`   | 21    | Full `ToolExecutor` interface via `FixtureToolExecutor`                                           |
 | `fixture-enrollment.test.ts` | 7     | `resolveEnrollmentToken` all 5 code paths                                                         |
 | `connector-analysis.test.ts` | 3     | `analyzeConnectorPolicies` target classification                                                  |
 
