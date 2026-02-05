@@ -1,8 +1,13 @@
 /**
  * Authentication service for validating chat API requests.
+ * Supports OAuth sessions, test-mode bypasses, and default user mode.
  */
 
 import { auth } from "@/lib/auth";
+import {
+  getDefaultUserAccessToken,
+  isDefaultUserEnabled,
+} from "@/lib/default-user";
 
 const EVAL_TEST_MODE_ENABLED = process.env.EVAL_TEST_MODE === "1";
 
@@ -42,14 +47,24 @@ function buildAuthContext(req: Request): AuthContext {
 }
 
 /**
- * Retrieve the session from Better Auth or return a test stub.
+ * Retrieve the session from Better Auth, a test stub, or a default user stub.
  */
 async function getSession(req: Request, isTestBypass: boolean) {
   if (isTestBypass) {
     return { user: { id: "test" } };
   }
+
   const session = await auth.api.getSession({ headers: req.headers });
-  return session;
+  if (session) {
+    return session;
+  }
+
+  // Fall back to default user mode when no OAuth session exists
+  if (isDefaultUserEnabled()) {
+    return { user: { id: "default-user" } };
+  }
+
+  return null;
 }
 
 /**
@@ -71,7 +86,7 @@ async function fetchTokenFromApi(req: Request): Promise<AccessTokenResult> {
 }
 
 /**
- * Get access token, returning test token in bypass mode.
+ * Get access token from test bypass, OAuth session, or default user service account.
  */
 async function getAccessToken(
   req: Request,
@@ -80,7 +95,20 @@ async function getAccessToken(
   if (isTestBypass) {
     return { type: "success", token: "test-token" };
   }
+
   const result = await fetchTokenFromApi(req);
+  if (result.type === "success") {
+    return result;
+  }
+
+  // Fall back to service account token when OAuth token is unavailable
+  if (isDefaultUserEnabled()) {
+    const defaultToken = await getDefaultUserAccessToken();
+    if (defaultToken) {
+      return { type: "success", token: defaultToken };
+    }
+  }
+
   return result;
 }
 
@@ -120,7 +148,7 @@ function handleTokenResult(tokenResult: AccessTokenResult): TokenHandlerResult {
 
 /**
  * Authenticate an incoming request for the chat API.
- * Handles both standard session-based auth and special test-mode bypasses.
+ * Handles standard session-based auth, test-mode bypasses, and default user mode.
  */
 export async function authenticateRequest(req: Request): Promise<AuthResult> {
   const { isTestBypass, isEvalTestMode } = buildAuthContext(req);

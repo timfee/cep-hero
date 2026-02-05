@@ -9,7 +9,7 @@ Next.js App Router UI and API routes.
 ## Directory Structure
 
 - **`(auth)/`** - Authentication flow pages
-- **`api/`** - API routes (chat, fixtures, MCP, auth, default-session)
+- **`api/`** - API routes (chat, fixtures, MCP, auth)
 - Root pages and layouts
 
 ## Guidelines

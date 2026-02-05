@@ -140,7 +140,7 @@ function applyStatusData(
   data: SignInStatusResponse,
   setStatus: (state: StatusState) => void,
   setLocalExpiresIn: (value: number) => void,
-  expiresAtRef: React.RefObject<number | null>
+  expiresAtRef: React.MutableRefObject<number | null>
 ) {
   setStatus({ loading: false, data, error: null });
   if (data.token?.expiresIn !== undefined) {

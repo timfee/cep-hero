@@ -223,6 +223,8 @@ export function UserStatusBar() {
     };
   };
 
+  // Default users always show a status badge (no token/expiry to check).
+  // OAuth users only show one when token info is available.
   const statusIndicator =
     isDefaultUser || (token && localExpiresIn !== null)
       ? getStatusIndicator()

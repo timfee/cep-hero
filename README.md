@@ -80,7 +80,8 @@ GOOGLE_SERVICE_ACCOUNT_JSON='{"type":"service_account",...}'
 GOOGLE_TOKEN_EMAIL=admin@your-domain.com
 
 # Optional: Auto-sign-in as the delegated admin (GOOGLE_TOKEN_EMAIL)
-# When enabled, skips OAuth and uses the service account directly
+# When enabled, skips OAuth and uses the service account directly.
+# WARNING: Disables authentication entirely. For development/demo only.
 USE_DEFAULT_USER=true
 
 # Self-enrollment password for the registration form

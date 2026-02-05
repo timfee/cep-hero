@@ -116,11 +116,11 @@ function buildSuccessResponse(
 }
 
 /**
- * Build a response for the default user with a long-lived synthetic token.
- * Service account tokens are managed separately so we report a stable status.
+ * Build a response for the default user. No token info is included because
+ * service account tokens are short-lived and managed on-demand per API call,
+ * so reporting a static expiry would be misleading.
  */
 function buildDefaultUserResponse(email: string): SignInStatusResponse {
-  const expiresIn = 12 * 60 * 60;
   return {
     authenticated: true,
     isDefaultUser: true,
@@ -128,11 +128,6 @@ function buildDefaultUserResponse(email: string): SignInStatusResponse {
       name: "Default Admin",
       email,
       image: null,
-    },
-    token: {
-      expiresIn,
-      expiresAt: new Date(Date.now() + expiresIn * 1000).toISOString(),
-      scopes: ["service-account"],
     },
   };
 }
