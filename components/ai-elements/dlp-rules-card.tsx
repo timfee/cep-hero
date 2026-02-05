@@ -3,6 +3,7 @@
 import { InfoIcon } from "lucide-react";
 import { memo } from "react";
 
+import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
 import {
   Tooltip,
   TooltipContent,
@@ -148,9 +149,10 @@ export const DlpRulesCard = memo(function DlpRulesCard({
               />
             </div>
             {rule.orgUnit && rule.orgUnit !== "/" && (
-              <p className="text-xs text-muted-foreground">
-                Scope: {rule.orgUnit}
-              </p>
+              <div className="text-xs text-muted-foreground flex items-center gap-1">
+                <span>Scope:</span>
+                <OrgUnitDisplay targetResource={rule.orgUnit} size="sm" />
+              </div>
             )}
             {rule.consoleUrl && (
               <a

@@ -119,6 +119,17 @@ export async function applyPolicyChange(
   const service = googleApis.chromepolicy({ version: "v1", auth });
   const targetResource = buildOrgUnitTargetResource(args.targetResource);
 
+  if (!targetResource) {
+    return {
+      _type: "ui.error",
+      error: "Org Unit ID is required.",
+      suggestion:
+        "Provide a valid org unit ID (e.g., 'orgunits/03ph8a2z1...' or '/Engineering').",
+      policySchemaId: args.policySchemaId,
+      targetResource: args.targetResource,
+    } as const;
+  }
+
   logApiRequest("apply-policy-change", {
     policySchemaId: args.policySchemaId,
     targetResource,

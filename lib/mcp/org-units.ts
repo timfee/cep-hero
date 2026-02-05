@@ -115,6 +115,7 @@ function lookupOrgUnit(
 
 /**
  * Builds a policy target resource string from an org unit identifier.
+ * Returns empty string if the input is invalid or missing the org unit ID.
  */
 export function buildOrgUnitTargetResource(value: string) {
   const normalized = normalizeResource(value);
@@ -124,11 +125,22 @@ export function buildOrgUnitTargetResource(value: string) {
   const withoutLeading = normalized.startsWith("/")
     ? normalized.slice(1)
     : normalized;
-  if (
-    withoutLeading.startsWith("orgunits/") ||
-    withoutLeading.startsWith("customers/")
-  ) {
+
+  // Handle prefixed resources
+  if (withoutLeading.startsWith("orgunits/")) {
+    const orgUnitId = withoutLeading.slice("orgunits/".length);
+    if (!orgUnitId) {
+      return "";
+    }
     return normalizeResource(withoutLeading);
   }
+  if (withoutLeading.startsWith("customers/")) {
+    const customerId = withoutLeading.slice("customers/".length);
+    if (!customerId) {
+      return "";
+    }
+    return normalizeResource(withoutLeading);
+  }
+
   return normalizeResource(`orgunits/${withoutLeading}`);
 }

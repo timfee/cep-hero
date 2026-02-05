@@ -67,10 +67,10 @@ export class CepToolExecutor {
    * Cloud Identity API requires the actual obfuscated ID (e.g., "C046psxkn"),
    * not "my_customer".
    */
-  private async resolveCustomerId(): Promise<string> {
+  private resolveCustomerId(): Promise<string> {
     // If already a specific customer ID (not my_customer), use it directly
     if (this.customerId !== "my_customer") {
-      return this.customerId;
+      return Promise.resolve(this.customerId);
     }
 
     // Lazily resolve and cache the actual customer ID

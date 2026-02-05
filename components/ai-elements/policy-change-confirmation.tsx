@@ -12,6 +12,7 @@ import { useState, memo } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
+import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
 import { cn } from "@/lib/utils";
 
 export interface PolicyChangeProposal {
@@ -134,12 +135,26 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
             {dlpData ? "Rule Name" : "Policy"}
           </span>
           <p className="text-xs text-foreground">{ruleName}</p>
-          {!dlpData && (
-            <p className="text-[10px] text-muted-foreground font-mono">
-              {targetDisplay}
-            </p>
-          )}
         </div>
+
+        {!dlpData && (
+          <div className="space-y-1">
+            <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
+              Target Org Unit
+            </span>
+            <div>
+              <OrgUnitDisplay
+                name={
+                  targetDisplay.startsWith("orgunits/")
+                    ? undefined
+                    : targetDisplay
+                }
+                targetResource={targetResource}
+                size="sm"
+              />
+            </div>
+          </div>
+        )}
 
         {dlpData && (
           <div className="flex gap-8">

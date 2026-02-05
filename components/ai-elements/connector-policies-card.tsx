@@ -4,6 +4,7 @@ import { InfoIcon } from "lucide-react";
 import { memo, useMemo } from "react";
 
 import { ConnectorStatus } from "@/components/ai-elements/connector-status";
+import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
 import {
   Tooltip,
   TooltipContent,
@@ -145,7 +146,7 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
                 policy.policyTargetKey?.targetResource ?? "Unknown";
               return (
                 <div key={`${target}-${index}`} className="px-3 py-2 text-sm">
-                  <p className="font-medium text-foreground">{target}</p>
+                  <OrgUnitDisplay targetResource={target} size="md" />
                 </div>
               );
             })}
