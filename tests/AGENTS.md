@@ -167,6 +167,70 @@ Fixture coverage is sparse. If a case needs evidence:
 1. Add fixtures under `evals/fixtures/EC-###/`
 2. Wire them in `registry.json`
 
+## Unit Test Coverage (lib/mcp/)
+
+Colocated unit tests in `lib/mcp/` test core business logic with inline fixtures. These require no credentials and run fast:
+
+| File                         | Tests | What it covers                                                                                    |
+| ---------------------------- | ----- | ------------------------------------------------------------------------------------------------- |
+| `formatters.test.ts`         | 14    | `formatSettingType`, `formatSettingValue` branch coverage                                         |
+| `org-units.test.ts`          | 31    | `normalizeResource`, `buildOrgUnitNameMap`, `resolveOrgUnitDisplay`, `buildOrgUnitTargetResource` |
+| `fixture-loader.test.ts`     | 16    | `loadFixtureData` merge logic, type coercion, edge cases                                          |
+| `fixture-executor.test.ts`   | 21    | Full `ToolExecutor` interface via `FixtureToolExecutor`                                           |
+| `fixture-enrollment.test.ts` | 7     | `resolveEnrollmentToken` all 5 code paths                                                         |
+| `connector-analysis.test.ts` | 3     | `analyzeConnectorPolicies` target classification                                                  |
+
+### Other Colocated Unit Tests
+
+| File                       | Tests | What it covers                                              |
+| -------------------------- | ----- | ----------------------------------------------------------- |
+| `lib/default-user.test.ts` | 12    | `isDefaultUserEnabled`, `getDefaultUserEmail` env var logic |
+| `lib/auth/status.test.ts`  | 13    | `formatTimeRemaining` time formatting for UI display        |
+
+### Writing Colocated Unit Tests
+
+Place `*.test.ts` files next to the source they test in `lib/mcp/`. Use inline fixtures — do not read files from disk. This keeps tests self-contained and fast.
+
+```typescript
+import { describe, expect, it } from "bun:test";
+
+import { myFunction } from "./my-module";
+
+// Construct fixtures inline matching the FixtureData shape
+const SAMPLE_DATA = { orgUnits: [{ orgUnitId: "id:abc" }] };
+
+describe("myFunction", () => {
+  it("handles expected input", () => {
+    const result = myFunction(SAMPLE_DATA);
+    expect(result).toBeDefined();
+  });
+});
+```
+
+### Fixture Patterns
+
+**Inline fixtures (unit tests):** Construct minimal fixture data directly in test files. This is the preferred pattern for `lib/mcp/` tests. See `fixture-executor.test.ts` for a comprehensive example.
+
+**File-based fixtures (eval tests):** The eval framework uses `evals/fixtures/base/api-base.json` as a shared baseline with case-specific overrides in `evals/fixtures/EC-###/overrides.json`. These are merged by `fixture-loader.ts`.
+
+**Regenerating eval fixtures:** Run `bun run fixtures:capture` to regenerate `api-base.json` from live Google APIs. Requires `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_TOKEN_EMAIL`, and `GOOGLE_CUSTOMER_ID`. PII is automatically redacted.
+
+### Integration Test Setup/Teardown
+
+Integration tests in `tests/` that create temporary resources (DLP rules, org units, policies) must clean up in `afterAll`:
+
+```typescript
+const ctx: TestContext = { createdRuleNames: [] };
+
+afterAll(async () => {
+  for (const ruleName of ctx.createdRuleNames) {
+    await deleteDLPRule(ctx.authClient, ruleName);
+  }
+});
+```
+
+See `tests/dlp-api.test.ts` for the full lifecycle pattern: create → list → verify → delete with `afterAll` cleanup.
+
 ## Best Practices
 
 - Avoid type assertions; add minimal runtime parsing where needed
@@ -174,3 +238,6 @@ Fixture coverage is sparse. If a case needs evidence:
 - Don't use `.only` or `.skip` in committed code
 - Keep test suites reasonably flat - avoid excessive nesting
 - Use `EVAL_TEST_MODE=1` for fast/quota-safe runs
+- Prefer inline fixture data over file reads in unit tests
+- Test all code paths in discriminated union returns (check `"error" in result` before accessing fields)
+- Use `bun x ultracite check` before committing to verify formatting
