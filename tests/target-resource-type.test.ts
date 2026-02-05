@@ -13,11 +13,10 @@
  */
 
 import { loadEnvConfig } from "@next/env";
-import { afterAll, beforeAll, describe, expect, it } from "bun:test";
+import { beforeAll, describe, expect, it } from "bun:test";
 
 import {
   createEnrollmentToken,
-  listOrgUnits,
   makeGoogleClients,
   probePolicyTargetResources,
 } from "@/lib/test-helpers/google-admin";
@@ -167,8 +166,9 @@ describe("Chrome Management enrollment API rejects customers/ targetResource", (
 
       try {
         await createEnrollmentToken("customers/my_customer");
-        // If we get here, the API didn't reject it — that's a test failure
-        expect("API should have rejected customers/ target").toBe(true);
+        throw new Error(
+          "Expected API to reject customers/ target, but it succeeded"
+        );
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         console.log(
