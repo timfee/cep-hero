@@ -3,24 +3,27 @@
  * Direct API validation script for Cloud Identity DLP rules.
  * Tests the v1beta1 API endpoint directly to validate the fix.
  *
- * Usage: bun run scripts/validate-dlp-api.ts
+ * Usage: bun scripts/validate-dlp-api.ts
  *
  * Requires:
- * - GOOGLE_SERVICE_ACCOUNT_JSON or valid OAuth token
- * - GOOGLE_TOKEN_EMAIL for impersonation
- * - GOOGLE_CUSTOMER_ID (required - the actual customer ID like C046psxkn)
+ * - GOOGLE_SERVICE_ACCOUNT_JSON: Service account credentials
+ * - GOOGLE_TOKEN_EMAIL: Admin email for impersonation
+ * - GOOGLE_CUSTOMER_ID (optional): Auto-resolved if not set
  */
 
 import { loadEnvConfig } from "@next/env";
-import { OAuth2Client } from "google-auth-library";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
 loadEnvConfig(process.cwd());
 
-const SCOPES = [
+const DLP_SCOPES = [
   "https://www.googleapis.com/auth/cloud-identity.policies",
   "https://www.googleapis.com/auth/cloud-identity.policies.readonly",
+];
+
+const CHROME_POLICY_SCOPES = [
+  "https://www.googleapis.com/auth/chrome.management.policy",
 ];
 
 /**
@@ -119,28 +122,69 @@ async function testV1ApiFails(accessToken: string, customerId: string) {
   }
 }
 
+/**
+ * Resolve customer ID from Chrome Policy API.
+ */
+async function resolveCustomerId(tokenEmail: string | undefined) {
+  console.log("Resolving customer ID from Chrome Policy API...");
+
+  const accessToken = await getServiceAccountAccessToken(
+    CHROME_POLICY_SCOPES,
+    tokenEmail
+  );
+
+  const res = await fetch(
+    "https://chromepolicy.googleapis.com/v1/customers/my_customer/policySchemas?pageSize=1",
+    { headers: { Authorization: `Bearer ${accessToken}` } }
+  );
+
+  if (!res.ok) {
+    throw new Error(`Chrome Policy API failed: ${res.status}`);
+  }
+
+  const data = (await res.json()) as {
+    policySchemas?: { name?: string }[];
+  };
+  const schemaName = data.policySchemas?.[0]?.name ?? "";
+  const match = schemaName.match(/customers\/([^/]+)\//);
+
+  if (!match?.[1]) {
+    throw new Error("Could not extract customer ID from policy schema");
+  }
+
+  return match[1];
+}
+
 async function main() {
   console.log("DLP API Validation Script");
   console.log("=".repeat(50));
 
-  const customerId = stripQuotes(process.env.GOOGLE_CUSTOMER_ID);
   const tokenEmail = stripQuotes(process.env.GOOGLE_TOKEN_EMAIL);
+  console.log(`\nUsing token email: ${tokenEmail ?? "(not set)"}`);
+
+  // Resolve customer ID (from env or auto-detect)
+  let customerId = stripQuotes(process.env.GOOGLE_CUSTOMER_ID);
 
   if (!customerId) {
-    console.error("\n❌ ERROR: GOOGLE_CUSTOMER_ID is required");
-    console.error("   Set the actual obfuscated customer ID (e.g., C046psxkn)");
-    console.error("   The API won't work with 'my_customer'");
-    process.exit(1);
+    try {
+      customerId = await resolveCustomerId(tokenEmail);
+      console.log(`✅ Auto-resolved customer ID: ${customerId}`);
+    } catch (error) {
+      console.error("\n❌ Failed to resolve customer ID:", error);
+      console.error(
+        "   Set GOOGLE_CUSTOMER_ID manually or fix Chrome Policy API access"
+      );
+      process.exit(1);
+    }
+  } else {
+    console.log(`Using provided customer ID: ${customerId}`);
   }
 
-  console.log(`\nUsing customer ID: ${customerId}`);
-  console.log(`Using token email: ${tokenEmail ?? "(not set)"}`);
-
+  // Get DLP API token
   let accessToken: string;
-
   try {
-    accessToken = await getServiceAccountAccessToken(SCOPES, tokenEmail);
-    console.log("✅ Got access token from service account");
+    accessToken = await getServiceAccountAccessToken(DLP_SCOPES, tokenEmail);
+    console.log("✅ Got access token for Cloud Identity API");
   } catch (error) {
     console.error("\n❌ Failed to get access token:", error);
     process.exit(1);

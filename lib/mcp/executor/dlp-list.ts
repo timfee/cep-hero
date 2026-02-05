@@ -132,8 +132,10 @@ async function fetchAndMapPolicies(
     return { rules: [] };
   }
 
+  // Cloud Identity API only supports filtering by customer, not setting.type.
+  // DLP rules are filtered client-side by the isDlpRule() function.
   const res = await policiesApi.list({
-    filter: `customer == "customers/${customerId}" AND setting.type.matches("rule.dlp.*")`,
+    filter: `customer == "customers/${customerId}"`,
   });
   const allPolicies = res.data.policies ?? [];
   const dlpPolicies = allPolicies.filter(isDlpRule);

@@ -314,14 +314,14 @@ describe("Cloud Identity DLP Policy API", () => {
     );
 
     runIt(
-      "returns filter error when using my_customer directly",
+      "accepts my_customer as customer ID alias",
       async () => {
         if (!ctx.authClient || !ctx.orgUnitContext) {
           console.log("[dlp-api] skipping - missing test context");
           return;
         }
 
-        console.log("[dlp-api] testing with my_customer (should fail)");
+        console.log("[dlp-api] testing with my_customer (should work)");
 
         const result = await listDLPRules(
           ctx.authClient,
@@ -332,19 +332,19 @@ describe("Cloud Identity DLP Policy API", () => {
 
         console.log("[dlp-api] result:", JSON.stringify(result, null, 2));
 
-        // Cloud Identity API should reject "my_customer" in filter
-        expect("error" in result).toBe(true);
-
+        // Cloud Identity API accepts "my_customer" as customer alias
         if ("error" in result) {
-          const errorLower = result.error.toLowerCase();
-          const isFilterError =
-            errorLower.includes("filter") ||
-            errorLower.includes("invalid") ||
-            errorLower.includes("customer");
-          expect(isFilterError).toBe(true);
+          // Should not be a "Filter is invalid" error
+          expect(result.error).not.toContain("Filter is invalid");
+          expect(result.error).not.toContain("7003");
+          console.log("[dlp-api] got error (not filter error):", result.error);
+        } else {
+          expect(result).toHaveProperty("rules");
+          expect(Array.isArray(result.rules)).toBe(true);
           console.log(
-            "[dlp-api] my_customer correctly rejected:",
-            result.error
+            "[dlp-api] my_customer works, found",
+            result.rules.length,
+            "rules"
           );
         }
       },
@@ -359,11 +359,22 @@ describe("Cloud Identity DLP Policy API", () => {
           return;
         }
 
+        // Need a valid org unit ID for DLP rule creation
+        const targetOrgUnit =
+          ctx.orgUnitContext.rootOrgUnitId ??
+          ctx.orgUnitContext.orgUnitList[0]?.orgUnitId;
+
+        if (!targetOrgUnit) {
+          console.log("[dlp-api] skipping - no org unit available for testing");
+          return;
+        }
+
         const testRuleName = generateTestRuleName();
         console.log(
           "[dlp-api] starting lifecycle test with rule:",
           testRuleName
         );
+        console.log("[dlp-api] target org unit:", targetOrgUnit);
 
         // Step 1: Create a test DLP rule
         console.log("[dlp-api] step 1: creating rule");
@@ -373,7 +384,7 @@ describe("Cloud Identity DLP Policy API", () => {
           ctx.orgUnitContext,
           {
             displayName: testRuleName,
-            targetOrgUnit: ctx.orgUnitContext.rootOrgUnitId,
+            targetOrgUnit,
             triggers: ["UPLOAD"],
             action: "AUDIT",
           }
