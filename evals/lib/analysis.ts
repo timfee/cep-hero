@@ -269,7 +269,7 @@ export async function runGeminiAnalysis(
 
   try {
     const { object: analysis } = await generateObject({
-      model: google("gemini-2.5-pro-preview-05-06"),
+      model: google("gemini-2.5-pro"),
       schema: AnalysisSchema,
       prompt: `Analyze these eval results for a Chrome Enterprise diagnostic AI assistant.
 Focus on patterns, risks, and actionable improvements.
