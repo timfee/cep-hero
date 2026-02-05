@@ -76,6 +76,29 @@ The choice of scopes represents a balance between functionality and least-privil
 
 If an administrator's Google account doesn't have permission to perform an action (for example, they're not a super admin), the API call will fail even though the app requested the scope. OAuth scopes define what the app _can ask for_, not what the user _can do_.
 
+### Service Account Authentication (For Testing)
+
+Integration tests use a different authentication path: service accounts with domain-wide delegation. This allows automated testing without interactive OAuth flows.
+
+The service account flow works differently from user OAuth:
+
+1. The service account has its own identity (a `client_email` like `sa@project.iam.gserviceaccount.com`)
+2. Domain-wide delegation authorizes it to impersonate users in the Workspace domain
+3. When making API calls, it impersonates an admin user (the `subject` field in the JWT)
+
+```typescript
+const jwt = new JWT({
+  email: serviceAccount.client_email,
+  key: serviceAccount.private_key,
+  scopes: ["https://www.googleapis.com/auth/cloud-identity.policies"],
+  subject: "admin@your-domain.com", // Impersonate this user
+});
+```
+
+This is essential for testing because it provides consistent, reproducible access without storing user passwords or manually generating tokens.
+
+**Environment Handling:** Bun's env file parser converts `\n` escape sequences to actual newlines. The service account JSON parser handles both formats—it first tries parsing as-is (for pretty-printed JSON), then falls back to fixing newlines (for minified JSON where Bun's conversion broke the private_key field).
+
 ## The Tool System: How the AI Gathers Data
 
 ### The ToolExecutor Interface
@@ -170,6 +193,28 @@ const policies = await Promise.all(
 ```
 
 By parallelizing the API calls, the tool returns results faster than if it called each one sequentially.
+
+### The DLP Rules Tool (Cloud Identity API)
+
+DLP rules live in a different API than Chrome policies. The `listDLPRules` tool demonstrates working with Cloud Identity:
+
+```typescript
+// Cloud Identity requires v1beta1 for DLP operations
+const service = googleApis.cloudidentity({ version: "v1beta1", auth });
+
+const response = await service.policies.list({
+  filter: `customer == "customers/${customerId}"`,
+});
+```
+
+**Important API Limitation:** The Cloud Identity filter syntax only supports `customer == "customers/{id}"`. It does NOT support filtering by `setting.type`. This means the API returns ALL policies (DLP rules, security settings, etc.), and we must filter client-side:
+
+```typescript
+const DLP_PATTERN = /^rule\.dlp/i;
+const dlpRules = allPolicies.filter((p) => DLP_PATTERN.test(p.setting?.type));
+```
+
+This is an example of an API quirk that required live testing to discover. The v1 API and server-side filters both fail with cryptic errors—only v1beta1 with client-side filtering works correctly.
 
 ## The Chat System: Orchestrating AI Conversations
 
