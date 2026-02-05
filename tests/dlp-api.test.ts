@@ -191,7 +191,7 @@ describe("Cloud Identity DLP Policy API", () => {
   });
 
   describe("Unit tests (no credentials required)", () => {
-    it("uses v1beta1 API version for Cloud Identity", () => {
+    it("uses v1beta1 API version for Cloud Identity", async () => {
       // This test verifies the API version without making actual API calls.
       // We check by creating a mock and verifying the version passed.
       let capturedVersion: string | undefined;
@@ -204,7 +204,7 @@ describe("Cloud Identity DLP Policy API", () => {
             list: () => Promise.resolve({ data: { policies: [] } }),
           },
         };
-      }) as typeof googleApis.cloudidentity;
+      }) as unknown as typeof googleApis.cloudidentity;
 
       try {
         // Import fresh to trigger the API initialization
@@ -220,7 +220,7 @@ describe("Cloud Identity DLP Policy API", () => {
         };
 
         // We need to actually call the function to trigger version capture
-        listDLPRules(auth, "test-customer", mockOrgContext, {});
+        await listDLPRules(auth, "test-customer", mockOrgContext, {});
 
         expect(capturedVersion).toBe("v1beta1");
       } finally {
@@ -441,7 +441,8 @@ describe("Cloud Identity DLP Policy API", () => {
           // Verify no "Filter is invalid" errors occurred during list
           expect(
             "rules" in listResult ||
-              !listResult.error.includes("Filter is invalid")
+              ("error" in listResult &&
+                !listResult.error.includes("Filter is invalid"))
           ).toBe(true);
         } else if (createResult._type === "ui.manual_steps") {
           console.log(
