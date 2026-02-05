@@ -457,4 +457,88 @@ describe("MobileDashboardSummary component", () => {
     const statusDot = container.querySelector(".bg-amber-400");
     expect(statusDot).toBeInTheDocument();
   });
+
+  it("shows error message when API fails", () => {
+    mockSWRReturn = {
+      data: null,
+      error: new Error("Network error"),
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    const { getByText } = render(
+      <MobileDashboardSummary onAction={mockOnAction} />
+    );
+
+    expect(getByText("Unable to load fleet status")).toBeInTheDocument();
+  });
+
+  it("has aria-expanded attribute for accessibility", async () => {
+    mockSWRReturn = {
+      data: {
+        headline: "Fleet Status",
+        summary: "Summary.",
+        postureCards: [],
+        suggestions: [],
+        sources: [],
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    const { getByRole } = render(
+      <MobileDashboardSummary onAction={mockOnAction} />
+    );
+
+    const headerButton = getByRole("button", { name: /Fleet Status/i });
+
+    // Initially collapsed
+    expect(headerButton).toHaveAttribute("aria-expanded", "false");
+
+    // Click to expand
+    fireEvent.click(headerButton);
+
+    // Now expanded
+    expect(headerButton).toHaveAttribute("aria-expanded", "true");
+  });
+
+  it("uses category-specific colors for recommendation badge", async () => {
+    mockSWRReturn = {
+      data: {
+        headline: "Fleet Status",
+        summary: "Summary.",
+        postureCards: [],
+        suggestions: [
+          {
+            text: "Review compliance policies",
+            action: "Show policies",
+            priority: 1,
+            category: "compliance",
+          },
+        ],
+        sources: [],
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    const { getByRole, container } = render(
+      <MobileDashboardSummary onAction={mockOnAction} />
+    );
+
+    // Expand to see recommendation
+    const headerButton = getByRole("button", { name: /Fleet Status/i });
+    fireEvent.click(headerButton);
+
+    await waitFor(() => {
+      // Compliance category should use amber colors
+      const badgeWithAmber = container.querySelector(".bg-amber-500\\/20");
+      expect(badgeWithAmber).toBeInTheDocument();
+    });
+  });
 });

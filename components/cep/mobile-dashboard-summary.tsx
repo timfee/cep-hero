@@ -16,7 +16,11 @@ import {
 import { useState } from "react";
 import useSWR from "swr";
 
-import type { OverviewData, PostureCardStatus } from "@/lib/overview";
+import type {
+  OverviewData,
+  PostureCardStatus,
+  SuggestionCategory,
+} from "@/lib/overview";
 
 import { Shimmer } from "@/components/ai-elements/shimmer";
 import { cn } from "@/lib/utils";
@@ -58,6 +62,16 @@ const STATUS_CONFIG: Record<
   },
 };
 
+const CATEGORY_COLORS: Record<
+  SuggestionCategory,
+  { bg: string; text: string }
+> = {
+  security: { bg: "bg-red-500/20", text: "text-red-400" },
+  compliance: { bg: "bg-amber-500/20", text: "text-amber-400" },
+  monitoring: { bg: "bg-blue-500/20", text: "text-blue-400" },
+  optimization: { bg: "bg-emerald-500/20", text: "text-emerald-400" },
+};
+
 interface MobileDashboardSummaryProps {
   onAction: (command: string) => void;
 }
@@ -71,12 +85,16 @@ export function MobileDashboardSummary({
 }: MobileDashboardSummaryProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  const { data, isLoading } = useSWR<OverviewData>("/api/overview", fetcher, {
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    revalidateIfStale: false,
-    keepPreviousData: true,
-  });
+  const { data, error, isLoading } = useSWR<OverviewData>(
+    "/api/overview",
+    fetcher,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      revalidateIfStale: false,
+      keepPreviousData: true,
+    }
+  );
 
   const hasHeadlineContent = Boolean(
     data?.headline && data.headline.trim().length > 0
@@ -92,11 +110,27 @@ export function MobileDashboardSummary({
         .slice(0, 3)
     : [];
 
+  // Get top suggestion by priority (computed once to avoid duplicate sorting)
+  const topSuggestion = data?.suggestions
+    ? [...data.suggestions].toSorted((a, b) => a.priority - b.priority)[0]
+    : null;
+
   // Count issues by severity for quick status
   const criticalCount =
     data?.postureCards.filter((c) => c.status === "critical").length ?? 0;
   const warningCount =
     data?.postureCards.filter((c) => c.status === "warning").length ?? 0;
+
+  // Handle error state
+  if (error) {
+    return (
+      <div className="border-b border-white/[0.06] bg-black/40 px-4 py-3 backdrop-blur-xl">
+        <span className="text-sm text-muted-foreground">
+          Unable to load fleet status
+        </span>
+      </div>
+    );
+  }
 
   return (
     <div className="border-b border-white/[0.06] bg-black/40 backdrop-blur-xl">
@@ -104,6 +138,7 @@ export function MobileDashboardSummary({
       <button
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
+        aria-expanded={isExpanded}
         className="flex w-full items-center justify-between px-4 py-3"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -246,7 +281,7 @@ export function MobileDashboardSummary({
               )}
 
               {/* Top recommendation */}
-              {data?.suggestions && data.suggestions.length > 0 && (
+              {topSuggestion && (
                 <div className="space-y-2">
                   <h3 className="text-xs font-medium text-muted-foreground">
                     Top recommendation
@@ -254,13 +289,8 @@ export function MobileDashboardSummary({
                   <button
                     type="button"
                     onClick={() => {
-                      const topSuggestion = [...data.suggestions].toSorted(
-                        (a, b) => a.priority - b.priority
-                      )[0];
-                      if (topSuggestion) {
-                        onAction(topSuggestion.action);
-                        setIsExpanded(false);
-                      }
+                      onAction(topSuggestion.action);
+                      setIsExpanded(false);
                     }}
                     className={cn(
                       "flex w-full items-center gap-3 rounded-xl p-3 text-left",
@@ -268,15 +298,17 @@ export function MobileDashboardSummary({
                       "transition-colors hover:bg-white/[0.08]"
                     )}
                   >
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-red-500/20 text-xs font-bold text-red-400">
+                    <div
+                      className={cn(
+                        "flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold",
+                        CATEGORY_COLORS[topSuggestion.category].bg,
+                        CATEGORY_COLORS[topSuggestion.category].text
+                      )}
+                    >
                       1
                     </div>
                     <span className="text-sm text-foreground">
-                      {
-                        [...data.suggestions].toSorted(
-                          (a, b) => a.priority - b.priority
-                        )[0]?.text
-                      }
+                      {topSuggestion.text}
                     </span>
                   </button>
                 </div>
