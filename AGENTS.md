@@ -261,6 +261,8 @@ const dlpRules = res.data.policies?.filter((p) =>
 
 ## Evaluation Framework
 
+> **Agent rule: Do NOT run evals (`bun run evals`) as part of routine development.** Evals are expensive (they make AI API calls and take significant time). Only run evals when the user explicitly asks you to. Running unit tests (`bun test`) and linting (`bun x ultracite check`) is fine for routine validation — evals are not.
+
 The eval framework tests AI diagnostic capabilities using fixture injection for deterministic, reproducible results.
 
 ### Architecture
