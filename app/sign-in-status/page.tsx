@@ -1,11 +1,13 @@
 /**
  * Sign-in status page displaying detailed authentication information.
+ * Supports both OAuth sessions and default user mode.
  */
 
 "use client";
 
 import {
   AlertTriangle,
+  ArrowRightLeft,
   CheckCircle,
   Clock,
   LogOut,
@@ -29,6 +31,7 @@ import {
   performSignOut,
   type SignInStatusResponse,
   type StatusState,
+  switchUser,
 } from "@/lib/auth/status";
 import { cn } from "@/lib/utils";
 
@@ -74,10 +77,22 @@ interface StatusInfo {
  * Determines the status indicator style and icon based on token state.
  */
 function getStatusInfo(
+  isDefaultUser: boolean,
   tokenError: string | undefined,
   isTokenExpired: boolean,
   isTokenExpiringSoon: boolean
 ): StatusInfo {
+  if (isDefaultUser) {
+    return {
+      icon: Shield,
+      bgColor: "bg-blue-500/10",
+      textColor: "text-blue-500",
+      borderColor: "border-blue-500/20",
+      label: "Service Account",
+      description:
+        "Using the delegated admin service account. Token management is automatic.",
+    };
+  }
   if (tokenError) {
     return {
       icon: XCircle,
@@ -119,6 +134,78 @@ function getStatusInfo(
 }
 
 /**
+ * Apply status data to state, updating expiry tracking refs.
+ */
+function applyStatusData(
+  data: SignInStatusResponse,
+  setStatus: (state: StatusState) => void,
+  setLocalExpiresIn: (value: number) => void,
+  expiresAtRef: React.MutableRefObject<number | null>
+) {
+  setStatus({ loading: false, data, error: null });
+  if (data.token?.expiresIn !== undefined) {
+    expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
+    setLocalExpiresIn(data.token.expiresIn);
+  }
+}
+
+/**
+ * Action buttons for the status page - extracted to reduce component complexity.
+ */
+function StatusActions({
+  isDefaultUser,
+  isTokenExpired,
+  isTokenExpiringSoon,
+  signingOut,
+  onRefresh,
+  onReauth,
+  onSwitchUser,
+  onSignOut,
+}: {
+  isDefaultUser: boolean;
+  isTokenExpired: boolean;
+  isTokenExpiringSoon: boolean;
+  signingOut: boolean;
+  onRefresh: () => void;
+  onReauth: () => void;
+  onSwitchUser: () => void;
+  onSignOut: () => void;
+}) {
+  return (
+    <div className="flex flex-col gap-2 pt-2">
+      <Button variant="outline" onClick={onRefresh} className="w-full">
+        <RefreshCw className="size-4" />
+        Refresh Status
+      </Button>
+
+      {!isDefaultUser && (isTokenExpired || isTokenExpiringSoon) && (
+        <Button onClick={onReauth} className="w-full">
+          <RefreshCw className="size-4" />
+          Re-authenticate
+        </Button>
+      )}
+
+      {isDefaultUser ? (
+        <Button variant="outline" onClick={onSwitchUser} className="w-full">
+          <ArrowRightLeft className="size-4" />
+          Switch User
+        </Button>
+      ) : (
+        <Button
+          variant="destructive"
+          onClick={onSignOut}
+          disabled={signingOut}
+          className="w-full"
+        >
+          <LogOut className="size-4" />
+          {signingOut ? "Signing out..." : "Sign Out"}
+        </Button>
+      )}
+    </div>
+  );
+}
+
+/**
  * Sign-in status page component.
  */
 export default function SignInStatusPage() {
@@ -132,11 +219,12 @@ export default function SignInStatusPage() {
   const [signingOut, setSigningOut] = useState(false);
   const expiresAtRef = useRef<number | null>(null);
 
+  const isDefaultUser = status.data?.isDefaultUser === true;
+
   const fetchStatus = useCallback(async () => {
     try {
       const response = await fetch("/api/sign-in-status");
 
-      // Server error - sign out
       if (!response.ok) {
         await performSignOut("sign-in-status");
         return;
@@ -144,19 +232,20 @@ export default function SignInStatusPage() {
 
       const data = (await response.json()) as SignInStatusResponse;
 
-      // If not authenticated or there's an error, sign out and redirect
+      // Default user mode: always accept the response
+      if (data.isDefaultUser) {
+        applyStatusData(data, setStatus, setLocalExpiresIn, expiresAtRef);
+        return;
+      }
+
+      // OAuth mode: sign out if not authenticated or there's an error
       if (!data.authenticated || data.error) {
         await performSignOut("sign-in-status");
         return;
       }
 
-      setStatus({ loading: false, data, error: null });
-      if (data.token?.expiresIn !== undefined) {
-        expiresAtRef.current = Date.now() + data.token.expiresIn * 1000;
-        setLocalExpiresIn(data.token.expiresIn);
-      }
+      applyStatusData(data, setStatus, setLocalExpiresIn, expiresAtRef);
     } catch {
-      // On any error, sign out and redirect
       await performSignOut("sign-in-status");
     }
   }, []);
@@ -168,7 +257,7 @@ export default function SignInStatusPage() {
   }, [fetchStatus]);
 
   useEffect(() => {
-    if (expiresAtRef.current === null) {
+    if (expiresAtRef.current === null || isDefaultUser) {
       return;
     }
 
@@ -184,11 +273,15 @@ export default function SignInStatusPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [status.data?.token?.expiresIn]);
+  }, [status.data?.token?.expiresIn, isDefaultUser]);
 
   const handleSignOut = useCallback(async () => {
     setSigningOut(true);
     await performSignOut("sign-in-status");
+  }, []);
+
+  const handleSwitchUser = useCallback(() => {
+    switchUser();
   }, []);
 
   const handleReauth = useCallback(() => {
@@ -200,12 +293,7 @@ export default function SignInStatusPage() {
     await fetchStatus();
   }, [fetchStatus]);
 
-  if (status.loading) {
-    return <LoadingSkeleton />;
-  }
-
-  // If no data, we're redirecting (sign out in progress)
-  if (!status.data) {
+  if (status.loading || !status.data) {
     return <LoadingSkeleton />;
   }
 
@@ -213,6 +301,7 @@ export default function SignInStatusPage() {
   const isTokenExpired = localExpiresIn !== null && localExpiresIn <= 0;
   const isTokenExpiringSoon = localExpiresIn !== null && localExpiresIn < 300;
   const statusInfo = getStatusInfo(
+    isDefaultUser,
     undefined,
     isTokenExpired,
     isTokenExpiringSoon
@@ -254,7 +343,7 @@ export default function SignInStatusPage() {
           {user && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">
-                Signed in as
+                {isDefaultUser ? "Using service account" : "Signed in as"}
               </h3>
               <div className="rounded-lg border bg-card p-3">
                 <p className="font-medium">{user.name ?? "Unknown"}</p>
@@ -265,8 +354,8 @@ export default function SignInStatusPage() {
             </div>
           )}
 
-          {/* Token Info */}
-          {token && localExpiresIn !== null && (
+          {/* Token Info (only for OAuth users) */}
+          {!isDefaultUser && token && localExpiresIn !== null && (
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-muted-foreground">
                 Session Details
@@ -302,34 +391,16 @@ export default function SignInStatusPage() {
             </div>
           )}
 
-          {/* Actions */}
-          <div className="flex flex-col gap-2 pt-2">
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              className="w-full"
-            >
-              <RefreshCw className="size-4" />
-              Refresh Status
-            </Button>
-
-            {(isTokenExpired || isTokenExpiringSoon) && (
-              <Button onClick={handleReauth} className="w-full">
-                <RefreshCw className="size-4" />
-                Re-authenticate
-              </Button>
-            )}
-
-            <Button
-              variant="destructive"
-              onClick={handleSignOut}
-              disabled={signingOut}
-              className="w-full"
-            >
-              <LogOut className="size-4" />
-              {signingOut ? "Signing out..." : "Sign Out"}
-            </Button>
-          </div>
+          <StatusActions
+            isDefaultUser={isDefaultUser}
+            isTokenExpired={isTokenExpired}
+            isTokenExpiringSoon={isTokenExpiringSoon}
+            signingOut={signingOut}
+            onRefresh={handleRefresh}
+            onReauth={handleReauth}
+            onSwitchUser={handleSwitchUser}
+            onSignOut={handleSignOut}
+          />
         </CardContent>
       </Card>
     </main>

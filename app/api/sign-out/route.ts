@@ -1,6 +1,13 @@
+/**
+ * Sign-out API route. Revokes the Google OAuth token and clears the
+ * BetterAuth session. In default user mode, this is a no-op since
+ * there is no OAuth session to clear.
+ */
+
 import { headers } from "next/headers";
 
 import { auth } from "@/lib/auth";
+import { isDefaultUserEnabled } from "@/lib/default-user";
 
 /**
  * Revokes Google OAuth token.
@@ -19,8 +26,14 @@ async function revokeGoogleToken(accessToken: string): Promise<boolean> {
 
 /**
  * Sign-out API route using Better Auth's signOut method.
+ * Returns a no-op success when in default user mode.
  */
 export async function POST(req: Request): Promise<Response> {
+  // In default user mode there is no OAuth session to revoke
+  if (isDefaultUserEnabled()) {
+    return Response.json({ success: true, message: "Signed out successfully" });
+  }
+
   // Try to revoke Google token first
   try {
     const tokenResponse = await auth.api.getAccessToken({

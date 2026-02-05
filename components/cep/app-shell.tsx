@@ -19,6 +19,7 @@ import {
 } from "./dashboard-load-context";
 import { DashboardOverview } from "./dashboard-overview";
 import { DashboardSkeleton } from "./dashboard-skeleton";
+import { MobileDashboardSummary } from "./mobile-dashboard-summary";
 import { UserStatusBar } from "./user-status-bar";
 
 /**
@@ -37,9 +38,10 @@ function AppShellContent() {
       <UserStatusBar />
       <DemoModeBanner />
 
-      {/* Mobile layout - chat only */}
-      <div className="flex flex-1 overflow-hidden lg:hidden">
-        <aside className="flex w-full flex-col">
+      {/* Mobile layout - condensed dashboard + chat */}
+      <div className="flex flex-1 flex-col overflow-hidden lg:hidden">
+        <MobileDashboardSummary onAction={handleAction} />
+        <aside className="flex min-h-0 flex-1 flex-col">
           <ChatConsole />
         </aside>
       </div>

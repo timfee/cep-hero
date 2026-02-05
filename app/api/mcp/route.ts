@@ -6,6 +6,7 @@
 import { WebStandardStreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/webStandardStreamableHttp.js";
 
 import { auth } from "@/lib/auth";
+import { getDefaultUserAccessToken } from "@/lib/default-user";
 import { createMcpServer } from "@/lib/mcp/server-factory";
 
 const SESSION_TTL_MS = 30 * 60 * 1000;
@@ -128,11 +129,21 @@ async function resolveAccessTokenFromSession(
 }
 
 /**
- * Resolve access token from bearer header or session.
+ * Resolve access token from bearer header, session, or default user service account.
  */
 async function resolveAccessToken(req: Request): Promise<string | undefined> {
   const bearerToken = extractBearerToken(req.headers.get("Authorization"));
-  return bearerToken ?? (await resolveAccessTokenFromSession(req));
+  if (bearerToken) {
+    return bearerToken;
+  }
+
+  const sessionToken = await resolveAccessTokenFromSession(req);
+  if (sessionToken) {
+    return sessionToken;
+  }
+
+  const defaultToken = await getDefaultUserAccessToken();
+  return defaultToken ?? undefined;
 }
 
 /**

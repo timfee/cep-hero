@@ -1,5 +1,5 @@
 /**
- * Server Actions for the self-enrollment gimme page.
+ * Server Actions for the self-enrollment gimme feature.
  */
 
 "use server";
