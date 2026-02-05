@@ -6,9 +6,44 @@
 import { render, waitFor } from "@testing-library/react";
 import { describe, expect, it, mock, afterEach } from "bun:test";
 
+/**
+ * Dashboard data structure for mock SWR responses.
+ */
+interface MockDashboardData {
+  headline: string;
+  summary: string;
+  postureCards: Array<{
+    label: string;
+    value: string;
+    note: string;
+    source: string;
+    action: string;
+    status: string;
+    priority: number;
+  }>;
+  suggestions: Array<{
+    text: string;
+    action: string;
+    priority: number;
+    category: string;
+  }>;
+  sources: string[];
+}
+
+/**
+ * Mock SWR return type for dashboard tests.
+ */
+interface MockSWRReturn {
+  data: MockDashboardData | null;
+  error: Error | null;
+  isLoading: boolean;
+  isValidating: boolean;
+  mutate: typeof mockMutate;
+}
+
 // Mock useSWR
 const mockMutate = mock(() => Promise.resolve());
-let mockSWRReturn = {
+let mockSWRReturn: MockSWRReturn = {
   data: null,
   error: null,
   isLoading: true,

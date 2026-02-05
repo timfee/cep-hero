@@ -30,6 +30,29 @@ import {
 export { loadFixtureData } from "./fixture-loader";
 
 /**
+ * Standard fixture error response for testing.
+ */
+const FIXTURE_ERROR_SUGGESTION = "This is a fixture error for testing.";
+
+/**
+ * Build a fixture error response if error is configured.
+ */
+function buildFixtureError<T extends Record<string, unknown>>(
+  error: string | undefined,
+  extra?: T
+): ({ error: string; suggestion: string; requiresReauth: false } & T) | null {
+  if (typeof error !== "string") {
+    return null;
+  }
+  return {
+    error,
+    suggestion: FIXTURE_ERROR_SUGGESTION,
+    requiresReauth: false,
+    ...extra,
+  } as { error: string; suggestion: string; requiresReauth: false } & T;
+}
+
+/**
  * Returns fixture data instead of calling real Google APIs.
  * Used for deterministic evaluation testing.
  */
@@ -44,12 +67,9 @@ export class FixtureToolExecutor implements ToolExecutor {
    * Returns Chrome events from fixture data.
    */
   getChromeEvents(args: z.infer<typeof GetChromeEventsSchema>) {
-    if (typeof this.fixtures.errors?.chromeEvents === "string") {
-      return Promise.resolve({
-        error: this.fixtures.errors.chromeEvents,
-        suggestion: "This is a fixture error for testing.",
-        requiresReauth: false,
-      });
+    const fixtureError = buildFixtureError(this.fixtures.errors?.chromeEvents);
+    if (fixtureError) {
+      return Promise.resolve(fixtureError);
     }
 
     const items = this.fixtures.auditEvents?.items ?? [];
@@ -64,12 +84,9 @@ export class FixtureToolExecutor implements ToolExecutor {
    * Returns DLP rules from fixture data.
    */
   listDLPRules() {
-    if (typeof this.fixtures.errors?.dlpRules === "string") {
-      return Promise.resolve({
-        error: this.fixtures.errors.dlpRules,
-        suggestion: "This is a fixture error for testing.",
-        requiresReauth: false,
-      });
+    const fixtureError = buildFixtureError(this.fixtures.errors?.dlpRules);
+    if (fixtureError) {
+      return Promise.resolve(fixtureError);
     }
     return Promise.resolve({ rules: mapDlpRules(this.fixtures) });
   }
@@ -78,12 +95,9 @@ export class FixtureToolExecutor implements ToolExecutor {
    * Returns org units from fixture data.
    */
   listOrgUnits() {
-    if (typeof this.fixtures.errors?.orgUnits === "string") {
-      return Promise.resolve({
-        error: this.fixtures.errors.orgUnits,
-        suggestion: "This is a fixture error for testing.",
-        requiresReauth: false,
-      });
+    const fixtureError = buildFixtureError(this.fixtures.errors?.orgUnits);
+    if (fixtureError) {
+      return Promise.resolve(fixtureError);
     }
     return Promise.resolve({ orgUnits: this.fixtures.orgUnits ?? [] });
   }
@@ -109,13 +123,12 @@ export class FixtureToolExecutor implements ToolExecutor {
    * Returns connector configuration from fixture data.
    */
   getChromeConnectorConfiguration() {
-    if (typeof this.fixtures.errors?.connectorConfig === "string") {
-      return Promise.resolve({
-        error: this.fixtures.errors.connectorConfig,
-        suggestion: "This is a fixture error for testing.",
-        requiresReauth: false,
-        policySchemas: [],
-      });
+    const fixtureError = buildFixtureError(
+      this.fixtures.errors?.connectorConfig,
+      { policySchemas: [] as string[] }
+    );
+    if (fixtureError) {
+      return Promise.resolve(fixtureError);
     }
     return Promise.resolve(buildConnectorConfig(this.fixtures));
   }
