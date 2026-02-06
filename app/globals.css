@@ -125,6 +125,17 @@
   * {
     @apply border-border outline-ring/50;
   }
+
+  [data-streamdown="link"] {
+    color: oklch(0.72 0.17 250);
+    display: inline;
+    overflow-wrap: anywhere;
+  }
+
+  [data-streamdown="link"]:hover {
+    color: oklch(0.8 0.14 250);
+  }
+
   body {
     @apply bg-background text-foreground;
     background-image:
