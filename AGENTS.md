@@ -70,7 +70,7 @@ export interface ToolExecutor { ... }
 - One blank line between substantially different blocks within a function
 - Group related code together
 - Do not re-export; do not clog code with backwards-compatability shims.
-  
+
 ## Core Principles
 
 Write code that is **accessible, performant, type-safe, and maintainable**. Focus on clarity and explicit intent over brevity.
