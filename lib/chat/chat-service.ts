@@ -63,7 +63,7 @@ When a user asks to change or apply a Chrome policy:
 
 # DLP Rule Workflow
 When creating DLP rules:
-1. Call listDLPRules and listOrgUnits in parallel to see what exists
+1. Call listDLPRules to check what already exists — do NOT call listOrgUnits (org units are resolved automatically)
 2. Pick sensible defaults (audit all traffic at root "/", all triggers) and call draftPolicyChange immediately — don't ask the user to fill in fields
 3. Wait for user to say "Confirm"
 4. Call createDLPRule with the proposed configuration
