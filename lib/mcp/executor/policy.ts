@@ -80,7 +80,7 @@ export function draftPolicyChange(
     intent: "update_policy",
     status: "pending_approval",
     applyParams: {
-      policySchemaId: args.policyName,
+      policySchemaId: args.policySchemaId,
       targetResource: args.targetUnit,
       value: args.proposedValue,
     },
