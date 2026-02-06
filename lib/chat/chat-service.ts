@@ -6,6 +6,7 @@ import { google } from "@ai-sdk/google";
 import { generateText, Output, stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 
+import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
 import {
   ApplyPolicyChangeSchema,
   CepToolExecutor,
@@ -249,26 +250,14 @@ function hasUIResult(toolResults: unknown[]): boolean {
 }
 
 /**
- * Tools whose output is consumed elsewhere (sources drawer, dashboard,
- * action buttons) and should not trigger the "explain your results" guard.
- */
-const SILENT_TOOLS = new Set([
-  "getFleetOverview",
-  "searchKnowledge",
-  "debugAuth",
-  "suggestActions",
-]);
-
-/**
  * Analyze the last step to determine what guards should be applied.
- * Steps that only called silent tools (suggestActions, searchKnowledge, etc.)
- * are treated as having no actionable tool results, preventing the guard
- * from forcing the model to "explain" invisible tool output and duplicating text.
+ * Steps that only called hidden tools are treated as having no actionable
+ * tool results, preventing the "explain your results" guard from firing.
  */
 export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   const onlySilentTools =
     lastStep.toolCalls.length > 0 &&
-    lastStep.toolCalls.every((tc) => SILENT_TOOLS.has(tc.toolName));
+    lastStep.toolCalls.every((tc) => HIDDEN_TOOL_NAMES.has(tc.toolName));
 
   const hasToolResults = lastStep.toolResults.length > 0 && !onlySilentTools;
   const hasText = lastStep.text.trim().length > 0;
@@ -390,7 +379,9 @@ export async function createChatStream({
         const hasText = last.text.trim().length > 100;
         const onlySilent =
           last.toolCalls.length > 0 &&
-          last.toolCalls.every((tc) => tc && SILENT_TOOLS.has(tc.toolName));
+          last.toolCalls.every(
+            (tc) => tc && HIDDEN_TOOL_NAMES.has(tc.toolName)
+          );
         return hasText && onlySilent;
       },
     ],
