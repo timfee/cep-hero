@@ -321,7 +321,6 @@ export async function createChatStream({
             "getChromeEvents",
             "getChromeConnectorConfiguration",
             "listDLPRules",
-            "listOrgUnits",
             "getFleetOverview",
             "searchKnowledge",
             "enrollBrowser",
