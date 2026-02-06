@@ -7,6 +7,7 @@ import { OAuth2Client } from "google-auth-library";
 import { google } from "googleapis";
 import { existsSync } from "node:fs";
 
+import { stripQuotes } from "@/lib/gimme/validation";
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 import { makeGoogleClients } from "@/lib/test-helpers/google-admin";
 import { isPlainObject } from "@/lib/utils";
@@ -47,7 +48,7 @@ function parseServiceAccountJson() {
     return { error: "Missing GOOGLE_SERVICE_ACCOUNT_JSON." };
   }
   try {
-    const trimmed = raw.replaceAll(/^['"]|['"]$/g, "");
+    const trimmed = stripQuotes(raw) ?? raw;
     const parsed: unknown = JSON.parse(trimmed);
     if (!isPlainObject(parsed)) {
       return { error: "Invalid GOOGLE_SERVICE_ACCOUNT_JSON: not an object." };
