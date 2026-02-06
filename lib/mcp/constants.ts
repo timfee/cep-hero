@@ -59,3 +59,15 @@ export const CONNECTOR_VALUE_KEYS: Record<string, string> = {
     "onSecurityEventEnterpriseConnector",
   "chrome.users.EnterpriseConnectors.OnPrint": "onPrintEnterpriseConnector",
 } as const;
+
+/**
+ * Tools whose output is consumed by dedicated UI (sources drawer, dashboard,
+ * action buttons) rather than displayed as tool-call cards. Shared between
+ * server guard logic and client rendering.
+ */
+export const HIDDEN_TOOL_NAMES = new Set<string>([
+  "getFleetOverview",
+  "searchKnowledge",
+  "debugAuth",
+  "suggestActions",
+]);
