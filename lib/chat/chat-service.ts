@@ -40,12 +40,17 @@ const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Ente
 - **applyPolicyChange**: Apply a confirmed Chrome policy change
 - **enrollBrowser**: Generate a CBCM enrollment token
 - **listOrgUnits**: List organizational units
-- **getFleetOverview**: Summarize fleet posture
+- **getFleetOverview**: Summarize fleet posture (internally fetches events, DLP rules, and connector config)
 - **debugAuth**: Inspect token scopes/expiry
 - **searchKnowledge**: Search documentation for error codes, concepts, and best practices
 - **suggestActions**: Offer follow-up action buttons to the user
 
 These are internal identifiers — never surface them to users.
+
+# Avoiding Redundant Tool Calls
+- Never call the same tool twice in one response.
+- getFleetOverview already fetches events, DLP rules, and connector config internally. When using it, do NOT also call getChromeEvents, listDLPRules, or getChromeConnectorConfiguration — that would duplicate work and clutter the response.
+- Each tool call produces a visible UI card. Every card must earn its place — don't call tools whose results you won't directly reference.
 
 # Safety
 Never apply changes without explicit user confirmation. Always draft first, then wait for the user to say "Confirm".
@@ -58,15 +63,15 @@ When a user asks to change or apply a Chrome policy:
 1. Call getChromeConnectorConfiguration first to check the current state
 2. Pick sensible defaults — use root "/" as targetUnit unless the user specifies otherwise. Do NOT ask the user for fields, suggest related policies, or offer alternatives — just draft the specific change requested.
 3. Call draftPolicyChange with policyName, proposedValue, targetUnit (full org unit ID — never truncate), and reasoning
-4. Wait for the user to confirm
+4. STOP after draftPolicyChange. The UI shows a confirmation card. Write a brief (1-2 sentence) intro, then wait for the user to confirm. Do not repeat the card's details in text — the card IS the summary.
 5. Call applyPolicyChange with the EXACT values from applyParams in the draft response — do not modify, truncate, or reconstruct them
 
 # DLP Rule Workflow
 When creating DLP rules:
 1. Call listDLPRules to check what already exists — do NOT call listOrgUnits (org units are resolved automatically)
 2. Pick sensible defaults (audit all traffic at root "/", all triggers) and call draftPolicyChange immediately — don't ask the user to fill in fields
-3. Wait for user to say "Confirm"
-4. Call createDLPRule with the proposed configuration
+3. STOP after draftPolicyChange. The UI shows a confirmation card with the rule details. Write a brief (1-2 sentence) intro, then wait for the user to confirm. Do NOT also call createDLPRule — that happens only after the user says "Confirm".
+4. After the user confirms, call createDLPRule with the proposed configuration
 
 # Handling Confirmations
 When the user says "Confirm" (or "yes", "do it", "apply"):
@@ -86,6 +91,12 @@ When a user reports an issue, call diagnostic tools first — don't give generic
 Never ask the user clarifying questions — not in text, not as bullet-point options, not as "would you like to..." prompts. If the query is ambiguous, pick the most likely interpretation and run the relevant tools. You can always course-correct after showing results. The ONLY way to offer follow-up options is via the suggestActions tool, never as text in your response.
 
 Never mention internal tool names (getChromeEvents, getChromeConnectorConfiguration, listDLPRules, etc.) in responses. Use natural descriptions: "checked your audit logs", "reviewed connector policies", "looked at your DLP rules".
+
+# Response Style
+- Tool results render as rich UI cards (tables, badges, confirmation forms). Your text should synthesize and contextualize, not repeat what the cards show.
+- After calling draftPolicyChange, write a brief 1-2 sentence introduction. The confirmation card IS the detailed content — do not duplicate it in text.
+- After diagnostic tools, weave findings into a natural summary. The user already sees the raw data in the cards — your text adds interpretation and recommended actions.
+- Keep responses focused. If you called 3 tools, a 3-5 sentence summary is usually sufficient.
 
 # Tone & Formatting
 Use natural language. Bold key terms. Don't use rigid section headers like "Diagnosis:" or "Evidence:" — instead use transitions like "Here's what I found", "The issue is", "I'd recommend".
@@ -204,6 +215,7 @@ export interface StepAnalysis {
   hasToolResults: boolean;
   hasText: boolean;
   hasShortResponse: boolean;
+  hasUIContent: boolean;
   textLength: number;
 }
 
@@ -214,11 +226,34 @@ export interface LastStep {
 }
 
 /**
+ * Check whether a tool result produced a UI element (confirmation card, success
+ * message, or manual steps) that the user can interact with directly.
+ * When UI content is present, the response guard should not force extra loops.
+ */
+function hasUIResult(toolResults: unknown[]): boolean {
+  for (const result of toolResults) {
+    if (typeof result === "object" && result !== null && "_type" in result) {
+      const typed = result as { _type: string };
+      if (
+        typed._type === "ui.confirmation" ||
+        typed._type === "ui.success" ||
+        typed._type === "ui.manual_steps" ||
+        typed._type === "ui.error"
+      ) {
+        return true;
+      }
+    }
+  }
+  return false;
+}
+
+/**
  * Analyze the last step to determine what guards should be applied.
  */
 export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   const hasToolResults = lastStep.toolResults.length > 0;
   const hasText = lastStep.text.trim().length > 0;
+  const hasUIContent = hasUIResult(lastStep.toolResults);
 
   const textLength = lastStep.text.trim().length;
   const hasShortResponse = hasToolResults && hasText && textLength < 50;
@@ -227,6 +262,7 @@ export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
     hasToolResults,
     hasText,
     hasShortResponse,
+    hasUIContent,
     textLength,
   };
 }
@@ -255,11 +291,17 @@ Your response was brief. Expand with specific evidence from the tool results. Ci
 
 /**
  * Compute the step response configuration based on analysis.
+ * When the last step produced interactive UI content (confirmation cards,
+ * success messages), the guard is skipped to prevent extra tool-call loops
+ * that generate redundant duplicate cards and verbose text.
  */
 export function computeStepResponse(
   analysis: StepAnalysis,
   enhancedSystemPrompt: string
 ): Record<string, unknown> {
+  if (analysis.hasUIContent) {
+    return {};
+  }
   if (analysis.hasToolResults && !analysis.hasText) {
     return buildResponseCompletionGuard(enhancedSystemPrompt);
   }
@@ -323,8 +365,6 @@ export async function createChatStream({
             "listDLPRules",
             "getFleetOverview",
             "searchKnowledge",
-            "enrollBrowser",
-            "debugAuth",
           ],
         };
       }
