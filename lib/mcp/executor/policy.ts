@@ -154,7 +154,10 @@ function normalizeValue(
     return { [key]: value };
   }
 
-  // Primitive value (boolean, string, number) — wrap with inferred key
+  if (value === null || value === undefined) {
+    return null;
+  }
+
   return { [inferValueKey(policySchemaId)]: value };
 }
 
