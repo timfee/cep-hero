@@ -58,12 +58,31 @@ describe("SignInPage", () => {
     mockTrack.mockClear();
   });
 
-  it("renders branding", () => {
+  it("renders branding and context", () => {
     const { getByText, getByAltText } = render(<SignInPage />);
 
     expect(getByText("CEP Hero")).toBeInTheDocument();
-    expect(getByText("Agentic CEP assistant demo")).toBeInTheDocument();
+    expect(
+      getByText("Internal POC playground for Chrome Enterprise")
+    ).toBeInTheDocument();
     expect(getByAltText("CEP Hero")).toBeInTheDocument();
+  });
+
+  it("renders test domain explanation", () => {
+    const { getByText, getAllByText } = render(<SignInPage />);
+
+    expect(getByText(/test domain/i)).toBeInTheDocument();
+    expect(getAllByText(/cep-netnew\.cc/i).length).toBeGreaterThan(0);
+  });
+
+  it("renders side-by-side sign-in and sign-up cards", () => {
+    const { getByText } = render(<SignInPage />);
+
+    expect(getByText("Sign In")).toBeInTheDocument();
+    expect(getByText("Get an Account")).toBeInTheDocument();
+    expect(
+      getByText(/already have a cep-netnew\.cc account/i)
+    ).toBeInTheDocument();
   });
 
   it("renders sign-in button", () => {
@@ -83,11 +102,20 @@ describe("SignInPage", () => {
     });
   });
 
-  it("shows admin account requirement text", () => {
+  it("shows Chrome profile tip", () => {
     const { getByText } = render(<SignInPage />);
 
+    expect(getByText(/separate chrome profile/i)).toBeInTheDocument();
+  });
+
+  it("renders enrollment form fields", () => {
+    const { getByLabelText, getByRole } = render(<SignInPage />);
+
+    expect(getByLabelText("Full Name")).toBeInTheDocument();
+    expect(getByLabelText("Google Email")).toBeInTheDocument();
+    expect(getByLabelText("Enrollment Password")).toBeInTheDocument();
     expect(
-      getByText(/requires a google workspace admin account/i)
+      getByRole("button", { name: /request account/i })
     ).toBeInTheDocument();
   });
 });
