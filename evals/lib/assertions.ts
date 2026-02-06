@@ -11,6 +11,16 @@ export interface AssertionResult {
   details?: Record<string, unknown>;
 }
 
+/**
+ * Serialize metadata to string for fuzzy matching, returning empty string for nullish values.
+ */
+function serializeMetadata(metadata: unknown): string {
+  if (metadata === undefined || metadata === null) {
+    return "";
+  }
+  return JSON.stringify(metadata);
+}
+
 const schemaKeyMap: Record<string, string> = {
   diagnosis: "diagnosis",
   evidence: "evidence",
@@ -126,13 +136,13 @@ export function checkRequiredEvidence({
   metadata: unknown;
   requiredEvidence: string[] | undefined;
 }): AssertionResult {
-  if (requiredEvidence === undefined || requiredEvidence.length === 0) {
+  if (!requiredEvidence?.length) {
     return { passed: true, message: "No required evidence specified" };
   }
 
-  const metadataText =
-    metadata !== undefined && metadata !== null ? JSON.stringify(metadata) : "";
-  const combined = normalizeForMatching(`${text}\n${metadataText}`);
+  const combined = normalizeForMatching(
+    `${text}\n${serializeMetadata(metadata)}`
+  );
 
   const missing = requiredEvidence.filter(
     (needle) => !combined.includes(normalizeForMatching(needle))
@@ -203,11 +213,7 @@ export function scoreRubric({
   criteria: string[];
 }) {
   const combined = normalizeForMatching(
-    `${text}\n${
-      metadata !== undefined && metadata !== null
-        ? JSON.stringify(metadata)
-        : ""
-    }`
+    `${text}\n${serializeMetadata(metadata)}`
   );
 
   const matched: string[] = [];
@@ -234,7 +240,7 @@ export function checkRequiredToolCalls({
   toolCalls: string[] | undefined;
   requiredToolCalls: string[] | undefined;
 }): AssertionResult {
-  if (requiredToolCalls === undefined || requiredToolCalls.length === 0) {
+  if (!requiredToolCalls?.length) {
     return { passed: true, message: "No required tool calls specified" };
   }
 
@@ -295,13 +301,13 @@ export function checkForbiddenEvidence({
   metadata: unknown;
   forbiddenEvidence: string[] | undefined;
 }): AssertionResult {
-  if (forbiddenEvidence === undefined || forbiddenEvidence.length === 0) {
+  if (!forbiddenEvidence?.length) {
     return { passed: true, message: "No forbidden evidence specified" };
   }
 
-  const metadataText =
-    metadata !== undefined && metadata !== null ? JSON.stringify(metadata) : "";
-  const combined = normalizeForMatching(`${text}\n${metadataText}`);
+  const combined = normalizeForMatching(
+    `${text}\n${serializeMetadata(metadata)}`
+  );
 
   const found = forbiddenEvidence.filter((needle) =>
     combined.includes(normalizeForMatching(needle))

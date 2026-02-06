@@ -1,20 +1,9 @@
 import { readFile } from "node:fs/promises";
 import { join, normalize, resolve } from "node:path";
 
+import { type Registry } from "@/lib/fixture-types";
 import { type FixtureData } from "@/lib/mcp/types";
-
-interface RegistryCase {
-  id: string;
-  title: string;
-  category: string;
-  tags?: string[];
-  overrides?: string[];
-}
-
-interface Registry {
-  version: string;
-  cases: RegistryCase[];
-}
+import { isPlainObject } from "@/lib/utils";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -115,7 +104,7 @@ export async function GET(_req: Request, { params }: RouteParams) {
     );
   }
 
-  if (!caseEntry.overrides || caseEntry.overrides.length === 0) {
+  if (!caseEntry.overrides?.length) {
     return Response.json(
       { error: `Fixture ${id} has no override data` },
       { status: 404 }
@@ -134,13 +123,6 @@ export async function GET(_req: Request, { params }: RouteParams) {
     tags: caseEntry.tags ?? [],
     data: result.data,
   });
-}
-
-/**
- * Checks if a value is a plain object (not an array or null).
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**

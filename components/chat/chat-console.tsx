@@ -6,7 +6,7 @@
 "use client";
 
 import { track } from "@vercel/analytics";
-import { getToolName, isToolUIPart } from "ai";
+import { type UIMessage, getToolName, isToolUIPart } from "ai";
 import { RefreshCcwIcon, CopyIcon } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -53,6 +53,12 @@ import {
   ReasoningContent,
 } from "@/components/ai-elements/reasoning";
 import {
+  Sources,
+  SourcesTrigger,
+  SourcesContent,
+  Source,
+} from "@/components/ai-elements/sources";
+import {
   Tool,
   ToolHeader,
   ToolContent,
@@ -77,6 +83,73 @@ interface OrgUnitsOutput {
     parentOrgUnitId?: string;
     description?: string;
   }[];
+}
+
+interface KnowledgeHit {
+  title?: string;
+  url?: string;
+}
+
+interface SearchKnowledgeOutput {
+  docs?: KnowledgeHit[];
+  policies?: KnowledgeHit[];
+}
+
+/**
+ * Unique source reference extracted from searchKnowledge tool outputs or inline markdown links.
+ */
+interface ExtractedSource {
+  title: string;
+  url: string;
+}
+
+const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+
+/**
+ * Extract unique sources from a message's searchKnowledge tool outputs and inline markdown links.
+ */
+function extractSourcesFromMessage(
+  parts: UIMessage["parts"]
+): ExtractedSource[] {
+  const seen = new Set<string>();
+  const sources: ExtractedSource[] = [];
+
+  for (const part of parts) {
+    if (isToolUIPart(part)) {
+      const toolPart = part as ToolPart;
+      if (
+        getToolName(part) === "searchKnowledge" &&
+        toolPart.state === "output-available"
+      ) {
+        const output = toolPart.output as SearchKnowledgeOutput;
+        const hits = [...(output?.docs ?? []), ...(output?.policies ?? [])];
+        for (const hit of hits) {
+          if (hit.url && hit.title && !seen.has(hit.url)) {
+            seen.add(hit.url);
+            sources.push({ title: hit.title, url: hit.url });
+          }
+        }
+      }
+    }
+
+    if (
+      part.type === "text" &&
+      "text" in part &&
+      typeof part.text === "string"
+    ) {
+      let match: RegExpExecArray | null;
+      MARKDOWN_LINK_PATTERN.lastIndex = 0;
+      while ((match = MARKDOWN_LINK_PATTERN.exec(part.text)) !== null) {
+        const [, title, url] = match;
+        if (!seen.has(url)) {
+          seen.add(url);
+          sources.push({ title, url });
+        }
+      }
+    }
+  }
+
+  return sources;
 }
 
 const CONFIRM_PATTERN = /^confirm\b/i;
@@ -126,16 +199,7 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
     }));
 }
 
-/**
- * Generate a dynamic welcome message based on fleet state.
- */
-function generateWelcomeMessage(data: OverviewData | null) {
-  if (!data) {
-    return "What can I help you with?";
-  }
-  const headline = data.headline?.trim();
-  return headline || "What can I help you with?";
-}
+import { generateWelcomeMessage } from "./welcome-message";
 
 /**
  * Map string actions to ActionItem objects with confirm/cancel detection.
@@ -602,6 +666,28 @@ export function ChatConsole() {
 
                     return null;
                   })}
+
+                  {!isUser &&
+                    (() => {
+                      const sources = extractSourcesFromMessage(message.parts);
+                      if (sources.length === 0) return null;
+                      return (
+                        <div className="pl-4 lg:pl-6">
+                          <Sources>
+                            <SourcesTrigger count={sources.length} />
+                            <SourcesContent>
+                              {sources.map((s) => (
+                                <Source
+                                  key={s.url}
+                                  href={s.url}
+                                  title={s.title}
+                                />
+                              ))}
+                            </SourcesContent>
+                          </Sources>
+                        </div>
+                      );
+                    })()}
 
                   {!isUser && isLast && actionsToRender.length > 0 && (
                     <div className="pl-4 lg:pl-6">
