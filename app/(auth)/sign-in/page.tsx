@@ -371,7 +371,7 @@ export default function SignInPage() {
         </div>
 
         {/* Context callout */}
-        <div className="mx-auto max-w-lg rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-center text-sm text-accent-foreground">
+        <div className="mx-auto max-w-lg rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-center text-sm text-destructive-foreground">
           This tool uses a test domain (
           <strong className="text-foreground">{TARGET_DOMAIN}</strong>) for live
           data access. Your @google.com credentials won&apos;t work
