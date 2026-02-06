@@ -134,6 +134,7 @@
      inline-block by default — display:inline lets text wrap naturally. */
   [data-streamdown="link"] {
     color: var(--link);
+    cursor: pointer;
     display: inline;
     overflow-wrap: anywhere;
     text-decoration-line: underline;
