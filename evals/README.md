@@ -22,7 +22,7 @@ The runner automatically manages the dev server (starts on port 3100, stops when
 
 ```
 evals/
-├── registry.json       # Case definitions (87 cases across 15 categories)
+├── registry.json       # Case definitions (87+ cases across 15 categories)
 ├── cases/              # Markdown files with prompts and expected results
 ├── fixtures/
 │   ├── base/           # Shared API snapshot (api-base.json)

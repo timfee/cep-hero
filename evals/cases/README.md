@@ -1,6 +1,6 @@
 # CEP eval case index
 
-This directory contains one Markdown file per eval case (EC-001 to EC-085). Each file uses the same sections (Summary, Reproduction, Conversation, Expected result, Cleanup) so the tests and documentation stay aligned.
+This directory contains one Markdown file per eval case (EC-001 to EC-087). Each file uses the same sections (Summary, Reproduction, Conversation, Expected result, Cleanup) so the tests and documentation stay aligned.
 
 Cases are organized by **failure domain** (15 categories) rather than by source document. The registry (`evals/registry.json`) is the source of truth for case metadata.
 
@@ -41,6 +41,6 @@ Cases are organized into 15 failure-domain categories:
 
 ## Fixtures
 
-Fixtures exist only for EC-001/002/003 (net logs and update_engine samples). Add concise fixtures under `evals/fixtures/EC-###/` when you tighten a case.
+The base fixture (`evals/fixtures/base/api-base.json`) provides a baseline snapshot of org units, policy schemas, and audit events that all evals can use. Case-specific overrides live in `evals/fixtures/EC-###/overrides.json` and are merged with the base data at runtime.
 
-The base fixture (`evals/fixtures/base/api-base.json`) provides a baseline snapshot of org units, policy schemas, and audit events that all evals can use
+Add concise fixtures under `evals/fixtures/EC-###/` when you tighten a case. Regenerate the base snapshot with `bun run fixtures:capture` (requires service account credentials; PII is auto-redacted).

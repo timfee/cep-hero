@@ -309,6 +309,15 @@ Uses **v1** for policy resolution and modification. The `my_customer` alias work
 - **`lib/mcp/server-factory.ts`**: MCP tool registrations and Streamable HTTP transport.
 - **`lib/mcp/errors.ts`**: Unified `ApiResult<T>` type, type guards, and logging utilities.
 - **`lib/mcp/constants.ts`**: Shared constants (MS_PER_DAY, CONNECTOR_POLICY_SCHEMAS).
+- **`lib/mcp/formatters.ts`**: Human-readable formatting for Cloud Identity settings.
+- **`lib/mcp/org-units.ts`**: Org unit name resolution and display mapping.
+- **`lib/mcp/fleet-overview/summarize.ts`**: Dashboard summarization with deterministic styling and fallback.
+- **`lib/overview.ts`**: Dashboard types (OverviewData, OverviewCard, Suggestion) and PII sanitization.
+- **`lib/chat/chat-service.ts`**: AI orchestration with system prompt, tool registration, and guards.
+- **`components/chat/chat-console.tsx`**: Main chat UI with Sources display, streaming indicators, and org unit context.
+- **`components/chat/welcome-message.ts`**: Dynamic welcome messages based on fleet health.
+- **`components/ui/org-unit-context.tsx`**: React context for org unit ID-to-name resolution.
+- **`components/ui/org-unit-display.tsx`**: Inline component for rendering friendly org unit names.
 - **`app/api/chat/route.ts`**: Chat endpoint that exposes tools to the UI.
 - **`app/api/mcp/route.ts`**: MCP Server endpoint via Streamable HTTP.
 - **`app/api/overview/route.ts`**: Fleet overview endpoint backed by `getFleetOverview`.
@@ -322,6 +331,9 @@ For AI agents and contributors, see **[AGENTS.md](./AGENTS.md)** for:
 - **API Result Pattern** - Use `ApiResult<T>` discriminated unions
 - **Unified Logging** - Use `logApiRequest`, `logApiResponse`, `logApiError`
 - **Shared Constants** - Add to `lib/mcp/constants.ts`
+- **Output Guardrails** - No `[object Object]`, no literal `undefined` strings in tool outputs
+- **Org Unit Display** - Use `OrgUnitDisplay` component with context for friendly names
+- **Quote Stripping** - Use `stripQuotes` from `lib/gimme/validation.ts` for env vars
 - **Anti-patterns to Avoid** - No barrel files, no duplicate types, no unnecessary wrappers
 
 Quick commands:
@@ -331,3 +343,5 @@ bun x ultracite fix    # Auto-format code
 bun x ultracite check  # Lint check
 bun test               # Run tests
 ```
+
+For a comprehensive architecture walkthrough, see **[WALKTHROUGH.md](./WALKTHROUGH.md)**.
