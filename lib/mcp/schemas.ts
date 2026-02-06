@@ -89,7 +89,9 @@ export const ApplyPolicyChangeSchema = z.object({
   targetResource: z
     .string()
     .describe("Target org unit resource (e.g., orgunits/03ph8a2z1en...)"),
-  value: z.record(z.string(), z.unknown()).describe("Policy value to apply"),
+  value: z
+    .union([z.record(z.string(), z.unknown()), z.array(z.unknown())])
+    .describe("Policy value to apply (object or array)"),
 });
 
 /**

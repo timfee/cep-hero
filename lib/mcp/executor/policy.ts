@@ -25,6 +25,7 @@ export type DraftPolicyChangeArgs = z.infer<typeof DraftPolicyChangeSchema>;
 
 /**
  * Arguments for applying a confirmed Chrome policy change.
+ * The value field may be a record or array depending on the policy schema.
  */
 export type ApplyPolicyChangeArgs = z.infer<typeof ApplyPolicyChangeSchema>;
 
@@ -90,7 +91,7 @@ interface ApplyPolicyChangeSuccess {
   message: string;
   policySchemaId: string;
   targetResource: string;
-  appliedValue: Record<string, unknown>;
+  appliedValue: Record<string, unknown> | unknown[];
 }
 
 interface ApplyPolicyChangeError {
@@ -118,6 +119,31 @@ function buildUpdateMask(value: Record<string, unknown>) {
 }
 
 /**
+ * Derives the record key name from a connector policy schema ID.
+ * Example: "chrome.users.EnterpriseConnectors.OnFileAttached" → "onFileAttachedEnterpriseConnector"
+ */
+function connectorKeyFromSchema(schemaId: string): string {
+  const leaf = schemaId.split(".").at(-1) ?? "";
+  return `${leaf.charAt(0).toLowerCase()}${leaf.slice(1)}EnterpriseConnector`;
+}
+
+/**
+ * Normalises the value argument into a Record suitable for the Chrome Policy
+ * API. When the AI sends an array (common for connector policies), the value
+ * is wrapped in a record keyed by the connector policy field name.
+ */
+function normalizeValue(
+  value: Record<string, unknown> | unknown[],
+  policySchemaId: string
+): Record<string, unknown> {
+  if (Array.isArray(value)) {
+    const key = connectorKeyFromSchema(policySchemaId);
+    return { [key]: value };
+  }
+  return value;
+}
+
+/**
  * Applies a confirmed policy change via the Chrome Policy API.
  */
 export async function applyPolicyChange(
@@ -139,12 +165,13 @@ export async function applyPolicyChange(
     } as const;
   }
 
-  const updateMask = buildUpdateMask(args.value);
+  const normalizedValue = normalizeValue(args.value, args.policySchemaId);
+  const updateMask = buildUpdateMask(normalizedValue);
 
   logApiRequest("apply-policy-change", {
     policySchemaId: args.policySchemaId,
     targetResource,
-    value: args.value,
+    value: normalizedValue,
     updateMask,
   });
 
@@ -157,7 +184,7 @@ export async function applyPolicyChange(
             policyTargetKey: { targetResource },
             policyValue: {
               policySchema: args.policySchemaId,
-              value: args.value,
+              value: normalizedValue,
             },
             updateMask,
           },
@@ -172,7 +199,7 @@ export async function applyPolicyChange(
       message: `Policy ${args.policySchemaId} applied successfully`,
       policySchemaId: args.policySchemaId,
       targetResource,
-      appliedValue: args.value,
+      appliedValue: normalizedValue,
     } as const;
   } catch (error: unknown) {
     logApiError("apply-policy-change", error);
