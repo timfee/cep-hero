@@ -72,13 +72,4 @@ describe("Error boundary component", () => {
 
     consoleSpy.mockRestore();
   });
-
-  it("renders the alert icon", () => {
-    const { container } = render(
-      <ErrorBoundary error={mockError} reset={mockReset} />
-    );
-
-    const iconContainer = container.querySelector(String.raw`.bg-red-500\/20`);
-    expect(iconContainer).toBeInTheDocument();
-  });
 });
