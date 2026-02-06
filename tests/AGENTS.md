@@ -51,6 +51,7 @@ describe("MyComponent", () => {
 - Use `render` from `@testing-library/react`
 - DOM matchers available via `@testing-library/jest-dom`
 - happy-dom provides browser-like environment
+- Focus on business logic and behavioral contracts, not CSS class assertions
 
 ```typescript
 import { render } from "@testing-library/react";
@@ -63,6 +64,17 @@ describe("Button", () => {
   });
 });
 ```
+
+### Test Quality Standards
+
+Recent improvements established these standards:
+
+- **Do** test business logic (data transformation, state management, validation)
+- **Do** test behavioral contracts (component A renders same text as component B)
+- **Do** test output guardrails (no `[object Object]`, no `undefined` strings, no `NaN`)
+- **Don't** test CSS class presence (brittle, low signal)
+- **Don't** test implementation details (internal state, private methods)
+- **Don't** duplicate the code under test in assertions
 
 ### Integration Tests (Google APIs)
 
@@ -132,12 +144,26 @@ Run DLP tests:
 bun test tests/dlp-api.test.ts
 ```
 
+## Integration Test Files
+
+| File                           | What it covers                           |
+| ------------------------------ | ---------------------------------------- |
+| `mcp-streamable-http.test.ts`  | MCP HTTP streaming transport             |
+| `connector-config-api.test.ts` | Connector configuration API              |
+| `dlp-api.test.ts`              | DLP API lifecycle (list, create, delete) |
+| `policy-change-api.test.ts`    | Policy change draft-and-apply workflow   |
+| `executor-customer-id.test.ts` | Customer ID resolution                   |
+| `target-resource-type.test.ts` | Target resource validation               |
+| `diagnose-evidence.test.ts`    | Evidence collection and citation         |
+| `fixtures-api.test.ts`         | Fixture data endpoint                    |
+
 ## Environment Variables
 
 Environment variables may contain surrounding quotes that need stripping:
 
 ```typescript
-const value = process.env.MY_VAR?.replace(/^['"]|['"]$/g, "");
+import { stripQuotes } from "@/lib/gimme/validation";
+const value = stripQuotes(process.env.MY_VAR);
 ```
 
 **Common issues:**
@@ -179,13 +205,18 @@ Colocated unit tests in `lib/mcp/` test core business logic with inline fixtures
 | `fixture-executor.test.ts`   | 21    | Full `ToolExecutor` interface via `FixtureToolExecutor`                                           |
 | `fixture-enrollment.test.ts` | 7     | `resolveEnrollmentToken` all 5 code paths                                                         |
 | `connector-analysis.test.ts` | 3     | `analyzeConnectorPolicies` target classification                                                  |
+| `output-guardrails.test.ts`  | 10+   | All tool outputs checked for `[object Object]`, `undefined`, `NaN`                                |
 
 ### Other Colocated Unit Tests
 
-| File                       | Tests | What it covers                                              |
-| -------------------------- | ----- | ----------------------------------------------------------- |
-| `lib/default-user.test.ts` | 12    | `isDefaultUserEnabled`, `getDefaultUserEmail` env var logic |
-| `lib/auth/status.test.ts`  | 13    | `formatTimeRemaining` time formatting for UI display        |
+| File                                         | Tests | What it covers                                              |
+| -------------------------------------------- | ----- | ----------------------------------------------------------- |
+| `lib/default-user.test.ts`                   | 12    | `isDefaultUserEnabled`, `getDefaultUserEmail` env var logic |
+| `lib/auth/status.test.ts`                    | 13    | `formatTimeRemaining` time formatting for UI display        |
+| `lib/overview.test.ts`                       | -     | Dashboard data sanitization and normalization               |
+| `components/chat/welcome-message.test.ts`    | -     | Welcome message generation based on fleet health            |
+| `components/ui/org-unit-display.test.tsx`    | -     | Org unit display component rendering and context resolution |
+| `components/cep/dashboard-overview.test.tsx` | -     | Dashboard card rendering and deterministic colors           |
 
 ### Writing Colocated Unit Tests
 
@@ -241,3 +272,4 @@ See `tests/dlp-api.test.ts` for the full lifecycle pattern: create → list → 
 - Prefer inline fixture data over file reads in unit tests
 - Test all code paths in discriminated union returns (check `"error" in result` before accessing fields)
 - Use `bun x ultracite check` before committing to verify formatting
+- Focus on high-signal business logic tests, not CSS class assertions
