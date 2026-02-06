@@ -279,4 +279,44 @@ describe("MCP output guardrails", () => {
       }
     });
   });
+
+  describe("draftPolicyChange proposal values never produce [object Object]", () => {
+    /**
+     * Regression: the PolicyChangeConfirmation component's formatPolicyValue
+     * used String(value) which converts nested objects to "[object Object]".
+     * These tests ensure that any value shape the executor produces can be
+     * safely serialized without information loss.
+     */
+    const NESTED_POLICY_VALUES: [string, unknown][] = [
+      ["nested config object", { enabled: true, level: { mode: "strict" } }],
+      [
+        "DLP-shaped value",
+        { displayName: "Audit rule", triggers: ["UPLOAD"], action: "AUDIT" },
+      ],
+      ["deep nesting", { a: { b: { c: "deep" } } }],
+      ["array of objects", { rules: [{ id: 1 }, { id: 2 }] }],
+      ["null fields", { enabled: null }],
+      ["boolean", { enabled: true }],
+      ["string", { name: "test" }],
+    ];
+
+    for (const [label, proposedValue] of NESTED_POLICY_VALUES) {
+      it(`draftPolicyChange output for ${label} serializes cleanly`, async () => {
+        const result = await executor.draftPolicyChange({
+          policyName: "chrome.users.TestPolicy",
+          proposedValue,
+          targetUnit: "id:eng002",
+          reasoning: "Test nested values",
+        });
+        const serialized = mcpSerialize(result);
+        expect(serialized).not.toContain("[object Object]");
+
+        // Also verify the diff and applyParams.value fields individually
+        const diffStr = JSON.stringify(result.diff);
+        const valueStr = JSON.stringify(result.applyParams?.value);
+        expect(diffStr).not.toContain("[object Object]");
+        expect(valueStr).not.toContain("[object Object]");
+      });
+    }
+  });
 });
