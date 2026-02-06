@@ -128,13 +128,15 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
 
 /**
  * Generate a dynamic welcome message based on fleet state.
+ * Uses the summary (conversational text) rather than the headline,
+ * which is already displayed in the dashboard header.
  */
 function generateWelcomeMessage(data: OverviewData | null) {
   if (!data) {
     return "What can I help you with?";
   }
-  const headline = data.headline?.trim();
-  return headline || "What can I help you with?";
+  const summary = data.summary?.trim();
+  return summary || "What can I help you with?";
 }
 
 /**
