@@ -26,6 +26,7 @@ export interface ChatResponse {
   text: string;
   metadata?: unknown;
   toolCalls?: string[];
+  toolOutputs?: { toolName: string; output: unknown }[];
 }
 
 interface ChatMessage {
@@ -51,6 +52,8 @@ const StreamChunkSchema = z.object({
   textDelta: z.string().optional(),
   delta: z.string().optional(),
   toolName: z.string().optional(),
+  toolCallId: z.string().optional(),
+  output: z.unknown().optional(),
 });
 
 /**
@@ -187,16 +190,34 @@ function parseStreamingResponse(bodyText: string): ChatResponse {
     .map((chunk) => chunk.textDelta ?? chunk.delta)
     .filter((delta): delta is string => typeof delta === "string");
 
-  const toolCalls = chunks
-    .filter(
-      (chunk) => chunk.type === "tool-input-start" || chunk.type === "tool-call"
-    )
+  const toolStartChunks = chunks.filter(
+    (chunk) => chunk.type === "tool-input-start" || chunk.type === "tool-call"
+  );
+
+  const toolCalls = toolStartChunks
     .map((chunk) => chunk.toolName)
     .filter((name): name is string => typeof name === "string");
 
+  const toolIdToName = new Map<string, string>();
+  for (const chunk of toolStartChunks) {
+    if (chunk.toolCallId && chunk.toolName) {
+      toolIdToName.set(chunk.toolCallId, chunk.toolName);
+    }
+  }
+
+  const toolOutputs = chunks
+    .filter((chunk) => chunk.type === "tool-output-available")
+    .map((chunk) => ({
+      toolName: toolIdToName.get(chunk.toolCallId ?? "") ?? "unknown",
+      output: chunk.output,
+    }));
+
+  const textContent = deltas.join("");
+  const isSSE = bodyText.includes("data:");
   return {
-    text: deltas.join("") || bodyText,
+    text: textContent || (isSSE ? "" : bodyText),
     toolCalls: toolCalls.length > 0 ? [...new Set(toolCalls)] : undefined,
+    toolOutputs: toolOutputs.length > 0 ? toolOutputs : undefined,
   };
 }
 

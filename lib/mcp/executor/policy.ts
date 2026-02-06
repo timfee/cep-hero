@@ -121,24 +121,44 @@ function buildUpdateMask(value: Record<string, unknown>) {
 }
 
 /**
+ * Derive the value key from a policy schema ID.
+ * "chrome.users.SafeBrowsingDeepScanningEnabled" → "safeBrowsingDeepScanningEnabled"
+ */
+function inferValueKey(policySchemaId: string): string {
+  const name = policySchemaId.split(".").at(-1) ?? policySchemaId;
+  return name.charAt(0).toLowerCase() + name.slice(1);
+}
+
+/**
  * Normalises the value argument into a Record suitable for the Chrome Policy
- * API. When the AI sends an array (valid for Enterprise Connector policies),
- * it is wrapped into the correct record key from CONNECTOR_VALUE_KEYS.
+ * API. Handles three cases:
+ * - Record: used as-is
+ * - Array: wrapped using CONNECTOR_VALUE_KEYS mapping
+ * - Primitive (boolean, string, number): wrapped with key inferred from schema
  *
  * Returns null if an array is provided for an unrecognised policy schema.
  */
 function normalizeValue(
-  value: Record<string, unknown> | unknown[],
+  value: unknown,
   policySchemaId: string
 ): Record<string, unknown> | null {
-  if (!Array.isArray(value)) {
-    return value;
+  if (typeof value === "object" && value !== null && !Array.isArray(value)) {
+    return value as Record<string, unknown>;
   }
-  const key = CONNECTOR_VALUE_KEYS[policySchemaId];
-  if (!key) {
+
+  if (Array.isArray(value)) {
+    const key = CONNECTOR_VALUE_KEYS[policySchemaId];
+    if (!key) {
+      return null;
+    }
+    return { [key]: value };
+  }
+
+  if (value === null || value === undefined) {
     return null;
   }
-  return { [key]: value };
+
+  return { [inferValueKey(policySchemaId)]: value };
 }
 
 /**

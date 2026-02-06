@@ -84,6 +84,32 @@ describe("chat-service", () => {
       expect(result).toHaveProperty("hasShortResponse");
       expect(result).toHaveProperty("textLength");
       expect(result).toHaveProperty("hasUIContent");
+      expect(result).toHaveProperty("onlySilentTools");
+    });
+
+    it("detects only-silent-tools step", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ actions: [] }],
+        text: "Here is the diagnosis.",
+        toolCalls: [{ toolName: "suggestActions" }],
+      });
+
+      expect(result.onlySilentTools).toBe(true);
+      expect(result.hasToolResults).toBe(false);
+    });
+
+    it("does not flag mixed tool calls as only-silent", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ events: [] }, { actions: [] }],
+        text: "Here is the diagnosis.",
+        toolCalls: [
+          { toolName: "getChromeEvents" },
+          { toolName: "suggestActions" },
+        ],
+      });
+
+      expect(result.onlySilentTools).toBe(false);
+      expect(result.hasToolResults).toBe(true);
     });
 
     it("detects ui.confirmation as UI content", () => {
@@ -150,6 +176,7 @@ describe("chat-service", () => {
           hasShortResponse: false,
           hasUIContent: false,
           textLength: 0,
+          onlySilentTools: false,
         },
         basePrompt
       );
@@ -166,6 +193,7 @@ describe("chat-service", () => {
           hasShortResponse: true,
           hasUIContent: false,
           textLength: 10,
+          onlySilentTools: false,
         },
         basePrompt
       );
@@ -182,6 +210,7 @@ describe("chat-service", () => {
           hasShortResponse: false,
           hasUIContent: false,
           textLength: 100,
+          onlySilentTools: false,
         },
         basePrompt
       );
@@ -197,6 +226,7 @@ describe("chat-service", () => {
           hasShortResponse: false,
           hasUIContent: false,
           textLength: 0,
+          onlySilentTools: false,
         },
         basePrompt
       );
@@ -212,6 +242,7 @@ describe("chat-service", () => {
           hasShortResponse: false,
           hasUIContent: true,
           textLength: 0,
+          onlySilentTools: false,
         },
         basePrompt
       );
@@ -226,10 +257,29 @@ describe("chat-service", () => {
           hasShortResponse: true,
           hasUIContent: true,
           textLength: 10,
+          onlySilentTools: false,
         },
         basePrompt
       );
       expect(result).toEqual({});
+    });
+
+    it("stops generation when text exists and only silent tools ran", () => {
+      const result = computeStepResponse(
+        {
+          hasToolResults: false,
+          hasText: true,
+          hasShortResponse: false,
+          hasUIContent: false,
+          textLength: 200,
+          onlySilentTools: true,
+        },
+        basePrompt
+      );
+
+      expect(result).toHaveProperty("toolChoice", "none");
+      expect(result).toHaveProperty("system");
+      expect(result.system as string).toContain("already complete");
     });
   });
 });
