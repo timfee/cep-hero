@@ -1,16 +1,10 @@
 import { describe, expect, it } from "bun:test";
-import { type chromepolicy_v1 } from "googleapis";
 
 import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
 
-type ResolvedPolicy =
-  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
-    policyTargetKey?: { targetResource?: string };
-  };
-
 describe("analyzeConnectorPolicies", () => {
   it("flags customer-level scoped policies as mis-scoped", () => {
-    const policies: ResolvedPolicy[] = [
+    const policies = [
       {
         policyTargetKey: { targetResource: "customers/my_customer" },
       },
@@ -33,7 +27,7 @@ describe("analyzeConnectorPolicies", () => {
   });
 
   it("returns no flag when policies are OU or group scoped", () => {
-    const policies: ResolvedPolicy[] = [
+    const policies = [
       { policyTargetKey: { targetResource: "orgunits/root" } },
       { policyTargetKey: { targetResource: "groups/123" } },
     ];

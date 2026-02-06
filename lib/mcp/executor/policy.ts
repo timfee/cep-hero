@@ -6,6 +6,7 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
+import { CONNECTOR_VALUE_KEYS } from "@/lib/mcp/constants";
 import { logApiError, logApiRequest, logApiResponse } from "@/lib/mcp/errors";
 import {
   buildOrgUnitTargetResource,
@@ -25,6 +26,7 @@ export type DraftPolicyChangeArgs = z.infer<typeof DraftPolicyChangeSchema>;
 
 /**
  * Arguments for applying a confirmed Chrome policy change.
+ * The value field may be a record or array depending on the policy schema.
  */
 export type ApplyPolicyChangeArgs = z.infer<typeof ApplyPolicyChangeSchema>;
 
@@ -95,6 +97,7 @@ interface ApplyPolicyChangeSuccess {
 
 interface ApplyPolicyChangeError {
   _type: "ui.error";
+  message: string;
   error: string;
   suggestion: string;
   policySchemaId: string;
@@ -118,6 +121,27 @@ function buildUpdateMask(value: Record<string, unknown>) {
 }
 
 /**
+ * Normalises the value argument into a Record suitable for the Chrome Policy
+ * API. When the AI sends an array (valid for Enterprise Connector policies),
+ * it is wrapped into the correct record key from CONNECTOR_VALUE_KEYS.
+ *
+ * Returns null if an array is provided for an unrecognised policy schema.
+ */
+function normalizeValue(
+  value: Record<string, unknown> | unknown[],
+  policySchemaId: string
+): Record<string, unknown> | null {
+  if (!Array.isArray(value)) {
+    return value;
+  }
+  const key = CONNECTOR_VALUE_KEYS[policySchemaId];
+  if (!key) {
+    return null;
+  }
+  return { [key]: value };
+}
+
+/**
  * Applies a confirmed policy change via the Chrome Policy API.
  */
 export async function applyPolicyChange(
@@ -131,6 +155,7 @@ export async function applyPolicyChange(
   if (!targetResource || targetResource.startsWith("customers/")) {
     return {
       _type: "ui.error",
+      message: "Invalid target: customer-level targeting is not allowed.",
       error: "Org Unit ID is required. Cannot target a customer directly.",
       suggestion:
         "Provide a valid org unit ID (e.g., 'orgunits/03ph8a2z1...' or '/Engineering').",
@@ -139,12 +164,25 @@ export async function applyPolicyChange(
     } as const;
   }
 
-  const updateMask = buildUpdateMask(args.value);
+  const normalizedValue = normalizeValue(args.value, args.policySchemaId);
+  if (!normalizedValue) {
+    return {
+      _type: "ui.error",
+      message: "Unsupported value format for this policy type.",
+      error:
+        "Array values are only supported for known EnterpriseConnectors policies.",
+      suggestion:
+        "Provide the value as a JSON object with named keys, not an array.",
+      policySchemaId: args.policySchemaId,
+      targetResource: args.targetResource,
+    } as const;
+  }
+  const updateMask = buildUpdateMask(normalizedValue);
 
   logApiRequest("apply-policy-change", {
     policySchemaId: args.policySchemaId,
     targetResource,
-    value: args.value,
+    value: normalizedValue,
     updateMask,
   });
 
@@ -157,7 +195,7 @@ export async function applyPolicyChange(
             policyTargetKey: { targetResource },
             policyValue: {
               policySchema: args.policySchemaId,
-              value: args.value,
+              value: normalizedValue,
             },
             updateMask,
           },
@@ -172,13 +210,14 @@ export async function applyPolicyChange(
       message: `Policy ${args.policySchemaId} applied successfully`,
       policySchemaId: args.policySchemaId,
       targetResource,
-      appliedValue: args.value,
+      appliedValue: normalizedValue,
     } as const;
   } catch (error: unknown) {
     logApiError("apply-policy-change", error);
 
     return {
       _type: "ui.error",
+      message: "Failed to apply policy change.",
       error:
         error instanceof Error
           ? error.message

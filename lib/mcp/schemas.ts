@@ -66,7 +66,9 @@ export const ListOrgUnitsSchema = z.object({});
  */
 export const DraftPolicyChangeSchema = z.object({
   policyName: z.string().describe("The human-readable name of the policy"),
-  proposedValue: z.any().describe("The JSON value to set"),
+  proposedValue: z
+    .union([z.record(z.string(), z.unknown()), z.array(z.unknown())])
+    .describe("The JSON value to set (object or array for connector policies)"),
   targetUnit: z
     .string()
     .describe("The Org Unit ID or path to apply this policy to"),
@@ -89,7 +91,9 @@ export const ApplyPolicyChangeSchema = z.object({
   targetResource: z
     .string()
     .describe("Target org unit resource (e.g., orgunits/03ph8a2z1en...)"),
-  value: z.record(z.string(), z.unknown()).describe("Policy value to apply"),
+  value: z
+    .union([z.record(z.string(), z.unknown()), z.array(z.unknown())])
+    .describe("Policy value to apply (object or array)"),
 });
 
 /**
