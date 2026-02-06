@@ -298,7 +298,9 @@ describe("applyPolicyChange payload validation", () => {
 
     expect(result._type).toBe("ui.error");
     if (result._type === "ui.error") {
-      expect(result.error).toContain("Org Unit ID is required");
+      expect(result.error).toContain(
+        "Org Unit ID is required. Cannot target a customer directly."
+      );
     }
   });
 

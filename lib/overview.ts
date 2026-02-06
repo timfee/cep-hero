@@ -125,42 +125,35 @@ export function sanitizeOverview(data: OverviewData): OverviewData {
 
 export const DEFAULT_SUGGESTIONS: Suggestion[] = [
   {
-    text: "Set up a DLP audit rule to monitor all traffic for sensitive data",
-    action: "Help me set up DLP to audit all traffic for sensitive data",
+    text: "Create a DLP rule",
+    action: "Create a DLP rule to audit all traffic",
     priority: 1,
     category: "security",
   },
   {
-    text: "Enable cookie encryption and disable incognito mode for better security",
-    action: "Help me turn on cookie encryption and disable incognito mode",
+    text: "Fleet overview",
+    action: "Show me a fleet overview",
     priority: 2,
-    category: "security",
+    category: "monitoring",
   },
   {
-    text: "Review your connector policies to ensure data protection is active",
-    action: "Review connector configuration",
-    priority: 3,
-    category: "compliance",
-  },
-  {
-    text: "Check recent security events for any suspicious activity",
+    text: "Recent security events",
     action: "Show recent security events",
-    priority: 4,
+    priority: 3,
     category: "monitoring",
   },
 ];
 
 export const QUICK_ACTIONS = [
   {
-    label: "Set up DLP monitoring",
+    label: "Create a DLP rule",
     description: "Audit all traffic for sensitive data",
   },
   {
-    label: "Secure browsers",
-    description: "Cookie encryption & disable incognito",
+    label: "Fleet overview",
+    description: "Summarize fleet security posture",
   },
-  { label: "Review connectors", description: "Check data protection policies" },
-  { label: "View security events", description: "Recent browser activity" },
+  { label: "Security events", description: "Recent browser activity" },
 ] as const;
 
 /**
