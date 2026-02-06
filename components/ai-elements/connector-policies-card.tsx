@@ -135,28 +135,33 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
             </p>
           )}
         </div>
-        {policies.length === 0 ? (
-          <div className="px-3 py-2 text-sm text-muted-foreground">
-            No policies were returned.
-          </div>
-        ) : (
-          <div className="divide-y divide-border">
-            {policies.slice(0, 6).map((policy, index) => {
-              const target =
-                policy.policyTargetKey?.targetResource ?? "Unknown";
-              return (
-                <div key={`${target}-${index}`} className="px-3 py-2 text-sm">
-                  <OrgUnitDisplay targetResource={target} size="md" />
-                </div>
-              );
-            })}
-            {policies.length > 6 && (
-              <div className="px-3 py-2 text-xs text-muted-foreground">
-                +{policies.length - 6} more policies not shown
-              </div>
-            )}
-          </div>
-        )}
+        <div className="px-3 py-2 text-sm">
+          {policies.length === 0 ? (
+            <span className="text-muted-foreground">
+              No policies were returned.
+            </span>
+          ) : (
+            <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
+              {policies.slice(0, 6).map((policy, index) => {
+                const target =
+                  policy.policyTargetKey?.targetResource ?? "Unknown";
+                return (
+                  <span key={`${target}-${index}`}>
+                    <OrgUnitDisplay targetResource={target} size="sm" />
+                    {index < Math.min(policies.length, 6) - 1 && (
+                      <span className="text-muted-foreground">,</span>
+                    )}
+                  </span>
+                );
+              })}
+              {policies.length > 6 && (
+                <span className="text-xs text-muted-foreground">
+                  +{policies.length - 6} more
+                </span>
+              )}
+            </span>
+          )}
+        </div>
       </div>
     </div>
   );
