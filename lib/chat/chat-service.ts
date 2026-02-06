@@ -25,6 +25,8 @@ import { type ChatMessage } from "./request-utils";
 
 export const maxDuration = 30;
 
+const CHAT_MODEL = "gemini-3-flash-preview" as const;
+
 const debugAuthSchema = z.object({});
 
 const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium.
@@ -42,6 +44,8 @@ const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Ente
 - **debugAuth**: Inspect token scopes/expiry
 - **searchKnowledge**: Search documentation for error codes, concepts, and best practices
 - **suggestActions**: Offer follow-up action buttons to the user
+
+These are internal identifiers — never surface them to users.
 
 # Safety
 Never apply changes without explicit user confirmation. Always draft first, then wait for the user to say "Confirm".
@@ -78,6 +82,10 @@ When a user reports an issue, call diagnostic tools first — don't give generic
 4. If tools fail, call debugAuth to inspect scopes
 5. Call searchKnowledge for any question about CEP features, error codes, configuration, or best practices — don't give generic advice without checking docs first
 6. After diagnostic or informational responses, call suggestActions with 2-4 context-specific follow-up options. Skip it when you've just proposed a change and are waiting for "Confirm".
+
+Never ask the user clarifying questions — not in text, not as bullet-point options, not as "would you like to..." prompts. If the query is ambiguous, pick the most likely interpretation and run the relevant tools. You can always course-correct after showing results. The ONLY way to offer follow-up options is via the suggestActions tool, never as text in your response.
+
+Never mention internal tool names (getChromeEvents, getChromeConnectorConfiguration, listDLPRules, etc.) in responses. Use natural descriptions: "checked your audit logs", "reviewed connector policies", "looked at your DLP rules".
 
 # Tone & Formatting
 Use natural language. Bold key terms. Don't use rigid section headers like "Diagnosis:" or "Evidence:" — instead use transitions like "Here's what I found", "The issue is", "I'd recommend".
@@ -140,7 +148,7 @@ function formatHits(hits: SearchHit[] | undefined, prefix: string) {
  */
 async function analyzeIntent(userMessage: string) {
   const result = await generateText({
-    model: google("gemini-2.0-flash-001"),
+    model: google(CHAT_MODEL),
     output: Output.object({
       schema: z.object({
         needsKnowledge: z
@@ -230,7 +238,7 @@ export function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-You received tool results but didn't explain them. Summarize what you found, cite specific values, and suggest next steps. Then call suggestActions.`,
+You received tool results but didn't explain them. Summarize what you found and cite specific values. Cite any sources from your context as [title](url) inline and list them under a **Sources** heading. Do NOT ask the user any questions — call suggestActions with actionable follow-ups instead.`,
   };
 }
 
@@ -241,7 +249,7 @@ export function buildShortResponseGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-Your response was brief. Expand with specific evidence from the tool results and actionable next steps. Then call suggestActions.`,
+Your response was brief. Expand with specific evidence from the tool results. Cite any sources from your context as [title](url) inline and list them under a **Sources** heading. Do NOT ask the user any questions — call suggestActions with actionable follow-ups instead.`,
   };
 }
 
@@ -302,7 +310,7 @@ export async function createChatStream({
   };
 
   const result = streamText({
-    model: google("gemini-2.0-flash-001"),
+    model: google(CHAT_MODEL),
     messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
     stopWhen: [stepCountIs(15)],
     prepareStep: ({ steps }) => {
@@ -398,9 +406,13 @@ export async function createChatStream({
 
       suggestActions: tool({
         description:
-          "Suggest follow-up actions to the user. Use this to provide clickable buttons for next steps.",
+          "Suggest 2-4 follow-up actions directly related to what you just discussed. Only suggest actions that logically follow from the current topic — never generic unrelated actions.",
         inputSchema: z.object({
-          actions: z.array(z.string()).describe("List of action commands"),
+          actions: z
+            .array(z.string())
+            .describe(
+              "Short imperative commands related to the current topic. After reviewing safe browsing, suggest 'Enable Safe Browsing for all users' — NOT 'Create a DLP rule'."
+            ),
         }),
         execute: ({ actions }) => ({ actions }),
       }),

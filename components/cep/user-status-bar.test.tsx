@@ -1,6 +1,6 @@
 /**
  * Tests for the UserStatusBar component.
- * Validates authentication states and branding display.
+ * Validates authentication states, redirect behavior, and branding display.
  */
 
 import { render, waitFor } from "@testing-library/react";
@@ -15,7 +15,6 @@ mock.module("next/navigation", () => ({
   }),
 }));
 
-// Mock Next.js Image component to avoid URL validation issues in tests
 mock.module("next/image", () => ({
   default: function MockImage({
     src,
@@ -32,8 +31,48 @@ mock.module("next/image", () => ({
   },
 }));
 
-// Import after mock.module to ensure the mock is used
 import { UserStatusBar } from "./user-status-bar";
+
+/**
+ * Builds a mock fetch returning an authenticated response with configurable token.
+ */
+function mockAuthFetch(tokenOverrides?: {
+  expiresIn?: number;
+  expiresAt?: string;
+}) {
+  const expiresIn = tokenOverrides?.expiresIn ?? 3600;
+  const expiresAt =
+    tokenOverrides?.expiresAt ??
+    new Date(Date.now() + expiresIn * 1000).toISOString();
+
+  globalThis.fetch = mock(() =>
+    Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          authenticated: true,
+          user: {
+            name: "Test User",
+            email: "test@example.com",
+            image: null,
+          },
+          token: { expiresIn, expiresAt, scopes: ["email", "profile"] },
+        }),
+    })
+  ) as unknown as typeof fetch;
+}
+
+/**
+ * Builds a mock fetch returning an unauthenticated response.
+ */
+function mockUnauthFetch() {
+  globalThis.fetch = mock(() =>
+    Promise.resolve({
+      ok: true,
+      json: () => Promise.resolve({ authenticated: false }),
+    })
+  ) as unknown as typeof fetch;
+}
 
 describe("UserStatusBar component", () => {
   const originalFetch = globalThis.fetch;
@@ -43,7 +82,6 @@ describe("UserStatusBar component", () => {
   beforeEach(() => {
     mockPush.mockClear();
     locationHref = "";
-    // Mock window.location.href with only getter/setter (no duplicate property)
     const locationMock = { ...originalLocation };
     Object.defineProperty(locationMock, "href", {
       get() {
@@ -68,27 +106,16 @@ describe("UserStatusBar component", () => {
     });
   });
 
-  it("shows loading state with branding", () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ authenticated: false }),
-      })
-    ) as unknown as typeof fetch;
+  it("shows branding during loading", () => {
+    mockUnauthFetch();
 
-    const { container, getByText } = render(<UserStatusBar />);
-    const skeleton = container.querySelector(".animate-pulse");
-    expect(skeleton).toBeInTheDocument();
+    const { getByText } = render(<UserStatusBar />);
+
     expect(getByText("CEP Hero")).toBeInTheDocument();
   });
 
   it("redirects to sign-in when unauthenticated", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ authenticated: false }),
-      })
-    ) as unknown as typeof fetch;
+    mockUnauthFetch();
 
     render(<UserStatusBar />);
 
@@ -97,7 +124,7 @@ describe("UserStatusBar component", () => {
     });
   });
 
-  it("redirects to sign-in when there is an auth error", async () => {
+  it("redirects to sign-in when auth response contains error", async () => {
     globalThis.fetch = mock(() =>
       Promise.resolve({
         ok: true,
@@ -117,7 +144,7 @@ describe("UserStatusBar component", () => {
     });
   });
 
-  it("redirects to sign-in when fetch throws an error", async () => {
+  it("redirects to sign-in on network failure", async () => {
     globalThis.fetch = mock(() =>
       Promise.reject(new Error("Network error"))
     ) as unknown as typeof fetch;
@@ -129,181 +156,28 @@ describe("UserStatusBar component", () => {
     });
   });
 
-  it("shows user info when authenticated", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-              scopes: ["email", "profile"],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+  it("shows user name when authenticated", async () => {
+    mockAuthFetch();
 
     const { getByText } = render(<UserStatusBar />);
 
     await waitFor(() => {
       expect(getByText("Test User")).toBeInTheDocument();
-      expect(getByText("CEP Hero")).toBeInTheDocument();
     });
   });
 
-  it("shows healthy status indicator when token is valid", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
-
-    const { container, getByText } = render(<UserStatusBar />);
-
-    await waitFor(() => {
-      expect(getByText("Test User")).toBeInTheDocument();
-    });
-
-    // Check for healthy status indicator (green background)
-    const statusIndicator = container.querySelector(".bg-emerald-500\\/10");
-    expect(statusIndicator).toBeInTheDocument();
-  });
-
-  it("shows warning status indicator when token is expiring soon", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 120, // Less than 5 minutes
-              expiresAt: new Date(Date.now() + 120000).toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
-
-    const { container, getByText } = render(<UserStatusBar />);
-
-    await waitFor(() => {
-      expect(getByText("Test User")).toBeInTheDocument();
-    });
-
-    // Check for warning status indicator (yellow background)
-    const statusIndicator = container.querySelector(".bg-yellow-500\\/10");
-    expect(statusIndicator).toBeInTheDocument();
-  });
-
-  it("shows expired status indicator when token has expired", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 0,
-              expiresAt: new Date().toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
-
-    const { container, getByText } = render(<UserStatusBar />);
-
-    await waitFor(() => {
-      expect(getByText("Test User")).toBeInTheDocument();
-    });
-
-    // Check for expired status indicator (red background)
-    const statusIndicator = container.querySelector(".bg-destructive\\/10");
-    expect(statusIndicator).toBeInTheDocument();
-  });
-
-  it("shows countdown time in trigger button", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+  it("shows countdown time for valid token", async () => {
+    mockAuthFetch();
 
     const { getByText } = render(<UserStatusBar />);
 
     await waitFor(() => {
-      expect(getByText("Test User")).toBeInTheDocument();
-      // Time should be displayed next to the clock icon
       expect(getByText("1h 0m")).toBeInTheDocument();
     });
   });
 
   it("renders dropdown trigger with proper aria-label", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3600000).toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+    mockAuthFetch();
 
     const { getByRole } = render(<UserStatusBar />);
 

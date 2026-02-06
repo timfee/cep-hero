@@ -84,18 +84,24 @@ function resolveOrgUnit(
   if (resolved) {
     const displayName =
       name && !name.startsWith("orgunits/") ? name : resolved.name;
+    const leaf = displayName.startsWith("/")
+      ? leafName(displayName)
+      : displayName;
+    const isRoot = leaf === "/" || resolved.path === "/";
     return {
-      displayName: displayName.startsWith("/")
-        ? leafName(displayName)
-        : displayName,
-      path: resolved.path,
+      displayName: isRoot ? "Root" : leaf,
+      path: isRoot ? null : resolved.path,
     };
   }
 
   // No context match — work with props directly
 
   if (name?.startsWith("/")) {
-    return { displayName: leafName(name), path: name };
+    const leaf = leafName(name);
+    return {
+      displayName: leaf === "/" ? "Root" : leaf,
+      path: name === "/" ? null : name,
+    };
   }
 
   if (name) {
@@ -103,7 +109,11 @@ function resolveOrgUnit(
   }
 
   if (targetResource?.startsWith("/")) {
-    return { displayName: leafName(targetResource), path: targetResource };
+    const leaf = leafName(targetResource);
+    return {
+      displayName: leaf === "/" ? "Root" : leaf,
+      path: targetResource === "/" ? null : targetResource,
+    };
   }
 
   if (targetResource?.startsWith("customers/")) {
@@ -111,14 +121,14 @@ function resolveOrgUnit(
   }
 
   if (targetResource?.startsWith("orgunits/")) {
-    return { displayName: "/", path: null };
+    return { displayName: "Root", path: null };
   }
 
   if (targetResource) {
     return { displayName: targetResource, path: null };
   }
 
-  return { displayName: "/", path: null };
+  return { displayName: "Root", path: null };
 }
 
 /**

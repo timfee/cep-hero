@@ -1,6 +1,7 @@
 /**
  * Tests for the DashboardOverview component.
- * Validates shimmer loading states and content rendering.
+ * Validates shimmer loading states, content rendering, and the contract
+ * that the chat welcome message never duplicates dashboard text.
  */
 
 import { render, waitFor } from "@testing-library/react";
@@ -69,7 +70,163 @@ mock.module("./dashboard-load-context", () => ({
   }),
 }));
 
+import type { FleetOverviewFacts } from "@/lib/mcp/fleet-overview/types";
+import type { OverviewData } from "@/lib/overview";
+
+import { generateWelcomeMessage } from "@/components/chat/welcome-message";
+import { buildFallbackOverview } from "@/lib/mcp/fleet-overview/summarize";
+
 import { DashboardOverview } from "./dashboard-overview";
+
+/**
+ * Fleet facts fixtures representing common real-world states.
+ */
+const FLEET_SCENARIOS: Record<string, FleetOverviewFacts> = {
+  allMissing: {
+    eventCount: 0,
+    blockedEventCount: 0,
+    errorEventCount: 0,
+    dlpRuleCount: 0,
+    connectorPolicyCount: 0,
+    latestEventAt: null,
+    eventWindowLabel: "7 days",
+    eventSampled: false,
+    eventSampleCount: 0,
+    errors: [],
+  },
+  allHealthy: {
+    eventCount: 100,
+    blockedEventCount: 5,
+    errorEventCount: 2,
+    dlpRuleCount: 3,
+    connectorPolicyCount: 2,
+    latestEventAt: "2026-01-07T12:00:00Z",
+    eventWindowLabel: "7 days",
+    eventSampled: false,
+    eventSampleCount: 100,
+    errors: [],
+  },
+  missingDlp: {
+    eventCount: 50,
+    blockedEventCount: 0,
+    errorEventCount: 0,
+    dlpRuleCount: 0,
+    connectorPolicyCount: 1,
+    latestEventAt: null,
+    eventWindowLabel: "7 days",
+    eventSampled: false,
+    eventSampleCount: 50,
+    errors: [],
+  },
+  missingConnectors: {
+    eventCount: 10,
+    blockedEventCount: 0,
+    errorEventCount: 0,
+    dlpRuleCount: 2,
+    connectorPolicyCount: 0,
+    latestEventAt: null,
+    eventWindowLabel: "7 days",
+    eventSampled: false,
+    eventSampleCount: 10,
+    errors: [],
+  },
+};
+
+describe("dashboard ↔ chat welcome message contract", () => {
+  for (const [scenario, facts] of Object.entries(FLEET_SCENARIOS)) {
+    it(`chat welcome message never duplicates dashboard text (${scenario})`, () => {
+      const fallback = buildFallbackOverview(facts);
+      const data: OverviewData = {
+        headline: fallback.headline,
+        summary: fallback.summary,
+        postureCards: fallback.postureCards.map((c) => ({
+          label: c.label,
+          value: c.value,
+          note: c.note,
+          source: c.source,
+          action: c.action,
+          status: c.status,
+          priority: c.priority,
+        })),
+        suggestions: fallback.suggestions,
+        sources: fallback.sources,
+      };
+
+      const welcomeMsg = generateWelcomeMessage(data);
+
+      // The welcome message must never BE the headline or summary
+      expect(welcomeMsg).not.toBe(data.headline);
+      expect(welcomeMsg).not.toBe(data.summary);
+
+      // The welcome message must never CONTAIN the headline or summary
+      // (skip trivially short strings that would create false positives)
+      if (data.headline.length > 10) {
+        expect(welcomeMsg).not.toContain(data.headline);
+      }
+      if (data.summary.length > 10) {
+        expect(welcomeMsg).not.toContain(data.summary);
+      }
+    });
+  }
+
+  it("chat welcome message never duplicates AI-generated headline", () => {
+    const aiGenerated: OverviewData = {
+      headline: "Quick fleet highlights are ready for your review.",
+      summary:
+        "Your fleet has 50 DLP rules and no critical events. I can guide you through setting up data protection rules and connector policies.",
+      postureCards: [
+        {
+          label: "Data Protection Rules",
+          value: "50 rules",
+          note: "Protecting sensitive data",
+          source: "Cloud Identity",
+          action: "List DLP rules",
+          status: "healthy",
+          priority: 3,
+        },
+        {
+          label: "Security Events",
+          value: "0 events",
+          note: "No events captured",
+          source: "Admin SDK",
+          action: "Show events",
+          status: "warning",
+          priority: 2,
+        },
+      ],
+      suggestions: [],
+      sources: ["Admin SDK Reports", "Cloud Identity"],
+    };
+
+    const welcomeMsg = generateWelcomeMessage(aiGenerated);
+
+    expect(welcomeMsg).not.toBe(aiGenerated.headline);
+    expect(welcomeMsg).not.toBe(aiGenerated.summary);
+    expect(welcomeMsg).not.toContain(aiGenerated.headline);
+    expect(welcomeMsg).not.toContain(aiGenerated.summary);
+  });
+
+  it("chat welcome message is always a meaningful introduction", () => {
+    const data: OverviewData = {
+      headline: "Fleet posture",
+      summary: "",
+      postureCards: [],
+      suggestions: [],
+      sources: [],
+    };
+
+    const withData = generateWelcomeMessage(data);
+    const withNull = generateWelcomeMessage(null);
+
+    // Both paths must identify the assistant
+    expect(withData).toContain("Chrome Enterprise Premium assistant");
+    expect(withNull).toContain("Chrome Enterprise Premium assistant");
+
+    // Both must include a call to action
+    expect(withData).toMatch(/suggestion|ask me anything/i);
+    expect(withNull).toMatch(/suggestion|ask me anything/i);
+  });
+});
 
 describe("DashboardOverview component", () => {
   const mockOnAction = mock(() => {});

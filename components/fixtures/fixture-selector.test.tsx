@@ -38,11 +38,6 @@ describe("FixtureSelector", () => {
     ) as unknown as typeof fetch;
   });
 
-  it("renders without crashing", () => {
-    const { container } = renderWithProvider(<FixtureSelector />);
-    expect(container).toBeDefined();
-  });
-
   it("fetches fixtures on mount", async () => {
     renderWithProvider(<FixtureSelector />);
 

@@ -33,7 +33,7 @@ export type EnrollmentInput = z.infer<typeof EnrollmentSchema>;
  * Strip surrounding quotes from environment variable values.
  */
 export function stripQuotes(value: string | undefined): string | undefined {
-  if (value === undefined || value === "") {
+  if (!value) {
     return undefined;
   }
   return value.replaceAll(/^['"]|['"]$/g, "");

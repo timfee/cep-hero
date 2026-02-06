@@ -115,7 +115,7 @@ function buildTextFromParsedData(
   nextSteps: string[]
 ) {
   const textLines: string[] = [];
-  if (typeof diagnosis === "string" && diagnosis.length > 0) {
+  if (diagnosis) {
     textLines.push(diagnosis);
   }
   if (nextSteps.length > 0) {
@@ -134,7 +134,7 @@ function parseJsonResponse(bodyText: string): ChatResponse | null {
     return null;
   }
   const errorMessage = parsed.data.error;
-  if (typeof errorMessage === "string" && errorMessage.length > 0) {
+  if (errorMessage) {
     return handleErrorResponse(errorMessage);
   }
   const text = buildTextFromParsedData(
