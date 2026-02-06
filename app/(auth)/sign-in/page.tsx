@@ -1,5 +1,5 @@
 /**
- * Sign-in page with options to sign in with existing account or self-enroll.
+ * Sign-in page with side-by-side sign-in and self-enrollment options.
  */
 
 "use client";
@@ -11,11 +11,21 @@ import { useCallback, useEffect, useState, useTransition } from "react";
 
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { signIn } from "@/lib/auth-client";
 import { enrollUser } from "@/lib/gimme/actions";
-import { ALLOWED_EMAIL_SUFFIX, MAX_NAME_LENGTH } from "@/lib/gimme/constants";
+import {
+  ALLOWED_EMAIL_SUFFIX,
+  MAX_NAME_LENGTH,
+  TARGET_DOMAIN,
+} from "@/lib/gimme/constants";
 
 /**
  * Handle sign-in button click.
@@ -52,7 +62,7 @@ function GoogleIcon() {
 }
 
 /**
- * Check email notification component - shown after enrollment request is processed.
+ * Check email notification shown after enrollment request is processed.
  */
 function CheckEmailNotice({
   email,
@@ -62,31 +72,27 @@ function CheckEmailNotice({
   onReset: () => void;
 }) {
   return (
-    <Card>
-      <CardContent className="pt-6">
-        <div className="space-y-4">
-          <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
-            <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-            <AlertTitle className="text-blue-800 dark:text-blue-200">
-              Check Your Email
-            </AlertTitle>
-            <AlertDescription className="text-blue-700 dark:text-blue-300">
-              We&apos;ve sent a notification to <strong>{email}</strong> with
-              the details of your request.
-            </AlertDescription>
-          </Alert>
+    <div className="space-y-4">
+      <Alert className="border-blue-200 bg-blue-50 dark:border-blue-900 dark:bg-blue-950">
+        <Mail className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+        <AlertTitle className="text-blue-800 dark:text-blue-200">
+          Check Your Email
+        </AlertTitle>
+        <AlertDescription className="text-blue-700 dark:text-blue-300">
+          We&apos;ve sent a notification to <strong>{email}</strong> with the
+          details of your request.
+        </AlertDescription>
+      </Alert>
 
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            onClick={onReset}
-          >
-            Submit Another Request
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
+      <Button
+        type="button"
+        variant="outline"
+        className="w-full"
+        onClick={onReset}
+      >
+        Submit Another Request
+      </Button>
+    </div>
   );
 }
 
@@ -133,20 +139,16 @@ function validateFields(
 }
 
 /**
- * Registration form component with client-side validation and value persistence.
+ * Registration form with client-side validation and value persistence.
  */
 function RegistrationForm() {
   const [isPending, startTransition] = useTransition();
 
-  // Controlled form values - persist across submissions
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  // Client-side validation errors
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
-
-  // Server response
   const [serverError, setServerError] = useState<string | null>(null);
   const [successEmail, setSuccessEmail] = useState<string | null>(null);
 
@@ -154,7 +156,6 @@ function RegistrationForm() {
     (e: React.FormEvent) => {
       e.preventDefault();
 
-      // Client-side validation
       const errors = validateFields(name, email, password);
       setFieldErrors(errors);
 
@@ -162,10 +163,8 @@ function RegistrationForm() {
         return;
       }
 
-      // Clear previous server error
       setServerError(null);
 
-      // Submit to server
       const formData = new FormData();
       formData.set("name", name.trim());
       formData.set("email", email.trim().toLowerCase());
@@ -193,7 +192,6 @@ function RegistrationForm() {
     setPassword("");
   }, []);
 
-  // Clear field error on change
   const handleNameChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       setName(e.target.value);
@@ -229,101 +227,92 @@ function RegistrationForm() {
   }
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Create an Account</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-3">
-          {serverError && (
-            <Alert variant="destructive" className="py-2">
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription className="text-sm">
-                {serverError}
-              </AlertDescription>
-            </Alert>
-          )}
+    <form onSubmit={handleSubmit} className="space-y-3">
+      {serverError && (
+        <Alert variant="destructive" className="py-2">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription className="text-sm">{serverError}</AlertDescription>
+        </Alert>
+      )}
 
-          <div className="space-y-1">
-            <label htmlFor="name" className="text-sm font-medium">
-              Full Name
-            </label>
-            <Input
-              id="name"
-              name="name"
-              type="text"
-              placeholder="John Doe"
-              value={name}
-              onChange={handleNameChange}
-              disabled={isPending}
-              autoComplete="name"
-              aria-invalid={!!fieldErrors.name}
-              className="border-border bg-background"
-            />
-            {fieldErrors.name && (
-              <p className="text-xs text-destructive">{fieldErrors.name}</p>
-            )}
-          </div>
+      <div className="space-y-1">
+        <label htmlFor="name" className="text-sm font-medium">
+          Full Name
+        </label>
+        <Input
+          id="name"
+          name="name"
+          type="text"
+          placeholder="John Doe"
+          value={name}
+          onChange={handleNameChange}
+          disabled={isPending}
+          autoComplete="name"
+          aria-invalid={!!fieldErrors.name}
+          className="border-border bg-background"
+        />
+        {fieldErrors.name && (
+          <p className="text-xs text-destructive">{fieldErrors.name}</p>
+        )}
+      </div>
 
-          <div className="space-y-1">
-            <label htmlFor="email" className="text-sm font-medium">
-              Google Email
-            </label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              placeholder="username@google.com"
-              value={email}
-              onChange={handleEmailChange}
-              disabled={isPending}
-              autoComplete="email"
-              aria-invalid={!!fieldErrors.email}
-              className="border-border bg-background"
-            />
-            {fieldErrors.email ? (
-              <p className="text-xs text-destructive">{fieldErrors.email}</p>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Must end with @google.com
-              </p>
-            )}
-          </div>
+      <div className="space-y-1">
+        <label htmlFor="email" className="text-sm font-medium">
+          Google Email
+        </label>
+        <Input
+          id="email"
+          name="email"
+          type="email"
+          placeholder="username@google.com"
+          value={email}
+          onChange={handleEmailChange}
+          disabled={isPending}
+          autoComplete="email"
+          aria-invalid={!!fieldErrors.email}
+          className="border-border bg-background"
+        />
+        {fieldErrors.email ? (
+          <p className="text-xs text-destructive">{fieldErrors.email}</p>
+        ) : (
+          <p className="text-xs text-muted-foreground">
+            Must end with @google.com
+          </p>
+        )}
+      </div>
 
-          <div className="space-y-1">
-            <label htmlFor="password" className="text-sm font-medium">
-              Enrollment Password
-            </label>
-            <Input
-              id="password"
-              name="password"
-              type="password"
-              placeholder="From your team lead"
-              value={password}
-              onChange={handlePasswordChange}
-              disabled={isPending}
-              autoComplete="off"
-              aria-invalid={!!fieldErrors.password}
-              className="border-border bg-background"
-            />
-            {fieldErrors.password && (
-              <p className="text-xs text-destructive">{fieldErrors.password}</p>
-            )}
-          </div>
+      <div className="space-y-1">
+        <label htmlFor="password" className="text-sm font-medium">
+          Enrollment Password
+        </label>
+        <Input
+          id="password"
+          name="password"
+          type="password"
+          placeholder="From your team lead"
+          value={password}
+          onChange={handlePasswordChange}
+          disabled={isPending}
+          autoComplete="off"
+          aria-invalid={!!fieldErrors.password}
+          className="border-border bg-background"
+        />
+        {fieldErrors.password && (
+          <p className="text-xs text-destructive">{fieldErrors.password}</p>
+        )}
+      </div>
 
-          <Button type="submit" className="w-full" disabled={isPending}>
-            {isPending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Processing...
-              </>
-            ) : (
-              "Create Account"
-            )}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending ? (
+          <>
+            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            Processing...
+          </>
+        ) : (
+          "Request Account"
+        )}
+      </Button>
+    </form>
   );
 }
 
@@ -334,7 +323,7 @@ function RegistrationForm() {
 const SIGNIN_TIMEOUT_MS = 10_000;
 
 /**
- * Sign-in page component with sign-in button and registration form.
+ * Sign-in page with side-by-side sign-in and self-enrollment cards.
  */
 export default function SignInPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
@@ -363,7 +352,7 @@ export default function SignInPage() {
       <div className="animate-gradient-shift absolute inset-0 z-0 bg-[length:400%_400%] bg-[linear-gradient(135deg,oklch(0.06_0.02_255),oklch(0.10_0.04_250),oklch(0.07_0.03_265),oklch(0.12_0.05_245),oklch(0.06_0.02_255))]" />
       <div className="animate-gradient-shift-reverse absolute inset-0 z-0 bg-[length:300%_300%] bg-[radial-gradient(ellipse_80%_60%_at_top_right,oklch(0.15_0.06_250/0.4),transparent_50%),radial-gradient(ellipse_60%_80%_at_bottom_left,oklch(0.14_0.05_270/0.3),transparent_50%)]" />
 
-      <div className="relative z-10 w-full max-w-md space-y-6">
+      <div className="relative z-10 w-full max-w-3xl space-y-6">
         {/* Branding */}
         <div className="text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl bg-muted">
@@ -377,50 +366,73 @@ export default function SignInPage() {
           </div>
           <h1 className="text-2xl font-semibold tracking-tight">CEP Hero</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Agentic CEP assistant demo
+            Internal POC playground for Chrome Enterprise
           </p>
         </div>
 
-        {/* Sign In Button */}
-        <div className="space-y-3">
-          <Button
-            className="w-full"
-            size="lg"
-            onClick={onSignIn}
-            disabled={isSigningIn}
-          >
-            {isSigningIn ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Signing in...
-              </>
-            ) : (
-              <>
-                <GoogleIcon />
-                Sign in with Google
-              </>
-            )}
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            Requires a Google Workspace admin account with Chrome management
-            permissions.
-          </p>
+        {/* Context callout */}
+        <div className="mx-auto max-w-lg rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-center text-sm text-muted-foreground">
+          This tool uses a test domain (
+          <strong className="text-foreground">{TARGET_DOMAIN}</strong>) for live
+          data access. Your @google.com credentials won&apos;t work
+          here&mdash;you need a{" "}
+          <strong className="text-foreground">{TARGET_DOMAIN}</strong> test
+          account.
         </div>
 
-        {/* Divider */}
-        <div className="relative">
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-background px-2 text-muted-foreground">
-              Or register for access
-            </span>
-          </div>
-        </div>
+        {/* Side-by-side cards */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {/* Sign In */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Sign In</CardTitle>
+              <CardDescription>
+                Already have a {TARGET_DOMAIN} account?
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <Button
+                className="w-full"
+                size="lg"
+                onClick={onSignIn}
+                disabled={isSigningIn}
+              >
+                {isSigningIn ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Signing in...
+                  </>
+                ) : (
+                  <>
+                    <GoogleIcon />
+                    Sign in with Google
+                  </>
+                )}
+              </Button>
+              <div className="rounded-md bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
+                <p className="font-medium text-foreground">Tip</p>
+                <p>
+                  Create a separate Chrome profile for your {TARGET_DOMAIN}{" "}
+                  account to avoid confusion with your corp profile.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
 
-        {/* Registration Form */}
-        <RegistrationForm />
+          {/* Get an Account */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Get an Account</CardTitle>
+              <CardDescription>
+                Enter your @google.com email and the enrollment password to get
+                a {TARGET_DOMAIN} account issued automatically.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <RegistrationForm />
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </main>
   );
