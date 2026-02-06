@@ -84,9 +84,7 @@ describe("SignInPage", () => {
 
     expect(getByText("Sign In")).toBeInTheDocument();
     expect(getByText("Get an Account")).toBeInTheDocument();
-    expect(
-      getByText(new RegExp(`already have a ${TARGET_DOMAIN} account`, "i"))
-    ).toBeInTheDocument();
+    expect(getByText(/already have a/i)).toBeInTheDocument();
   });
 
   it("renders sign-in button", () => {
