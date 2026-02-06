@@ -5,12 +5,16 @@
 import { google as googleModel } from "@ai-sdk/google";
 import { generateText, Output } from "ai";
 
-import { FleetOverviewResponseSchema } from "@/lib/mcp/schemas";
+import {
+  type FleetOverviewResponse,
+  FleetOverviewResponseSchema,
+} from "@/lib/mcp/schemas";
 
 import {
   type FleetKnowledgeContext,
   type FleetOverviewFacts,
   type FleetOverviewFallback,
+  type PostureCard,
   type Suggestion,
 } from "./types";
 
@@ -87,7 +91,105 @@ List the actual API sources used: "Admin SDK Reports", "Cloud Identity", "Chrome
 }
 
 /**
+ * Derives a deterministic status for a posture card based on its label and fleet facts.
+ * Matches the card label against known categories using keywords so AI-generated
+ * label variations (e.g. "DLP Coverage" vs "Data Protection Rules") resolve consistently.
+ */
+function resolveCardStatus(
+  label: string,
+  facts: FleetOverviewFacts
+): PostureCard["status"] {
+  const lower = label.toLowerCase();
+
+  if (
+    lower.includes("dlp") ||
+    lower.includes("data protection") ||
+    lower.includes("data loss")
+  ) {
+    return facts.dlpRuleCount > 0 ? "healthy" : "critical";
+  }
+
+  if (
+    lower.includes("event") ||
+    lower.includes("monitoring") ||
+    lower.includes("activity")
+  ) {
+    if (facts.eventCount === 0) {
+      return "warning";
+    }
+    return facts.blockedEventCount > 0 ? "warning" : "healthy";
+  }
+
+  if (lower.includes("connector")) {
+    return facts.connectorPolicyCount > 0 ? "healthy" : "critical";
+  }
+
+  return undefined;
+}
+
+/**
+ * Derives a deterministic category for a suggestion based on its text content.
+ * Ensures the same type of suggestion always gets the same color treatment.
+ */
+function resolveSuggestionCategory(
+  text: string
+): Suggestion["category"] | undefined {
+  const lower = text.toLowerCase();
+
+  if (
+    lower.includes("dlp") ||
+    lower.includes("data protection") ||
+    lower.includes("connector") ||
+    lower.includes("block") ||
+    lower.includes("encrypt")
+  ) {
+    return "security";
+  }
+
+  if (
+    lower.includes("event") ||
+    lower.includes("reporting") ||
+    lower.includes("monitor") ||
+    lower.includes("visibility")
+  ) {
+    return "monitoring";
+  }
+
+  if (lower.includes("audit") || lower.includes("compliance")) {
+    return "compliance";
+  }
+
+  return undefined;
+}
+
+/**
+ * Overrides AI-assigned posture card statuses and suggestion categories with
+ * deterministic values derived from the fleet facts and content keywords.
+ * This prevents color inconsistencies across reloads caused by non-deterministic
+ * AI output.
+ */
+export function enforceCardStyles(
+  overview: FleetOverviewResponse,
+  facts: FleetOverviewFacts
+): FleetOverviewResponse {
+  return {
+    ...overview,
+    postureCards: overview.postureCards.map((card) => {
+      const deterministic = resolveCardStatus(card.label, facts);
+      return deterministic ? { ...card, status: deterministic } : card;
+    }),
+    suggestions: overview.suggestions.map((suggestion) => {
+      const deterministic = resolveSuggestionCategory(suggestion.text);
+      return deterministic
+        ? { ...suggestion, category: deterministic }
+        : suggestion;
+    }),
+  };
+}
+
+/**
  * Uses the AI model to synthesize a narrative summary from structured facts.
+ * Enforces deterministic card statuses after AI generation.
  */
 export async function summarizeFleetOverview(
   facts: FleetOverviewFacts,
@@ -101,7 +203,11 @@ export async function summarizeFleetOverview(
     prompt: buildFleetOverviewPrompt(facts, context, knowledge),
   });
 
-  return result.output;
+  if (!result.output) {
+    return result.output;
+  }
+
+  return enforceCardStyles(result.output, facts);
 }
 
 /**

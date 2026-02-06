@@ -384,12 +384,12 @@ export default function SignInPage() {
           />
           <p>
             This tool uses a test domain (
-            <strong className="font-semibold text-amber-100">
+            <strong className="font-mono font-semibold text-amber-100">
               {TARGET_DOMAIN}
             </strong>
             ) for live data access. Your @google.com credentials won&apos;t work
             here&mdash;you need a{" "}
-            <strong className="font-semibold text-amber-100">
+            <strong className="font-mono font-semibold text-amber-100">
               {TARGET_DOMAIN}
             </strong>{" "}
             test account.
@@ -403,7 +403,8 @@ export default function SignInPage() {
             <CardHeader>
               <CardTitle className="text-lg">Sign In</CardTitle>
               <CardDescription>
-                Already have a {TARGET_DOMAIN} account?
+                Already have a{" "}
+                <span className="font-mono">{TARGET_DOMAIN}</span> account?
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -421,7 +422,8 @@ export default function SignInPage() {
                 ) : (
                   <>
                     <GoogleIcon />
-                    Sign in with {TARGET_DOMAIN}
+                    Sign in with{" "}
+                    <span className="font-mono">{TARGET_DOMAIN}</span>
                   </>
                 )}
               </Button>
@@ -435,8 +437,9 @@ export default function SignInPage() {
                     Use a separate Chrome profile
                   </p>
                   <p className="mt-0.5">
-                    Create a dedicated Chrome profile for your {TARGET_DOMAIN}{" "}
-                    account to avoid conflicts with your corp profile.
+                    Create a dedicated Chrome profile for your{" "}
+                    <span className="font-mono">{TARGET_DOMAIN}</span> account
+                    to avoid conflicts with your corp profile.
                   </p>
                 </div>
               </div>
@@ -449,7 +452,8 @@ export default function SignInPage() {
               <CardTitle className="text-lg">Get an Account</CardTitle>
               <CardDescription>
                 Enter your @google.com email and the enrollment password to get
-                a {TARGET_DOMAIN} account issued automatically.
+                a <span className="font-mono">{TARGET_DOMAIN}</span> account
+                issued automatically.
               </CardDescription>
             </CardHeader>
             <CardContent>

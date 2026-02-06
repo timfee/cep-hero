@@ -169,13 +169,13 @@ export function MobileDashboardSummary({
 
           {/* Quick status pills */}
           <div className="flex shrink-0 items-center gap-1.5">
-            {topPostureCards.slice(0, 2).map((card, idx) => {
+            {topPostureCards.slice(0, 2).map((card) => {
               const status = card.status ?? "info";
               const config = STATUS_CONFIG[status];
               const StatusIcon = config.icon;
               return (
                 <div
-                  key={idx}
+                  key={`${card.label}-${card.action}`}
                   className={cn(
                     "flex items-center gap-1 rounded-full px-2 py-0.5",
                     config.bgColor
@@ -225,14 +225,14 @@ export function MobileDashboardSummary({
                     Fleet posture
                   </h3>
                   <div className="space-y-2">
-                    {topPostureCards.map((card, idx) => {
+                    {topPostureCards.map((card) => {
                       const status = card.status ?? "info";
                       const config = STATUS_CONFIG[status];
                       const StatusIcon = config.icon;
 
                       return (
                         <button
-                          key={idx}
+                          key={`${card.label}-${card.action}`}
                           type="button"
                           onClick={() => {
                             onAction(card.action);
