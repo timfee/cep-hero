@@ -60,6 +60,10 @@ import {
   ToolOutput,
 } from "@/components/ai-elements/tool";
 import { useChatContext } from "@/components/chat/chat-context";
+import {
+  OrgUnitMapProvider,
+  type OrgUnitInfo,
+} from "@/components/ui/org-unit-context";
 import { normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
@@ -73,6 +77,18 @@ interface OrgUnitsOutput {
     parentOrgUnitId?: string;
     description?: string;
   }[];
+}
+
+/**
+ * Extracts the leaf segment from an org unit path for use as a friendly name.
+ */
+function leafNameFromPath(path: string): string {
+  if (!path || path === "/") {
+    return "/";
+  }
+
+  const segments = path.split("/").filter(Boolean);
+  return segments.at(-1) ?? path;
 }
 
 const CONFIRM_PATTERN = /^confirm\b/i;
@@ -212,34 +228,57 @@ export function ChatConsole() {
   );
 
   /**
-   * Build a map of org unit IDs to display paths from tool outputs.
+   * Build a map of org unit IDs to display info (name + path) from tool outputs.
+   * Indexes each unit under multiple key formats for flexible resolution.
    */
-  const orgUnitDisplayMap = useMemo(() => {
-    const map = new Map<string, string>();
+  const orgUnitInfoMap = useMemo(() => {
+    const map = new Map<string, OrgUnitInfo>();
 
     for (const message of messages) {
       for (const part of message.parts) {
         if (!isToolUIPart(part)) {
           continue;
         }
-        if (getToolName(part) !== "listOrgUnits") {
-          continue;
-        }
         if (part.state !== "output-available") {
           continue;
         }
-        const output = part.output as OrgUnitsOutput;
-        const orgUnits = output?.orgUnits ?? [];
-        for (const unit of orgUnits) {
-          const id = unit.orgUnitId ?? "";
-          const path = unit.orgUnitPath ?? unit.name ?? "";
-          if (!id || !path) {
-            continue;
+
+        const toolName = getToolName(part);
+
+        // Primary source: listOrgUnits provides the full org unit list
+        if (toolName === "listOrgUnits") {
+          const output = part.output as OrgUnitsOutput;
+          const orgUnits = output?.orgUnits ?? [];
+          for (const unit of orgUnits) {
+            const id = unit.orgUnitId ?? "";
+            const path = unit.orgUnitPath ?? unit.name ?? "";
+            const name = unit.name ?? leafNameFromPath(path);
+            if (!id || !path) {
+              continue;
+            }
+            const info: OrgUnitInfo = { name, path };
+            const normalized = normalizeResource(id);
+            map.set(normalized, info);
+            map.set(`orgunits/${normalized}`, info);
+            map.set(`id:${normalized}`, info);
           }
-          const normalized = normalizeResource(id);
-          map.set(normalized, path);
-          map.set(`orgunits/${normalized}`, path);
-          map.set(`id:${normalized}`, path);
+        }
+
+        // Secondary source: connector config provides targetResource + targetResourceName
+        if (toolName === "getChromeConnectorConfiguration") {
+          const output = part.output as ConnectorConfigOutput;
+          const target = output?.targetResource;
+          const targetName = output?.targetResourceName;
+          if (target && targetName) {
+            const normalized = normalizeResource(target);
+            const info: OrgUnitInfo = {
+              name: leafNameFromPath(targetName),
+              path: targetName,
+            };
+            if (!map.has(normalized)) {
+              map.set(normalized, info);
+            }
+          }
         }
       }
     }
@@ -248,13 +287,13 @@ export function ChatConsole() {
   }, [messages]);
 
   const rootOrgUnitId = useMemo(() => {
-    for (const [key, value] of orgUnitDisplayMap.entries()) {
-      if (value === "/") {
+    for (const [key, info] of orgUnitInfoMap.entries()) {
+      if (info.path === "/") {
         return key.replace(/^orgunits\//, "").replace(/^id:/, "");
       }
     }
     return null;
-  }, [orgUnitDisplayMap]);
+  }, [orgUnitInfoMap]);
 
   /**
    * Replace org unit IDs in text with human-readable paths.
@@ -263,9 +302,9 @@ export function ChatConsole() {
     (text: string) =>
       text.replace(/orgunits\/[a-z0-9-]+/gi, (match) => {
         const normalized = normalizeResource(match);
-        const resolved = orgUnitDisplayMap.get(normalized);
+        const resolved = orgUnitInfoMap.get(normalized);
         if (resolved) {
-          return resolved;
+          return resolved.path;
         }
         const normalizedId = normalized.replace(/^orgunits\//, "");
         if (rootOrgUnitId && normalizedId === rootOrgUnitId) {
@@ -273,7 +312,7 @@ export function ChatConsole() {
         }
         return "an org unit";
       }),
-    [orgUnitDisplayMap, rootOrgUnitId]
+    [orgUnitInfoMap, rootOrgUnitId]
   );
 
   const emptyStateActions = useMemo(() => {
@@ -367,273 +406,277 @@ export function ChatConsole() {
   );
 
   return (
-    <div className="flex h-full flex-col rounded-lg border border-border bg-card">
-      <Conversation className="flex-1">
-        <ConversationContent className="p-4 lg:p-6">
-          {messages.length === 0 && !isStreaming && (
-            <div className="space-y-4">
-              <Message from="assistant" className="bg-muted p-4 lg:p-6">
-                <MessageContent>
-                  <MessageResponse>
-                    {sanitizeOrgUnitsInText(welcomeMessage)}
-                  </MessageResponse>
-                </MessageContent>
-              </Message>
-              <div className="pl-4 lg:pl-6">
-                <ActionButtons
-                  actions={emptyStateActions}
-                  onAction={handleAction}
-                  disabled={isStreaming}
-                  resetKey={status}
-                />
+    <OrgUnitMapProvider map={orgUnitInfoMap}>
+      <div className="flex h-full flex-col rounded-lg border border-border bg-card">
+        <Conversation className="flex-1">
+          <ConversationContent className="p-4 lg:p-6">
+            {messages.length === 0 && !isStreaming && (
+              <div className="space-y-4">
+                <Message from="assistant" className="bg-muted p-4 lg:p-6">
+                  <MessageContent>
+                    <MessageResponse>
+                      {sanitizeOrgUnitsInText(welcomeMessage)}
+                    </MessageResponse>
+                  </MessageContent>
+                </Message>
+                <div className="pl-4 lg:pl-6">
+                  <ActionButtons
+                    actions={emptyStateActions}
+                    onAction={handleAction}
+                    disabled={isStreaming}
+                    resetKey={status}
+                  />
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {messages.map((message, index) => {
-            const isUser = message.role === "user";
-            const isLast = index === messages.length - 1;
-            const suggestedActions = getSuggestedActionsForMessage(message);
-            const actionsToRender = deriveActions(
-              suggestedActions,
-              isStreaming
-            );
+            {messages.map((message, index) => {
+              const isUser = message.role === "user";
+              const isLast = index === messages.length - 1;
+              const suggestedActions = getSuggestedActionsForMessage(message);
+              const actionsToRender = deriveActions(
+                suggestedActions,
+                isStreaming
+              );
 
-            return (
-              <div key={message.id || index} className="space-y-4">
-                {message.parts.map((part, i) => {
-                  const partKey = `${message.id || index}-${i}`;
+              return (
+                <div key={message.id || index} className="space-y-4">
+                  {message.parts.map((part, i) => {
+                    const partKey = `${message.id || index}-${i}`;
 
-                  if (part.type === "reasoning") {
-                    return (
-                      <Reasoning
-                        key={partKey}
-                        isStreaming={isStreaming && isLast}
-                      >
-                        <ReasoningTrigger />
-                        <ReasoningContent>{part.text}</ReasoningContent>
-                      </Reasoning>
-                    );
-                  }
-
-                  if (part.type === "text") {
-                    return (
-                      <Message
-                        key={partKey}
-                        from={message.role}
-                        className={cn(
-                          isUser ? "bg-transparent" : "bg-muted p-4 lg:p-6"
-                        )}
-                      >
-                        <MessageContent>
-                          <MessageResponse>
-                            {sanitizeOrgUnitsInText(part.text)}
-                          </MessageResponse>
-                        </MessageContent>
-                        {!isUser && (
-                          <MessageActions>
-                            <MessageAction
-                              onClick={async () => {
-                                await track("Response Regenerated");
-                                regenerate();
-                              }}
-                              tooltip="Regenerate"
-                            >
-                              <RefreshCcwIcon className="size-4" />
-                            </MessageAction>
-                            <MessageAction
-                              onClick={async () => {
-                                await track("Response Copied");
-                                await navigator.clipboard.writeText(part.text);
-                              }}
-                              tooltip="Copy"
-                            >
-                              <CopyIcon className="size-4" />
-                            </MessageAction>
-                          </MessageActions>
-                        )}
-                      </Message>
-                    );
-                  }
-
-                  if (isToolUIPart(part)) {
-                    const toolName = getToolName(part);
-                    const toolPart = part as ToolPart;
-
-                    if (toolName === "suggestActions") {
-                      return null;
-                    }
-
-                    if (
-                      toolName === "listOrgUnits" &&
-                      toolPart.state === "output-available"
-                    ) {
+                    if (part.type === "reasoning") {
                       return (
-                        <div key={partKey} className="pl-4 lg:pl-6">
-                          <OrgUnitsList
-                            data={(toolPart.output as OrgUnitsOutput) ?? {}}
-                          />
-                        </div>
+                        <Reasoning
+                          key={partKey}
+                          isStreaming={isStreaming && isLast}
+                        >
+                          <ReasoningTrigger />
+                          <ReasoningContent>{part.text}</ReasoningContent>
+                        </Reasoning>
                       );
                     }
 
-                    if (
-                      toolName === "getChromeEvents" &&
-                      toolPart.state === "output-available"
-                    ) {
+                    if (part.type === "text") {
                       return (
-                        <div key={partKey} className="pl-4 lg:pl-6">
-                          <EventsTable
-                            output={
-                              (toolPart.output as ChromeEventsOutput) ?? {}
-                            }
-                          />
-                        </div>
+                        <Message
+                          key={partKey}
+                          from={message.role}
+                          className={cn(
+                            isUser ? "bg-transparent" : "bg-muted p-4 lg:p-6"
+                          )}
+                        >
+                          <MessageContent>
+                            <MessageResponse>
+                              {sanitizeOrgUnitsInText(part.text)}
+                            </MessageResponse>
+                          </MessageContent>
+                          {!isUser && (
+                            <MessageActions>
+                              <MessageAction
+                                onClick={async () => {
+                                  await track("Response Regenerated");
+                                  regenerate();
+                                }}
+                                tooltip="Regenerate"
+                              >
+                                <RefreshCcwIcon className="size-4" />
+                              </MessageAction>
+                              <MessageAction
+                                onClick={async () => {
+                                  await track("Response Copied");
+                                  await navigator.clipboard.writeText(
+                                    part.text
+                                  );
+                                }}
+                                tooltip="Copy"
+                              >
+                                <CopyIcon className="size-4" />
+                              </MessageAction>
+                            </MessageActions>
+                          )}
+                        </Message>
                       );
                     }
 
-                    if (
-                      toolName === "listDLPRules" &&
-                      toolPart.state === "output-available"
-                    ) {
-                      return (
-                        <div key={partKey} className="pl-4 lg:pl-6">
-                          <DlpRulesCard
-                            output={(toolPart.output as DlpRulesOutput) ?? {}}
-                          />
-                        </div>
-                      );
-                    }
+                    if (isToolUIPart(part)) {
+                      const toolName = getToolName(part);
+                      const toolPart = part as ToolPart;
 
-                    if (
-                      toolName === "getChromeConnectorConfiguration" &&
-                      toolPart.state === "output-available"
-                    ) {
-                      return (
-                        <div key={partKey} className="pl-4 lg:pl-6">
-                          <ConnectorPoliciesCard
-                            output={
-                              (toolPart.output as ConnectorConfigOutput) ?? {}
-                            }
-                          />
-                        </div>
-                      );
-                    }
+                      if (toolName === "suggestActions") {
+                        return null;
+                      }
 
-                    if (
-                      toolName === "draftPolicyChange" &&
-                      toolPart.state === "output-available"
-                    ) {
-                      const output =
-                        toolPart.output as PolicyChangeConfirmationOutput;
-                      if (output?._type === "ui.confirmation") {
-                        const proposalId = output.proposalId ?? partKey;
+                      if (
+                        toolName === "listOrgUnits" &&
+                        toolPart.state === "output-available"
+                      ) {
                         return (
                           <div key={partKey} className="pl-4 lg:pl-6">
-                            <PolicyChangeConfirmation
-                              proposal={output}
-                              onConfirm={() => {
-                                setApplyingProposalId(proposalId);
-                                void sendMessage({ text: "Confirm" });
-                              }}
-                              onCancel={() => {
-                                void sendMessage({ text: "Cancel" });
-                              }}
-                              isApplying={applyingProposalId === proposalId}
+                            <OrgUnitsList
+                              data={(toolPart.output as OrgUnitsOutput) ?? {}}
                             />
                           </div>
                         );
                       }
-                    }
 
-                    const headerProps =
-                      toolPart.type === "dynamic-tool"
-                        ? {
-                            type: toolPart.type,
-                            state: toolPart.state,
-                            toolName,
-                          }
-                        : { type: toolPart.type, state: toolPart.state };
-
-                    return (
-                      <Tool key={partKey}>
-                        <ToolHeader {...headerProps} />
-                        <ToolContent>
-                          <ToolInput input={toolPart.input} />
-                          {toolPart.state === "output-available" && (
-                            <ToolOutput
-                              output={toolPart.output}
-                              errorText={undefined}
-                            />
-                          )}
-                          {toolPart.state === "output-error" && (
-                            <ToolOutput
-                              output={undefined}
-                              errorText={
-                                toolPart.errorText ??
-                                (toolPart as { error?: string }).error
+                      if (
+                        toolName === "getChromeEvents" &&
+                        toolPart.state === "output-available"
+                      ) {
+                        return (
+                          <div key={partKey} className="pl-4 lg:pl-6">
+                            <EventsTable
+                              output={
+                                (toolPart.output as ChromeEventsOutput) ?? {}
                               }
                             />
-                          )}
-                        </ToolContent>
-                      </Tool>
-                    );
-                  }
+                          </div>
+                        );
+                      }
 
-                  return null;
-                })}
+                      if (
+                        toolName === "listDLPRules" &&
+                        toolPart.state === "output-available"
+                      ) {
+                        return (
+                          <div key={partKey} className="pl-4 lg:pl-6">
+                            <DlpRulesCard
+                              output={(toolPart.output as DlpRulesOutput) ?? {}}
+                            />
+                          </div>
+                        );
+                      }
 
-                {!isUser && isLast && actionsToRender.length > 0 && (
-                  <div className="pl-4 lg:pl-6">
-                    <ActionButtons
-                      actions={actionsToRender}
-                      onAction={handleAction}
-                      disabled={isStreaming}
-                      resetKey={`${message.id ?? index}-${status}`}
-                    />
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                      if (
+                        toolName === "getChromeConnectorConfiguration" &&
+                        toolPart.state === "output-available"
+                      ) {
+                        return (
+                          <div key={partKey} className="pl-4 lg:pl-6">
+                            <ConnectorPoliciesCard
+                              output={
+                                (toolPart.output as ConnectorConfigOutput) ?? {}
+                              }
+                            />
+                          </div>
+                        );
+                      }
 
-          {isWaitingForResponse && (
-            <div className="pl-4 lg:pl-6">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <div className="flex gap-1">
-                  {[0, 1, 2].map((i) => (
-                    <span
-                      key={i}
-                      className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse"
-                      style={{ animationDelay: `${i * 150}ms` }}
-                    />
-                  ))}
+                      if (
+                        toolName === "draftPolicyChange" &&
+                        toolPart.state === "output-available"
+                      ) {
+                        const output =
+                          toolPart.output as PolicyChangeConfirmationOutput;
+                        if (output?._type === "ui.confirmation") {
+                          const proposalId = output.proposalId ?? partKey;
+                          return (
+                            <div key={partKey} className="pl-4 lg:pl-6">
+                              <PolicyChangeConfirmation
+                                proposal={output}
+                                onConfirm={() => {
+                                  setApplyingProposalId(proposalId);
+                                  void sendMessage({ text: "Confirm" });
+                                }}
+                                onCancel={() => {
+                                  void sendMessage({ text: "Cancel" });
+                                }}
+                                isApplying={applyingProposalId === proposalId}
+                              />
+                            </div>
+                          );
+                        }
+                      }
+
+                      const headerProps =
+                        toolPart.type === "dynamic-tool"
+                          ? {
+                              type: toolPart.type,
+                              state: toolPart.state,
+                              toolName,
+                            }
+                          : { type: toolPart.type, state: toolPart.state };
+
+                      return (
+                        <Tool key={partKey}>
+                          <ToolHeader {...headerProps} />
+                          <ToolContent>
+                            <ToolInput input={toolPart.input} />
+                            {toolPart.state === "output-available" && (
+                              <ToolOutput
+                                output={toolPart.output}
+                                errorText={undefined}
+                              />
+                            )}
+                            {toolPart.state === "output-error" && (
+                              <ToolOutput
+                                output={undefined}
+                                errorText={
+                                  toolPart.errorText ??
+                                  (toolPart as { error?: string }).error
+                                }
+                              />
+                            )}
+                          </ToolContent>
+                        </Tool>
+                      );
+                    }
+
+                    return null;
+                  })}
+
+                  {!isUser && isLast && actionsToRender.length > 0 && (
+                    <div className="pl-4 lg:pl-6">
+                      <ActionButtons
+                        actions={actionsToRender}
+                        onAction={handleAction}
+                        disabled={isStreaming}
+                        resetKey={`${message.id ?? index}-${status}`}
+                      />
+                    </div>
+                  )}
                 </div>
-                <span>Thinking...</span>
+              );
+            })}
+
+            {isWaitingForResponse && (
+              <div className="pl-4 lg:pl-6">
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <div className="flex gap-1">
+                    {[0, 1, 2].map((i) => (
+                      <span
+                        key={i}
+                        className="h-1.5 w-1.5 rounded-full bg-muted-foreground animate-pulse"
+                        style={{ animationDelay: `${i * 150}ms` }}
+                      />
+                    ))}
+                  </div>
+                  <span>Thinking...</span>
+                </div>
               </div>
-            </div>
-          )}
-        </ConversationContent>
+            )}
+          </ConversationContent>
 
-        <ConversationScrollButton />
-      </Conversation>
+          <ConversationScrollButton />
+        </Conversation>
 
-      <div className="border-t p-4 lg:p-6">
-        <PromptInput onSubmit={handleSubmit} className="relative">
-          <PromptInputBody>
-            <PromptInputTextarea
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="What would you like to know?"
-              className="min-h-16 pr-12"
-            />
-          </PromptInputBody>
-          <PromptInputFooter>
-            <div />
-            <PromptInputSubmit status={status} onStop={stop} />
-          </PromptInputFooter>
-        </PromptInput>
+        <div className="border-t p-4 lg:p-6">
+          <PromptInput onSubmit={handleSubmit} className="relative">
+            <PromptInputBody>
+              <PromptInputTextarea
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="What would you like to know?"
+                className="min-h-16 pr-12"
+              />
+            </PromptInputBody>
+            <PromptInputFooter>
+              <div />
+              <PromptInputSubmit status={status} onStop={stop} />
+            </PromptInputFooter>
+          </PromptInput>
+        </div>
       </div>
-    </div>
+    </OrgUnitMapProvider>
   );
 }

@@ -16,15 +16,51 @@ import {
 } from "lucide-react";
 import { isValidElement } from "react";
 
+import type { OrgUnitInfo } from "@/components/ui/org-unit-context";
+
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useOrgUnitMap } from "@/components/ui/org-unit-context";
+import { normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { CodeBlock } from "./code-block";
+
+/**
+ * Replaces org unit ID patterns in a JSON string with human-readable paths.
+ * Handles "orgunits/abc123" and "id:abc123" patterns found in tool output.
+ */
+function sanitizeOrgUnitIdsInJson(
+  json: string,
+  orgUnitMap: Map<string, OrgUnitInfo>
+): string {
+  if (orgUnitMap.size === 0) {
+    return json;
+  }
+
+  return json.replace(/(?:orgunits|id:)\/?\b[a-z0-9_-]+\b/gi, (match) => {
+    const normalized = normalizeResource(match);
+    const info = orgUnitMap.get(normalized);
+    if (info) {
+      return info.path;
+    }
+
+    // Also try with orgunits/ prefix for bare IDs after id: stripping
+    if (!normalized.startsWith("orgunits/")) {
+      const withPrefix = `orgunits/${normalized}`;
+      const prefixInfo = orgUnitMap.get(withPrefix);
+      if (prefixInfo) {
+        return prefixInfo.path;
+      }
+    }
+
+    return match;
+  });
+}
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -196,17 +232,25 @@ export type ToolInputProps = ComponentProps<"div"> & {
 
 /**
  * Displays tool input parameters as formatted JSON in a code block.
+ * Org unit IDs are replaced with human-readable paths when the context is available.
  */
-export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
-    <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-      Parameters
-    </h4>
-    <div className="rounded-md bg-muted/50">
-      <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
+  const orgUnitMap = useOrgUnitMap();
+  const json = sanitizeOrgUnitIdsInJson(
+    JSON.stringify(input, null, 2),
+    orgUnitMap
+  );
+  return (
+    <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
+      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        Parameters
+      </h4>
+      <div className="rounded-md bg-muted/50">
+        <CodeBlock code={json} language="json" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolPart["output"];
@@ -215,6 +259,7 @@ export type ToolOutputProps = ComponentProps<"div"> & {
 
 /**
  * Displays tool execution results or error messages with appropriate styling.
+ * Org unit IDs in JSON output are replaced with human-readable paths.
  */
 export const ToolOutput = ({
   className,
@@ -222,6 +267,8 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
+  const orgUnitMap = useOrgUnitMap();
+
   if (!(output || errorText)) {
     return null;
   }
@@ -229,11 +276,14 @@ export const ToolOutput = ({
   let Output = <div>{output as ReactNode}</div>;
 
   if (typeof output === "object" && !isValidElement(output)) {
-    Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+    const json = sanitizeOrgUnitIdsInJson(
+      JSON.stringify(output, null, 2),
+      orgUnitMap
     );
+    Output = <CodeBlock code={json} language="json" />;
   } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />;
+    const sanitized = sanitizeOrgUnitIdsInJson(output, orgUnitMap);
+    Output = <CodeBlock code={sanitized} language="json" />;
   }
 
   return (
