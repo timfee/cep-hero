@@ -131,7 +131,7 @@ export function UserStatusBar() {
         Math.floor((expiresAtRef.current - Date.now()) / 1000)
       );
       setLocalExpiresIn(remaining);
-    }, 1000);
+    }, 60_000);
 
     return () => clearInterval(timer);
   }, [status.data?.token?.expiresIn, isDefaultUser]);
@@ -213,7 +213,7 @@ export function UserStatusBar() {
       return {
         bgColor: "bg-yellow-500/10",
         textColor: "text-yellow-500",
-        text: formatTimeRemaining(localExpiresIn ?? 0, true),
+        text: formatTimeRemaining(localExpiresIn ?? 0),
       };
     }
     return {
