@@ -10,7 +10,9 @@ import {
   type chromemanagement_v1,
 } from "googleapis";
 
+import { stripQuotes } from "@/lib/gimme/validation";
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
+import { getErrorMessage } from "@/lib/mcp/errors";
 
 type Directory = admin_directory_v1.Admin;
 type ChromePolicy = chromepolicy_v1.Chromepolicy;
@@ -81,16 +83,6 @@ function createGoogleApiClients(auth: OAuth2Client) {
 }
 
 /**
- * Strip surrounding quotes from environment variable values.
- */
-function stripQuotes(value: string | undefined) {
-  if (value === undefined || value === "") {
-    return;
-  }
-  return value.replaceAll(/^['"]|['"]$/g, "");
-}
-
-/**
  * Create and configure all Google Admin SDK clients.
  */
 export async function makeGoogleClients(): Promise<GoogleClients> {
@@ -124,22 +116,6 @@ export async function detectPrimaryDomain() {
   const domains = await listDomains();
   const primary = domains.find((domain) => domain.isPrimary) ?? domains[0];
   return primary?.domainName ?? null;
-}
-
-/**
- * Normalize error values to a message string.
- */
-function getErrorMessage(error: unknown) {
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  const message =
-    error && typeof error === "object"
-      ? Reflect.get(error, "message")
-      : undefined;
-
-  return typeof message === "string" ? message : "Unknown error";
 }
 
 /**

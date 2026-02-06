@@ -13,6 +13,7 @@
 
 import { loadEnvConfig } from "@next/env";
 
+import { stripQuotes } from "@/lib/gimme/validation";
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
 loadEnvConfig(process.cwd());
@@ -25,16 +26,6 @@ const DLP_SCOPES = [
 const CHROME_POLICY_SCOPES = [
   "https://www.googleapis.com/auth/chrome.management.policy",
 ];
-
-/**
- * Strip quotes from environment variable values.
- */
-function stripQuotes(value: string | undefined) {
-  if (!value) {
-    return undefined;
-  }
-  return value.replaceAll(/^['"]|['"]$/g, "");
-}
 
 /**
  * Test Cloud Identity v1beta1 policies.list API directly.

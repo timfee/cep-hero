@@ -9,12 +9,16 @@ import {
 
 const executor = new FixtureToolExecutor(loadFixtureData({}));
 
+const TOOL_NAME_PATTERN =
+  /getChromeEvents|getChromeConnectorConfiguration|listDLPRules|createDLPRule|draftPolicyChange|applyPolicyChange|enrollBrowser|listOrgUnits|getFleetOverview|debugAuth|searchKnowledge|suggestActions/;
+
 interface TurnResult {
   toolCalls: string[];
   text: string;
   hasCitations: boolean;
   hasSourcesHeading: boolean;
   questionMarks: number;
+  hasToolNameLeak: boolean;
 }
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
@@ -63,6 +67,7 @@ async function chatTurn(
   const hasCitations = fullText.includes("[") && fullText.includes("](http");
   const hasSourcesHeading = fullText.toLowerCase().includes("sources");
   const questionMarks = (fullText.match(/\?/g) || []).length;
+  const hasToolNameLeak = TOOL_NAME_PATTERN.test(fullText);
 
   console.log("TOOLS: [" + uniqueTools.join(", ") + "]");
   console.log("RESPONSE: " + fullText.slice(0, 800));
@@ -70,6 +75,7 @@ async function chatTurn(
     "CITATIONS: inline=" + hasCitations + " sources=" + hasSourcesHeading
   );
   console.log("QUESTIONS: " + questionMarks);
+  console.log("TOOL_NAME_LEAK: " + hasToolNameLeak);
 
   return {
     result: {
@@ -78,6 +84,7 @@ async function chatTurn(
       hasCitations,
       hasSourcesHeading,
       questionMarks,
+      hasToolNameLeak,
     },
     updatedMessages: [
       ...updatedMessages,
@@ -203,14 +210,75 @@ async function main() {
     "Turn 1: Check connectors"
   );
 
-  const f5pass = f5t1.result.toolCalls.includes(
-    "getChromeConnectorConfiguration"
-  );
+  const f5pass =
+    f5t1.result.toolCalls.includes("getChromeConnectorConfiguration") &&
+    f5t1.result.hasCitations;
   console.log(
     "\nFLOW 5 VERDICT: " +
       (f5pass ? "PASS" : "FAIL") +
       " (tools: " +
       f5t1.result.toolCalls.join(", ") +
+      ", citations: " +
+      f5t1.result.hasCitations +
+      ")"
+  );
+
+  console.log("\n" + "=".repeat(70));
+  console.log(
+    "FLOW 6: Safe browsing review (no questions, no tool name leak, uses tools, has citations)"
+  );
+  console.log("=".repeat(70));
+
+  msgs = [];
+  const f6t1 = await chatTurn(
+    msgs,
+    "Review our safe browsing settings",
+    "Turn 1: Review safe browsing"
+  );
+
+  const f6noQuestions = f6t1.result.questionMarks <= 1;
+  const f6noLeak = !f6t1.result.hasToolNameLeak;
+  const f6usedTools = f6t1.result.toolCalls.length > 0;
+  const f6hasCitations = f6t1.result.hasCitations;
+  const f6pass = f6noQuestions && f6noLeak && f6usedTools && f6hasCitations;
+  console.log(
+    "\nFLOW 6 VERDICT: " +
+      (f6pass ? "PASS" : "FAIL") +
+      " (questions: " +
+      f6t1.result.questionMarks +
+      ", toolNameLeak: " +
+      f6t1.result.hasToolNameLeak +
+      ", citations: " +
+      f6t1.result.hasCitations +
+      ", tools: " +
+      f6t1.result.toolCalls.join(", ") +
+      ")"
+  );
+
+  console.log("\n" + "=".repeat(70));
+  console.log("FLOW 7: Ambiguous fleet query (should use tools, not ask)");
+  console.log("=".repeat(70));
+
+  msgs = [];
+  const f7t1 = await chatTurn(
+    msgs,
+    "What's going on with our fleet?",
+    "Turn 1: Ambiguous fleet query"
+  );
+
+  const f7usedTools = f7t1.result.toolCalls.length > 0;
+  const f7noQuestions = f7t1.result.questionMarks <= 1;
+  const f7noLeak = !f7t1.result.hasToolNameLeak;
+  const f7pass = f7usedTools && f7noQuestions && f7noLeak;
+  console.log(
+    "\nFLOW 7 VERDICT: " +
+      (f7pass ? "PASS" : "FAIL") +
+      " (questions: " +
+      f7t1.result.questionMarks +
+      ", toolNameLeak: " +
+      f7t1.result.hasToolNameLeak +
+      ", tools: " +
+      f7t1.result.toolCalls.join(", ") +
       ")"
   );
 
@@ -222,7 +290,9 @@ async function main() {
     { name: "Event reporting", pass: f2pass },
     { name: "Policy + confirm", pass: f3pass },
     { name: "Knowledge citations", pass: f4pass },
-    { name: "Connector check", pass: f5pass },
+    { name: "Connector check + citations", pass: f5pass },
+    { name: "Safe browsing (no questions/leak/citations)", pass: f6pass },
+    { name: "Ambiguous fleet query", pass: f7pass },
   ];
   for (const r of results) {
     console.log("  " + (r.pass ? "PASS" : "FAIL") + " " + r.name);

@@ -7,6 +7,7 @@
  * development or controlled demo environments, never in production.
  */
 
+import { stripQuotes } from "@/lib/gimme/validation";
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 
 /**
@@ -62,8 +63,7 @@ export function getDefaultUserEmail(): string | null {
     return null;
   }
 
-  const email = process.env.GOOGLE_TOKEN_EMAIL ?? "";
-  return email.replaceAll(/^['"]|['"]$/g, "");
+  return stripQuotes(process.env.GOOGLE_TOKEN_EMAIL) ?? "";
 }
 
 /**
