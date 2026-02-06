@@ -1,7 +1,7 @@
 /**
  * Tests for the OrgUnitDisplay component.
  * Validates both context-free fallback rendering and context-based resolution
- * of org unit IDs to friendly name + path pill format.
+ * of org unit IDs to friendly inline name (path) format.
  */
 
 import { render } from "@testing-library/react";
@@ -27,22 +27,19 @@ function renderWithContext(
 
 describe("OrgUnitDisplay", () => {
   describe("without context (fallback behavior)", () => {
-    it("extracts leaf name from path and shows path pill for multi-segment paths", () => {
+    it("extracts leaf name from path and shows path for multi-segment paths", () => {
       const { container } = render(<OrgUnitDisplay name="/Sales/West Coast" />);
 
       expect(container.textContent).toContain("West Coast");
-      expect(container.textContent).toContain("/Sales/West Coast");
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(1);
+      expect(container.textContent).toContain("(/Sales/West Coast)");
     });
 
-    it("shows leaf name without pill for single-segment paths", () => {
+    it("shows leaf name without path for single-segment paths", () => {
       const { container } = render(<OrgUnitDisplay name="/Engineering" />);
 
       expect(container.textContent).toContain("Engineering");
-      // No pill — path "/Engineering" matches "/${displayName}"
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      // No path shown — "/Engineering" matches "/${displayName}"
+      expect(container.textContent).not.toContain("(");
     });
 
     it("shows root indicator for orgunits/ without context", () => {
@@ -57,8 +54,7 @@ describe("OrgUnitDisplay", () => {
       const { container } = render(<OrgUnitDisplay name="Engineering" />);
 
       expect(container.textContent).toContain("Engineering");
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      expect(container.textContent).not.toContain("(");
     });
 
     it("shows Organization for customers/ prefix", () => {
@@ -99,16 +95,14 @@ describe("OrgUnitDisplay", () => {
       expect(container.textContent).toContain("Engineering");
     });
 
-    it("resolves nested org unit ID to name + path pill", () => {
+    it("resolves nested org unit ID to name with path in parentheses", () => {
       const { container } = renderWithContext(
         { targetResource: "orgunits/xyz789" },
         [["orgunits/xyz789", { name: "West Coast", path: "/Sales/West Coast" }]]
       );
 
       expect(container.textContent).toContain("West Coast");
-      expect(container.textContent).toContain("/Sales/West Coast");
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(1);
+      expect(container.textContent).toContain("(/Sales/West Coast)");
     });
 
     it("resolves bare id prop via context", () => {
@@ -137,36 +131,31 @@ describe("OrgUnitDisplay", () => {
     });
   });
 
-  describe("path pill display logic", () => {
-    it("does not show pill when path matches /${displayName}", () => {
+  describe("path display logic", () => {
+    it("does not show path when it matches /${displayName}", () => {
       const { container } = render(<OrgUnitDisplay name="/Engineering" />);
 
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      expect(container.textContent).not.toContain("(");
     });
 
-    it("shows pill for multi-segment paths", () => {
+    it("shows path in parentheses for multi-segment paths", () => {
       const { container } = render(<OrgUnitDisplay name="/Sales/West Coast" />);
 
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(1);
-      expect(pills[0]?.textContent).toBe("/Sales/West Coast");
+      expect(container.textContent).toContain("(/Sales/West Coast)");
     });
 
-    it("does not show pill when path equals displayName", () => {
+    it("does not show path when it equals displayName", () => {
       const { container } = render(<OrgUnitDisplay name="Engineering" />);
 
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      expect(container.textContent).not.toContain("(");
     });
 
-    it("does not show pill for paths matching name with id prop", () => {
+    it("does not show path for matching name with id prop", () => {
       const { container } = render(
         <OrgUnitDisplay name="/Engineering" id="/Engineering" />
       );
 
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      expect(container.textContent).not.toContain("(");
     });
   });
 
@@ -174,15 +163,15 @@ describe("OrgUnitDisplay", () => {
     it("applies sm size classes by default", () => {
       const { container } = render(<OrgUnitDisplay name="/Test" />);
 
-      const nameSpan = container.querySelector(".text-xs");
-      expect(nameSpan).toBeTruthy();
+      const span = container.querySelector(".text-xs");
+      expect(span).toBeTruthy();
     });
 
     it("applies md size classes when specified", () => {
       const { container } = render(<OrgUnitDisplay name="/Test" size="md" />);
 
-      const nameSpan = container.querySelector(".text-sm");
-      expect(nameSpan).toBeTruthy();
+      const span = container.querySelector(".text-sm");
+      expect(span).toBeTruthy();
     });
   });
 
@@ -201,8 +190,7 @@ describe("OrgUnitDisplay", () => {
       );
 
       expect(container.textContent).toContain("/");
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      expect(container.textContent).not.toContain("(");
     });
 
     it("applies custom className", () => {
@@ -217,8 +205,7 @@ describe("OrgUnitDisplay", () => {
       const { container } = render(<OrgUnitDisplay name="/" />);
 
       expect(container.textContent).toBe("/");
-      const pills = container.querySelectorAll(".bg-muted");
-      expect(pills.length).toBe(0);
+      expect(container.textContent).not.toContain("(");
     });
   });
 });
