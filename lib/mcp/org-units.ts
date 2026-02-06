@@ -29,7 +29,7 @@ export function normalizeResource(value: string) {
  * Type guard for non-empty strings.
  */
 function hasContent(value: string | null | undefined): value is string {
-  return typeof value === "string" && value.length > 0;
+  return !!value;
 }
 
 /**

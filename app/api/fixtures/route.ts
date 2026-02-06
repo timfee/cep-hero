@@ -1,18 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-interface RegistryCase {
-  id: string;
-  title: string;
-  category: string;
-  tags?: string[];
-  overrides?: string[];
-}
-
-interface Registry {
-  version: string;
-  cases: RegistryCase[];
-}
+import { type Registry } from "@/lib/fixture-types";
 
 export interface FixtureListItem {
   id: string;
@@ -41,7 +30,7 @@ export async function GET() {
   }
 
   const fixtures: FixtureListItem[] = registry.cases
-    .filter((c) => c.overrides && c.overrides.length > 0)
+    .filter((c) => c.overrides?.length)
     .map((c) => ({
       id: c.id,
       title: c.title,
