@@ -91,7 +91,6 @@ function checkStructuredText(
     "suggest",
     "check",
     "error",
-    "look",
     "configur",
     "investigat",
   ];

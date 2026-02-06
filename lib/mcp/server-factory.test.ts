@@ -1,6 +1,6 @@
 /**
- * Tests that all tool executor methods are registered in the MCP server.
- * Prevents regressions where executor methods exist but are never exposed via MCP.
+ * Tests that expected MCP tools are registered by the server factory.
+ * Update EXPECTED_TOOLS when adding or removing tools from the MCP server.
  */
 
 import { describe, expect, it, mock } from "bun:test";
