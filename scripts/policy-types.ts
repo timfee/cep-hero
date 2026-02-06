@@ -170,7 +170,7 @@ export function parseSupportString(supportString: string) {
  * Convert the supported_on array to a human-readable string.
  */
 export function getSupportedOnText(policy: PolicyDefinition) {
-  if (!Array.isArray(policy.supported_on) || policy.supported_on.length === 0) {
+  if (!policy.supported_on?.length) {
     return "Not specified";
   }
   return policy.supported_on.map(parseSupportString).join(", ");

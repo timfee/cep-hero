@@ -9,6 +9,7 @@ import { existsSync } from "node:fs";
 
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 import { makeGoogleClients } from "@/lib/test-helpers/google-admin";
+import { isPlainObject } from "@/lib/utils";
 
 interface CheckResult {
   ok: boolean;
@@ -38,18 +39,11 @@ function loadEnv() {
 }
 
 /**
- * Type guard for plain objects.
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-
-/**
  * Parse and validate service account JSON from environment.
  */
 function parseServiceAccountJson() {
   const raw = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (raw === undefined || raw === "") {
+  if (!raw) {
     return { error: "Missing GOOGLE_SERVICE_ACCOUNT_JSON." };
   }
   try {
@@ -81,37 +75,26 @@ async function checkCredentials(): Promise<CheckResult> {
   const testDomain = process.env.TEST_USER_DOMAIN;
 
   const serviceAccount = parseServiceAccountJson();
-  if (typeof serviceAccount.error === "string") {
+  if (serviceAccount.error) {
     errors.push(serviceAccount.error);
   } else {
-    if (
-      serviceAccount.client_email === undefined ||
-      serviceAccount.client_email === ""
-    ) {
+    if (!serviceAccount.client_email) {
       errors.push("Service account JSON missing client_email.");
     }
-    if (
-      serviceAccount.private_key === undefined ||
-      serviceAccount.private_key === ""
-    ) {
+    if (!serviceAccount.private_key) {
       errors.push("Service account JSON missing private_key.");
     }
   }
 
-  if (tokenEmail === undefined || tokenEmail === "") {
+  if (!tokenEmail) {
     errors.push("Missing GOOGLE_TOKEN_EMAIL (impersonation subject).");
   }
 
-  if (customerId === undefined || customerId === "") {
+  if (!customerId) {
     warnings.push("GOOGLE_CUSTOMER_ID not set; will attempt to resolve.");
   }
 
-  if (
-    (testDomain === undefined || testDomain === "") &&
-    tokenEmail !== undefined &&
-    tokenEmail !== "" &&
-    !tokenEmail.includes("@")
-  ) {
+  if (!testDomain && tokenEmail && !tokenEmail.includes("@")) {
     warnings.push("TEST_USER_DOMAIN not set; using token email domain.");
   }
 

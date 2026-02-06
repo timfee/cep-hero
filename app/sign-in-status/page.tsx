@@ -219,7 +219,7 @@ export default function SignInStatusPage() {
   const [signingOut, setSigningOut] = useState(false);
   const expiresAtRef = useRef<number | null>(null);
 
-  const isDefaultUser = status.data?.isDefaultUser === true;
+  const isDefaultUser = !!status.data?.isDefaultUser;
 
   const fetchStatus = useCallback(async () => {
     try {

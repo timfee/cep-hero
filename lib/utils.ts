@@ -13,11 +13,20 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Type guard for plain objects (not arrays or null).
+ */
+export function isPlainObject(
+  value: unknown
+): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+/**
  * Resolve a required environment variable, throwing if missing.
  */
 export function getRequiredEnv(name: string) {
   const value = process.env[name];
-  if (value === undefined || value === "") {
+  if (!value) {
     throw new Error(`Missing ${name} environment variable`);
   }
 

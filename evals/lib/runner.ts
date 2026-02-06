@@ -723,7 +723,7 @@ async function applyLlmJudgePhase(reports: EvalReport[]) {
  * Parse pause milliseconds from string.
  */
 function parsePauseMs(raw: string | undefined) {
-  if (raw === undefined || raw === "") {
+  if (!raw) {
     return DEFAULT_CASE_PAUSE_MS;
   }
   const parsed = Number.parseInt(raw, 10);
