@@ -1129,6 +1129,52 @@
       ],
       "overrides": ["evals/fixtures/HERO-002/overrides.json"],
       "required_evidence": ["cookie", "incognito", "policy"]
+    },
+    {
+      "id": "EC-086",
+      "title": "Review safe browsing settings (no questions, no tool name exposure)",
+      "category": "security",
+      "case_file": "evals/cases/EC-086-review-safe-browsing-settings.md",
+      "tags": ["safe-browsing", "anti-pattern"],
+      "required_evidence": ["safe browsing"],
+      "forbidden_evidence": [
+        "getChromeEvents",
+        "getChromeConnectorConfiguration",
+        "listDLPRules",
+        "createDLPRule",
+        "draftPolicyChange",
+        "applyPolicyChange",
+        "enrollBrowser",
+        "listOrgUnits",
+        "getFleetOverview",
+        "debugAuth",
+        "searchKnowledge",
+        "suggestActions"
+      ],
+      "required_tool_calls": ["getChromeConnectorConfiguration"]
+    },
+    {
+      "id": "EC-087",
+      "title": "Check if safe browsing is properly configured",
+      "category": "security",
+      "case_file": "evals/cases/EC-087-check-safe-browsing-configured.md",
+      "tags": ["safe-browsing"],
+      "required_evidence": ["safe browsing"],
+      "forbidden_evidence": [
+        "getChromeEvents",
+        "getChromeConnectorConfiguration",
+        "listDLPRules",
+        "createDLPRule",
+        "draftPolicyChange",
+        "applyPolicyChange",
+        "enrollBrowser",
+        "listOrgUnits",
+        "getFleetOverview",
+        "debugAuth",
+        "searchKnowledge",
+        "suggestActions"
+      ],
+      "required_tool_calls": ["getChromeConnectorConfiguration"]
     }
   ]
 }

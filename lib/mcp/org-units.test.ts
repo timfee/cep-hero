@@ -161,7 +161,7 @@ describe("resolveOrgUnitDisplay", () => {
     ).toBe("/Engineering-Test");
   });
 
-  it("resolves root org unit via special matching", () => {
+  it("resolves root org unit via special matching with friendly label", () => {
     expect(
       resolveOrgUnitDisplay(
         "orgunits/03ph8a2z23yjui6",
@@ -169,7 +169,7 @@ describe("resolveOrgUnitDisplay", () => {
         rootOrgUnitId,
         rootOrgUnitPath
       )
-    ).toBe("/");
+    ).toBe("/ (Root)");
   });
 
   it("returns null for unknown ID", () => {
