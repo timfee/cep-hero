@@ -154,7 +154,44 @@ export function checkRequiredEvidence({
 }
 
 /**
+ * Synonyms for conversational rubric matching. Allows the model to use
+ * natural language instead of rigid keywords while still validating
+ * that the response addresses key quality dimensions.
+ */
+const rubricSynonyms: Record<string, string[]> = {
+  issue: ["problem", "detect", "show", "indicate", "trigger", "fail", "block"],
+  evidence: ["event", "log", "data", "result", "output", "policy", "rule"],
+  recommend: [
+    "enable",
+    "configure",
+    "suggest",
+    "try",
+    "set up",
+    "apply",
+    "use",
+  ],
+};
+
+/**
+ * Check if a criterion or any of its synonyms appear in the text.
+ */
+function matchesCriterion(combined: string, criterion: string) {
+  const normalized = normalizeForMatching(criterion);
+  if (combined.includes(normalized)) {
+    return true;
+  }
+  const synonyms = rubricSynonyms[normalized];
+  if (!synonyms) {
+    return false;
+  }
+  return synonyms.some((synonym) =>
+    combined.includes(normalizeForMatching(synonym))
+  );
+}
+
+/**
  * Score rubric criteria by checking for required cues in the response.
+ * Uses synonym expansion for conversational-style responses.
  */
 export function scoreRubric({
   text,
@@ -177,7 +214,7 @@ export function scoreRubric({
   const missed: string[] = [];
 
   for (const criterion of criteria) {
-    if (combined.includes(normalizeForMatching(criterion))) {
+    if (matchesCriterion(combined, criterion)) {
       matched.push(criterion);
     } else {
       missed.push(criterion);
