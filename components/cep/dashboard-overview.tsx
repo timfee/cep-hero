@@ -323,7 +323,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                         <div className="flex items-center gap-4">
                           <div
                             className={cn(
-                              "flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold",
+                              "flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold",
                               suggestion.category === "security"
                                 ? "bg-red-500/20 text-red-400"
                                 : suggestion.category === "compliance"
