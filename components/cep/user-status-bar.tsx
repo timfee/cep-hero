@@ -219,7 +219,7 @@ export function UserStatusBar() {
     return {
       bgColor: "bg-emerald-500/10",
       textColor: "text-emerald-400",
-      text: formatTimeRemaining(localExpiresIn ?? 0, true),
+      text: formatTimeRemaining(localExpiresIn ?? 0),
     };
   };
 
