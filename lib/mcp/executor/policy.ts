@@ -109,6 +109,15 @@ export type ApplyPolicyChangeResult =
   | ApplyPolicyChangeError;
 
 /**
+ * Builds an updateMask from the value object's keys. The Chrome Policy API
+ * requires explicit field names rather than a wildcard.
+ */
+function buildUpdateMask(value: Record<string, unknown>) {
+  const keys = Object.keys(value);
+  return keys.length > 0 ? keys.join(",") : "";
+}
+
+/**
  * Applies a confirmed policy change via the Chrome Policy API.
  */
 export async function applyPolicyChange(
@@ -130,10 +139,13 @@ export async function applyPolicyChange(
     } as const;
   }
 
+  const updateMask = buildUpdateMask(args.value);
+
   logApiRequest("apply-policy-change", {
     policySchemaId: args.policySchemaId,
     targetResource,
     value: args.value,
+    updateMask,
   });
 
   try {
@@ -147,7 +159,7 @@ export async function applyPolicyChange(
               policySchema: args.policySchemaId,
               value: args.value,
             },
-            updateMask: "*",
+            updateMask,
           },
         ],
       },
