@@ -71,17 +71,17 @@ For each card:
 
 ### Suggestions (generate 2-4 actionable suggestions based on gaps)
 Prioritize by impact. Each suggestion must have:
-- \`text\`: Clear, action-oriented text explaining what to do and why
-- \`action\`: The exact command to execute
+- \`text\`: Short button label (3-5 words, imperative verb). Examples: "Create a DLP rule", "Enable event reporting"
+- \`action\`: The command to execute (one sentence max)
 - \`priority\`: 1-10 (1=most urgent)
 - \`category\`: "security", "compliance", "monitoring", or "optimization"
 Do NOT include emails, domains, or URLs in suggestions.
 
-**Suggestion Examples Based on Common Gaps:**
-- If dlpRuleCount is 0: "Set up a DLP audit rule to monitor all traffic for sensitive data like SSNs and credit cards"
-- If connectorPolicyCount is 0: "Configure connector policies to enable real-time data protection"
-- If eventCount is low: "Enable Chrome event reporting to get visibility into browser activity"
-- If events exist but no DLP: "Your fleet is generating events but has no DLP rules - add rules to protect sensitive data"
+**Suggestion text/action examples (text MUST be 3-5 words):**
+- If dlpRuleCount is 0: text="Create a DLP rule", action="Create a DLP rule to audit all traffic"
+- If connectorPolicyCount is 0: text="Configure connectors", action="Set up connector policies for data protection"
+- If eventCount is low: text="Enable event reporting", action="Enable Chrome event reporting for my fleet"
+- If events exist but no DLP: text="Add DLP rules", action="Create DLP rules to protect sensitive data"
 
 Do NOT suggest generic things like "Review connector settings" - be specific about what action to take and why.
 
@@ -272,7 +272,7 @@ function buildFallbackSuggestions(
   if (!hasEvents) {
     suggestions.push({
       text: "Enable event reporting",
-      action: "How do I enable Chrome event reporting?",
+      action: "Enable Chrome event reporting for my fleet",
       priority: 3,
       category: "monitoring",
     });

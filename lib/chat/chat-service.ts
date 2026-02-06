@@ -46,10 +46,16 @@ const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Ente
 # Safety
 Never apply changes without explicit user confirmation. Always draft first, then wait for the user to say "Confirm".
 
+# Diagnose Before Acting
+When the user asks to change, enable, disable, or troubleshoot something, call a diagnostic tool first (getChromeConnectorConfiguration, getChromeEvents, listDLPRules, listOrgUnits, or searchKnowledge) to check the current state before calling draftPolicyChange.
+
 # Chrome Policy Workflow (Draft & Commit)
-1. Call draftPolicyChange with policyName, proposedValue, targetUnit (full org unit ID — never truncate), and reasoning
-2. Wait for the user to confirm
-3. Call applyPolicyChange with the EXACT values from applyParams in the draft response — do not modify, truncate, or reconstruct them
+When a user asks to change or apply a Chrome policy:
+1. Call getChromeConnectorConfiguration first to check the current state
+2. Pick sensible defaults — use root "/" as targetUnit unless the user specifies otherwise. Do NOT ask the user for fields, suggest related policies, or offer alternatives — just draft the specific change requested.
+3. Call draftPolicyChange with policyName, proposedValue, targetUnit (full org unit ID — never truncate), and reasoning
+4. Wait for the user to confirm
+5. Call applyPolicyChange with the EXACT values from applyParams in the draft response — do not modify, truncate, or reconstruct them
 
 # DLP Rule Workflow
 When creating DLP rules:
@@ -165,7 +171,7 @@ async function fetchKnowledgeSnippets(query: string) {
   if (docSnippets.length === 0 && policySnippets.length === 0) {
     return "";
   }
-  return `\n\nRelevant Context retrieved from knowledge base:\n${docSnippets}\n${policySnippets}\n`;
+  return `\n\n## Sources — cite these as [title](url)\nYou MUST cite the URLs below inline and list them under a **Sources** heading.\n\n${docSnippets}\n${policySnippets}\n`;
 }
 
 /**
@@ -271,27 +277,58 @@ export async function createChatStream({
     ? `${systemPrompt}${knowledgeContext}`
     : systemPrompt;
 
+  const isFirstTurn = !messages.some((m) => m.role === "assistant");
+
+  const mutationTools = {
+    applyPolicyChange: tool({
+      description:
+        "Apply a policy change after user confirmation. Use this when the user says 'Confirm' after a draftPolicyChange proposal.",
+      inputSchema: ApplyPolicyChangeSchema,
+      execute: async (args) => {
+        const result = await executor.applyPolicyChange(args);
+        return result;
+      },
+    }),
+
+    createDLPRule: tool({
+      description:
+        "Create a DLP (Data Loss Prevention) rule to monitor or block sensitive data. Use this for setting up audit rules or data protection policies.",
+      inputSchema: CreateDLPRuleSchema,
+      execute: async (args) => {
+        const result = await executor.createDLPRule(args);
+        return result;
+      },
+    }),
+  };
+
   const result = streamText({
     model: google("gemini-2.0-flash-001"),
     messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
-    stopWhen: [
-      stepCountIs(15),
-      ({ steps }) => {
-        const lastStep = steps.at(-1);
-        if (!lastStep) {
-          return false;
-        }
-        const hasSubstantialText = lastStep.text.trim().length >= 50;
-        const madeToolCalls = lastStep.toolCalls.length > 0;
-        return hasSubstantialText && !madeToolCalls;
-      },
-    ],
+    stopWhen: [stepCountIs(15)],
     prepareStep: ({ steps }) => {
+      if (steps.length === 0 && isFirstTurn) {
+        return {
+          toolChoice: "required" as const,
+          activeTools: [
+            "getChromeEvents",
+            "getChromeConnectorConfiguration",
+            "listDLPRules",
+            "listOrgUnits",
+            "getFleetOverview",
+            "searchKnowledge",
+            "enrollBrowser",
+            "debugAuth",
+          ],
+        };
+      }
+      if (steps.length === 0) {
+        return { toolChoice: "required" as const };
+      }
       const lastStep = steps.at(-1);
       if (!lastStep) {
         return {};
       }
-      const analysis = analyzeLastStep(lastStep);
+      const analysis = analyzeLastStep(lastStep as LastStep);
       return computeStepResponse(analysis, enhancedSystemPrompt);
     },
     tools: {
@@ -378,26 +415,6 @@ export async function createChatStream({
         },
       }),
 
-      applyPolicyChange: tool({
-        description:
-          "Apply a policy change after user confirmation. Use this when the user says 'Confirm' after a draftPolicyChange proposal.",
-        inputSchema: ApplyPolicyChangeSchema,
-        execute: async (args) => {
-          const result = await executor.applyPolicyChange(args);
-          return result;
-        },
-      }),
-
-      createDLPRule: tool({
-        description:
-          "Create a DLP (Data Loss Prevention) rule to monitor or block sensitive data. Use this for setting up audit rules or data protection policies.",
-        inputSchema: CreateDLPRuleSchema,
-        execute: async (args) => {
-          const result = await executor.createDLPRule(args);
-          return result;
-        },
-      }),
-
       searchKnowledge: tool({
         description:
           "Search the knowledge base for documentation about Chrome Enterprise concepts, error codes, troubleshooting steps, and best practices. Results include title, url, and content. You MUST cite these sources as [title](url) inline and list them under a **Sources** heading at the end.",
@@ -427,6 +444,8 @@ export async function createChatStream({
           };
         },
       }),
+
+      ...(isFirstTurn ? {} : mutationTools),
     },
   });
 
