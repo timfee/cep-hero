@@ -81,22 +81,17 @@ const CANCEL_PATTERN = /^(cancel|no)\b/i;
 const FALLBACK_ACTIONS: ActionItem[] = [
   {
     id: "hero-dlp-audit",
-    label: "Set up DLP monitoring",
-    command: "Help me set up DLP to audit all traffic for sensitive data",
+    label: "Create a DLP rule",
+    command: "Create a DLP rule to audit all traffic",
   },
   {
-    id: "hero-browser-security",
-    label: "Secure browsers",
-    command: "Help me turn on cookie encryption and disable incognito mode",
-  },
-  {
-    id: "fallback-connector-config",
-    label: "Review connector settings",
-    command: "Review connector settings",
+    id: "hero-fleet-overview",
+    label: "Fleet overview",
+    command: "Show me a fleet overview",
   },
   {
     id: "fallback-events",
-    label: "Show recent security events",
+    label: "Recent security events",
     command: "Show recent security events",
   },
 ];

@@ -119,10 +119,10 @@ export async function applyPolicyChange(
   const service = googleApis.chromepolicy({ version: "v1", auth });
   const targetResource = buildOrgUnitTargetResource(args.targetResource);
 
-  if (!targetResource) {
+  if (!targetResource || targetResource.startsWith("customers/")) {
     return {
       _type: "ui.error",
-      error: "Org Unit ID is required.",
+      error: "Org Unit ID is required. Cannot target a customer directly.",
       suggestion:
         "Provide a valid org unit ID (e.g., 'orgunits/03ph8a2z1...' or '/Engineering').",
       policySchemaId: args.policySchemaId,
