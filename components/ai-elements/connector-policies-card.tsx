@@ -144,33 +144,43 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
         animate={{ opacity: 1 }}
         className="rounded-lg border border-border bg-card overflow-hidden"
       >
-        <CollapsibleTrigger className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors hover:bg-muted/50">
-          <Shield
-            className={cn(
-              "h-4 w-4 shrink-0",
-              analysis.flag
-                ? "text-orange-400"
-                : analysis.total > 0
-                  ? "text-status-positive"
-                  : "text-muted-foreground"
-            )}
-          />
-          <span className="flex-1 text-sm text-foreground">{summary}</span>
+        <div className="flex w-full items-center gap-2.5 px-3 py-2.5">
+          <CollapsibleTrigger className="flex flex-1 items-center gap-2.5 text-left transition-colors hover:bg-muted/50 rounded-sm min-w-0">
+            <Shield
+              className={cn(
+                "h-4 w-4 shrink-0",
+                analysis.flag
+                  ? "text-orange-400"
+                  : analysis.total > 0
+                    ? "text-status-positive"
+                    : "text-muted-foreground"
+              )}
+            />
+            <span className="flex-1 text-sm text-foreground truncate">
+              {summary}
+            </span>
+            <motion.div
+              animate={{ rotate: isOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+            </motion.div>
+          </CollapsibleTrigger>
           <Tooltip>
             <TooltipTrigger asChild>
-              <InfoIcon className="h-3.5 w-3.5 cursor-help text-muted-foreground" />
+              <button
+                type="button"
+                className="shrink-0"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <InfoIcon className="h-3.5 w-3.5 cursor-help text-muted-foreground" />
+              </button>
             </TooltipTrigger>
             <TooltipContent className="max-w-xs">
               <p>{TOOLTIPS.policyScope}</p>
             </TooltipContent>
           </Tooltip>
-          <motion.div
-            animate={{ rotate: isOpen ? 180 : 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <ChevronDown className="h-4 w-4 text-muted-foreground" />
-          </motion.div>
-        </CollapsibleTrigger>
+        </div>
 
         <CollapsibleContent>
           <motion.div

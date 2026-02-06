@@ -367,6 +367,19 @@ describe("applyPolicyChange payload validation", () => {
     }
   });
 
+  it("rejects array values for non-EnterpriseConnectors policies", async () => {
+    const result = await applyPolicyChange(auth, customerId, {
+      policySchemaId: "chrome.users.IncognitoModeAvailability",
+      targetResource: "orgunits/03ph8a2z221pcso",
+      value: [{ incognitoModeAvailability: 1 }],
+    });
+
+    expect(result._type).toBe("ui.error");
+    if (result._type === "ui.error") {
+      expect(result.error).toContain("EnterpriseConnectors");
+    }
+  });
+
   it("returns ui.error on API exception", async () => {
     const mockCP = mock(() => ({
       customers: {
