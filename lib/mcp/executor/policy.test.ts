@@ -242,7 +242,7 @@ describe("applyPolicyChange payload validation", () => {
     }
   });
 
-  it("sets updateMask to wildcard", async () => {
+  it("builds updateMask from value keys", async () => {
     const captured: CapturedBatchModify[] = [];
     const mockCP = buildMockChromepolicy(captured);
     const original = googleApis.chromepolicy;
@@ -257,7 +257,33 @@ describe("applyPolicyChange payload validation", () => {
       });
 
       const request = captured[0].requestBody.requests[0];
-      expect(request.updateMask).toBe("*");
+      expect(request.updateMask).toBe("incognitoModeAvailability");
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
+  it("builds updateMask with multiple keys", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      await applyPolicyChange(auth, customerId, {
+        policySchemaId: "chrome.users.PasswordManager",
+        targetResource: "orgunits/03ph8a2z221pcso",
+        value: {
+          passwordManagerEnabled: false,
+          passwordLeakDetectionEnabled: true,
+        },
+      });
+
+      const request = captured[0].requestBody.requests[0];
+      expect(request.updateMask).toBe(
+        "passwordManagerEnabled,passwordLeakDetectionEnabled"
+      );
     } finally {
       googleApis.chromepolicy = original;
     }

@@ -195,6 +195,45 @@ export interface DiagnosisPayload {
 }
 
 /**
+ * Successful tool result with a confirmation message and optional console link.
+ */
+export interface ToolResultSuccess {
+  _type: "ui.success";
+  message: string;
+  consoleUrl?: string;
+}
+
+/**
+ * Error tool result with diagnostic details and optional remediation suggestion.
+ */
+export interface ToolResultError {
+  _type: "ui.error";
+  message?: string;
+  error?: string;
+  suggestion?: string;
+  consoleUrl?: string;
+}
+
+/**
+ * Manual-steps fallback when an automated action could not complete.
+ */
+export interface ToolResultManualSteps {
+  _type: "ui.manual_steps";
+  message: string;
+  error?: string;
+  steps: string[];
+  consoleUrl?: string;
+}
+
+/**
+ * Discriminated union for tool result outputs rendered by ToolResultCard.
+ */
+export type ToolResultOutput =
+  | ToolResultSuccess
+  | ToolResultError
+  | ToolResultManualSteps;
+
+/**
  * Union type for diagnosis results - either success payload or error.
  */
 export type DiagnosisResult = DiagnosisError | DiagnosisPayload;

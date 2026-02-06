@@ -41,9 +41,11 @@ export const ConnectorStatus = memo(function ConnectorStatus({
         )}
         <div className="min-w-0 flex-1">
           <p className="text-sm text-foreground">
-            {isHealthy
-              ? "Connector policies properly scoped"
-              : "Connector scope issue detected"}
+            {analysis.total === 0
+              ? "No connector policies configured"
+              : isHealthy
+                ? "Connector policies properly scoped"
+                : "Connector scope issue detected"}
           </p>
           <p className="text-xs text-muted-foreground">
             {analysis.total} {analysis.total === 1 ? "policy" : "policies"}{" "}

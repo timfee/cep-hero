@@ -120,15 +120,20 @@ function logCreateRequest(args: CreateDLPRuleArgs) {
 }
 
 /**
- * Extracts the access token from the OAuth client.
+ * Extracts the access token from the OAuth client. Returns null if no
+ * credentials are available rather than throwing.
  */
 async function getAccessToken(auth: OAuth2Client) {
-  const token = await auth.getAccessToken();
-  const accessToken = token?.token;
-  if (typeof accessToken !== "string" || accessToken.length === 0) {
+  try {
+    const token = await auth.getAccessToken();
+    const accessToken = token?.token;
+    if (typeof accessToken !== "string" || accessToken.length === 0) {
+      return null;
+    }
+    return accessToken;
+  } catch {
     return null;
   }
-  return accessToken;
 }
 
 /**
@@ -139,7 +144,7 @@ async function executeCreateRule(
   customerId: string,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): Promise<CreateDLPRuleSuccess | CreateDLPRuleManualSteps> {
+): Promise<CreateDLPRuleResult> {
   const policyPayload = buildPolicyPayload(customerId, args);
   try {
     const result = await submitDLPRule(
@@ -243,7 +248,7 @@ async function submitDLPRule(
   payload: ReturnType<typeof buildPolicyPayload>,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): Promise<CreateDLPRuleSuccess | CreateDLPRuleManualSteps> {
+): Promise<CreateDLPRuleSuccess | CreateDLPRuleError> {
   const res = await fetch(
     "https://cloudidentity.googleapis.com/v1beta1/policies",
     {
@@ -300,16 +305,26 @@ function extractApiErrorMessage(data: unknown) {
 }
 
 /**
- * Builds a manual steps response from an API error.
+ * Builds an error response from an API error, preserving the actual error
+ * message so callers can see what went wrong.
  */
 function buildApiError(
   data: unknown,
   args: CreateDLPRuleArgs,
   targetOrgUnitDisplay: string
-): CreateDLPRuleManualSteps {
+): CreateDLPRuleError {
   const errorMessage = extractApiErrorMessage(data);
   console.log("[create-dlp-rule] API error", JSON.stringify(data));
-  return buildManualSteps(errorMessage, args, targetOrgUnitDisplay);
+  return {
+    _type: "ui.error",
+    message: `Failed to create DLP rule: ${errorMessage}`,
+    error: errorMessage,
+    displayName: args.displayName,
+    targetOrgUnit: targetOrgUnitDisplay,
+    triggers: args.triggers,
+    action: args.action,
+    consoleUrl: "https://admin.google.com/ac/chrome/dlp",
+  };
 }
 
 /**
