@@ -1,7 +1,7 @@
 /**
- * Reusable component for displaying org units as friendly name + path pill.
+ * Reusable inline component for displaying org units as friendly name + path.
  * Uses OrgUnitMapContext to resolve raw IDs to human-readable names and paths,
- * ensuring consistent structured display across the entire app.
+ * rendering as lightweight inline text rather than block-level elements.
  */
 
 "use client";
@@ -122,8 +122,8 @@ function resolveOrgUnit(
 }
 
 /**
- * Displays an org unit as friendly name + optional path pill.
- * Format: "Engineering (/Engineering)" or "West Coast (/Sales/West Coast)"
+ * Displays an org unit inline as friendly name + optional parenthetical path.
+ * Format: "Engineering" or "West Coast (/Sales/West Coast)"
  *
  * When an OrgUnitMapProvider is present in the tree, raw org unit IDs are
  * automatically resolved to human-readable names and paths.
@@ -142,27 +142,16 @@ export function OrgUnitDisplay({
   );
 
   const textSize = size === "sm" ? "text-xs" : "text-sm";
-  const pillSize = size === "sm" ? "text-[10px]" : "text-xs";
 
-  // Show path pill when it provides context beyond the display name alone.
-  // Skip the pill for simple single-segment paths where name and path
-  // convey the same information (e.g., "Engineering" + "/Engineering").
-  const showPill =
+  // Show path context when it provides info beyond the display name alone.
+  // Skip for simple single-segment paths where name and path are redundant.
+  const showPath =
     path !== null && path !== displayName && !(path === `/${displayName}`);
 
   return (
-    <span className={cn("inline-flex items-center gap-1.5", className)}>
-      <span className={cn(textSize, "text-foreground")}>{displayName}</span>
-      {showPill && (
-        <span
-          className={cn(
-            pillSize,
-            "text-muted-foreground bg-muted px-1.5 py-0.5 rounded"
-          )}
-        >
-          {path}
-        </span>
-      )}
+    <span className={cn("inline", textSize, className)}>
+      <span className="font-medium text-foreground">{displayName}</span>
+      {showPath && <span className="text-muted-foreground"> ({path})</span>}
     </span>
   );
 }
