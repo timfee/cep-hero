@@ -6,7 +6,7 @@
 
 "use client";
 
-import { normalizeResource } from "@/lib/mcp/org-units";
+import { leafName, normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { useOrgUnitMap, type OrgUnitInfo } from "./org-unit-context";
@@ -22,19 +22,6 @@ interface OrgUnitDisplayProps {
   className?: string;
   /** Size variant */
   size?: "sm" | "md";
-}
-
-/**
- * Extracts the leaf name from an org unit path.
- * "/Sales/West Coast" → "West Coast", "/" → "/"
- */
-function leafName(path: string): string {
-  if (path === "/") {
-    return "/";
-  }
-
-  const segments = path.split("/").filter(Boolean);
-  return segments.at(-1) ?? path;
 }
 
 /**

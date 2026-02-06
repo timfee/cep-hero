@@ -16,8 +16,6 @@ import {
 } from "lucide-react";
 import { isValidElement } from "react";
 
-import type { OrgUnitInfo } from "@/components/ui/org-unit-context";
-
 import { Badge } from "@/components/ui/badge";
 import {
   Collapsible,
@@ -25,42 +23,10 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useOrgUnitMap } from "@/components/ui/org-unit-context";
-import { normalizeResource } from "@/lib/mcp/org-units";
+import { sanitizeOrgUnitIds } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { CodeBlock } from "./code-block";
-
-/**
- * Replaces org unit ID patterns in a JSON string with human-readable paths.
- * Handles "orgunits/abc123" and "id:abc123" patterns found in tool output.
- */
-function sanitizeOrgUnitIdsInJson(
-  json: string,
-  orgUnitMap: Map<string, OrgUnitInfo>
-): string {
-  if (orgUnitMap.size === 0) {
-    return json;
-  }
-
-  return json.replace(/(?:orgunits|id:)\/?\b[a-z0-9_-]+\b/gi, (match) => {
-    const normalized = normalizeResource(match);
-    const info = orgUnitMap.get(normalized);
-    if (info) {
-      return info.path;
-    }
-
-    // Also try with orgunits/ prefix for bare IDs after id: stripping
-    if (!normalized.startsWith("orgunits/")) {
-      const withPrefix = `orgunits/${normalized}`;
-      const prefixInfo = orgUnitMap.get(withPrefix);
-      if (prefixInfo) {
-        return prefixInfo.path;
-      }
-    }
-
-    return match;
-  });
-}
 
 export type ToolProps = ComponentProps<typeof Collapsible>;
 
@@ -236,10 +202,7 @@ export type ToolInputProps = ComponentProps<"div"> & {
  */
 export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
   const orgUnitMap = useOrgUnitMap();
-  const json = sanitizeOrgUnitIdsInJson(
-    JSON.stringify(input, null, 2),
-    orgUnitMap
-  );
+  const json = sanitizeOrgUnitIds(JSON.stringify(input, null, 2), orgUnitMap);
   return (
     <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
       <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
@@ -276,13 +239,13 @@ export const ToolOutput = ({
   let Output = <div>{output as ReactNode}</div>;
 
   if (typeof output === "object" && !isValidElement(output)) {
-    const json = sanitizeOrgUnitIdsInJson(
+    const json = sanitizeOrgUnitIds(
       JSON.stringify(output, null, 2),
       orgUnitMap
     );
     Output = <CodeBlock code={json} language="json" />;
   } else if (typeof output === "string") {
-    const sanitized = sanitizeOrgUnitIdsInJson(output, orgUnitMap);
+    const sanitized = sanitizeOrgUnitIds(output, orgUnitMap);
     Output = <CodeBlock code={sanitized} language="json" />;
   }
 

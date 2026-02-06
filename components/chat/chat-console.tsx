@@ -64,7 +64,7 @@ import {
   OrgUnitMapProvider,
   type OrgUnitInfo,
 } from "@/components/ui/org-unit-context";
-import { normalizeResource } from "@/lib/mcp/org-units";
+import { leafName, normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { OrgUnitsList } from "./org-units-list";
@@ -77,18 +77,6 @@ interface OrgUnitsOutput {
     parentOrgUnitId?: string;
     description?: string;
   }[];
-}
-
-/**
- * Extracts the leaf segment from an org unit path for use as a friendly name.
- */
-function leafNameFromPath(path: string): string {
-  if (!path || path === "/") {
-    return "/";
-  }
-
-  const segments = path.split("/").filter(Boolean);
-  return segments.at(-1) ?? path;
 }
 
 const CONFIRM_PATTERN = /^confirm\b/i;
@@ -252,7 +240,7 @@ export function ChatConsole() {
           for (const unit of orgUnits) {
             const id = unit.orgUnitId ?? "";
             const path = unit.orgUnitPath ?? unit.name ?? "";
-            const name = unit.name ?? leafNameFromPath(path);
+            const name = unit.name ?? leafName(path);
             if (!id || !path) {
               continue;
             }
@@ -272,11 +260,13 @@ export function ChatConsole() {
           if (target && targetName) {
             const normalized = normalizeResource(target);
             const info: OrgUnitInfo = {
-              name: leafNameFromPath(targetName),
+              name: leafName(targetName),
               path: targetName,
             };
             if (!map.has(normalized)) {
               map.set(normalized, info);
+              map.set(`orgunits/${normalized}`, info);
+              map.set(`id:${normalized}`, info);
             }
           }
         }
@@ -300,7 +290,7 @@ export function ChatConsole() {
    */
   const sanitizeOrgUnitsInText = useCallback(
     (text: string) =>
-      text.replace(/orgunits\/[a-z0-9-]+/gi, (match) => {
+      text.replace(/orgunits\/[a-z0-9_-]+/gi, (match) => {
         const normalized = normalizeResource(match);
         const resolved = orgUnitInfoMap.get(normalized);
         if (resolved) {
