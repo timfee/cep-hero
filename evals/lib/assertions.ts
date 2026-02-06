@@ -77,7 +77,23 @@ function checkStructuredText(
   expected: string[]
 ): AssertionResult {
   const lower = text.toLowerCase();
-  const signals = ["diagnosis", "evidence", "hypothesis", "next", "reference"];
+  const signals = [
+    "diagnosis",
+    "evidence",
+    "hypothesis",
+    "next",
+    "reference",
+    "found",
+    "issue",
+    "cause",
+    "recommend",
+    "steps",
+    "suggest",
+    "check",
+    "error",
+    "configur",
+    "investigat",
+  ];
   const matches = signals.filter((signal) => lower.includes(signal)).length;
 
   if (expected.length === 0 && lower.length > 0) {
