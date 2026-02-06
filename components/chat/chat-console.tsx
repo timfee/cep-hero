@@ -127,23 +127,27 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
 }
 
 /**
- * Generate a dynamic welcome message based on fleet state.
- * Combines a short assistant introduction with the fleet summary so
- * the seed message is distinct from (and complements) the dashboard headline.
+ * Generate a standalone welcome message for the chat panel.
+ * This must NOT repeat the dashboard headline or summary since those are
+ * already visible in the left panel.
  */
 function generateWelcomeMessage(data: OverviewData | null) {
-  const intro = "Hey there! I'm your Chrome Enterprise Premium assistant.";
-
   if (!data) {
-    return `${intro} What can I help you with?`;
+    return "Hey there! I'm your Chrome Enterprise Premium assistant. Ask me anything about your fleet, or use the suggestions below to get started.";
   }
 
-  const summary = data.summary?.trim();
-  if (!summary) {
-    return `${intro} What can I help you with?`;
+  const gaps: string[] = [];
+  for (const card of data.postureCards) {
+    if (card.status === "critical" || card.status === "warning") {
+      gaps.push(card.label.toLowerCase());
+    }
   }
 
-  return `${intro} ${summary}`;
+  if (gaps.length > 0) {
+    return `Hey there! I'm your Chrome Enterprise Premium assistant. I noticed a few areas that could use attention — like ${gaps.join(" and ")}. Pick a suggestion below or ask me anything.`;
+  }
+
+  return "Hey there! I'm your Chrome Enterprise Premium assistant. Everything's looking good on the dashboard. Pick a suggestion below or ask me anything.";
 }
 
 /**
