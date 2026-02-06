@@ -86,4 +86,28 @@ describe("formatSettingValue", () => {
     expect(formatSettingValue({ count: 42 })).toBe("count: 42");
     expect(formatSettingValue({ value: null })).toBe("value: null");
   });
+
+  it("serializes nested objects instead of producing [object Object]", () => {
+    const result = formatSettingValue({
+      action: { type: "BLOCK_CONTENT", severity: "HIGH" },
+    });
+    expect(result).toBe('action: {"type":"BLOCK_CONTENT","severity":"HIGH"}');
+    expect(result).not.toContain("[object Object]");
+  });
+
+  it("serializes array values as comma-separated items", () => {
+    const result = formatSettingValue({
+      triggers: ["chrome.file_upload", "chrome.print"],
+    });
+    expect(result).toBe("triggers: chrome.file_upload, chrome.print");
+    expect(result).not.toContain("[object Object]");
+  });
+
+  it("serializes arrays containing objects", () => {
+    const result = formatSettingValue({
+      rules: [{ name: "rule1" }, { name: "rule2" }],
+    });
+    expect(result).toBe('rules: {"name":"rule1"}, {"name":"rule2"}');
+    expect(result).not.toContain("[object Object]");
+  });
 });
