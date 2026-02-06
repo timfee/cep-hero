@@ -174,6 +174,134 @@ describe("draftPolicyChange", () => {
   });
 });
 
+describe("draft → apply round-trip", () => {
+  const ctx = buildOrgUnitContext();
+  const auth = new OAuth2Client();
+  auth.setCredentials({ access_token: "test-token" });
+  const customerId = "my_customer";
+
+  it("applyParams.policySchemaId is the schema ID, not the human name", () => {
+    const result = draftPolicyChange(ctx, {
+      policyName: "On Security Event Enterprise Connector",
+      policySchemaId: "chrome.users.EnterpriseConnectors.OnSecurityEvent",
+      proposedValue: [{ service_provider: "google" }],
+      targetUnit: "id:03ph8a2z221pcso",
+      reasoning: "Enable security event reporting",
+    });
+
+    expect(result.applyParams.policySchemaId).toBe(
+      "chrome.users.EnterpriseConnectors.OnSecurityEvent"
+    );
+    expect(result.applyParams.policySchemaId).not.toBe(
+      "On Security Event Enterprise Connector"
+    );
+  });
+
+  it("draft output feeds directly into apply for connector policies", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const draft = draftPolicyChange(ctx, {
+        policyName: "On Security Event Enterprise Connector",
+        policySchemaId: "chrome.users.EnterpriseConnectors.OnSecurityEvent",
+        proposedValue: [{ service_provider: "google" }],
+        targetUnit: "id:03ph8a2z221pcso",
+        reasoning: "Enable security event reporting",
+      });
+
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: draft.applyParams.policySchemaId,
+        targetResource: draft.applyParams.targetResource,
+        value: draft.applyParams.value,
+      });
+
+      expect(result._type).toBe("ui.success");
+      expect(captured).toHaveLength(1);
+      expect(captured[0].requestBody.requests[0].updateMask).toBe(
+        "onSecurityEventEnterpriseConnector"
+      );
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
+  it("draft output feeds directly into apply for simple policies", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const draft = draftPolicyChange(ctx, {
+        policyName: "Incognito Mode Availability",
+        policySchemaId: "chrome.users.IncognitoModeAvailability",
+        proposedValue: { incognitoModeAvailability: 1 },
+        targetUnit: "id:03ph8a2z221pcso",
+        reasoning: "Disable incognito",
+      });
+
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: draft.applyParams.policySchemaId,
+        targetResource: draft.applyParams.targetResource,
+        value: draft.applyParams.value,
+      });
+
+      expect(result._type).toBe("ui.success");
+      expect(captured[0].requestBody.requests[0].policyValue.policySchema).toBe(
+        "chrome.users.IncognitoModeAvailability"
+      );
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
+  for (const [schemaId, valueKey] of Object.entries({
+    "chrome.users.EnterpriseConnectors.OnFileAttached":
+      "onFileAttachedEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnFileDownloaded":
+      "onFileDownloadedEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnBulkDataEntry":
+      "onBulkDataEntryEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnSecurityEvent":
+      "onSecurityEventEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnPrint": "onPrintEnterpriseConnector",
+  })) {
+    it(`round-trips ${schemaId} through draft → apply`, async () => {
+      const captured: CapturedBatchModify[] = [];
+      const mockCP = buildMockChromepolicy(captured);
+      const original = googleApis.chromepolicy;
+      googleApis.chromepolicy =
+        mockCP as unknown as typeof googleApis.chromepolicy;
+
+      try {
+        const draft = draftPolicyChange(ctx, {
+          policyName: `Human Name for ${schemaId.split(".").pop()}`,
+          policySchemaId: schemaId,
+          proposedValue: [{ service_provider: "google" }],
+          targetUnit: "id:03ph8a2z221pcso",
+          reasoning: "Test round-trip",
+        });
+
+        const result = await applyPolicyChange(auth, customerId, {
+          policySchemaId: draft.applyParams.policySchemaId,
+          targetResource: draft.applyParams.targetResource,
+          value: draft.applyParams.value,
+        });
+
+        expect(result._type).toBe("ui.success");
+        expect(captured[0].requestBody.requests[0].updateMask).toBe(valueKey);
+      } finally {
+        googleApis.chromepolicy = original;
+      }
+    });
+  }
+});
+
 describe("applyPolicyChange payload validation", () => {
   const auth = new OAuth2Client();
   auth.setCredentials({ access_token: "test-token" });
