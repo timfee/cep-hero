@@ -24,43 +24,6 @@ import type {
   ToolResultOutput,
 } from "@/types/chat";
 
-/**
- * Tools whose output is rendered by dedicated UI cards.
- * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
- */
-export const RICH_CARD_TOOLS = new Set([
-  "getChromeEvents",
-  "getChromeConnectorConfiguration",
-  "listDLPRules",
-  "listOrgUnits",
-  "draftPolicyChange",
-  "createDLPRule",
-  "applyPolicyChange",
-]);
-
-/**
- * Tools that are invisible in the chat — their output is consumed
- * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
- */
-export const HIDDEN_TOOLS = new Set([
-  "getFleetOverview",
-  "searchKnowledge",
-  "debugAuth",
-  "suggestActions",
-]);
-
-/**
- * Context-gathering tools whose cards are suppressed when a message also
- * contains an action tool (applyPolicyChange, createDLPRule). This prevents
- * redundant re-display of data the AI fetched to prepare the action.
- */
-const CONTEXT_TOOLS = new Set([
-  "getChromeConnectorConfiguration",
-  "listOrgUnits",
-  "listDLPRules",
-  "getChromeEvents",
-]);
-
 import { ActionButtons } from "@/components/ai-elements/action-buttons";
 import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-policies-card";
 import {
@@ -113,6 +76,43 @@ import { leafName, normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { OrgUnitsList } from "./org-units-list";
+
+/**
+ * Tools whose output is rendered by dedicated UI cards.
+ * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
+ */
+export const RICH_CARD_TOOLS = new Set([
+  "getChromeEvents",
+  "getChromeConnectorConfiguration",
+  "listDLPRules",
+  "listOrgUnits",
+  "draftPolicyChange",
+  "createDLPRule",
+  "applyPolicyChange",
+]);
+
+/**
+ * Tools that are invisible in the chat — their output is consumed
+ * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
+ */
+export const HIDDEN_TOOLS = new Set([
+  "getFleetOverview",
+  "searchKnowledge",
+  "debugAuth",
+  "suggestActions",
+]);
+
+/**
+ * Context-gathering tools whose cards are suppressed when a message also
+ * contains an action tool (applyPolicyChange, createDLPRule). This prevents
+ * redundant re-display of data the AI fetched to prepare the action.
+ */
+const CONTEXT_TOOLS = new Set([
+  "getChromeConnectorConfiguration",
+  "listOrgUnits",
+  "listDLPRules",
+  "getChromeEvents",
+]);
 
 interface OrgUnitsOutput {
   orgUnits?: {

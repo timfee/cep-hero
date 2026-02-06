@@ -94,7 +94,10 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
   const ruleName = dlpData?.displayName ?? policyName;
 
   const valueEntries =
-    !dlpData && typeof proposedValue === "object" && proposedValue !== null
+    !dlpData &&
+    typeof proposedValue === "object" &&
+    proposedValue !== null &&
+    !Array.isArray(proposedValue)
       ? Object.entries(proposedValue as Record<string, unknown>)
       : [];
 

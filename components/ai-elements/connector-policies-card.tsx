@@ -48,6 +48,12 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
   output: ConnectorConfigOutput;
 }) {
   const [isOpen, setIsOpen] = useState(false);
+  const policies = output.value ?? [];
+  const analysis = useMemo(
+    () => analyzeConnectorPolicies(policies),
+    [policies]
+  );
+  const summary = useMemo(() => buildSummary(analysis), [analysis]);
 
   if (output.error) {
     return (
@@ -60,13 +66,6 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
       </div>
     );
   }
-
-  const policies = output.value ?? [];
-  const analysis = useMemo(
-    () => analyzeConnectorPolicies(policies),
-    [policies]
-  );
-  const summary = useMemo(() => buildSummary(analysis), [analysis]);
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -101,6 +100,7 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
             <TooltipTrigger asChild>
               <button
                 type="button"
+                aria-label="Policy scope help"
                 className="shrink-0"
                 onClick={(e) => e.stopPropagation()}
               >
