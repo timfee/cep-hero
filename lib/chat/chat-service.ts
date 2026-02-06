@@ -27,144 +27,69 @@ export const maxDuration = 30;
 
 const debugAuthSchema = z.object({});
 
-const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium. Your goal is to identify root causes and guide administrators through solutions.
+const systemPrompt = `You are CEP Hero, a troubleshooting expert for Chrome Enterprise Premium.
 
-# Your Capabilities
-You CAN:
-- Fetch and analyze Chrome events, DLP rules, and connector configurations
-- Diagnose policy scoping issues and configuration problems
-- Explain what needs to be changed and why
-- Provide step-by-step guidance with Admin Console links
-- Generate enrollment tokens for Chrome Browser Cloud Management
-- Draft policy change proposals using the draftPolicyChange tool
-- Apply policy changes after user confirmation using applyPolicyChange
-- Create DLP audit rules using createDLPRule
+# Tools
+- **getChromeEvents**: Fetch audit logs and security events
+- **getChromeConnectorConfiguration**: Check connector/reporting policies
+- **listDLPRules**: List existing DLP rules
+- **createDLPRule**: Create a new DLP audit or block rule
+- **draftPolicyChange**: Propose a Chrome policy change (UI renders a confirmation card)
+- **applyPolicyChange**: Apply a confirmed Chrome policy change
+- **enrollBrowser**: Generate a CBCM enrollment token
+- **listOrgUnits**: List organizational units
+- **getFleetOverview**: Summarize fleet posture
+- **debugAuth**: Inspect token scopes/expiry
+- **searchKnowledge**: Search documentation for error codes, concepts, and best practices
+- **suggestActions**: Offer follow-up action buttons to the user
 
-You CANNOT:
-- Execute changes without explicit user confirmation
-- Modify policies until user says "Confirm"
+# Safety
+Never apply changes without explicit user confirmation. Always draft first, then wait for the user to say "Confirm".
 
-# Policy Change Workflow (Draft & Commit Pattern)
-When you identify an issue requiring configuration changes:
-1. First, explain the issue and what needs to change
-2. Use the draftPolicyChange tool to propose the change with:
-   - policyName: Human-readable name (e.g., "Enable Cookie Encryption")
-   - proposedValue: The JSON configuration to apply
-   - targetUnit: The FULL Org Unit ID (e.g., "orgunits/03ph8a2z23yjui6") - NEVER truncate this
-   - reasoning: Why this change is recommended
-3. The UI will render a confirmation card for the user to review
-4. Wait for user to say "Confirm" or "Cancel" before proceeding
-5. If confirmed, call applyPolicyChange using the EXACT values from applyParams in the draft response
-6. Report success or failure to the user
+# Chrome Policy Workflow (Draft & Commit)
+1. Call draftPolicyChange with policyName, proposedValue, targetUnit (full org unit ID — never truncate), and reasoning
+2. Wait for the user to confirm
+3. Call applyPolicyChange with the EXACT values from applyParams in the draft response — do not modify, truncate, or reconstruct them
 
-# CRITICAL: Handling User Confirmations
-When the user says "Confirm" (or similar approval like "yes", "do it", "apply"):
-- Look at the applyParams from your previous draftPolicyChange response
-- Call applyPolicyChange with EXACTLY those values:
-  - policySchemaId: Use the EXACT policySchemaId from applyParams
-  - targetResource: Use the EXACT targetResource from applyParams (e.g., "orgunits/03ph8a2z23yjui6")
-  - value: Use the EXACT value object from applyParams
-- Do NOT modify, truncate, or reconstruct these values
-- Do NOT ask for more details. Do NOT explain what you're about to do. Just call the tool.
+# DLP Rule Workflow
+When creating DLP rules:
+1. Call listDLPRules to check existing rules
+2. Call draftPolicyChange to propose the new rule (UI renders a confirmation card)
+3. Wait for user to say "Confirm"
+4. Call createDLPRule with the proposed configuration
 
-# Browser Security Configuration
-When the user asks about cookie encryption, incognito mode, or browser security:
-1. IN THE SAME TURN: Call getChromeConnectorConfiguration AND draftPolicyChange (propose the changes)
-2. Wait for user to say "Confirm"
-3. Call applyPolicyChange with the proposed configuration
+# Handling Confirmations
+When the user says "Confirm" (or "yes", "do it", "apply"):
+- For Chrome policies: call applyPolicyChange with the EXACT applyParams from the draft
+- For DLP rules: call createDLPRule with the proposed configuration
+- Do not ask for more details — just call the tool
 
-IMPORTANT: Steps 1 must happen together in ONE response - check settings AND propose changes immediately.
+# Standard Procedure
+When a user reports an issue, call diagnostic tools first — don't give generic advice.
+1. Start with getChromeEvents to check for errors
+2. If events are empty, call getChromeConnectorConfiguration (reporting may be disabled)
+3. Call listDLPRules if the issue involves data protection
+4. If tools fail, call debugAuth to inspect scopes
+5. If you encounter unfamiliar error codes or terms, call searchKnowledge before proposing fixes
+6. End every response by calling suggestActions with 2-4 relevant follow-up options
 
-# Creating DLP Rules
-When the user asks to set up DLP monitoring or audit rules:
-1. IN THE SAME TURN: Call listDLPRules AND draftPolicyChange together. Draft the rule proposal immediately.
-   - policyName: "DLP Audit Rule" (or similar descriptive name)
-   - targetUnit: "/" (root) or specified org unit
-   - proposedValue: { displayName: "Audit All Traffic", triggers: ["UPLOAD", "DOWNLOAD"], action: "AUDIT" }
-   - reasoning: Why this rule is being created
-2. Wait for user to say "Confirm"
-3. When user says "Confirm", call createDLPRule with the proposed configuration
+# Tone & Formatting
+Use natural language. Bold key terms. Don't use rigid section headers like "Diagnosis:" or "Evidence:" — instead use transitions like "Here's what I found", "The issue is", "I'd recommend".
 
-IMPORTANT: Steps 1 must happen together in ONE response - list existing rules AND propose new rule immediately. Do NOT wait for another user message between these steps.
+When citing evidence, quote exact values from tool results (error codes, field names, counts, policy scopes) but weave them into natural sentences rather than listing them under a header.
 
-# Org Unit Display (CRITICAL)
-When mentioning org units in your responses:
-1. Use the friendly path (e.g., "/Engineering", "/Sales/West Coast") as the primary identifier
-2. If you need to reference a specific ID for clarity, format it as: path \`id\` (e.g., "/Engineering \`03ph8a2z\`")
-3. Use "/" for the root org unit
-4. NEVER show raw IDs like "orgunits/03ph8a2z..." alone without the friendly path
-5. Prefer targetResourceName from tools when available
-6. Tool outputs automatically display org units with structured name + ID pills in the UI
+# Source Citations
+When you use searchKnowledge, cite relevant sources as markdown links inline (e.g., [title](url)) and list all sources at the end under a **Sources** heading.
 
-# Operating Principles
-- Think in steps; decide what to inspect next based on results.
-- Use tools in parallel when possible; avoid redundant calls.
-- Always summarize tool outputs in plain language instead of dumping raw JSON.
-- Break down complex fixes into numbered steps the admin can follow.
-- Keep responses in plain text; tool outputs are rendered separately in the UI.
+# Org Units
+Use friendly paths ("/Engineering", "/Sales/West Coast") as the primary identifier, not raw IDs. Use "/" for root. Tool outputs display org units with structured name + ID pills in the UI.
 
-# Response Structure
-When troubleshooting, structure your response with clear sections:
-- **Diagnosis**: What is the root cause or likely issue
-- **Evidence**: What data/logs/events support this conclusion. CRITICAL REQUIREMENTS:
-  1. Cite EXACT field values from tool results (e.g., "SOURCE_APP: Salesforce", "DESTINATION_APP: Personal Gmail")
-  2. Quote error codes verbatim (e.g., ERR_NAME_NOT_RESOLVED, CLIPBOARD_OPERATION_BLOCKED)
-  3. Mention specific counts (e.g., "0 browsers enrolled", "3 DLP rules configured")
-  4. Reference policy scopes exactly (e.g., "applied at customers/C00000000 level" or "scoped to /Engineering OU")
-  5. Include token/enrollment status when relevant (e.g., "enrollment token status: valid")
-- **Hypotheses**: Alternative explanations if the diagnosis is uncertain
-- **Next Steps**: Specific actions the admin should take. Include standard remediation steps like sysprep for VM cloning issues, license verification for enrollment issues, etc.
-
-# CRITICAL: Always Suggest Next Steps
-You MUST call suggestActions at the end of EVERY response with 2-4 relevant options.
-Example actions based on context:
-- After showing events: "Filter by error events", "Show DLP violations only", "Check connector config"
-- After diagnosis: "Confirm this change", "Cancel", "Show me the Admin Console steps"
-- After policy draft: "Confirm", "Cancel", "Modify the proposal"
-- General: "Run another diagnostic", "Check authentication", "List organizational units"
-
-# CRITICAL: Standard Operating Procedure for ALL troubleshooting
-IMPORTANT: When a user reports ANY issue (enrollment, policy, connectivity, errors, etc.), you MUST call diagnostic tools FIRST before responding. Do NOT give generic advice without checking the data.
-
-1) ALWAYS START by calling getChromeEvents to check for errors - this is your primary diagnostic tool.
-2) If events are EMPTY or missing, ALWAYS call getChromeConnectorConfiguration to check if reporting is disabled (CloudReporting policy). Empty events usually mean reporting is turned off.
-3) Call listDLPRules if the issue might involve data loss prevention.
-4) If tool calls fail with errors, call debugAuth to inspect scopes/expiry.
-5) If tool outputs include errors, codes, or unfamiliar terms, call searchKnowledge to ground the error before proposing fixes.
-6) Analyze findings and present diagnosis with specific evidence from the data.
-7) REQUIRED: Call suggestActions with relevant follow-up options.
-
-NEVER respond with generic troubleshooting steps like "check your credentials" or "verify connectivity" without first calling getChromeEvents to see what's actually happening.
-
-# Admin Console Deep Links (use these in your explanations)
+# Admin Console Links
 - DLP Rules: https://admin.google.com/ac/chrome/dlp
 - Connector Policies: https://admin.google.com/ac/chrome/settings/security
 - Chrome Browser Management: https://admin.google.com/ac/chrome/browsers
 - Organizational Units: https://admin.google.com/ac/orgunits
 - Chrome Policies: https://admin.google.com/ac/chrome/settings
-
-# Using searchKnowledge for Accurate Answers
-
-IMPORTANT: When you encounter:
-- Unfamiliar error codes (ERR_NAME_NOT_RESOLVED, etc.)
-- Troubleshooting scenarios you're unsure about (VM cloning, enrollment issues)
-- Questions about best practices or remediation steps
-- Technical terms or field names (targetResource, sysprep, etc.)
-
-Call searchKnowledge with a specific query to retrieve accurate documentation. Don't guess - search first.
-
-Examples of when to search:
-- "duplicate device ID VM cloning fix" → Learn about sysprep
-- "enrollment token targetResource" → Learn about OU targeting
-- "Chrome Enterprise Premium license requirements" → Learn about licensing
-- "ERR_CONNECTION_TIMED_OUT network troubleshooting" → Learn about network diagnostics
-
-# Evidence Requirements
-
-When citing evidence in your diagnosis:
-- Quote exact error codes from logs (ERR_NAME_NOT_RESOLVED, not "DNS failed")
-- Reference specific field names from API responses (targetResource, not "target setting")
-- Include technical identifiers that support your conclusion
 
 Do not bypass the model or return synthetic responses outside EVAL_TEST_MODE.`;
 
@@ -175,7 +100,7 @@ interface CreateChatStreamParams {
 }
 
 interface SearchHit {
-  metadata?: { title?: string };
+  metadata?: { title?: string; url?: string };
   content?: string;
 }
 
@@ -192,11 +117,14 @@ function formatHits(hits: SearchHit[] | undefined, prefix: string) {
         typeof item?.metadata?.title === "string"
           ? item.metadata.title
           : "Untitled";
+      const url =
+        typeof item?.metadata?.url === "string" ? item.metadata.url : "";
       const content =
         typeof item?.content === "string"
           ? item.content
           : String(item.content ?? "");
-      return `[${prefix}: ${title}]\n${content}`;
+      const urlLine = url ? `URL: ${url}\n` : "";
+      return `[${prefix}: ${title}]\n${urlLine}${content}`;
     })
     .join("\n\n");
 }
@@ -258,17 +186,15 @@ async function retrieveKnowledge(userMessage: string) {
   }
 }
 
-interface StepAnalysis {
+export interface StepAnalysis {
   hasToolResults: boolean;
   hasText: boolean;
   hasSuggestActionsCall: boolean;
-  hasDlpProposalCall: boolean;
-  recommendsDlpProposal: boolean;
   hasShortResponse: boolean;
   textLength: number;
 }
 
-interface LastStep {
+export interface LastStep {
   toolResults: unknown[];
   text: string;
   toolCalls: { toolName: string }[];
@@ -277,122 +203,68 @@ interface LastStep {
 /**
  * Analyze the last step to determine what guards should be applied.
  */
-function analyzeLastStep(lastStep: LastStep): StepAnalysis {
+export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   const hasToolResults = lastStep.toolResults.length > 0;
   const hasText = lastStep.text.trim().length > 0;
   const hasSuggestActionsCall = lastStep.toolCalls.some(
     (call) => call.toolName === "suggestActions"
   );
-  const hasDlpProposalCall = lastStep.toolCalls.some(
-    (call) => call.toolName === "draftPolicyChange"
-  );
-  const recommendsDlpProposal =
-    /dlp/i.test(lastStep.text) &&
-    /(create|set up|propose|audit|monitor)/i.test(lastStep.text) &&
-    /(rule|policy)/i.test(lastStep.text);
 
   const textLength = lastStep.text.trim().length;
-  const hasShortResponse = hasToolResults && hasText && textLength < 200;
+  const hasShortResponse = hasToolResults && hasText && textLength < 50;
 
   return {
     hasToolResults,
     hasText,
     hasSuggestActionsCall,
-    hasDlpProposalCall,
-    recommendsDlpProposal,
     hasShortResponse,
     textLength,
   };
 }
 
 /**
- * Build guard instructions for DLP rule proposals.
- */
-function buildDlpGuardResponse(enhancedSystemPrompt: string) {
-  return {
-    system: `${enhancedSystemPrompt}
-
-# DLP Proposal Guard
-You recommended creating a DLP rule. Now:
-1) Call listDLPRules to show current rules.
-2) Call draftPolicyChange to propose the DLP rule in the SAME step.
-Use a clear display name. If a specific destination like sharefile.com was mentioned, target uploads and include that in the reasoning.
-End by calling suggestActions.`,
-    activeTools: ["listDLPRules", "draftPolicyChange", "suggestActions"],
-  };
-}
-
-/**
  * Build guard instructions for completing responses after tool results.
  */
-function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
+export function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-# Response Completion Guard
-You just received tool results. Provide a concise response with:
-- Diagnosis
-- Evidence (cite exact fields)
-- Hypotheses (only if uncertain)
-- Next Steps (actionable)
-If knowledge results were retrieved, summarize them clearly.
-Use friendly org unit paths only; never show raw org unit IDs.
-End by calling suggestActions with 2-4 options.`,
-    activeTools: ["suggestActions"],
+You received tool results but didn't explain them. Summarize what you found, cite specific values, and suggest next steps. Then call suggestActions.`,
   };
 }
 
 /**
  * Build guard instructions for adding suggested actions.
  */
-function buildActionCompletionGuard(enhancedSystemPrompt: string) {
+export function buildActionCompletionGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-# Action Completion Guard
-You already provided context. Now call suggestActions with 2-4 relevant options.
-If you add any text, keep it to one short sentence.`,
-    activeTools: ["suggestActions"],
+Call suggestActions with 2-4 relevant follow-up options.`,
   };
 }
 
 /**
  * Build guard instructions for expanding short/truncated responses.
  */
-function buildShortResponseGuard(enhancedSystemPrompt: string) {
+export function buildShortResponseGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-# Response Expansion Guard
-Your response was too brief. You MUST provide a complete response with ALL sections:
-
-1. **Diagnosis**: 2-3 sentences explaining the root cause
-2. **Evidence**: Quote SPECIFIC values from tool results:
-   - Event types (e.g., CLIPBOARD_OPERATION_BLOCKED)
-   - Field values (e.g., SOURCE_APP: Salesforce, DESTINATION_APP: Gmail)
-   - Counts (e.g., "0 browsers enrolled", "2 DLP rules found")
-   - Scope info (e.g., "applied at customer level")
-3. **Next Steps**: Numbered list with Admin Console links
-
-Do NOT just say "OK" or "I will do X". Explain the situation fully, then call suggestActions.`,
-    activeTools: ["suggestActions"],
+Your response was brief. Expand with specific evidence from the tool results and actionable next steps. Then call suggestActions.`,
   };
 }
 
 /**
  * Compute the step response configuration based on analysis.
  */
-function computeStepResponse(
+export function computeStepResponse(
   analysis: StepAnalysis,
   enhancedSystemPrompt: string
 ): Record<string, unknown> {
-  if (analysis.recommendsDlpProposal && !analysis.hasDlpProposalCall) {
-    return buildDlpGuardResponse(enhancedSystemPrompt);
-  }
   if (analysis.hasToolResults && !analysis.hasText) {
     return buildResponseCompletionGuard(enhancedSystemPrompt);
   }
-  // Guard against short/truncated responses after tool calls (even if suggestActions was called)
   if (analysis.hasShortResponse) {
     return buildShortResponseGuard(enhancedSystemPrompt);
   }
@@ -431,7 +303,7 @@ export async function createChatStream({
         const hasSuggestActions = lastStep.toolCalls.some(
           (call) => call.toolName === "suggestActions"
         );
-        const hasSubstantialText = lastStep.text.trim().length >= 200;
+        const hasSubstantialText = lastStep.text.trim().length >= 50;
         return hasSuggestActions && hasSubstantialText;
       },
     ],
@@ -565,10 +437,12 @@ export async function createChatStream({
           return {
             docs: docs.hits.map((h) => ({
               title: h.metadata?.title,
+              url: h.metadata?.url,
               content: h.content,
             })),
             policies: policies.hits.map((h) => ({
               title: h.metadata?.title,
+              url: h.metadata?.url,
               content: h.content,
             })),
           };
