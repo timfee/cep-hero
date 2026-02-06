@@ -119,7 +119,7 @@ async function captureChromeReports() {
  */
 async function captureAuditEvents() {
   const tokenEmail = process.env.GOOGLE_TOKEN_EMAIL;
-  if (tokenEmail === undefined || tokenEmail === "") {
+  if (!tokenEmail) {
     return { error: "GOOGLE_TOKEN_EMAIL is not set." };
   }
   try {

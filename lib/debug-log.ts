@@ -4,6 +4,8 @@
 
 import { appendFile } from "node:fs/promises";
 
+import { isPlainObject } from "@/lib/utils";
+
 const LOG_PATH = `${process.cwd()}/debug.log`;
 
 interface DebugEntry {
@@ -13,13 +15,6 @@ interface DebugEntry {
 }
 
 const REDACT_KEYS = [/token/i, /authorization/i, /cookie/i];
-
-/**
- * Type guard for plain objects.
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
-}
 
 /**
  * Type guard for primitive values.

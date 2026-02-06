@@ -2,6 +2,8 @@
  * Loader for merging base and override fixture data for eval testing.
  */
 
+import { isPlainObject } from "@/lib/utils";
+
 import { type FixtureData } from "./types";
 
 /**
@@ -46,13 +48,6 @@ export function loadFixtureData(
       ? (mergedObject.errors as FixtureData["errors"])
       : undefined,
   };
-}
-
-/**
- * Type guard for plain objects (not arrays or null).
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
 /**
