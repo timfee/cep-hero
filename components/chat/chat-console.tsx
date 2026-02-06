@@ -128,15 +128,22 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
 
 /**
  * Generate a dynamic welcome message based on fleet state.
- * Uses the summary (conversational text) rather than the headline,
- * which is already displayed in the dashboard header.
+ * Combines a short assistant introduction with the fleet summary so
+ * the seed message is distinct from (and complements) the dashboard headline.
  */
 function generateWelcomeMessage(data: OverviewData | null) {
+  const intro = "Hey there! I'm your Chrome Enterprise Premium assistant.";
+
   if (!data) {
-    return "What can I help you with?";
+    return `${intro} What can I help you with?`;
   }
+
   const summary = data.summary?.trim();
-  return summary || "What can I help you with?";
+  if (!summary) {
+    return `${intro} What can I help you with?`;
+  }
+
+  return `${intro} ${summary}`;
 }
 
 /**
