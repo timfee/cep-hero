@@ -12,11 +12,15 @@ import {
 } from "@/lib/mcp/org-units";
 
 import { type ConnectorConfigResult } from "./executor/connector";
+import { type ListDLPRulesResult } from "./executor/dlp-list";
+import { type ListOrgUnitsResult } from "./executor/org-units-api";
 import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
   type DraftPolicyChangeSchema,
+  type EnrollBrowserSchema,
   type GetChromeEventsSchema,
+  type GetFleetOverviewSchema,
 } from "./registry";
 import {
   type ApplyPolicyChangeResult,
@@ -83,7 +87,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns DLP rules from fixture data.
    */
-  listDLPRules() {
+  listDLPRules(): Promise<ListDLPRulesResult> {
     const fixtureError = buildFixtureError(this.fixtures.errors?.dlpRules);
     if (fixtureError) {
       return Promise.resolve(fixtureError);
@@ -94,7 +98,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns org units from fixture data.
    */
-  listOrgUnits() {
+  listOrgUnits(): Promise<ListOrgUnitsResult> {
     const fixtureError = buildFixtureError(this.fixtures.errors?.orgUnits);
     if (fixtureError) {
       return Promise.resolve(fixtureError);
@@ -105,7 +109,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns enrollment token from fixture data.
    */
-  enrollBrowser() {
+  enrollBrowser(_args?: z.infer<typeof EnrollBrowserSchema>) {
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
       return Promise.resolve({
         error: this.fixtures.errors.enrollBrowser,
@@ -166,7 +170,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns a fleet overview summary from fixture data.
    */
-  getFleetOverview() {
+  getFleetOverview(_args?: z.infer<typeof GetFleetOverviewSchema>) {
     return Promise.resolve(buildFleetOverviewResponse(this.fixtures));
   }
 }
@@ -310,7 +314,7 @@ function buildDraftPolicyResponse(
     intent: "update_policy",
     status: "pending_approval",
     applyParams: {
-      policySchemaId: args.policyName,
+      policySchemaId: args.policySchemaId,
       targetResource: args.targetUnit,
       value: args.proposedValue,
     },
