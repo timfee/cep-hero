@@ -88,14 +88,18 @@ describe("SignInPage", () => {
   it("renders sign-in button", () => {
     const { getByRole } = render(<SignInPage />);
 
-    const button = getByRole("button", { name: /sign in with google/i });
+    const button = getByRole("button", {
+      name: /sign in with cep-netnew\.cc/i,
+    });
     expect(button).toBeInTheDocument();
   });
 
   it("calls signIn.social on button click", () => {
     const { getByRole } = render(<SignInPage />);
 
-    fireEvent.click(getByRole("button", { name: /sign in with google/i }));
+    fireEvent.click(
+      getByRole("button", { name: /sign in with cep-netnew\.cc/i })
+    );
     expect(mockSignInSocial).toHaveBeenCalledWith({
       provider: "google",
       callbackURL: "/",

@@ -5,7 +5,13 @@
 "use client";
 
 import { track } from "@vercel/analytics";
-import { AlertCircle, Loader2, Mail } from "lucide-react";
+import {
+  AlertCircle,
+  Loader2,
+  Mail,
+  Monitor,
+  TriangleAlert,
+} from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState, useTransition } from "react";
 
@@ -370,14 +376,24 @@ export default function SignInPage() {
           </p>
         </div>
 
-        {/* Context callout */}
-        <div className="mx-auto max-w-lg rounded-lg border border-border/50 bg-muted/30 px-4 py-3 text-center text-sm text-destructive-foreground">
-          This tool uses a test domain (
-          <strong className="text-foreground">{TARGET_DOMAIN}</strong>) for live
-          data access. Your @google.com credentials won&apos;t work
-          here&mdash;you need a{" "}
-          <strong className="text-foreground">{TARGET_DOMAIN}</strong> test
-          account.
+        {/* Test domain warning */}
+        <div className="mx-auto flex max-w-lg items-start gap-3 rounded-lg border border-amber-500/40 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">
+          <TriangleAlert
+            className="mt-0.5 h-4 w-4 shrink-0 text-amber-400"
+            aria-hidden="true"
+          />
+          <p>
+            This tool uses a test domain (
+            <strong className="font-semibold text-amber-100">
+              {TARGET_DOMAIN}
+            </strong>
+            ) for live data access. Your @google.com credentials won&apos;t work
+            here&mdash;you need a{" "}
+            <strong className="font-semibold text-amber-100">
+              {TARGET_DOMAIN}
+            </strong>{" "}
+            test account.
+          </p>
         </div>
 
         {/* Side-by-side cards */}
@@ -405,18 +421,24 @@ export default function SignInPage() {
                 ) : (
                   <>
                     <GoogleIcon />
-                    Sign in with Google
+                    Sign in with {TARGET_DOMAIN}
                   </>
                 )}
               </Button>
-              <div className="rounded-md bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-                <p className="font-medium text-lg text-accent-foreground">
-                  Use a new profile
-                </p>
-                <p>
-                  Create a separate Chrome profile for your {TARGET_DOMAIN}{" "}
-                  account to avoid confusion with your corp profile.
-                </p>
+              <div className="flex items-start gap-2.5 rounded-md border border-blue-500/30 bg-blue-950/20 px-3 py-2.5 text-xs text-blue-200">
+                <Monitor
+                  className="mt-0.5 h-4 w-4 shrink-0 text-blue-400"
+                  aria-hidden="true"
+                />
+                <div>
+                  <p className="font-medium text-blue-100">
+                    Use a separate Chrome profile
+                  </p>
+                  <p className="mt-0.5">
+                    Create a dedicated Chrome profile for your {TARGET_DOMAIN}{" "}
+                    account to avoid conflicts with your corp profile.
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
