@@ -1,6 +1,4 @@
-# Ultracite Code Standards
-
-This project uses **Ultracite**, a zero-config preset that enforces strict code quality standards through automated formatting and linting.
+# Code Standards
 
 ## Quick Reference
 
@@ -9,8 +7,6 @@ This project uses **Ultracite**, a zero-config preset that enforces strict code 
 - **Diagnose setup**: `bun x ultracite doctor`
 
 Oxlint + Oxfmt (the underlying engine) provides robust linting and formatting. Most issues are automatically fixable.
-
----
 
 ## Documentation Standards (JSDoc/TSDoc)
 
@@ -42,7 +38,7 @@ export function formatSettingType(settingType: string) {
 **Format requirements:**
 
 - Use multi-line format with `/**` on its own line
-- Description only - do NOT use `@param` or `@return` tags (TypeScript provides this)
+- Description only - do NOT use `@param` or `@return` tags
 - Keep descriptions concise but informative
 - Explain the "why" not the "what" when the function name is self-explanatory
 
@@ -67,16 +63,14 @@ export interface ToolExecutor { ... }
 
 - Private helper functions with obvious purpose (use judgment)
 - Inline type definitions within function signatures
-- Re-exports (document at the source)
 
 ### Code Organization
 
 - Two blank lines between top-level declarations (functions, classes, types)
 - One blank line between substantially different blocks within a function
 - Group related code together
-
----
-
+- Do not re-export; do not clog code with backwards-compatability shims.
+  
 ## Core Principles
 
 Write code that is **accessible, performant, type-safe, and maintainable**. Focus on clarity and explicit intent over brevity.
@@ -122,7 +116,6 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 
 ### Error Handling & Debugging
 
-- Remove `console.log`, `debugger`, and `alert` statements from production code
 - For this POC, structured `console.log` output is allowed; include a consistent tag and avoid secrets
 - Throw `Error` objects with descriptive messages, not strings or other values
 - Use `try-catch` blocks meaningfully - don't catch errors just to rethrow them
@@ -140,7 +133,6 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 ### Security
 
 - Add `rel="noopener"` when using `target="_blank"` on links
-- Avoid `dangerouslySetInnerHTML` unless absolutely necessary
 - Don't use `eval()` or assign directly to `document.cookie`
 - Validate and sanitize user input
 
@@ -150,25 +142,13 @@ Write code that is **accessible, performant, type-safe, and maintainable**. Focu
 - Use top-level regex literals instead of creating them in loops
 - Prefer specific imports over namespace imports
 - Avoid barrel files (index files that re-export everything)
-- Use proper image components (e.g., Next.js `<Image>`) over `<img>` tags
 
 ### Framework-Specific Guidance
-
-**Next.js:**
 
 - Use Next.js `<Image>` component for images
 - Use `next/head` or App Router metadata API for head elements
 - Use Server Components for async data fetching instead of async Client Components
-
-**React 19+:**
-
 - Use ref as a prop instead of `React.forwardRef`
-
-**Solid/Svelte/Vue/Qwik:**
-
-- Use `class` and `for` attributes (not `className` or `htmlFor`)
-
----
 
 ## Testing
 
