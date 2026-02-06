@@ -200,6 +200,40 @@ function buildMultiTurnResult(
 }
 
 /**
+ * Summarize tool outputs as context for the next conversation turn.
+ * Includes only action-producing tools (draftPolicyChange, createDLPRule)
+ * whose outputs contain data the model needs to continue the flow.
+ */
+function buildToolContext(
+  toolOutputs: { toolName: string; output: unknown }[] | undefined
+): string {
+  if (!toolOutputs || toolOutputs.length === 0) {
+    return "";
+  }
+
+  const actionTools = new Set([
+    "draftPolicyChange",
+    "createDLPRule",
+    "applyPolicyChange",
+  ]);
+
+  const summaries = toolOutputs
+    .filter((to) => actionTools.has(to.toolName))
+    .map((to) => {
+      try {
+        const preview = JSON.stringify(to.output);
+        const truncated =
+          preview.length > 500 ? `${preview.slice(0, 500)}...` : preview;
+        return `[${to.toolName} result: ${truncated}]`;
+      } catch {
+        return `[${to.toolName} result: (unserializable)]`;
+      }
+    });
+
+  return summaries.join("\n");
+}
+
+/**
  * Process a single turn in a multi-turn conversation.
  */
 async function processTurn(
@@ -214,7 +248,11 @@ async function processTurn(
   const assistantText = resp.text;
   const turnToolCalls = resp.toolCalls ?? [];
 
-  state.messages.push({ role: "assistant", content: assistantText });
+  const toolContext = buildToolContext(resp.toolOutputs);
+  state.messages.push({
+    role: "assistant",
+    content: toolContext ? `${assistantText}\n\n${toolContext}` : assistantText,
+  });
   state.allToolCalls.push(...turnToolCalls);
   state.allResponses.push(assistantText);
 
