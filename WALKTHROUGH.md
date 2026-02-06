@@ -461,6 +461,12 @@ The pattern prevents several failure modes:
 
 **Audit trail**: The conversation history shows the draft, the confirmation, and the result. This creates a clear record of what changed and why.
 
+### Result Rendering
+
+Both `createDLPRule` and `applyPolicyChange` return structured results with a `_type` discriminator (`ui.success`, `ui.error`, or `ui.manual_steps`). The chat console renders these via `ToolResultCard` (`components/ai-elements/tool-result-card.tsx`), a compact inline card that shows an icon (green check for success, red alert for error, orange alert for manual steps), the result message, and an optional Admin Console link. This keeps evidence co-located with the action that produced it, rather than forcing the AI to restate results in verbose text.
+
+These tools are also included in the `RICH_CARD_TOOLS` set, so when the AI retries a tool call within the same message, only the final result card is shown.
+
 ## Org Unit Display: Context-Based Name Resolution
 
 ### The Problem
@@ -485,7 +491,7 @@ The `output-guardrails.test.ts` suite provides proactive quality tests that prev
 - Literal `undefined` strings — missing values leaking through
 - `NaN` — bad number conversions
 
-The formatters in `lib/mcp/formatters.ts` handle the edge cases. `formatSettingValue` uses `JSON.stringify` for nested objects instead of implicit string coercion, and `formatSettingType` converts Cloud Identity setting types like `settings/rule.dlp.upload` into human-readable labels like "Rule: Dlp Upload".
+The formatters in `lib/mcp/formatters.ts` handle the edge cases. `formatSettingValue` uses `JSON.stringify` for nested objects instead of implicit string coercion, and `formatSettingType` converts Cloud Identity setting types like `settings/rule.dlp.upload` into human-readable labels like "Rule: Dlp Upload". The same pattern applies in UI components—`formatPolicyValue` in `policy-change-confirmation.tsx` uses `JSON.stringify` for object values to prevent `[object Object]` from appearing in policy change confirmation cards.
 
 ## Testing: Fixtures and Determinism
 
@@ -688,7 +694,7 @@ If you're new to the codebase, start with these files:
 
 4. **`app/api/chat/route.ts`** — The chat endpoint ties everything together: authentication, executor selection, and response streaming.
 
-5. **`components/chat/chat-console.tsx`** — The main chat UI, including Sources display, streaming indicators, org unit context, and tool output rendering.
+5. **`components/chat/chat-console.tsx`** — The main chat UI, including Sources display, streaming indicators, org unit context, and tool output rendering. Action tool results (`createDLPRule`, `applyPolicyChange`) render via `ToolResultCard`; read-only tools render via dedicated cards (events table, DLP rules card, etc.).
 
 6. **`lib/mcp/fleet-overview/summarize.ts`** — Dashboard summarization with deterministic card styling, fallback generation, and AI-powered headline/summary creation.
 

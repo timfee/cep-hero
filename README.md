@@ -314,7 +314,8 @@ Uses **v1** for policy resolution and modification. The `my_customer` alias work
 - **`lib/mcp/fleet-overview/summarize.ts`**: Dashboard summarization with deterministic styling and fallback.
 - **`lib/overview.ts`**: Dashboard types (OverviewData, OverviewCard, Suggestion) and PII sanitization.
 - **`lib/chat/chat-service.ts`**: AI orchestration with system prompt, tool registration, and guards.
-- **`components/chat/chat-console.tsx`**: Main chat UI with Sources display, streaming indicators, and org unit context.
+- **`components/ai-elements/tool-result-card.tsx`**: Renders structured results (success/error/manual steps) from action tools inline.
+- **`components/chat/chat-console.tsx`**: Main chat UI with Sources display, streaming indicators, org unit context, and tool result rendering.
 - **`components/chat/welcome-message.ts`**: Dynamic welcome messages based on fleet health.
 - **`components/ui/org-unit-context.tsx`**: React context for org unit ID-to-name resolution.
 - **`components/ui/org-unit-display.tsx`**: Inline component for rendering friendly org unit names.
