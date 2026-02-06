@@ -91,7 +91,7 @@ interface ApplyPolicyChangeSuccess {
   message: string;
   policySchemaId: string;
   targetResource: string;
-  appliedValue: Record<string, unknown> | unknown[];
+  appliedValue: Record<string, unknown>;
 }
 
 interface ApplyPolicyChangeError {
@@ -131,12 +131,18 @@ function connectorKeyFromSchema(schemaId: string): string {
  * Normalises the value argument into a Record suitable for the Chrome Policy
  * API. When the AI sends an array (common for connector policies), the value
  * is wrapped in a record keyed by the connector policy field name.
+ *
+ * Returns null if an array is provided for a non-EnterpriseConnectors policy
+ * to prevent generating an incorrect payload.
  */
 function normalizeValue(
   value: Record<string, unknown> | unknown[],
   policySchemaId: string
-): Record<string, unknown> {
+): Record<string, unknown> | null {
   if (Array.isArray(value)) {
+    if (!policySchemaId.includes("EnterpriseConnectors")) {
+      return null;
+    }
     const key = connectorKeyFromSchema(policySchemaId);
     return { [key]: value };
   }
@@ -166,6 +172,17 @@ export async function applyPolicyChange(
   }
 
   const normalizedValue = normalizeValue(args.value, args.policySchemaId);
+  if (!normalizedValue) {
+    return {
+      _type: "ui.error",
+      error:
+        "Array values are only supported for EnterpriseConnectors policies.",
+      suggestion:
+        "Provide the value as a JSON object with named keys, not an array.",
+      policySchemaId: args.policySchemaId,
+      targetResource: args.targetResource,
+    } as const;
+  }
   const updateMask = buildUpdateMask(normalizedValue);
 
   logApiRequest("apply-policy-change", {
