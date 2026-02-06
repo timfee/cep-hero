@@ -21,7 +21,7 @@ interface CrawleeError extends Error {
  */
 function extractCleanTitle(element: unknown, url: string) {
   const title = getElementText(element);
-  if (title && title.length > 0) {
+  if (title) {
     return title.replaceAll(/\s+/g, " ").trim();
   }
 

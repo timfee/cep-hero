@@ -149,9 +149,7 @@ function formatShortDateTime(value?: string | null): string {
 function summarizeEvents(events: ChromeEvent[]) {
   const timestamps = events
     .map((event) => event.id?.time)
-    .filter(
-      (time): time is string => typeof time === "string" && time.length > 0
-    )
+    .filter((time): time is string => !!time)
     .map((time) => new Date(time))
     .filter((date) => !Number.isNaN(date.getTime()));
 

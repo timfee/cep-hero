@@ -21,6 +21,7 @@ import { afterAll, beforeAll, describe, expect, it } from "bun:test";
 import { OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 
+import { stripQuotes } from "@/lib/gimme/validation";
 import { getServiceAccountAccessToken } from "@/lib/google-service-account";
 import {
   fetchOrgUnitContext,
@@ -60,16 +61,6 @@ const ctx: TestContext = {
   orgUnitContext: null,
   createdRuleNames: [],
 };
-
-/**
- * Strip quotes from environment variable values.
- */
-function stripQuotes(value: string | undefined) {
-  if (!value) {
-    return undefined;
-  }
-  return value.replaceAll(/^['"]|['"]$/g, "");
-}
 
 /**
  * Create authenticated OAuth2 client for testing.

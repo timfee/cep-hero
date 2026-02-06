@@ -215,7 +215,7 @@ export function buildPromptMap(
 
     const content = readFileSync(caseFilePath, "utf8");
     const prompt = extractPromptFromMarkdown(content);
-    if (typeof prompt === "string" && prompt.length > 0) {
+    if (prompt) {
       map.set(evalCase.id, prompt);
     }
   }

@@ -28,10 +28,10 @@ function generatePolicyMarkdown(policy: PolicyDefinition) {
   if (policy.id) {
     metadata.push(`**Policy ID:** ${policy.id}`);
   }
-  if (policy.deprecated === true) {
+  if (policy.deprecated) {
     metadata.push("**Status:** Deprecated");
   }
-  if (policy.device_only === true) {
+  if (policy.device_only) {
     metadata.push(`**Scope:** Device-only`);
   }
 
@@ -40,14 +40,14 @@ function generatePolicyMarkdown(policy: PolicyDefinition) {
     sections.push("");
   }
 
-  if (typeof policy.desc === "string" && policy.desc.length > 0) {
+  if (policy.desc) {
     sections.push("## Description");
     sections.push("");
     sections.push(policy.desc);
     sections.push("");
   }
 
-  if (Array.isArray(policy.supported_on) && policy.supported_on.length > 0) {
+  if (policy.supported_on?.length) {
     sections.push("## Supported Platforms");
     sections.push("");
     sections.push(policy.supported_on.map((p: string) => `- ${p}`).join("\n"));
@@ -57,17 +57,17 @@ function generatePolicyMarkdown(policy: PolicyDefinition) {
   if (
     typeof policy.type === "string" ||
     policy.schema !== undefined ||
-    (Array.isArray(policy.items) && policy.items.length > 0)
+    policy.items?.length
   ) {
     sections.push("## Configuration");
     sections.push("");
 
-    if (typeof policy.type === "string" && policy.type.length > 0) {
+    if (policy.type) {
       sections.push(`**Type:** ${policy.type}`);
       sections.push("");
     }
 
-    if (Array.isArray(policy.items) && policy.items.length > 0) {
+    if (policy.items?.length) {
       sections.push("### Available Options");
       sections.push("");
       for (const item of policy.items) {
@@ -93,18 +93,18 @@ function generatePolicyMarkdown(policy: PolicyDefinition) {
     }
   }
 
-  if (policy.features !== undefined && policy.features !== null) {
+  if (policy.features) {
     const features: string[] = [];
-    if (policy.features.dynamic_refresh === true) {
+    if (policy.features.dynamic_refresh) {
       features.push("Dynamic refresh supported");
     }
-    if (policy.features.per_profile === true) {
+    if (policy.features.per_profile) {
       features.push("Per-profile configuration");
     }
-    if (policy.features.can_be_recommended === true) {
+    if (policy.features.can_be_recommended) {
       features.push("Can be set as recommended");
     }
-    if (policy.features.can_be_mandatory === true) {
+    if (policy.features.can_be_mandatory) {
       features.push("Can be set as mandatory");
     }
 
@@ -116,7 +116,7 @@ function generatePolicyMarkdown(policy: PolicyDefinition) {
     }
   }
 
-  if (Array.isArray(policy.tags) && policy.tags.length > 0) {
+  if (policy.tags?.length) {
     sections.push("## Tags");
     sections.push("");
     sections.push(policy.tags.map((tag: string) => `\`${tag}\``).join(" "));
