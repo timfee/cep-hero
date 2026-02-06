@@ -44,7 +44,7 @@ export function OrgUnitsList({ data }: OrgUnitsListProps) {
   }
 
   return (
-    <Collapsible>
+    <Collapsible className="group">
       <CollapsibleTrigger className="flex w-full items-center gap-2 rounded-md border p-3 text-sm transition-colors hover:bg-muted/50">
         <Building2 className="h-4 w-4 text-muted-foreground" />
         <span className="font-medium">
