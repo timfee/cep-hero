@@ -184,7 +184,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
             <button
               onClick={handleRefresh}
               disabled={isRefreshing}
-              className="flex flex-shrink-0 items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.08] disabled:opacity-50"
+              className="flex flex-shrink-0 cursor-pointer items-center gap-2 rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-white/[0.08] disabled:cursor-not-allowed disabled:opacity-50"
               aria-label="Refresh dashboard"
             >
               <RefreshCw
@@ -233,7 +233,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                             onAction(card.action);
                           }}
                           className={cn(
-                            "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
+                            "group flex w-full cursor-pointer items-center justify-between rounded-2xl p-6 text-left",
                             "border border-white/10 bg-white/[0.04] backdrop-blur-xl",
                             "transition-all duration-200",
                             "hover:border-white/15 hover:bg-white/[0.08]"
@@ -314,7 +314,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                           onAction(suggestion.action);
                         }}
                         className={cn(
-                          "group flex w-full items-center justify-between rounded-2xl p-6 text-left",
+                          "group flex w-full cursor-pointer items-center justify-between rounded-2xl p-6 text-left",
                           "border bg-white/[0.04] backdrop-blur-xl",
                           "transition-all duration-200",
                           CATEGORY_COLORS[suggestion.category]
