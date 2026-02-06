@@ -135,17 +135,29 @@ interface SearchKnowledgeOutput {
 }
 
 /**
- * Unique source reference extracted from searchKnowledge tool outputs or inline markdown links.
+ * Unique source reference extracted from searchKnowledge tool outputs.
  */
 interface ExtractedSource {
   title: string;
   url: string;
 }
 
-const MARKDOWN_LINK_PATTERN = /\[([^\]]+)\]\((https?:\/\/[^)]+)\)/g;
+/**
+ * Strip trailing "Sources" sections and stray inline markdown links
+ * from agent text. The Sources drawer handles citation display.
+ */
+function stripSourcesFromText(text: string): string {
+  // Remove trailing "Sources" / "**Sources**" sections (heading + everything after)
+  const stripped = text.replace(
+    /\n+(?:\*\*Sources?\*\*|#{1,3}\s*Sources?)\s*\n[\s\S]*$/i,
+    ""
+  );
+  return stripped.trim();
+}
 
 /**
- * Extract unique sources from a message's searchKnowledge tool outputs and inline markdown links.
+ * Extract unique sources from a message's searchKnowledge tool outputs.
+ * Sources are displayed in a collapsible drawer — not inline in the text.
  */
 function extractSourcesFromMessage(
   parts: UIMessage["parts"]
@@ -167,22 +179,6 @@ function extractSourcesFromMessage(
             seen.add(hit.url);
             sources.push({ title: hit.title, url: hit.url });
           }
-        }
-      }
-    }
-
-    if (
-      part.type === "text" &&
-      "text" in part &&
-      typeof part.text === "string"
-    ) {
-      let match: RegExpExecArray | null;
-      MARKDOWN_LINK_PATTERN.lastIndex = 0;
-      while ((match = MARKDOWN_LINK_PATTERN.exec(part.text)) !== null) {
-        const [, title, url] = match;
-        if (!seen.has(url)) {
-          seen.add(url);
-          sources.push({ title, url });
         }
       }
     }
@@ -569,7 +565,11 @@ export function ChatConsole() {
                         >
                           <MessageContent>
                             <MessageResponse>
-                              {sanitizeOrgUnitsInText(part.text)}
+                              {isUser
+                                ? part.text
+                                : sanitizeOrgUnitsInText(
+                                    stripSourcesFromText(part.text)
+                                  )}
                             </MessageResponse>
                           </MessageContent>
                           {!isUser && (
