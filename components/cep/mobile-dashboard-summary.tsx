@@ -175,7 +175,7 @@ export function MobileDashboardSummary({
               const StatusIcon = config.icon;
               return (
                 <div
-                  key={card.label}
+                  key={`${card.label}-${card.action}`}
                   className={cn(
                     "flex items-center gap-1 rounded-full px-2 py-0.5",
                     config.bgColor
@@ -232,7 +232,7 @@ export function MobileDashboardSummary({
 
                       return (
                         <button
-                          key={card.label}
+                          key={`${card.label}-${card.action}`}
                           type="button"
                           onClick={() => {
                             onAction(card.action);
