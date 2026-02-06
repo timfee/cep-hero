@@ -260,7 +260,7 @@ describe("createDLPRule payload validation", () => {
     }
   });
 
-  it("returns ui.manual_steps on API error", async () => {
+  it("returns ui.error on API error", async () => {
     mockFetchError(403, "Permission denied");
 
     const result = await createDLPRule(auth, customerId, ctx, {
@@ -270,11 +270,9 @@ describe("createDLPRule payload validation", () => {
       action: "AUDIT",
     });
 
-    expect(result._type).toBe("ui.manual_steps");
-    if (result._type === "ui.manual_steps") {
+    expect(result._type).toBe("ui.error");
+    if (result._type === "ui.error") {
       expect(result.error).toBe("Permission denied");
-      expect(result.steps).toBeDefined();
-      expect(result.steps!.length).toBeGreaterThan(0);
     }
   });
 
@@ -296,17 +294,21 @@ describe("createDLPRule payload validation", () => {
     }
   });
 
-  it("propagates error when OAuth2Client has no credentials", async () => {
+  it("returns ui.error when OAuth2Client has no credentials", async () => {
     const noTokenAuth = new OAuth2Client();
+    noTokenAuth.setCredentials({});
 
-    await expect(
-      createDLPRule(noTokenAuth, customerId, ctx, {
-        displayName: "No token rule",
-        targetOrgUnit: "id:03ph8a2z221pcso",
-        triggers: ["UPLOAD"],
-        action: "AUDIT",
-      })
-    ).rejects.toThrow();
+    const result = await createDLPRule(noTokenAuth, customerId, ctx, {
+      displayName: "No token rule",
+      targetOrgUnit: "id:03ph8a2z221pcso",
+      triggers: ["UPLOAD"],
+      action: "AUDIT",
+    });
+
+    expect(result._type).toBe("ui.error");
+    if (result._type === "ui.error") {
+      expect(result.error).toBe("Authentication required");
+    }
   });
 
   it("includes displayName in setting.value.name", async () => {

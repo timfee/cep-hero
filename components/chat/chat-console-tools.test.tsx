@@ -19,6 +19,8 @@ describe("tool visibility tiers", () => {
     "listDLPRules",
     "listOrgUnits",
     "draftPolicyChange",
+    "createDLPRule",
+    "applyPolicyChange",
   ]);
 
   describe("HIDDEN_TOOLS", () => {
@@ -46,13 +48,15 @@ describe("tool visibility tiers", () => {
   });
 
   describe("RICH_CARD_TOOLS", () => {
-    it("includes all five tools with custom UI cards", () => {
-      expect(RICH_CARD_TOOLS.size).toBe(5);
+    it("includes all seven tools with custom UI cards", () => {
+      expect(RICH_CARD_TOOLS.size).toBe(7);
       expect(RICH_CARD_TOOLS.has("getChromeEvents")).toBe(true);
       expect(RICH_CARD_TOOLS.has("getChromeConnectorConfiguration")).toBe(true);
       expect(RICH_CARD_TOOLS.has("listDLPRules")).toBe(true);
       expect(RICH_CARD_TOOLS.has("listOrgUnits")).toBe(true);
       expect(RICH_CARD_TOOLS.has("draftPolicyChange")).toBe(true);
+      expect(RICH_CARD_TOOLS.has("createDLPRule")).toBe(true);
+      expect(RICH_CARD_TOOLS.has("applyPolicyChange")).toBe(true);
     });
   });
 

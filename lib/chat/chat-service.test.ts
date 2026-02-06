@@ -113,6 +113,15 @@ describe("chat-service", () => {
       expect(result.hasUIContent).toBe(true);
     });
 
+    it("detects ui.error as UI content", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ _type: "ui.error", message: "API failure" }],
+        text: "",
+        toolCalls: [],
+      });
+      expect(result.hasUIContent).toBe(true);
+    });
+
     it("does not flag regular tool results as UI content", () => {
       const result = analyzeLastStep({
         toolResults: [{ events: [], totalCount: 0 }],
