@@ -47,7 +47,7 @@ describe("OrgUnitDisplay", () => {
         <OrgUnitDisplay targetResource="orgunits/03ph8a2z23yjui6" />
       );
 
-      expect(container.textContent).toContain("/");
+      expect(container.textContent).toContain("Root");
     });
 
     it("shows non-path name directly", () => {
@@ -181,7 +181,7 @@ describe("OrgUnitDisplay", () => {
         <OrgUnitDisplay name={null} id={null} targetResource={null} />
       );
 
-      expect(container.textContent).toContain("/");
+      expect(container.textContent).toContain("Root");
     });
 
     it("handles empty orgunits/ prefix", () => {
@@ -189,7 +189,7 @@ describe("OrgUnitDisplay", () => {
         <OrgUnitDisplay targetResource="orgunits/" />
       );
 
-      expect(container.textContent).toContain("/");
+      expect(container.textContent).toContain("Root");
       expect(container.textContent).not.toContain("(");
     });
 
@@ -204,7 +204,7 @@ describe("OrgUnitDisplay", () => {
     it("handles root path correctly", () => {
       const { container } = render(<OrgUnitDisplay name="/" />);
 
-      expect(container.textContent).toBe("/");
+      expect(container.textContent).toBe("Root");
       expect(container.textContent).not.toContain("(");
     });
   });
