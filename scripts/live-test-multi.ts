@@ -224,7 +224,9 @@ async function main() {
   );
 
   console.log("\n" + "=".repeat(70));
-  console.log("FLOW 6: Safe browsing review (no questions, no tool name leak)");
+  console.log(
+    "FLOW 6: Safe browsing review (no questions, no tool name leak, uses tools, has citations)"
+  );
   console.log("=".repeat(70));
 
   msgs = [];
