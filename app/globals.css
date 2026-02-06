@@ -37,6 +37,8 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.25 0 0);
   --sidebar-ring: oklch(0.5 0.15 250);
+  --link: oklch(0.72 0.17 250);
+  --link-hover: oklch(0.8 0.14 250);
 }
 
 .dark {
@@ -72,6 +74,8 @@
   --sidebar-accent-foreground: oklch(0.95 0 0);
   --sidebar-border: oklch(0.25 0 0);
   --sidebar-ring: oklch(0.5 0.15 250);
+  --link: oklch(0.72 0.17 250);
+  --link-hover: oklch(0.8 0.14 250);
 }
 
 @theme inline {
@@ -126,14 +130,24 @@
     @apply border-border outline-ring/50;
   }
 
+  /* Streamdown renders links as <button> (linkSafety mode), which are
+     inline-block by default — display:inline lets text wrap naturally. */
   [data-streamdown="link"] {
-    color: oklch(0.72 0.17 250);
+    color: var(--link);
     display: inline;
     overflow-wrap: anywhere;
+    text-decoration-line: underline;
+    text-underline-offset: 0.25em;
   }
 
   [data-streamdown="link"]:hover {
-    color: oklch(0.8 0.14 250);
+    color: var(--link-hover);
+  }
+
+  [data-streamdown="link"]:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: 2px;
   }
 
   body {
