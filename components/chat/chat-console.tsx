@@ -24,31 +24,6 @@ import type {
   ToolResultOutput,
 } from "@/types/chat";
 
-/**
- * Tools whose output is rendered by dedicated UI cards.
- * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
- */
-export const RICH_CARD_TOOLS = new Set([
-  "getChromeEvents",
-  "getChromeConnectorConfiguration",
-  "listDLPRules",
-  "listOrgUnits",
-  "draftPolicyChange",
-  "createDLPRule",
-  "applyPolicyChange",
-]);
-
-/**
- * Tools that are invisible in the chat — their output is consumed
- * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
- */
-export const HIDDEN_TOOLS = new Set([
-  "getFleetOverview",
-  "searchKnowledge",
-  "debugAuth",
-  "suggestActions",
-]);
-
 import { ActionButtons } from "@/components/ai-elements/action-buttons";
 import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-policies-card";
 import {
@@ -101,6 +76,43 @@ import { leafName, normalizeResource } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { OrgUnitsList } from "./org-units-list";
+
+/**
+ * Tools whose output is rendered by dedicated UI cards.
+ * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
+ */
+export const RICH_CARD_TOOLS = new Set([
+  "getChromeEvents",
+  "getChromeConnectorConfiguration",
+  "listDLPRules",
+  "listOrgUnits",
+  "draftPolicyChange",
+  "createDLPRule",
+  "applyPolicyChange",
+]);
+
+/**
+ * Tools that are invisible in the chat — their output is consumed
+ * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
+ */
+export const HIDDEN_TOOLS = new Set([
+  "getFleetOverview",
+  "searchKnowledge",
+  "debugAuth",
+  "suggestActions",
+]);
+
+/**
+ * Context-gathering tools whose cards are suppressed when a message also
+ * contains an action tool (applyPolicyChange, createDLPRule). This prevents
+ * redundant re-display of data the AI fetched to prepare the action.
+ */
+const CONTEXT_TOOLS = new Set([
+  "getChromeConnectorConfiguration",
+  "listOrgUnits",
+  "listDLPRules",
+  "getChromeEvents",
+]);
 
 interface OrgUnitsOutput {
   orgUnits?: {
@@ -512,12 +524,19 @@ export function ChatConsole() {
               // When the AI calls the same tool multiple times in one message,
               // only the last invocation's rich card is shown.
               const lastToolIndex = new Map<string, number>();
+              let hasActionTool = false;
               for (let pi = 0; pi < message.parts.length; pi++) {
                 const p = message.parts[pi];
                 if (isToolUIPart(p)) {
                   const name = getToolName(p);
                   if (RICH_CARD_TOOLS.has(name)) {
                     lastToolIndex.set(name, pi);
+                  }
+                  if (
+                    name === "applyPolicyChange" ||
+                    name === "createDLPRule"
+                  ) {
+                    hasActionTool = true;
                   }
                 }
               }
@@ -587,6 +606,13 @@ export function ChatConsole() {
 
                       // Hidden tools: never render (sources/actions handled elsewhere)
                       if (HIDDEN_TOOLS.has(toolName)) {
+                        return null;
+                      }
+
+                      // When an action tool (applyPolicyChange, createDLPRule) is
+                      // present in this message, suppress redundant context-gathering
+                      // cards that the AI re-fetched to prepare the action.
+                      if (hasActionTool && CONTEXT_TOOLS.has(toolName)) {
                         return null;
                       }
 
