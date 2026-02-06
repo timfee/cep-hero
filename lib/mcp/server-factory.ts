@@ -6,12 +6,15 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import {
+  ApplyPolicyChangeSchema,
   CepToolExecutor,
-  GetChromeEventsSchema,
-  ListDLPRulesSchema,
+  CreateDLPRuleSchema,
+  DraftPolicyChangeSchema,
   EnrollBrowserSchema,
+  GetChromeEventsSchema,
   GetConnectorConfigSchema,
   GetFleetOverviewSchema,
+  ListDLPRulesSchema,
   ListOrgUnitsSchema,
 } from "@/lib/mcp/registry";
 import { searchDocs, searchPolicies } from "@/lib/upstash/search";
@@ -130,6 +133,50 @@ export function createMcpServer(accessToken: string) {
         };
       }
       const result = await searchDocs(args.query, topK);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    }
+  );
+
+  server.registerTool(
+    "createDLPRule",
+    {
+      description:
+        "Create a data protection (DLP) rule via Cloud Identity API.",
+      inputSchema: CreateDLPRuleSchema,
+    },
+    async (args) => {
+      const result = await executor.createDLPRule(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    }
+  );
+
+  server.registerTool(
+    "draftPolicyChange",
+    {
+      description: "Draft a Chrome policy change proposal for user review.",
+      inputSchema: DraftPolicyChangeSchema,
+    },
+    async (args) => {
+      const result = await executor.draftPolicyChange(args);
+      return {
+        content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
+      };
+    }
+  );
+
+  server.registerTool(
+    "applyPolicyChange",
+    {
+      description:
+        "Apply a confirmed Chrome policy change via Chrome Policy API.",
+      inputSchema: ApplyPolicyChangeSchema,
+    },
+    async (args) => {
+      const result = await executor.applyPolicyChange(args);
       return {
         content: [{ type: "text", text: JSON.stringify(result, null, 2) }],
       };
