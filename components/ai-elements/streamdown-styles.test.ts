@@ -38,6 +38,13 @@ describe('Streamdown link styles ([data-streamdown="link"])', () => {
   it("has underline styling for link affordance", () => {
     expect(block).toContain("text-decoration-line: underline");
   });
+
+  it("lives outside @layer base so it beats Tailwind cascade layers", () => {
+    const layerBaseStart = css.indexOf("@layer base {");
+    const linkRuleStart = css.indexOf('[data-streamdown="link"]');
+    expect(linkRuleStart).toBeGreaterThan(-1);
+    expect(linkRuleStart).toBeLessThan(layerBaseStart);
+  });
 });
 
 describe("Streamdown link hover styles", () => {
