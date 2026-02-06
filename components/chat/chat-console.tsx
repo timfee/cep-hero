@@ -134,8 +134,8 @@ interface ExtractedSource {
 }
 
 /**
- * Strip trailing "Sources" sections and stray inline markdown links
- * from agent text. The Sources drawer handles citation display.
+ * Strip trailing "Sources" sections from agent text.
+ * The Sources drawer handles citation display separately.
  */
 function stripSourcesFromText(text: string): string {
   // Remove trailing "Sources" / "**Sources**" sections (heading + everything after)
