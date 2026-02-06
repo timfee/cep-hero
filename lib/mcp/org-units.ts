@@ -114,6 +114,50 @@ function lookupOrgUnit(
 }
 
 /**
+ * Extracts the leaf segment from an org unit path for use as a friendly name.
+ * "/Sales/West Coast" → "West Coast", "/" → "/"
+ */
+export function leafName(path: string): string {
+  if (!path || path === "/") {
+    return "/";
+  }
+
+  const segments = path.split("/").filter(Boolean);
+  return segments.at(-1) ?? path;
+}
+
+/**
+ * Replaces org unit ID patterns in a string with human-readable paths.
+ * Handles "orgunits/abc123" and "id:abc123" patterns found in tool JSON output.
+ */
+export function sanitizeOrgUnitIds(
+  text: string,
+  pathMap: Map<string, { path: string }>
+): string {
+  if (pathMap.size === 0) {
+    return text;
+  }
+
+  return text.replaceAll(/(?:orgunits\/|id:)[a-z0-9_-]+/gi, (match) => {
+    const normalized = normalizeResource(match);
+    const info = pathMap.get(normalized);
+    if (info) {
+      return info.path;
+    }
+
+    if (!normalized.startsWith("orgunits/")) {
+      const withPrefix = `orgunits/${normalized}`;
+      const prefixInfo = pathMap.get(withPrefix);
+      if (prefixInfo) {
+        return prefixInfo.path;
+      }
+    }
+
+    return match;
+  });
+}
+
+/**
  * Builds a policy target resource string from an org unit identifier.
  * Returns empty string if the input is invalid or missing the org unit ID.
  */

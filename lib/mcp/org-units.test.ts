@@ -9,9 +9,11 @@ import { describe, expect, it } from "bun:test";
 import {
   buildOrgUnitNameMap,
   buildOrgUnitTargetResource,
+  leafName,
   normalizeResource,
   type OrgUnit,
   resolveOrgUnitDisplay,
+  sanitizeOrgUnitIds,
 } from "./org-units";
 
 /**
@@ -218,5 +220,86 @@ describe("buildOrgUnitTargetResource", () => {
 
   it("normalizes case for prefix", () => {
     expect(buildOrgUnitTargetResource("Orgunits/abc")).toBe("orgunits/abc");
+  });
+});
+
+describe("leafName", () => {
+  it("extracts leaf from multi-segment path", () => {
+    expect(leafName("/Sales/West Coast")).toBe("West Coast");
+  });
+
+  it("extracts leaf from single-segment path", () => {
+    expect(leafName("/Engineering")).toBe("Engineering");
+  });
+
+  it("returns / for root path", () => {
+    expect(leafName("/")).toBe("/");
+  });
+
+  it("returns / for empty string", () => {
+    expect(leafName("")).toBe("/");
+  });
+
+  it("extracts leaf from deep path", () => {
+    expect(leafName("/Org/Sales/West Coast/Team A")).toBe("Team A");
+  });
+});
+
+describe("sanitizeOrgUnitIds", () => {
+  const pathMap = new Map<string, { path: string }>([
+    ["orgunits/abc123", { path: "/Engineering" }],
+    ["abc123", { path: "/Engineering" }],
+    ["orgunits/xyz789", { path: "/Sales/West Coast" }],
+    ["xyz789", { path: "/Sales/West Coast" }],
+    ["orgunits/org_unit_123", { path: "/With Underscores" }],
+    ["org_unit_123", { path: "/With Underscores" }],
+  ]);
+
+  it("replaces orgunits/ prefixed IDs with paths", () => {
+    const input = '{"targetResource": "orgunits/abc123"}';
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe('{"targetResource": "/Engineering"}');
+  });
+
+  it("replaces id: prefixed IDs with paths", () => {
+    const input = '{"orgUnit": "id:abc123"}';
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe('{"orgUnit": "/Engineering"}');
+  });
+
+  it("replaces multiple occurrences in same string", () => {
+    const input = "orgunits/abc123 and orgunits/xyz789";
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe("/Engineering and /Sales/West Coast");
+  });
+
+  it("leaves unrecognized IDs unchanged", () => {
+    const input = '{"targetResource": "orgunits/unknown999"}';
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe('{"targetResource": "orgunits/unknown999"}');
+  });
+
+  it("handles IDs with underscores", () => {
+    const input = '{"orgUnit": "orgunits/org_unit_123"}';
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe('{"orgUnit": "/With Underscores"}');
+  });
+
+  it("returns input unchanged when map is empty", () => {
+    const input = '{"targetResource": "orgunits/abc123"}';
+    const result = sanitizeOrgUnitIds(input, new Map());
+    expect(result).toBe(input);
+  });
+
+  it("does not match bare IDs without prefix", () => {
+    const input = '{"value": "abc123"}';
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe('{"value": "abc123"}');
+  });
+
+  it("is case-insensitive for orgunits prefix", () => {
+    const input = '{"target": "Orgunits/abc123"}';
+    const result = sanitizeOrgUnitIds(input, pathMap);
+    expect(result).toBe('{"target": "/Engineering"}');
   });
 });
