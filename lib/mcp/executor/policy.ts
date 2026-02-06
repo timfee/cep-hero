@@ -97,6 +97,7 @@ interface ApplyPolicyChangeSuccess {
 
 interface ApplyPolicyChangeError {
   _type: "ui.error";
+  message: string;
   error: string;
   suggestion: string;
   policySchemaId: string;
@@ -154,6 +155,7 @@ export async function applyPolicyChange(
   if (!targetResource || targetResource.startsWith("customers/")) {
     return {
       _type: "ui.error",
+      message: "Invalid target: customer-level targeting is not allowed.",
       error: "Org Unit ID is required. Cannot target a customer directly.",
       suggestion:
         "Provide a valid org unit ID (e.g., 'orgunits/03ph8a2z1...' or '/Engineering').",
@@ -166,6 +168,7 @@ export async function applyPolicyChange(
   if (!normalizedValue) {
     return {
       _type: "ui.error",
+      message: "Unsupported value format for this policy type.",
       error:
         "Array values are only supported for known EnterpriseConnectors policies.",
       suggestion:
@@ -214,6 +217,7 @@ export async function applyPolicyChange(
 
     return {
       _type: "ui.error",
+      message: "Failed to apply policy change.",
       error:
         error instanceof Error
           ? error.message
