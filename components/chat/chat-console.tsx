@@ -28,7 +28,7 @@ import type {
  * Tools whose output is rendered by dedicated UI cards.
  * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
  */
-const RICH_CARD_TOOLS = new Set([
+export const RICH_CARD_TOOLS = new Set([
   "getChromeEvents",
   "getChromeConnectorConfiguration",
   "listDLPRules",
@@ -42,7 +42,7 @@ const RICH_CARD_TOOLS = new Set([
  * Tools that are invisible in the chat — their output is consumed
  * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
  */
-const HIDDEN_TOOLS = new Set([
+export const HIDDEN_TOOLS = new Set([
   "getFleetOverview",
   "searchKnowledge",
   "debugAuth",
