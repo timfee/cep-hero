@@ -11,9 +11,10 @@ CEP Hero is an AI-powered troubleshooting assistant for Chrome Enterprise Premiu
 5. [The Chat System: Orchestrating AI Conversations](#the-chat-system-orchestrating-ai-conversations)
 6. [The Dashboard: Evidence-First Summarization](#the-dashboard-evidence-first-summarization)
 7. [Policy Changes: The Draft-and-Apply Pattern](#policy-changes-the-draft-and-apply-pattern)
-8. [Testing: Fixtures and Determinism](#testing-fixtures-and-determinism)
-9. [Evaluation: Measuring AI Quality](#evaluation-measuring-ai-quality)
-10. [Project Structure Reference](#project-structure-reference)
+8. [Org Unit Display: Context-Based Name Resolution](#org-unit-display-context-based-name-resolution)
+9. [Testing: Fixtures and Determinism](#testing-fixtures-and-determinism)
+10. [Evaluation: Measuring AI Quality](#evaluation-measuring-ai-quality)
+11. [Project Structure Reference](#project-structure-reference)
 
 ## What Problem Does This Solve?
 
@@ -294,6 +295,23 @@ prepareStep: ({ steps }) => {
 
 If the AI tries to say "I'll check the events" and stop, the guard injects additional instructions requiring a complete response.
 
+### Sources and Citations
+
+The chat console extracts and displays citation sources from AI responses. When the AI references knowledge from `searchKnowledge` tool outputs or includes inline markdown links, the system collects these into a deduplicated Sources panel rendered below each assistant message.
+
+The `extractSourcesFromMessage` function processes message parts to find unique URLs. Sources are displayed in a collapsible UI element, giving users transparency about where the AI's information came from.
+
+The system prompt instructs the AI to always cite its sources and include inline markdown links. The live-test-multi script verifies that citations appear consistently across different conversation flows.
+
+### Streaming Indicator
+
+The chat console shows a persistent "Responding..." indicator while the AI is generating a response. Two visual states communicate progress:
+
+- **"Thinking..."** — The request has been submitted but no assistant response has started streaming yet
+- **"Responding..."** — The assistant is actively generating text
+
+Both states use animated pulsing dots with staggered delays. This replaces a simple spinner and gives users better feedback about what's happening during potentially long diagnostic responses.
+
 ## The Dashboard: Evidence-First Summarization
 
 ### The Two-Layer Pattern
@@ -349,6 +367,24 @@ Separating extraction from interpretation has several benefits.
 **Token Efficiency**: The AI receives only the relevant facts, not megabytes of raw API data. This reduces costs and improves response times.
 
 **Consistency**: The same facts always produce similar summaries. The AI isn't distracted by irrelevant fields or formatting differences in API responses.
+
+### Deterministic Card Styling
+
+A subtle but important problem: dashboard card colors and suggestion categories were non-deterministic across reloads because the AI would assign different statuses each time. The solution is a post-processing step called `enforceCardStyles` that deterministically resolves card statuses and suggestion categories based on keyword matching.
+
+For example, a card mentioning "DLP" is always "critical" if zero rules exist, and a suggestion about "security" always gets the "security" category. This ensures visual consistency without constraining the AI's actual text generation.
+
+### Fallback Overview
+
+When the AI summarization fails (network errors, rate limits, etc.), `buildFallbackOverview` generates a deterministic dashboard from the extracted facts alone. It detects gaps (no DLP rules, no connector policies, no events) and generates appropriate cards and suggestions. This ensures the dashboard always renders something useful.
+
+### Welcome Messages
+
+The chat seed message is generated independently from the dashboard text by `generateWelcomeMessage`. This prevents a previous bug where the dashboard headline was duplicated in the chat. The welcome message inspects fleet health data and tailors its greeting—mentioning specific areas that need attention if warnings or critical items exist, or confirming everything looks good if the fleet is healthy.
+
+### Data Sanitization
+
+The `sanitizeOverview` function in `lib/overview.ts` redacts sensitive data (emails, URLs, domain names) from all text fields before they reach the frontend. This prevents the AI from accidentally exposing PII in dashboard headlines or summaries.
 
 ### Structured Output
 
@@ -424,6 +460,32 @@ The pattern prevents several failure modes:
 **Misunderstanding**: The confirmation card shows exactly what will change, including the target org unit and policy values. Users can verify before proceeding.
 
 **Audit trail**: The conversation history shows the draft, the confirmation, and the result. This creates a clear record of what changed and why.
+
+## Org Unit Display: Context-Based Name Resolution
+
+### The Problem
+
+Google APIs return org unit identifiers as opaque strings like `orgunits/03ph8a2z23yjui6`. Displaying these raw IDs in the UI or AI responses is useless—administrators need to see friendly paths like `/Engineering` or `/Sales/West Coast`.
+
+### The Solution
+
+The org unit display system uses React context to share a name-resolution map across components.
+
+**`OrgUnitMapProvider`** (`components/ui/org-unit-context.tsx`) wraps the chat console and provides a `Map<string, OrgUnitInfo>` that maps raw IDs to `{ name, path }` objects. This map is populated when org units are fetched via the `listOrgUnits` tool.
+
+**`OrgUnitDisplay`** (`components/ui/org-unit-display.tsx`) is an inline component that resolves an org unit ID to its friendly name. It consults the context map first, falls back to explicit props, and renders inline text like "Engineering (/Sales/West Coast)". The root org unit is displayed as "Root" rather than showing a confusing empty ID.
+
+This pattern keeps org unit resolution centralized. Components like `ConnectorPoliciesCard` and `DLPRulesCard` don't need to know how to resolve IDs—they just render `<OrgUnitDisplay id={rawId} />` and the context handles the rest.
+
+### Output Guardrails
+
+The `output-guardrails.test.ts` suite provides proactive quality tests that prevent common formatting bugs in tool outputs. Every tool executor method is tested against fixtures containing challenging data (nested objects, arrays, mixed types) and the output is scanned for forbidden patterns:
+
+- `[object Object]` — unhandled object-to-string coercion
+- Literal `undefined` strings — missing values leaking through
+- `NaN` — bad number conversions
+
+The formatters in `lib/mcp/formatters.ts` handle the edge cases. `formatSettingValue` uses `JSON.stringify` for nested objects instead of implicit string coercion, and `formatSettingType` converts Cloud Identity setting types like `settings/rule.dlp.upload` into human-readable labels like "Rule: Dlp Upload".
 
 ## Testing: Fixtures and Determinism
 
@@ -563,39 +625,55 @@ Reports are committed to the repository so you can track eval performance over t
 
 ```
 cep-hero/
-├── app/                          # Next.js pages and API routes
+├── app/                          # Next.js App Router pages and API routes
 │   ├── api/
 │   │   ├── auth/[...all]/       # OAuth endpoints via Better Auth
 │   │   ├── chat/                # AI chat streaming endpoint
-│   │   └── overview/            # Dashboard data endpoint
-│   ├── (auth)/sign-in/          # Sign-in page
+│   │   ├── fixtures/            # Fixture data endpoints (list, get by ID)
+│   │   ├── mcp/                 # MCP Streamable HTTP endpoint
+│   │   ├── overview/            # Dashboard data endpoint
+│   │   ├── sign-in-status/      # Auth status check endpoint
+│   │   └── sign-out/            # Sign-out handler
+│   ├── (auth)/sign-in/          # Sign-in page with domain context
+│   ├── sign-in-status/          # Auth status display page
 │   └── page.tsx                 # Home page (redirects if not authenticated)
 │
 ├── components/
-│   ├── chat/                    # Chat console and context provider
-│   ├── cep/                     # Dashboard and app shell
 │   ├── ai-elements/             # Tool output renderers (tables, cards, etc.)
-│   └── ui/                      # Shared primitives (buttons, inputs, etc.)
+│   ├── chat/                    # Chat console, context, welcome messages
+│   ├── cep/                     # Dashboard, app shell, status bar
+│   ├── fixtures/                # Demo mode UI (fixture selector, banner)
+│   └── ui/                      # Shared primitives (buttons, org-unit display, etc.)
 │
 ├── lib/
 │   ├── auth.ts                  # Better Auth configuration
-│   ├── auth/                    # Shared auth utilities
+│   ├── auth/                    # Auth status utilities
 │   ├── chat/                    # Chat service and AI orchestration
+│   ├── fixtures/                # Fixture context for demo mode
+│   ├── gimme/                   # Self-enrollment module
+│   ├── overview.ts              # Dashboard types and sanitization
+│   ├── upstash/                 # Vector search for knowledge grounding
 │   └── mcp/                     # Tool system
 │       ├── executor/            # Production executor (Google API calls)
 │       ├── fleet-overview/      # Dashboard extraction and summarization
+│       ├── formatters.ts        # Human-readable formatting utilities
+│       ├── org-units.ts         # Org unit name resolution and mapping
 │       ├── schemas.ts           # Zod schemas for tool inputs
 │       ├── types.ts             # ToolExecutor interface
-│       └── fixture-executor.ts  # Test executor
+│       ├── server-factory.ts    # MCP server with tool registrations
+│       ├── fixture-executor.ts  # Test executor (fixture injection)
+│       └── fixture-loader.ts    # Fixture data loading and merging
 │
 ├── evals/
-│   ├── cases/                   # Test scenarios (markdown files)
-│   ├── fixtures/                # Test data overrides
-│   ├── lib/                     # Runner, assertions, reporting
-│   ├── registry.json            # Case definitions
+│   ├── cases/                   # Test scenarios (87 markdown files)
+│   ├── fixtures/                # Base snapshot and per-case overrides
+│   ├── lib/                     # Runner, assertions, judge, reporting
+│   ├── registry.json            # Case definitions (87 cases, 15 categories)
 │   └── run.ts                   # CLI entry point
 │
-└── tests/                       # Unit and integration tests
+├── scripts/                     # CLI utilities (indexing, validation, live tests)
+├── tests/                       # Integration tests and test setup
+└── types/                       # Shared TypeScript type definitions
 ```
 
 ### Key Files to Start With
@@ -604,10 +682,16 @@ If you're new to the codebase, start with these files:
 
 1. **`lib/mcp/types.ts`** — The `ToolExecutor` interface defines every operation the AI can perform. This is the contract between the chat service and the data layer.
 
-2. **`lib/chat/chat-service.ts`** — The chat service configures the AI and registers tools. The system prompt here shapes the AI's behavior.
+2. **`lib/chat/chat-service.ts`** — The chat service configures the AI and registers tools. The system prompt here shapes the AI's behavior (conversational tone, forced tool usage, citation requirements).
 
 3. **`lib/mcp/executor/index.ts`** — The production executor implements the interface with real Google API calls. Trace through one method to see how API responses are transformed.
 
 4. **`app/api/chat/route.ts`** — The chat endpoint ties everything together: authentication, executor selection, and response streaming.
 
-5. **`evals/lib/runner.ts`** — The eval runner shows how cases are executed and assertions are checked. This is useful for understanding what "correct behavior" means.
+5. **`components/chat/chat-console.tsx`** — The main chat UI, including Sources display, streaming indicators, org unit context, and tool output rendering.
+
+6. **`lib/mcp/fleet-overview/summarize.ts`** — Dashboard summarization with deterministic card styling, fallback generation, and AI-powered headline/summary creation.
+
+7. **`lib/overview.ts`** — Dashboard types (`OverviewData`, `OverviewCard`, `Suggestion`) and the `sanitizeOverview` function that redacts sensitive data.
+
+8. **`evals/lib/runner.ts`** — The eval runner shows how cases are executed and assertions are checked. This is useful for understanding what "correct behavior" means.
