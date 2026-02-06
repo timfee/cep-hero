@@ -4,6 +4,7 @@
 
 import { JWT } from "google-auth-library";
 
+import { stripQuotes } from "@/lib/gimme/validation";
 import { isPlainObject } from "@/lib/utils";
 
 interface ServiceAccountCredentials {
@@ -30,7 +31,7 @@ function getServiceAccountJson() {
       "Missing GOOGLE_SERVICE_ACCOUNT_JSON env for service account credentials"
     );
   }
-  return inline.replaceAll(/^['"]|['"]$/g, "");
+  return stripQuotes(inline) ?? inline;
 }
 
 /**
@@ -118,5 +119,5 @@ export function getServiceAccountSubject(defaultEmail: string) {
   if (!envEmail) {
     return defaultEmail;
   }
-  return envEmail.replaceAll(/^['"]|['"]$/g, "");
+  return stripQuotes(envEmail) ?? defaultEmail;
 }
