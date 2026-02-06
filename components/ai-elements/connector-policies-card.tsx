@@ -9,6 +9,8 @@ import { ChevronDown, InfoIcon, Shield } from "lucide-react";
 import { motion } from "motion/react";
 import { memo, useMemo, useState } from "react";
 
+import type { ConnectorAnalysis, ConnectorConfigOutput } from "@/types/chat";
+
 import {
   Collapsible,
   CollapsibleContent,
@@ -20,83 +22,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { analyzeConnectorPolicies } from "@/lib/mcp/connector-analysis";
 import { TOOLTIPS } from "@/lib/terminology";
 import { cn } from "@/lib/utils";
-
-interface ResolvedPolicy {
-  policyTargetKey?: { targetResource?: string | null };
-}
-
-interface ConnectorConfigOutput {
-  value?: ResolvedPolicy[];
-  targetResource?: string | null;
-  targetResourceName?: string | null;
-  attemptedTargets?: string[];
-  errors?: { targetResource?: string | null; message?: string }[];
-  error?: string;
-  suggestion?: string;
-}
-
-interface ConnectorAnalysis {
-  total: number;
-  byTarget: {
-    customer: number;
-    orgUnit: number;
-    group: number;
-    unknown: number;
-  };
-  misScoped: number;
-  flag: boolean;
-  sampleTarget?: string;
-}
-
-/**
- * Analyse resolved policies to determine scope health.
- */
-function analyzePolicies(policies: ResolvedPolicy[]): ConnectorAnalysis {
-  const counts: ConnectorAnalysis["byTarget"] = {
-    customer: 0,
-    orgUnit: 0,
-    group: 0,
-    unknown: 0,
-  };
-
-  const misScoped: string[] = [];
-
-  for (const policy of policies) {
-    const target = policy.policyTargetKey?.targetResource ?? "";
-    const normalized = target.toLowerCase();
-    let bucket: keyof ConnectorAnalysis["byTarget"] = "unknown";
-    if (
-      normalized.startsWith("orgunits/") ||
-      normalized.includes("/orgunits/")
-    ) {
-      bucket = "orgUnit";
-    } else if (
-      normalized.startsWith("groups/") ||
-      normalized.includes("/groups/")
-    ) {
-      bucket = "group";
-    } else if (
-      normalized.startsWith("customers/") ||
-      normalized.includes("/customers/")
-    ) {
-      bucket = "customer";
-    }
-    counts[bucket] += 1;
-    if (bucket === "customer") {
-      misScoped.push(target);
-    }
-  }
-
-  return {
-    total: policies.length,
-    byTarget: counts,
-    misScoped: misScoped.length,
-    flag: misScoped.length > 0,
-    sampleTarget: misScoped[0],
-  };
-}
 
 /**
  * Builds a short human-readable summary string for the collapsed header.
@@ -134,7 +62,10 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
   }
 
   const policies = output.value ?? [];
-  const analysis = useMemo(() => analyzePolicies(policies), [policies]);
+  const analysis = useMemo(
+    () => analyzeConnectorPolicies(policies),
+    [policies]
+  );
   const summary = useMemo(() => buildSummary(analysis), [analysis]);
 
   return (

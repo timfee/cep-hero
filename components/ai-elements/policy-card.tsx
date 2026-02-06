@@ -17,6 +17,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
+import { formatPolicyValue } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface PolicyValue {
@@ -53,19 +54,6 @@ function formatPolicyName(schema?: string): string {
   // Extract the policy name from schema like "chrome.users.SafeBrowsingProtectionLevel"
   const parts = schema.split(".");
   return parts.at(-1) || schema;
-}
-
-function formatValue(value: unknown): string {
-  if (value === null || value === undefined) {
-    return "Not set";
-  }
-  if (typeof value === "boolean") {
-    return value ? "Enabled" : "Disabled";
-  }
-  if (typeof value === "object") {
-    return JSON.stringify(value, null, 2);
-  }
-  return String(value);
 }
 
 export const PolicyCard = memo(function PolicyCard({
@@ -172,7 +160,7 @@ export const PolicyCard = memo(function PolicyCard({
                         {key}
                       </p>
                       <p className="text-sm text-foreground break-all">
-                        {formatValue(val)}
+                        {formatPolicyValue(val)}
                       </p>
                     </div>
                   </div>

@@ -6,6 +6,7 @@ import { type OAuth2Client } from "google-auth-library";
 import { google as googleApis } from "googleapis";
 import { type z } from "zod";
 
+import { CONNECTOR_VALUE_KEYS } from "@/lib/mcp/constants";
 import { logApiError, logApiRequest, logApiResponse } from "@/lib/mcp/errors";
 import {
   buildOrgUnitTargetResource,
@@ -119,34 +120,24 @@ function buildUpdateMask(value: Record<string, unknown>) {
 }
 
 /**
- * Derives the record key name from a connector policy schema ID.
- * Example: "chrome.users.EnterpriseConnectors.OnFileAttached" → "onFileAttachedEnterpriseConnector"
- */
-function connectorKeyFromSchema(schemaId: string): string {
-  const leaf = schemaId.split(".").at(-1) ?? "";
-  return `${leaf.charAt(0).toLowerCase()}${leaf.slice(1)}EnterpriseConnector`;
-}
-
-/**
  * Normalises the value argument into a Record suitable for the Chrome Policy
- * API. When the AI sends an array (common for connector policies), the value
- * is wrapped in a record keyed by the connector policy field name.
+ * API. When the AI sends an array (valid for Enterprise Connector policies),
+ * it is wrapped into the correct record key from CONNECTOR_VALUE_KEYS.
  *
- * Returns null if an array is provided for a non-EnterpriseConnectors policy
- * to prevent generating an incorrect payload.
+ * Returns null if an array is provided for an unrecognised policy schema.
  */
 function normalizeValue(
   value: Record<string, unknown> | unknown[],
   policySchemaId: string
 ): Record<string, unknown> | null {
-  if (Array.isArray(value)) {
-    if (!policySchemaId.includes("EnterpriseConnectors")) {
-      return null;
-    }
-    const key = connectorKeyFromSchema(policySchemaId);
-    return { [key]: value };
+  if (!Array.isArray(value)) {
+    return value;
   }
-  return value;
+  const key = CONNECTOR_VALUE_KEYS[policySchemaId];
+  if (!key) {
+    return null;
+  }
+  return { [key]: value };
 }
 
 /**
@@ -176,7 +167,7 @@ export async function applyPolicyChange(
     return {
       _type: "ui.error",
       error:
-        "Array values are only supported for EnterpriseConnectors policies.",
+        "Array values are only supported for known EnterpriseConnectors policies.",
       suggestion:
         "Provide the value as a JSON object with named keys, not an array.",
       policySchemaId: args.policySchemaId,
