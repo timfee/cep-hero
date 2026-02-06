@@ -22,6 +22,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useOrgUnitMap } from "@/components/ui/org-unit-context";
+import { sanitizeOrgUnitIds } from "@/lib/mcp/org-units";
 import { cn } from "@/lib/utils";
 
 import { CodeBlock } from "./code-block";
@@ -196,17 +198,22 @@ export type ToolInputProps = ComponentProps<"div"> & {
 
 /**
  * Displays tool input parameters as formatted JSON in a code block.
+ * Org unit IDs are replaced with human-readable paths when the context is available.
  */
-export const ToolInput = ({ className, input, ...props }: ToolInputProps) => (
-  <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
-    <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
-      Parameters
-    </h4>
-    <div className="rounded-md bg-muted/50">
-      <CodeBlock code={JSON.stringify(input, null, 2)} language="json" />
+export const ToolInput = ({ className, input, ...props }: ToolInputProps) => {
+  const orgUnitMap = useOrgUnitMap();
+  const json = sanitizeOrgUnitIds(JSON.stringify(input, null, 2), orgUnitMap);
+  return (
+    <div className={cn("space-y-2 overflow-hidden p-4", className)} {...props}>
+      <h4 className="font-medium text-muted-foreground text-xs uppercase tracking-wide">
+        Parameters
+      </h4>
+      <div className="rounded-md bg-muted/50">
+        <CodeBlock code={json} language="json" />
+      </div>
     </div>
-  </div>
-);
+  );
+};
 
 export type ToolOutputProps = ComponentProps<"div"> & {
   output: ToolPart["output"];
@@ -215,6 +222,7 @@ export type ToolOutputProps = ComponentProps<"div"> & {
 
 /**
  * Displays tool execution results or error messages with appropriate styling.
+ * Org unit IDs in JSON output are replaced with human-readable paths.
  */
 export const ToolOutput = ({
   className,
@@ -222,6 +230,8 @@ export const ToolOutput = ({
   errorText,
   ...props
 }: ToolOutputProps) => {
+  const orgUnitMap = useOrgUnitMap();
+
   if (!(output || errorText)) {
     return null;
   }
@@ -229,11 +239,14 @@ export const ToolOutput = ({
   let Output = <div>{output as ReactNode}</div>;
 
   if (typeof output === "object" && !isValidElement(output)) {
-    Output = (
-      <CodeBlock code={JSON.stringify(output, null, 2)} language="json" />
+    const json = sanitizeOrgUnitIds(
+      JSON.stringify(output, null, 2),
+      orgUnitMap
     );
+    Output = <CodeBlock code={json} language="json" />;
   } else if (typeof output === "string") {
-    Output = <CodeBlock code={output} language="json" />;
+    const sanitized = sanitizeOrgUnitIds(output, orgUnitMap);
+    Output = <CodeBlock code={sanitized} language="json" />;
   }
 
   return (
