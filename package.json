@@ -13,7 +13,9 @@
     "fixtures:capture": "bun run scripts/capture-eval-fixtures.ts",
     "credentials:check": "bun run scripts/check-credentials.ts",
     "check": "ultracite check",
-    "fix": "ultracite fix"
+    "fix": "ultracite fix",
+    "build-artifact": "sudo docker build -t nextjsapp/default . && sudo docker tag nextjsapp/default us-central1-docker.pkg.dev/cep-herp-dev/cr-images/default-svc:latest",
+    "deploy": "sudo docker push us-central1-docker.pkg.dev/cep-herp-dev/cr-images/default-svc:latest && gcloud run deploy default   --project=cep-herp-dev   --region=us-central1   --ingress=internal-and-cloud-load-balancing   --network=cr-infra-vpc-network   --subnet=cr-infra-subnetwork   --vpc-egress=all-traffic   --image='us-central1-docker.pkg.dev/cep-herp-dev/cr-images/default-svc'"
   },
   "dependencies": {
     "@ai-sdk/google": "^3.0.21",
