@@ -4,6 +4,9 @@
 
 import { JWT } from "google-auth-library";
 
+import { stripQuotes } from "@/lib/gimme/validation";
+import { isPlainObject } from "@/lib/utils";
+
 interface ServiceAccountCredentials {
   client_email: string;
   private_key: string;
@@ -23,12 +26,12 @@ function loadServiceAccount() {
  */
 function getServiceAccountJson() {
   const inline = process.env.GOOGLE_SERVICE_ACCOUNT_JSON;
-  if (inline === undefined || inline === "") {
+  if (!inline) {
     throw new Error(
       "Missing GOOGLE_SERVICE_ACCOUNT_JSON env for service account credentials"
     );
   }
-  return inline.replaceAll(/^['"]|['"]$/g, "");
+  return stripQuotes(inline) ?? inline;
 }
 
 /**
@@ -102,7 +105,7 @@ export async function getServiceAccountAccessToken(
     subject,
   });
   const result = await jwt.authorize();
-  if (typeof result.access_token !== "string" || result.access_token === "") {
+  if (!result.access_token || typeof result.access_token !== "string") {
     throw new Error("Failed to obtain service account access token");
   }
   return result.access_token;
@@ -113,15 +116,8 @@ export async function getServiceAccountAccessToken(
  */
 export function getServiceAccountSubject(defaultEmail: string) {
   const envEmail = process.env.GOOGLE_TOKEN_EMAIL;
-  if (envEmail === undefined || envEmail === "") {
+  if (!envEmail) {
     return defaultEmail;
   }
-  return envEmail.replaceAll(/^['"]|['"]$/g, "");
-}
-
-/**
- * Type guard for plain objects.
- */
-function isPlainObject(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return stripQuotes(envEmail) ?? defaultEmail;
 }
