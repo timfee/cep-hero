@@ -410,7 +410,9 @@ export default function SignInPage() {
                 )}
               </Button>
               <div className="rounded-md bg-muted/50 px-3 py-2.5 text-xs text-muted-foreground">
-                <p className="font-medium text-foreground">Tip</p>
+                <p className="font-medium text-lg text-accent-foreground">
+                  Use a new profile
+                </p>
                 <p>
                   Create a separate Chrome profile for your {TARGET_DOMAIN}{" "}
                   account to avoid confusion with your corp profile.
