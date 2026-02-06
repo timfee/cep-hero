@@ -23,6 +23,29 @@ import type {
   SuggestedActionsOutput,
 } from "@/types/chat";
 
+/**
+ * Tools whose output is rendered by dedicated UI cards.
+ * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
+ */
+const RICH_CARD_TOOLS = new Set([
+  "getChromeEvents",
+  "getChromeConnectorConfiguration",
+  "listDLPRules",
+  "listOrgUnits",
+  "draftPolicyChange",
+]);
+
+/**
+ * Tools that are invisible in the chat — their output is consumed
+ * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
+ */
+const HIDDEN_TOOLS = new Set([
+  "getFleetOverview",
+  "searchKnowledge",
+  "debugAuth",
+  "suggestActions",
+]);
+
 import { ActionButtons } from "@/components/ai-elements/action-buttons";
 import { ConnectorPoliciesCard } from "@/components/ai-elements/connector-policies-card";
 import {
@@ -481,6 +504,20 @@ export function ChatConsole() {
                 isStreaming
               );
 
+              // Build a map of toolName → last part index for deduplication.
+              // When the AI calls the same tool multiple times in one message,
+              // only the last invocation's rich card is shown.
+              const lastToolIndex = new Map<string, number>();
+              for (let pi = 0; pi < message.parts.length; pi++) {
+                const p = message.parts[pi];
+                if (isToolUIPart(p)) {
+                  const name = getToolName(p);
+                  if (RICH_CARD_TOOLS.has(name)) {
+                    lastToolIndex.set(name, pi);
+                  }
+                }
+              }
+
               return (
                 <div key={message.id || index} className="space-y-4">
                   {message.parts.map((part, i) => {
@@ -544,7 +581,17 @@ export function ChatConsole() {
                       const toolName = getToolName(part);
                       const toolPart = part as ToolPart;
 
-                      if (toolName === "suggestActions") {
+                      // Hidden tools: never render (sources/actions handled elsewhere)
+                      if (HIDDEN_TOOLS.has(toolName)) {
+                        return null;
+                      }
+
+                      // Dedup: for rich-card tools called multiple times,
+                      // suppress earlier invocations so only the last card shows
+                      if (
+                        RICH_CARD_TOOLS.has(toolName) &&
+                        lastToolIndex.get(toolName) !== i
+                      ) {
                         return null;
                       }
 
@@ -630,33 +677,48 @@ export function ChatConsole() {
                         }
                       }
 
-                      const headerProps =
-                        toolPart.type === "dynamic-tool"
-                          ? {
-                              type: toolPart.type,
-                              state: toolPart.state,
-                              toolName,
-                            }
-                          : { type: toolPart.type, state: toolPart.state };
+                      // Compact inline status for remaining tools (createDLPRule,
+                      // applyPolicyChange, enrollBrowser, etc.)
+                      // Shows a collapsed header; errors auto-expand with details.
+                      const isError =
+                        toolPart.state === "output-error" ||
+                        toolPart.state === "output-denied";
+                      const isRunning =
+                        toolPart.state === "input-streaming" ||
+                        toolPart.state === "input-available";
+
+                      if (isRunning) {
+                        return null;
+                      }
 
                       return (
-                        <Tool key={partKey}>
-                          <ToolHeader {...headerProps} />
+                        <Tool key={partKey} defaultOpen={isError}>
+                          <ToolHeader
+                            {...(toolPart.type === "dynamic-tool"
+                              ? {
+                                  type: toolPart.type,
+                                  state: toolPart.state,
+                                  toolName,
+                                }
+                              : {
+                                  type: toolPart.type,
+                                  state: toolPart.state,
+                                })}
+                          />
                           <ToolContent>
-                            <ToolInput input={toolPart.input} />
-                            {toolPart.state === "output-available" && (
-                              <ToolOutput
-                                output={toolPart.output}
-                                errorText={undefined}
-                              />
-                            )}
-                            {toolPart.state === "output-error" && (
+                            {isError && (
                               <ToolOutput
                                 output={undefined}
                                 errorText={
                                   toolPart.errorText ??
                                   (toolPart as { error?: string }).error
                                 }
+                              />
+                            )}
+                            {toolPart.state === "output-available" && (
+                              <ToolOutput
+                                output={toolPart.output}
+                                errorText={undefined}
                               />
                             )}
                           </ToolContent>
