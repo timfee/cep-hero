@@ -139,7 +139,7 @@ export function MobileDashboardSummary({
         type="button"
         onClick={() => setIsExpanded(!isExpanded)}
         aria-expanded={isExpanded}
-        className="flex w-full items-center justify-between px-4 py-3"
+        className="flex w-full cursor-pointer items-center justify-between px-4 py-3"
       >
         <div className="flex min-w-0 flex-1 items-center gap-3">
           {/* Status indicator dot */}
@@ -239,7 +239,7 @@ export function MobileDashboardSummary({
                             setIsExpanded(false);
                           }}
                           className={cn(
-                            "flex w-full items-center gap-3 rounded-xl p-3 text-left",
+                            "flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-left",
                             "border border-white/10 bg-white/[0.04]",
                             "transition-colors hover:bg-white/[0.08]"
                           )}
@@ -293,7 +293,7 @@ export function MobileDashboardSummary({
                       setIsExpanded(false);
                     }}
                     className={cn(
-                      "flex w-full items-center gap-3 rounded-xl p-3 text-left",
+                      "flex w-full cursor-pointer items-center gap-3 rounded-xl p-3 text-left",
                       "border border-white/10 bg-white/[0.04]",
                       "transition-colors hover:bg-white/[0.08]"
                     )}
