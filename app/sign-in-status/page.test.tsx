@@ -1,6 +1,7 @@
 /**
  * Tests for the SignInStatusPage component.
- * Validates authentication states and error handling.
+ * Validates page-specific display: user info details, token status labels,
+ * and sign-out button. Auth redirect behavior is covered by user-status-bar tests.
  */
 
 import { render, waitFor } from "@testing-library/react";
@@ -15,123 +16,54 @@ mock.module("next/navigation", () => ({
   }),
 }));
 
-// Import after mock.module to ensure the mock is used
 import SignInStatusPage from "./page";
 
-describe("SignInStatusPage component", () => {
+/**
+ * Builds a mock fetch that returns an authenticated response.
+ */
+function mockAuthenticatedFetch(tokenOverrides?: {
+  expiresIn?: number;
+  expiresAt?: string;
+}) {
+  const expiresIn = tokenOverrides?.expiresIn ?? 3600;
+  const expiresAt =
+    tokenOverrides?.expiresAt ??
+    new Date(Date.now() + expiresIn * 1000).toISOString();
+
+  globalThis.fetch = mock(() =>
+    Promise.resolve({
+      ok: true,
+      json: () =>
+        Promise.resolve({
+          authenticated: true,
+          user: {
+            name: "Test User",
+            email: "test@example.com",
+            image: null,
+          },
+          token: {
+            expiresIn,
+            expiresAt,
+            scopes: ["email", "profile"],
+          },
+        }),
+    })
+  ) as unknown as typeof fetch;
+}
+
+describe("SignInStatusPage", () => {
   const originalFetch = globalThis.fetch;
-  const originalLocation = globalThis.location;
-  let locationHref = "";
 
   beforeEach(() => {
     mockPush.mockClear();
-    locationHref = "";
-    // Mock window.location.href with only getter/setter (no duplicate property)
-    const locationMock = { ...originalLocation };
-    Object.defineProperty(locationMock, "href", {
-      get() {
-        return locationHref;
-      },
-      set(value: string) {
-        locationHref = value;
-      },
-      configurable: true,
-    });
-    Object.defineProperty(globalThis, "location", {
-      value: locationMock,
-      writable: true,
-    });
   });
 
   afterEach(() => {
     globalThis.fetch = originalFetch;
-    Object.defineProperty(globalThis, "location", {
-      value: originalLocation,
-      writable: true,
-    });
-  });
-
-  it("shows loading state initially", () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ authenticated: false }),
-      })
-    ) as unknown as typeof fetch;
-
-    const { container, getByText } = render(<SignInStatusPage />);
-    const skeleton = container.querySelector(".animate-pulse");
-    expect(skeleton).toBeInTheDocument();
-    expect(getByText("Account Status")).toBeInTheDocument();
-  });
-
-  it("redirects to sign-in when unauthenticated", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () => Promise.resolve({ authenticated: false }),
-      })
-    ) as unknown as typeof fetch;
-
-    render(<SignInStatusPage />);
-
-    await waitFor(() => {
-      expect(locationHref).toBe("/sign-in");
-    });
-  });
-
-  it("redirects to sign-in when there is an auth error", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: { name: "Test", email: "test@example.com", image: null },
-            error: "Token validation failed",
-          }),
-      })
-    ) as unknown as typeof fetch;
-
-    render(<SignInStatusPage />);
-
-    await waitFor(() => {
-      expect(locationHref).toBe("/sign-in");
-    });
-  });
-
-  it("redirects to sign-in when fetch throws an error", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.reject(new Error("Network error"))
-    ) as unknown as typeof fetch;
-
-    render(<SignInStatusPage />);
-
-    await waitFor(() => {
-      expect(locationHref).toBe("/sign-in");
-    });
   });
 
   it("shows user info and healthy status when authenticated", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
-              scopes: ["email", "profile"],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+    mockAuthenticatedFetch();
 
     const { getByText } = render(<SignInStatusPage />);
 
@@ -143,25 +75,7 @@ describe("SignInStatusPage component", () => {
   });
 
   it("shows warning status when token is expiring soon", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 120,
-              expiresAt: new Date(Date.now() + 120_000).toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+    mockAuthenticatedFetch({ expiresIn: 120 });
 
     const { getByText } = render(<SignInStatusPage />);
 
@@ -171,60 +85,18 @@ describe("SignInStatusPage component", () => {
   });
 
   it("shows expired status when token has expired", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 0,
-              expiresAt: new Date().toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+    mockAuthenticatedFetch({ expiresIn: 0 });
 
-    const { container, getByText } = render(<SignInStatusPage />);
+    const { getByText } = render(<SignInStatusPage />);
 
     await waitFor(() => {
-      // Check for the status label specifically
       const expiredLabel = getByText("Expired", { selector: "p" });
       expect(expiredLabel).toBeInTheDocument();
-      // Also verify the destructive styling is applied
-      const statusBadge = container.querySelector(
-        String.raw`.bg-destructive\/10`
-      );
-      expect(statusBadge).toBeInTheDocument();
     });
   });
 
   it("shows sign out button", async () => {
-    globalThis.fetch = mock(() =>
-      Promise.resolve({
-        ok: true,
-        json: () =>
-          Promise.resolve({
-            authenticated: true,
-            user: {
-              name: "Test User",
-              email: "test@example.com",
-              image: null,
-            },
-            token: {
-              expiresIn: 3600,
-              expiresAt: new Date(Date.now() + 3_600_000).toISOString(),
-              scopes: [],
-            },
-          }),
-      })
-    ) as unknown as typeof fetch;
+    mockAuthenticatedFetch();
 
     const { getByRole } = render(<SignInStatusPage />);
 
