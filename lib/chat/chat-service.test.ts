@@ -83,6 +83,52 @@ describe("chat-service", () => {
       expect(result).toHaveProperty("hasText");
       expect(result).toHaveProperty("hasShortResponse");
       expect(result).toHaveProperty("textLength");
+      expect(result).toHaveProperty("hasUIContent");
+    });
+
+    it("detects ui.confirmation as UI content", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ _type: "ui.confirmation", proposalId: "test-123" }],
+        text: "",
+        toolCalls: [],
+      });
+      expect(result.hasUIContent).toBe(true);
+    });
+
+    it("detects ui.success as UI content", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ _type: "ui.success", ruleName: "DLP Rule" }],
+        text: "",
+        toolCalls: [],
+      });
+      expect(result.hasUIContent).toBe(true);
+    });
+
+    it("detects ui.manual_steps as UI content", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ _type: "ui.manual_steps", steps: ["step 1"] }],
+        text: "",
+        toolCalls: [],
+      });
+      expect(result.hasUIContent).toBe(true);
+    });
+
+    it("does not flag regular tool results as UI content", () => {
+      const result = analyzeLastStep({
+        toolResults: [{ events: [], totalCount: 0 }],
+        text: "",
+        toolCalls: [],
+      });
+      expect(result.hasUIContent).toBe(false);
+    });
+
+    it("does not flag empty tool results as UI content", () => {
+      const result = analyzeLastStep({
+        toolResults: [],
+        text: "some text",
+        toolCalls: [],
+      });
+      expect(result.hasUIContent).toBe(false);
     });
   });
 
@@ -93,6 +139,7 @@ describe("chat-service", () => {
           hasToolResults: true,
           hasText: false,
           hasShortResponse: false,
+          hasUIContent: false,
           textLength: 0,
         },
         basePrompt
@@ -108,6 +155,7 @@ describe("chat-service", () => {
           hasToolResults: true,
           hasText: true,
           hasShortResponse: true,
+          hasUIContent: false,
           textLength: 10,
         },
         basePrompt
@@ -123,6 +171,7 @@ describe("chat-service", () => {
           hasToolResults: true,
           hasText: true,
           hasShortResponse: false,
+          hasUIContent: false,
           textLength: 100,
         },
         basePrompt
@@ -137,11 +186,40 @@ describe("chat-service", () => {
           hasToolResults: false,
           hasText: false,
           hasShortResponse: false,
+          hasUIContent: false,
           textLength: 0,
         },
         basePrompt
       );
 
+      expect(result).toEqual({});
+    });
+
+    it("skips response completion guard when UI content is present", () => {
+      const result = computeStepResponse(
+        {
+          hasToolResults: true,
+          hasText: false,
+          hasShortResponse: false,
+          hasUIContent: true,
+          textLength: 0,
+        },
+        basePrompt
+      );
+      expect(result).toEqual({});
+    });
+
+    it("skips short response guard when UI content is present", () => {
+      const result = computeStepResponse(
+        {
+          hasToolResults: true,
+          hasText: true,
+          hasShortResponse: true,
+          hasUIContent: true,
+          textLength: 10,
+        },
+        basePrompt
+      );
       expect(result).toEqual({});
     });
   });
