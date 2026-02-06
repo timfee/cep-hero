@@ -13,6 +13,7 @@ import { useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
+import { formatPolicyValue, humanizeKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface PolicyChangeProposal {
@@ -67,13 +68,6 @@ function isDLPRule(value: unknown): value is {
   );
 }
 
-function formatPolicyValue(value: unknown): string {
-  if (value === null || value === undefined) return "Not set";
-  if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
-  if (typeof value === "object") return JSON.stringify(value, null, 2);
-  return String(value);
-}
-
 export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
   proposal,
   onConfirm,
@@ -100,7 +94,10 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
   const ruleName = dlpData?.displayName ?? policyName;
 
   const valueEntries =
-    !dlpData && typeof proposedValue === "object" && proposedValue !== null
+    !dlpData &&
+    typeof proposedValue === "object" &&
+    proposedValue !== null &&
+    !Array.isArray(proposedValue)
       ? Object.entries(proposedValue as Record<string, unknown>)
       : [];
 
@@ -201,13 +198,13 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
         )}
 
         {!dlpData && valueEntries.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {valueEntries.map(([key, val]) => (
-              <div key={key} className="flex items-baseline gap-2">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide min-w-[80px]">
-                  {key}
+              <div key={key} className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0 max-w-[120px] truncate">
+                  {humanizeKey(key)}
                 </span>
-                <span className="text-xs text-foreground font-medium">
+                <span className="text-xs text-foreground font-medium truncate">
                   {formatPolicyValue(val)}
                 </span>
               </div>
