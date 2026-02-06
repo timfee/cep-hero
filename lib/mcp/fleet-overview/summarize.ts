@@ -95,7 +95,7 @@ export async function summarizeFleetOverview(
   knowledge: FleetKnowledgeContext
 ) {
   const result = await generateText({
-    model: googleModel("gemini-2.0-flash-001"),
+    model: googleModel("gemini-3-flash-preview"),
     output: Output.object({ schema: FleetOverviewResponseSchema }),
     system: FLEET_OVERVIEW_SYSTEM_PROMPT,
     prompt: buildFleetOverviewPrompt(facts, context, knowledge),
