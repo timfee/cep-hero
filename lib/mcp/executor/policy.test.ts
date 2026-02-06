@@ -330,6 +330,43 @@ describe("applyPolicyChange payload validation", () => {
     }
   });
 
+  it("wraps array values into a record keyed by the connector field name", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: "chrome.users.EnterpriseConnectors.OnFileAttached",
+        targetResource: "orgunits/03ph8a2z221pcso",
+        value: [
+          {
+            block_until_verdict: 1,
+            service_provider: "google",
+            enable: [{ tags: ["dlp", "malware"], url_list: ["*"] }],
+          },
+        ],
+      });
+
+      expect(result._type).toBe("ui.success");
+      const request = captured[0].requestBody.requests[0];
+      expect(request.policyValue.value).toEqual({
+        onFileAttachedEnterpriseConnector: [
+          {
+            block_until_verdict: 1,
+            service_provider: "google",
+            enable: [{ tags: ["dlp", "malware"], url_list: ["*"] }],
+          },
+        ],
+      });
+      expect(request.updateMask).toBe("onFileAttachedEnterpriseConnector");
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
   it("returns ui.error on API exception", async () => {
     const mockCP = mock(() => ({
       customers: {

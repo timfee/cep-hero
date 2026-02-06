@@ -67,10 +67,41 @@ function isDLPRule(value: unknown): value is {
   );
 }
 
+/**
+ * Converts a camelCase or SCREAMING_SNAKE_CASE key into a readable label.
+ */
+function humanizeKey(key: string): string {
+  return key
+    .replaceAll(/_/g, " ")
+    .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
+    .toLowerCase()
+    .replace(/^\w/, (c) => c.toUpperCase());
+}
+
+/**
+ * Renders a policy value as a short, human-readable string.
+ * Complex objects/arrays are summarised rather than dumped as JSON.
+ */
 function formatPolicyValue(value: unknown): string {
   if (value === null || value === undefined) return "Not set";
   if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
-  if (typeof value === "object") return JSON.stringify(value, null, 2);
+  if (typeof value === "number") return String(value);
+  if (typeof value === "string") return value;
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "None";
+    if (value.length === 1 && typeof value[0] === "string") return value[0];
+    return `${value.length} ${value.length === 1 ? "item" : "items"} configured`;
+  }
+
+  if (typeof value === "object") {
+    const keys = Object.keys(value as Record<string, unknown>);
+    if (keys.length === 0) return "Empty";
+    if (keys.length <= 2) {
+      return keys.map((k) => humanizeKey(k)).join(", ");
+    }
+    return `${keys.length} settings`;
+  }
   return String(value);
 }
 
@@ -201,13 +232,13 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
         )}
 
         {!dlpData && valueEntries.length > 0 && (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             {valueEntries.map(([key, val]) => (
-              <div key={key} className="flex items-baseline gap-2">
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wide min-w-[80px]">
-                  {key}
+              <div key={key} className="flex items-center gap-2 min-w-0">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wide shrink-0 max-w-[120px] truncate">
+                  {humanizeKey(key)}
                 </span>
-                <span className="text-xs text-foreground font-medium">
+                <span className="text-xs text-foreground font-medium truncate">
                   {formatPolicyValue(val)}
                 </span>
               </div>
