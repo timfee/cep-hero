@@ -126,29 +126,7 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
     }));
 }
 
-/**
- * Generate a standalone welcome message for the chat panel.
- * This must NOT repeat the dashboard headline or summary since those are
- * already visible in the left panel.
- */
-function generateWelcomeMessage(data: OverviewData | null) {
-  if (!data) {
-    return "Hey there! I'm your Chrome Enterprise Premium assistant. Ask me anything about your fleet, or use the suggestions below to get started.";
-  }
-
-  const gaps: string[] = [];
-  for (const card of data.postureCards) {
-    if (card.status === "critical" || card.status === "warning") {
-      gaps.push(card.label.toLowerCase());
-    }
-  }
-
-  if (gaps.length > 0) {
-    return `Hey there! I'm your Chrome Enterprise Premium assistant. I noticed a few areas that could use attention — like ${gaps.join(" and ")}. Pick a suggestion below or ask me anything.`;
-  }
-
-  return "Hey there! I'm your Chrome Enterprise Premium assistant. Everything's looking good on the dashboard. Pick a suggestion below or ask me anything.";
-}
+import { generateWelcomeMessage } from "./welcome-message";
 
 /**
  * Map string actions to ActionItem objects with confirm/cancel detection.
