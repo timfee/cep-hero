@@ -42,6 +42,7 @@ describe('Streamdown link styles ([data-streamdown="link"])', () => {
   it("lives outside @layer base so it beats Tailwind cascade layers", () => {
     const layerBaseStart = css.indexOf("@layer base {");
     const linkRuleStart = css.indexOf('[data-streamdown="link"]');
+    expect(layerBaseStart).toBeGreaterThan(-1);
     expect(linkRuleStart).toBeGreaterThan(-1);
     expect(linkRuleStart).toBeLessThan(layerBaseStart);
   });
