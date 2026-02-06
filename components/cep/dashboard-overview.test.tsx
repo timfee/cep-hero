@@ -465,4 +465,92 @@ describe("DashboardOverview component", () => {
       expect(mockSetDashboardLoaded).not.toHaveBeenCalled();
     });
   });
+
+  it("has cursor-pointer on posture card buttons", async () => {
+    mockSWRReturn = {
+      data: {
+        headline: "Status",
+        summary: "Check posture.",
+        postureCards: [
+          {
+            label: "Threat Events",
+            value: "3",
+            note: "Needs review",
+            source: "api",
+            action: "Show events",
+            status: "warning",
+            priority: 1,
+          },
+        ],
+        suggestions: [],
+        sources: [],
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    const { getByText } = render(<DashboardOverview onAction={mockOnAction} />);
+
+    await waitFor(() => {
+      const card = getByText("Threat Events").closest("button");
+      expect(card).toHaveClass("cursor-pointer");
+    });
+  });
+
+  it("has cursor-pointer on suggestion buttons", async () => {
+    mockSWRReturn = {
+      data: {
+        headline: "Status",
+        summary: "Recommendations available.",
+        postureCards: [],
+        suggestions: [
+          {
+            text: "Enable DLP",
+            action: "Set up DLP",
+            priority: 1,
+            category: "security",
+          },
+        ],
+        sources: [],
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    const { getByText } = render(<DashboardOverview onAction={mockOnAction} />);
+
+    await waitFor(() => {
+      const suggestion = getByText("Enable DLP").closest("button");
+      expect(suggestion).toHaveClass("cursor-pointer");
+    });
+  });
+
+  it("has cursor-pointer on refresh button", async () => {
+    mockSWRReturn = {
+      data: {
+        headline: "Fleet Status",
+        summary: "OK",
+        postureCards: [],
+        suggestions: [],
+        sources: [],
+      },
+      error: null,
+      isLoading: false,
+      isValidating: false,
+      mutate: mockMutate,
+    };
+
+    const { getByLabelText } = render(
+      <DashboardOverview onAction={mockOnAction} />
+    );
+
+    await waitFor(() => {
+      const refreshBtn = getByLabelText("Refresh dashboard");
+      expect(refreshBtn).toHaveClass("cursor-pointer");
+    });
+  });
 });
