@@ -5,6 +5,7 @@
 import { betterAuth } from "better-auth";
 import { nextCookies } from "better-auth/next-js";
 
+import { TARGET_DOMAIN } from "./gimme/constants";
 import { getRequiredEnv } from "./utils";
 
 /**
@@ -18,6 +19,7 @@ export const auth = betterAuth({
     google: {
       clientId: getRequiredEnv("GOOGLE_CLIENT_ID"),
       clientSecret: getRequiredEnv("GOOGLE_CLIENT_SECRET"),
+      hd: TARGET_DOMAIN,
       accessType: "offline",
       prompt: "consent",
       scope: [
