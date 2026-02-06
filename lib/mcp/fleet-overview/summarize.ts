@@ -147,8 +147,8 @@ function buildFallbackSuggestions(
 
   if (!hasDlpRules) {
     suggestions.push({
-      text: "Set up a DLP audit rule to monitor all traffic for sensitive data like SSNs and credit cards",
-      action: "Help me set up DLP to audit all traffic for sensitive data",
+      text: "Create a DLP rule",
+      action: "Create a DLP rule to audit all traffic",
       priority: 1,
       category: "security",
     });
@@ -156,8 +156,8 @@ function buildFallbackSuggestions(
 
   if (!hasConnectors) {
     suggestions.push({
-      text: "Configure connector policies to enable real-time data protection across your fleet",
-      action: "Help me configure connector policies for data protection",
+      text: "Configure connectors",
+      action: "Help me configure connector policies",
       priority: 2,
       category: "security",
     });
@@ -165,7 +165,7 @@ function buildFallbackSuggestions(
 
   if (!hasEvents) {
     suggestions.push({
-      text: "Enable Chrome event reporting to get visibility into browser activity",
+      text: "Enable event reporting",
       action: "How do I enable Chrome event reporting?",
       priority: 3,
       category: "monitoring",
@@ -174,7 +174,7 @@ function buildFallbackSuggestions(
 
   if (suggestions.length === 0) {
     suggestions.push({
-      text: "Review your security posture and identify optimization opportunities",
+      text: "Review security posture",
       action: "Analyze my fleet security posture",
       priority: 5,
       category: "optimization",
