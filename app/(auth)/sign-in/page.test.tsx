@@ -50,6 +50,8 @@ mock.module("@/lib/auth-client", () => ({
   useSession: () => ({ data: null, isPending: false }),
 }));
 
+import { TARGET_DOMAIN } from "@/lib/gimme/constants";
+
 const { default: SignInPage } = await import("./page");
 
 describe("SignInPage", () => {
@@ -72,7 +74,9 @@ describe("SignInPage", () => {
     const { getByText, getAllByText } = render(<SignInPage />);
 
     expect(getByText(/test domain/i)).toBeInTheDocument();
-    expect(getAllByText(/cep-netnew\.cc/i).length).toBeGreaterThan(0);
+    expect(getAllByText(new RegExp(TARGET_DOMAIN, "i")).length).toBeGreaterThan(
+      0
+    );
   });
 
   it("renders side-by-side sign-in and sign-up cards", () => {
@@ -81,21 +85,27 @@ describe("SignInPage", () => {
     expect(getByText("Sign In")).toBeInTheDocument();
     expect(getByText("Get an Account")).toBeInTheDocument();
     expect(
-      getByText(/already have a cep-netnew\.cc account/i)
+      getByText(new RegExp(`already have a ${TARGET_DOMAIN} account`, "i"))
     ).toBeInTheDocument();
   });
 
   it("renders sign-in button", () => {
     const { getByRole } = render(<SignInPage />);
 
-    const button = getByRole("button", { name: /sign in with google/i });
+    const button = getByRole("button", {
+      name: new RegExp(`sign in with ${TARGET_DOMAIN}`, "i"),
+    });
     expect(button).toBeInTheDocument();
   });
 
   it("calls signIn.social on button click", () => {
     const { getByRole } = render(<SignInPage />);
 
-    fireEvent.click(getByRole("button", { name: /sign in with google/i }));
+    fireEvent.click(
+      getByRole("button", {
+        name: new RegExp(`sign in with ${TARGET_DOMAIN}`, "i"),
+      })
+    );
     expect(mockSignInSocial).toHaveBeenCalledWith({
       provider: "google",
       callbackURL: "/",
