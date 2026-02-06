@@ -127,22 +127,10 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
  */
 function generateWelcomeMessage(data: OverviewData | null) {
   if (!data) {
-    return `Hey there! I'm your Chrome Enterprise Premium assistant.
-
-Use the buttons below to start.`;
+    return "What can I help you with?";
   }
-
   const headline = data.headline?.trim();
-  const summary = data.summary?.trim();
-
-  const sections = [
-    `Hey there! I'm your Chrome Enterprise Premium assistant.`,
-    headline,
-    summary,
-    "Use the buttons below to start.",
-  ].filter((section): section is string => Boolean(section));
-
-  return sections.join("\n\n");
+  return headline || "What can I help you with?";
 }
 
 /**
