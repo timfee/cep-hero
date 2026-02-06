@@ -5,24 +5,9 @@
 
 import { describe, expect, it } from "bun:test";
 
+import { HIDDEN_TOOLS, RICH_CARD_TOOLS } from "./chat-console";
+
 describe("tool visibility tiers", () => {
-  const HIDDEN_TOOLS = new Set([
-    "getFleetOverview",
-    "searchKnowledge",
-    "debugAuth",
-    "suggestActions",
-  ]);
-
-  const RICH_CARD_TOOLS = new Set([
-    "getChromeEvents",
-    "getChromeConnectorConfiguration",
-    "listDLPRules",
-    "listOrgUnits",
-    "draftPolicyChange",
-    "createDLPRule",
-    "applyPolicyChange",
-  ]);
-
   describe("HIDDEN_TOOLS", () => {
     it("hides getFleetOverview (data feeds AI summary, not a user-facing card)", () => {
       expect(HIDDEN_TOOLS.has("getFleetOverview")).toBe(true);
