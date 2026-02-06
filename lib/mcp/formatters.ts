@@ -75,10 +75,20 @@ function formatSettingEntry([key, value]: [string, unknown]) {
 
 /**
  * Converts a value to a display string, with boolean-specific formatting.
+ * Handles arrays and nested objects instead of producing "[object Object]".
  */
-function formatSingleValue(value: unknown) {
+function formatSingleValue(value: unknown): string {
   if (typeof value === "boolean") {
     return value ? "enabled" : "disabled";
   }
+
+  if (Array.isArray(value)) {
+    return value.map(formatSingleValue).join(", ");
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return JSON.stringify(value);
+  }
+
   return String(value);
 }
