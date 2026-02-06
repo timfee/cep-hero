@@ -73,7 +73,7 @@ function redactSensitive(text: string) {
  */
 function sanitizeOverviewText(text: string) {
   return redactSensitive(text)
-    .replace(/^[.,;:!?\s]+/, "")
+    .replace(/^[.,;:!?]+/, "")
     .trim();
 }
 
