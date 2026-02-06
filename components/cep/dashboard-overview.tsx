@@ -216,14 +216,14 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                 <div className="space-y-3">
                   {[...data.postureCards]
                     .toSorted((a, b) => (a.priority ?? 5) - (b.priority ?? 5))
-                    .map((card, idx) => {
+                    .map((card) => {
                       const status = card.status ?? "info";
                       const config = STATUS_CONFIG[status];
                       const StatusIcon = config.icon;
 
                       return (
                         <button
-                          key={idx}
+                          key={card.label}
                           type="button"
                           onClick={async () => {
                             await track("Posture Card Clicked", {
@@ -305,7 +305,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                     .toSorted((a, b) => a.priority - b.priority)
                     .map((suggestion, idx) => (
                       <button
-                        key={idx}
+                        key={suggestion.action}
                         type="button"
                         onClick={async () => {
                           await track("Suggestion Clicked", {
