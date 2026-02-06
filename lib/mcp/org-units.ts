@@ -66,6 +66,7 @@ function addUnitToMap(map: Map<string, string>, unit: OrgUnit) {
 /**
  * Resolves an org unit identifier to its human-readable path. Handles direct
  * paths (starting with "/"), root org unit special cases, and ID lookups.
+ * Returns "/ (Root)" instead of bare "/" so root is always clearly labeled.
  */
 export function resolveOrgUnitDisplay(
   value: string | null | undefined,
@@ -83,10 +84,17 @@ export function resolveOrgUnitDisplay(
   }
 
   if (trimmed.startsWith("/")) {
-    return trimmed;
+    return friendlyPath(trimmed);
   }
 
   return lookupOrgUnit(trimmed, map, rootOrgUnitId, rootOrgUnitPath);
+}
+
+/**
+ * Labels bare "/" as "/ (Root)" so the root org unit is always identifiable.
+ */
+function friendlyPath(path: string) {
+  return path === "/" ? "/ (Root)" : path;
 }
 
 /**
@@ -106,11 +114,12 @@ function lookupOrgUnit(
       normalized === normalizedRoot ||
       normalized === `orgunits/${normalizedRoot}`;
     if (isRoot) {
-      return rootOrgUnitPath;
+      return friendlyPath(rootOrgUnitPath);
     }
   }
 
-  return map.get(normalized) ?? null;
+  const resolved = map.get(normalized);
+  return resolved === undefined ? null : friendlyPath(resolved);
 }
 
 /**
