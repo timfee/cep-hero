@@ -239,17 +239,23 @@ export const ToolOutput = ({
     return null;
   }
 
-  let Output = <div>{output as ReactNode}</div>;
+  let Output: ReactNode = null;
 
-  if (typeof output === "object" && !isValidElement(output)) {
-    const json = sanitizeOrgUnitIds(
-      JSON.stringify(output, null, 2),
-      orgUnitMap
-    );
-    Output = <CodeBlock code={json} language="json" />;
-  } else if (typeof output === "string") {
-    const sanitized = sanitizeOrgUnitIds(output, orgUnitMap);
-    Output = <CodeBlock code={sanitized} language="json" />;
+  if (output != null) {
+    if (typeof output === "object" && !isValidElement(output)) {
+      const json = sanitizeOrgUnitIds(
+        JSON.stringify(output, null, 2),
+        orgUnitMap
+      );
+      Output = <CodeBlock code={json} language="json" />;
+    } else if (typeof output === "string") {
+      const sanitized = sanitizeOrgUnitIds(output, orgUnitMap);
+      Output = <CodeBlock code={sanitized} language="json" />;
+    } else if (isValidElement(output)) {
+      Output = output;
+    } else {
+      Output = <CodeBlock code={String(output)} language="json" />;
+    }
   }
 
   return (

@@ -21,25 +21,28 @@ import type {
   DlpRulesOutput,
   PolicyChangeConfirmationOutput,
   SuggestedActionsOutput,
+  ToolResultOutput,
 } from "@/types/chat";
 
 /**
  * Tools whose output is rendered by dedicated UI cards.
  * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
  */
-const RICH_CARD_TOOLS = new Set([
+export const RICH_CARD_TOOLS = new Set([
   "getChromeEvents",
   "getChromeConnectorConfiguration",
   "listDLPRules",
   "listOrgUnits",
   "draftPolicyChange",
+  "createDLPRule",
+  "applyPolicyChange",
 ]);
 
 /**
  * Tools that are invisible in the chat — their output is consumed
  * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
  */
-const HIDDEN_TOOLS = new Set([
+export const HIDDEN_TOOLS = new Set([
   "getFleetOverview",
   "searchKnowledge",
   "debugAuth",
@@ -88,6 +91,7 @@ import {
   ToolInput,
   ToolOutput,
 } from "@/components/ai-elements/tool";
+import { ToolResultCard } from "@/components/ai-elements/tool-result-card";
 import { useChatContext } from "@/components/chat/chat-context";
 import {
   OrgUnitMapProvider,
@@ -677,8 +681,27 @@ export function ChatConsole() {
                         }
                       }
 
-                      // Compact inline status for remaining tools (createDLPRule,
-                      // applyPolicyChange, enrollBrowser, etc.)
+                      // Tool result cards for action tools
+                      if (
+                        (toolName === "createDLPRule" ||
+                          toolName === "applyPolicyChange") &&
+                        toolPart.state === "output-available"
+                      ) {
+                        const output = toolPart.output as ToolResultOutput;
+                        if (
+                          output?._type === "ui.success" ||
+                          output?._type === "ui.error" ||
+                          output?._type === "ui.manual_steps"
+                        ) {
+                          return (
+                            <div key={partKey} className="pl-4 lg:pl-6">
+                              <ToolResultCard output={output} />
+                            </div>
+                          );
+                        }
+                      }
+
+                      // Compact inline status for remaining tools (enrollBrowser, etc.)
                       // Shows a collapsed header; errors auto-expand with details.
                       const isError =
                         toolPart.state === "output-error" ||
