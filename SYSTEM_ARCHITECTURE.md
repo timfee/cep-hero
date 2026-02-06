@@ -3,41 +3,41 @@
 ## Layer Diagram
 
 ```
-┌─────────────────────────────────────────────────────────────────────┐
-│                         ENTRY POINTS                                │
-│                                                                     │
-│  ┌──────────────┐   ┌──────────────┐   ┌─────────────────────────┐ │
-│  │  Browser UI   │   │  MCP Client  │   │  Eval Runner / Dashboard│ │
-│  │  /api/chat    │   │  /api/mcp    │   │  evals/run.ts  /api/…  │ │
-│  └──────┬───────┘   └──────┬───────┘   └────────────┬────────────┘ │
-└─────────┼──────────────────┼────────────────────────┼───────────────┘
-          │                  │                        │
-          ▼                  ▼                        ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                     AUTH  (Better Auth + Google OAuth)               │
-│  Session cookie / Bearer token / Service-account fallback           │
-│  → resolves OAuth2 access token for downstream API calls            │
-└──────────────────────────────┬──────────────────────────────────────┘
-                               │
-                               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                      TOOL EXECUTOR LAYER                            │
-│                                                                     │
-│  ┌────────────────────────┐     ┌────────────────────────────────┐  │
-│  │   CepToolExecutor      │     │   FixtureToolExecutor          │  │
-│  │   (production — calls  │     │   (eval — returns deterministic│  │
-│  │    Google APIs)         │     │    fixture JSON, no API calls) │  │
-│  └───────────┬────────────┘     └────────────────────────────────┘  │
-│              │  Both implement ToolExecutor (lib/mcp/types.ts)      │
-└──────────────┼──────────────────────────────────────────────────────┘
-               │
-               ▼
-┌─────────────────────────────────────────────────────────────────────┐
-│                       GOOGLE WORKSPACE APIs                         │
-│                                                                     │
-│  Admin SDK ·  Chrome Policy ·  Chrome Mgmt ·  Cloud Identity ·  Dir│
-│  reports_v1    v1               v1             v1beta1          v1  │
-└─────────────────────────────────────────────────────────────────────┘
+┌───────────────────────────────────────────────────────────────┐
+│                        ENTRY POINTS                           │
+│                                                               │
+│  ┌─────────────┐  ┌─────────────┐  ┌───────────────────────┐ │
+│  │ Browser UI   │  │ MCP Client  │  │ Eval Runner/Dashboard │ │
+│  │ /api/chat    │  │ /api/mcp    │  │ evals/run.ts  /api/*  │ │
+│  └──────┬──────┘  └──────┬──────┘  └───────────┬───────────┘ │
+└─────────┼────────────────┼─────────────────────┼─────────────┘
+          │                │                     │
+          ▼                ▼                     ▼
+┌───────────────────────────────────────────────────────────────┐
+│                AUTH (Better Auth + Google OAuth)               │
+│  Session cookie / Bearer token / Service-account fallback     │
+│  Resolves OAuth2 access token for downstream API calls        │
+└─────────────────────────┬─────────────────────────────────────┘
+                          │
+                          ▼
+┌───────────────────────────────────────────────────────────────┐
+│                    TOOL EXECUTOR LAYER                         │
+│                                                               │
+│  ┌──────────────────────┐   ┌───────────────────────────────┐ │
+│  │ CepToolExecutor       │   │ FixtureToolExecutor           │ │
+│  │ Production: calls     │   │ Eval: deterministic fixture   │ │
+│  │ Google APIs           │   │ JSON, no API calls            │ │
+│  └──────────┬───────────┘   └───────────────────────────────┘ │
+│             │  Both implement ToolExecutor (lib/mcp/types.ts)  │
+└─────────────┼─────────────────────────────────────────────────┘
+              │
+              ▼
+┌───────────────────────────────────────────────────────────────┐
+│                    GOOGLE WORKSPACE APIs                       │
+│                                                               │
+│  Admin SDK · Chrome Policy · Chrome Mgmt · Cloud Identity     │
+│  reports_v1   v1              v1            v1beta1            │
+└───────────────────────────────────────────────────────────────┘
 ```
 
 ## Chat Request Lifecycle

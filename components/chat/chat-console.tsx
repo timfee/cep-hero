@@ -91,16 +91,7 @@ export const RICH_CARD_TOOLS = new Set([
   "applyPolicyChange",
 ]);
 
-/**
- * Tools that are invisible in the chat — their output is consumed
- * elsewhere (Sources panel, dashboard, AI summary text) or is purely internal.
- */
-export const HIDDEN_TOOLS = new Set([
-  "getFleetOverview",
-  "searchKnowledge",
-  "debugAuth",
-  "suggestActions",
-]);
+import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
 
 /**
  * Context-gathering tools whose cards are suppressed when a message also
@@ -605,7 +596,7 @@ export function ChatConsole() {
                       const toolPart = part as ToolPart;
 
                       // Hidden tools: never render (sources/actions handled elsewhere)
-                      if (HIDDEN_TOOLS.has(toolName)) {
+                      if (HIDDEN_TOOL_NAMES.has(toolName)) {
                         return null;
                       }
 
