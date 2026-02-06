@@ -125,30 +125,32 @@
   --color-status-info: oklch(0.65 0.18 250);
 }
 
+/* Streamdown renders links as <button> (linkSafety mode). Buttons are
+   inline-block by default which breaks text flow inside paragraphs.
+   These rules MUST live outside @layer so they beat Tailwind layers
+   and browser defaults in the CSS cascade. */
+[data-streamdown="link"] {
+  color: var(--link);
+  cursor: pointer;
+  display: inline;
+  overflow-wrap: anywhere;
+  text-decoration-line: underline;
+  text-underline-offset: 0.25em;
+}
+
+[data-streamdown="link"]:hover {
+  color: var(--link-hover);
+}
+
+[data-streamdown="link"]:focus-visible {
+  outline: 2px solid var(--ring);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;
-  }
-
-  /* Streamdown renders links as <button> (linkSafety mode), which are
-     inline-block by default — display:inline lets text wrap naturally. */
-  [data-streamdown="link"] {
-    color: var(--link);
-    cursor: pointer;
-    display: inline;
-    overflow-wrap: anywhere;
-    text-decoration-line: underline;
-    text-underline-offset: 0.25em;
-  }
-
-  [data-streamdown="link"]:hover {
-    color: var(--link-hover);
-  }
-
-  [data-streamdown="link"]:focus-visible {
-    outline: 2px solid var(--ring);
-    outline-offset: 2px;
-    border-radius: 2px;
   }
 
   body {
