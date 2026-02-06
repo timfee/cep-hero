@@ -224,7 +224,7 @@ describe("buildFallbackOverview", () => {
 
     expect(result.suggestions.length).toBeGreaterThan(0);
     expect(result.suggestions[0].category).toBe("security");
-    expect(result.suggestions[0].text).toContain("DLP");
+    expect(result.suggestions[0].text).toBe("Create a DLP rule");
   });
 
   it("includes correct API sources", () => {

@@ -4,9 +4,6 @@
 
 import { Index } from "@upstash/vector";
 
-const DOCS_NAMESPACE = "docs";
-const POLICY_NAMESPACE = "policies";
-
 /**
  * A single hit from a vector similarity search.
  */
@@ -33,7 +30,7 @@ export async function searchDocs(
   topK = 3
 ): Promise<VectorSearchResult> {
   const index = new Index();
-  const result = await index.namespace(DOCS_NAMESPACE).query({
+  const result = await index.query({
     data: query,
     topK,
     includeMetadata: true,
@@ -60,7 +57,7 @@ export async function searchPolicies(
   topK = 4
 ): Promise<VectorSearchResult> {
   const index = new Index();
-  const result = await index.namespace(POLICY_NAMESPACE).query({
+  const result = await index.query({
     data: query,
     topK,
     includeMetadata: true,

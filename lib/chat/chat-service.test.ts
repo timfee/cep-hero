@@ -7,7 +7,6 @@ import { describe, expect, it } from "bun:test";
 
 import {
   analyzeLastStep,
-  buildActionCompletionGuard,
   buildResponseCompletionGuard,
   buildShortResponseGuard,
   computeStepResponse,
@@ -19,14 +18,6 @@ describe("chat-service", () => {
   describe("guard return shapes", () => {
     it("buildResponseCompletionGuard returns system only", () => {
       const result = buildResponseCompletionGuard(basePrompt);
-
-      expect(result).toHaveProperty("system");
-      expect(result).not.toHaveProperty("activeTools");
-      expect(typeof result.system).toBe("string");
-    });
-
-    it("buildActionCompletionGuard returns system only", () => {
-      const result = buildActionCompletionGuard(basePrompt);
 
       expect(result).toHaveProperty("system");
       expect(result).not.toHaveProperty("activeTools");
@@ -52,17 +43,6 @@ describe("chat-service", () => {
 
       expect(result.hasToolResults).toBe(true);
       expect(result.hasText).toBe(false);
-      expect(result.hasSuggestActionsCall).toBe(false);
-    });
-
-    it("detects suggestActions call", () => {
-      const result = analyzeLastStep({
-        toolResults: [{ data: "something" }],
-        text: "Here is what I found in the diagnostic logs.",
-        toolCalls: [{ toolName: "suggestActions" }],
-      });
-
-      expect(result.hasSuggestActionsCall).toBe(true);
     });
 
     it("detects short response under 50 chars", () => {
@@ -101,7 +81,6 @@ describe("chat-service", () => {
       expect(result).not.toHaveProperty("recommendsDlpProposal");
       expect(result).toHaveProperty("hasToolResults");
       expect(result).toHaveProperty("hasText");
-      expect(result).toHaveProperty("hasSuggestActionsCall");
       expect(result).toHaveProperty("hasShortResponse");
       expect(result).toHaveProperty("textLength");
     });
@@ -113,7 +92,6 @@ describe("chat-service", () => {
         {
           hasToolResults: true,
           hasText: false,
-          hasSuggestActionsCall: false,
           hasShortResponse: false,
           textLength: 0,
         },
@@ -129,7 +107,6 @@ describe("chat-service", () => {
         {
           hasToolResults: true,
           hasText: true,
-          hasSuggestActionsCall: false,
           hasShortResponse: true,
           textLength: 10,
         },
@@ -140,28 +117,11 @@ describe("chat-service", () => {
       expect(result.system as string).toContain("brief");
     });
 
-    it("returns action completion guard when missing suggestActions", () => {
+    it("returns empty object when tool results and substantial text", () => {
       const result = computeStepResponse(
         {
           hasToolResults: true,
           hasText: true,
-          hasSuggestActionsCall: false,
-          hasShortResponse: false,
-          textLength: 100,
-        },
-        basePrompt
-      );
-
-      expect(result).toHaveProperty("system");
-      expect(result.system as string).toContain("suggestActions");
-    });
-
-    it("returns empty object when response is complete", () => {
-      const result = computeStepResponse(
-        {
-          hasToolResults: true,
-          hasText: true,
-          hasSuggestActionsCall: true,
           hasShortResponse: false,
           textLength: 100,
         },
@@ -176,7 +136,6 @@ describe("chat-service", () => {
         {
           hasToolResults: false,
           hasText: false,
-          hasSuggestActionsCall: false,
           hasShortResponse: false,
           textLength: 0,
         },
