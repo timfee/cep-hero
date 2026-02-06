@@ -70,6 +70,7 @@ function isDLPRule(value: unknown): value is {
 function formatPolicyValue(value: unknown): string {
   if (value === null || value === undefined) return "Not set";
   if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
+  if (typeof value === "object") return JSON.stringify(value, null, 2);
   return String(value);
 }
 

@@ -239,7 +239,7 @@ export const ToolOutput = ({
     return null;
   }
 
-  let Output = <div>{output as ReactNode}</div>;
+  let Output: ReactNode;
 
   if (typeof output === "object" && !isValidElement(output)) {
     const json = sanitizeOrgUnitIds(
@@ -250,6 +250,10 @@ export const ToolOutput = ({
   } else if (typeof output === "string") {
     const sanitized = sanitizeOrgUnitIds(output, orgUnitMap);
     Output = <CodeBlock code={sanitized} language="json" />;
+  } else if (isValidElement(output)) {
+    Output = output;
+  } else {
+    Output = <CodeBlock code={String(output)} language="json" />;
   }
 
   return (
