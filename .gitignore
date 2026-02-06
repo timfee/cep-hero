@@ -44,11 +44,6 @@ next-env.d.ts
 # eval outputs (ignore all, force-add only the latest HTML report)
 /evals/reports/
 
-# e2e evaluation reports
-/e2e/reports/
-/test-results/
-/playwright-report/
-
 debug.log
 .opencode
 /package-lock.json

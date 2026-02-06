@@ -12,9 +12,6 @@
     "evals:full": "bun evals/run.ts --html --analyze --with-judge --iterations 3",
     "fixtures:capture": "bun run scripts/capture-eval-fixtures.ts",
     "credentials:check": "bun run scripts/check-credentials.ts",
-    "e2e": "bunx playwright test",
-    "e2e:headed": "bunx playwright test --headed",
-    "e2e:report": "bunx playwright show-report",
     "check": "ultracite check",
     "fix": "ultracite fix",
     "build-artifact": "sudo docker build -t nextjsapp/default . && sudo docker tag nextjsapp/default us-central1-docker.pkg.dev/cep-herp-dev/cr-images/default-svc:latest",
@@ -81,7 +78,6 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "^20.5.0",
-    "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4.1.18",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.9.1",

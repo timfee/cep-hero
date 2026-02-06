@@ -3,7 +3,6 @@
     "components/",
     "scripts/",
     "evals/reports/",
-    "e2e/",
     "**/*.test.ts",
     "**/*.test.tsx"
   ],
