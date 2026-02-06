@@ -53,8 +53,8 @@ Never apply changes without explicit user confirmation. Always draft first, then
 
 # DLP Rule Workflow
 When creating DLP rules:
-1. Call listDLPRules to check existing rules
-2. Call draftPolicyChange to propose the new rule (UI renders a confirmation card)
+1. Call listDLPRules and listOrgUnits in parallel to see what exists
+2. Pick sensible defaults (audit all traffic at root "/", all triggers) and call draftPolicyChange immediately — don't ask the user to fill in fields
 3. Wait for user to say "Confirm"
 4. Call createDLPRule with the proposed configuration
 
@@ -70,8 +70,8 @@ When a user reports an issue, call diagnostic tools first — don't give generic
 2. If events are empty, call getChromeConnectorConfiguration (reporting may be disabled)
 3. Call listDLPRules if the issue involves data protection
 4. If tools fail, call debugAuth to inspect scopes
-5. If you encounter unfamiliar error codes or terms, call searchKnowledge before proposing fixes
-6. End every response by calling suggestActions with 2-4 relevant follow-up options
+5. Call searchKnowledge for any question about CEP features, error codes, configuration, or best practices — don't give generic advice without checking docs first
+6. After diagnostic or informational responses, call suggestActions with 2-4 context-specific follow-up options. Skip it when you've just proposed a change and are waiting for "Confirm".
 
 # Tone & Formatting
 Use natural language. Bold key terms. Don't use rigid section headers like "Diagnosis:" or "Evidence:" — instead use transitions like "Here's what I found", "The issue is", "I'd recommend".
@@ -79,7 +79,7 @@ Use natural language. Bold key terms. Don't use rigid section headers like "Diag
 When citing evidence, quote exact values from tool results (error codes, field names, counts, policy scopes) but weave them into natural sentences rather than listing them under a header.
 
 # Source Citations
-When you use searchKnowledge, cite relevant sources as markdown links inline (e.g., [title](url)) and list all sources at the end under a **Sources** heading.
+Always cite sources from knowledge context. Use markdown links inline (e.g., [title](url)) and list all sources at the end under a **Sources** heading. This applies whether knowledge came from searchKnowledge or was provided as context.
 
 # Org Units
 Use friendly paths ("/Engineering", "/Sales/West Coast") as the primary identifier, not raw IDs. Use "/" for root. Tool outputs display org units with structured name + ID pills in the UI.
@@ -189,7 +189,6 @@ async function retrieveKnowledge(userMessage: string) {
 export interface StepAnalysis {
   hasToolResults: boolean;
   hasText: boolean;
-  hasSuggestActionsCall: boolean;
   hasShortResponse: boolean;
   textLength: number;
 }
@@ -206,9 +205,6 @@ export interface LastStep {
 export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   const hasToolResults = lastStep.toolResults.length > 0;
   const hasText = lastStep.text.trim().length > 0;
-  const hasSuggestActionsCall = lastStep.toolCalls.some(
-    (call) => call.toolName === "suggestActions"
-  );
 
   const textLength = lastStep.text.trim().length;
   const hasShortResponse = hasToolResults && hasText && textLength < 50;
@@ -216,7 +212,6 @@ export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
   return {
     hasToolResults,
     hasText,
-    hasSuggestActionsCall,
     hasShortResponse,
     textLength,
   };
@@ -230,17 +225,6 @@ export function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
     system: `${enhancedSystemPrompt}
 
 You received tool results but didn't explain them. Summarize what you found, cite specific values, and suggest next steps. Then call suggestActions.`,
-  };
-}
-
-/**
- * Build guard instructions for adding suggested actions.
- */
-export function buildActionCompletionGuard(enhancedSystemPrompt: string) {
-  return {
-    system: `${enhancedSystemPrompt}
-
-Call suggestActions with 2-4 relevant follow-up options.`,
   };
 }
 
@@ -267,9 +251,6 @@ export function computeStepResponse(
   }
   if (analysis.hasShortResponse) {
     return buildShortResponseGuard(enhancedSystemPrompt);
-  }
-  if (analysis.hasToolResults && !analysis.hasSuggestActionsCall) {
-    return buildActionCompletionGuard(enhancedSystemPrompt);
   }
   return {};
 }
@@ -300,11 +281,9 @@ export async function createChatStream({
         if (!lastStep) {
           return false;
         }
-        const hasSuggestActions = lastStep.toolCalls.some(
-          (call) => call.toolName === "suggestActions"
-        );
         const hasSubstantialText = lastStep.text.trim().length >= 50;
-        return hasSuggestActions && hasSubstantialText;
+        const madeToolCalls = lastStep.toolCalls.length > 0;
+        return hasSubstantialText && !madeToolCalls;
       },
     ],
     prepareStep: ({ steps }) => {
@@ -421,7 +400,7 @@ export async function createChatStream({
 
       searchKnowledge: tool({
         description:
-          "Search the knowledge base for documentation about Chrome Enterprise concepts, error codes, troubleshooting steps, and best practices. Use this when you encounter unfamiliar terms, error codes, or need to verify remediation steps.",
+          "Search the knowledge base for documentation about Chrome Enterprise concepts, error codes, troubleshooting steps, and best practices. Results include title, url, and content. You MUST cite these sources as [title](url) inline and list them under a **Sources** heading at the end.",
         inputSchema: z.object({
           query: z
             .string()
