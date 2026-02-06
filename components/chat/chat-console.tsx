@@ -126,16 +126,7 @@ function suggestionsToActions(suggestions: Suggestion[]): ActionItem[] {
     }));
 }
 
-/**
- * Generate a dynamic welcome message based on fleet state.
- */
-function generateWelcomeMessage(data: OverviewData | null) {
-  if (!data) {
-    return "What can I help you with?";
-  }
-  const headline = data.headline?.trim();
-  return headline || "What can I help you with?";
-}
+import { generateWelcomeMessage } from "./welcome-message";
 
 /**
  * Map string actions to ActionItem objects with confirm/cancel detection.

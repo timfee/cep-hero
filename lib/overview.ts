@@ -68,10 +68,13 @@ function redactSensitive(text: string) {
 }
 
 /**
- * Sanitize overview text by redacting sensitive data and trimming whitespace.
+ * Sanitize overview text by redacting sensitive data, stripping leading
+ * punctuation artifacts from AI output, and trimming whitespace.
  */
 function sanitizeOverviewText(text: string) {
-  return redactSensitive(text).trim();
+  return redactSensitive(text)
+    .replace(/^[.,;:!?]+/, "")
+    .trim();
 }
 
 /**

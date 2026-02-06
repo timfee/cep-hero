@@ -84,9 +84,12 @@ describe("SignInPage", () => {
 
     expect(getByText("Sign In")).toBeInTheDocument();
     expect(getByText("Get an Account")).toBeInTheDocument();
-    expect(
-      getByText(new RegExp(`already have a ${TARGET_DOMAIN} account`, "i"))
-    ).toBeInTheDocument();
+    const description = getByText("Sign In")
+      .closest("[data-slot='card']")
+      ?.querySelector("[data-slot='card-description']");
+    expect(description?.textContent).toMatch(
+      new RegExp(`already have a\\s+${TARGET_DOMAIN}\\s+account`, "i")
+    );
   });
 
   it("renders sign-in button", () => {
