@@ -2,29 +2,17 @@
  * Analyzer for Chrome connector policy targets to detect mis-scoping.
  */
 
-import { type chromepolicy_v1 } from "googleapis";
+import { type ConnectorAnalysis } from "@/types/chat";
+
+export type { ConnectorAnalysis };
 
 /**
- * Analysis result for connector policy targets.
+ * Minimal shape required by the analyzer — any object with a target resource.
+ * Satisfies both the googleapis PolicyWithTarget and plain UI types.
  */
-export interface ConnectorAnalysis {
-  total: number;
-  byTarget: {
-    customer: number;
-    orgUnit: number;
-    group: number;
-    unknown: number;
-  };
-  misScoped: number;
-  detail: string;
-  flag: boolean;
-  sampleTarget?: string;
+interface PolicyWithTarget {
+  policyTargetKey?: { targetResource?: string | null };
 }
-
-type ResolvedPolicy =
-  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
-    policyTargetKey?: { targetResource?: string };
-  };
 
 /**
  * Classifies a policy target resource into a known scope type.
@@ -55,7 +43,7 @@ function classifyTarget(
  * Analyzes connector policy targets to detect mis-scoping.
  */
 export function analyzeConnectorPolicies(
-  policies: ResolvedPolicy[]
+  policies: PolicyWithTarget[]
 ): ConnectorAnalysis {
   const mutableCounts: ConnectorAnalysis["byTarget"] = {
     customer: 0,
@@ -63,8 +51,7 @@ export function analyzeConnectorPolicies(
     group: 0,
     unknown: 0,
   };
-  const misScoped: chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy[] =
-    [];
+  const misScoped: PolicyWithTarget[] = [];
 
   for (const policy of policies) {
     const targetResource = getTargetResource(policy);
@@ -91,7 +78,7 @@ export function analyzeConnectorPolicies(
 /**
  * Safely extracts the policy target resource from a resolved policy.
  */
-function getTargetResource(policy: ResolvedPolicy) {
+function getTargetResource(policy: PolicyWithTarget) {
   const targetResource = policy.policyTargetKey?.targetResource;
   return typeof targetResource === "string" ? targetResource : undefined;
 }

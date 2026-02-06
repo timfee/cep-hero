@@ -13,6 +13,7 @@ import { useState, memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { OrgUnitDisplay } from "@/components/ui/org-unit-display";
+import { formatPolicyValue, humanizeKey } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 export interface PolicyChangeProposal {
@@ -65,44 +66,6 @@ function isDLPRule(value: unknown): value is {
     value !== null &&
     ("triggers" in value || "action" in value)
   );
-}
-
-/**
- * Converts a camelCase or SCREAMING_SNAKE_CASE key into a readable label.
- */
-function humanizeKey(key: string): string {
-  return key
-    .replaceAll(/_/g, " ")
-    .replaceAll(/([a-z])([A-Z])/g, "$1 $2")
-    .toLowerCase()
-    .replace(/^\w/, (c) => c.toUpperCase());
-}
-
-/**
- * Renders a policy value as a short, human-readable string.
- * Complex objects/arrays are summarised rather than dumped as JSON.
- */
-function formatPolicyValue(value: unknown): string {
-  if (value === null || value === undefined) return "Not set";
-  if (typeof value === "boolean") return value ? "Enabled" : "Disabled";
-  if (typeof value === "number") return String(value);
-  if (typeof value === "string") return value;
-
-  if (Array.isArray(value)) {
-    if (value.length === 0) return "None";
-    if (value.length === 1 && typeof value[0] === "string") return value[0];
-    return `${value.length} ${value.length === 1 ? "item" : "items"} configured`;
-  }
-
-  if (typeof value === "object") {
-    const keys = Object.keys(value as Record<string, unknown>);
-    if (keys.length === 0) return "Empty";
-    if (keys.length <= 2) {
-      return keys.map((k) => humanizeKey(k)).join(", ");
-    }
-    return `${keys.length} settings`;
-  }
-  return String(value);
 }
 
 export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
