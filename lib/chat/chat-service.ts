@@ -237,7 +237,8 @@ function hasUIResult(toolResults: unknown[]): boolean {
       if (
         typed._type === "ui.confirmation" ||
         typed._type === "ui.success" ||
-        typed._type === "ui.manual_steps"
+        typed._type === "ui.manual_steps" ||
+        typed._type === "ui.error"
       ) {
         return true;
       }

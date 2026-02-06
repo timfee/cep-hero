@@ -679,7 +679,7 @@ export function ChatConsole() {
 
                       // Compact inline status for remaining tools (createDLPRule,
                       // applyPolicyChange, enrollBrowser, etc.)
-                      // Shows a single subtle line instead of the full generic tool block.
+                      // Shows a collapsed header; errors auto-expand with details.
                       const isError =
                         toolPart.state === "output-error" ||
                         toolPart.state === "output-denied";
@@ -692,7 +692,7 @@ export function ChatConsole() {
                       }
 
                       return (
-                        <Tool key={partKey} className="border-border/50">
+                        <Tool key={partKey} defaultOpen={isError}>
                           <ToolHeader
                             {...(toolPart.type === "dynamic-tool"
                               ? {
@@ -705,8 +705,8 @@ export function ChatConsole() {
                                   state: toolPart.state,
                                 })}
                           />
-                          {isError && (
-                            <ToolContent>
+                          <ToolContent>
+                            {isError && (
                               <ToolOutput
                                 output={undefined}
                                 errorText={
@@ -714,8 +714,14 @@ export function ChatConsole() {
                                   (toolPart as { error?: string }).error
                                 }
                               />
-                            </ToolContent>
-                          )}
+                            )}
+                            {toolPart.state === "output-available" && (
+                              <ToolOutput
+                                output={toolPart.output}
+                                errorText={undefined}
+                              />
+                            )}
+                          </ToolContent>
                         </Tool>
                       );
                     }
