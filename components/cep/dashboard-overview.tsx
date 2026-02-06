@@ -223,7 +223,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
 
                       return (
                         <button
-                          key={card.label}
+                          key={`${card.label}-${card.action}`}
                           type="button"
                           onClick={async () => {
                             await track("Posture Card Clicked", {
@@ -305,7 +305,7 @@ export function DashboardOverview({ onAction }: DashboardOverviewProps) {
                     .toSorted((a, b) => a.priority - b.priority)
                     .map((suggestion, idx) => (
                       <button
-                        key={suggestion.action}
+                        key={`${suggestion.action}-${idx}`}
                         type="button"
                         onClick={async () => {
                           await track("Suggestion Clicked", {
