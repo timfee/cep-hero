@@ -6,6 +6,7 @@ import { google } from "@ai-sdk/google";
 import { generateText, Output, stepCountIs, streamText, tool } from "ai";
 import { z } from "zod";
 
+import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
 import {
   ApplyPolicyChangeSchema,
   CepToolExecutor,
@@ -104,7 +105,7 @@ Use natural language. Bold key terms. Don't use rigid section headers like "Diag
 When citing evidence, quote exact values from tool results (error codes, field names, counts, policy scopes) but weave them into natural sentences rather than listing them under a header.
 
 # Source Citations
-Always cite sources from knowledge context. Use markdown links inline (e.g., [title](url)) and list all sources at the end under a **Sources** heading. This applies whether knowledge came from searchKnowledge or was provided as context.
+Reference source content naturally in your response but do NOT include markdown links or URLs inline. Do NOT add a "Sources" section or heading — the UI automatically displays sources in a collapsible drawer from searchKnowledge results.
 
 # Org Units
 Use friendly paths ("/Engineering", "/Sales/West Coast") as the primary identifier, not raw IDs. Use "/" for root. Tool outputs display org units with structured name + ID pills in the UI.
@@ -190,7 +191,7 @@ async function fetchKnowledgeSnippets(query: string) {
   if (docSnippets.length === 0 && policySnippets.length === 0) {
     return "";
   }
-  return `\n\n## Sources — cite these as [title](url)\nYou MUST cite the URLs below inline and list them under a **Sources** heading.\n\n${docSnippets}\n${policySnippets}\n`;
+  return `\n\n## Knowledge Context\nUse this information to inform your response. Do NOT include URLs or a Sources section — the UI displays sources automatically.\n\n${docSnippets}\n${policySnippets}\n`;
 }
 
 /**
@@ -217,6 +218,7 @@ export interface StepAnalysis {
   hasShortResponse: boolean;
   hasUIContent: boolean;
   textLength: number;
+  onlySilentTools: boolean;
 }
 
 export interface LastStep {
@@ -249,9 +251,15 @@ function hasUIResult(toolResults: unknown[]): boolean {
 
 /**
  * Analyze the last step to determine what guards should be applied.
+ * Steps that only called hidden tools are treated as having no actionable
+ * tool results, preventing the "explain your results" guard from firing.
  */
 export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
-  const hasToolResults = lastStep.toolResults.length > 0;
+  const onlySilentTools =
+    lastStep.toolCalls.length > 0 &&
+    lastStep.toolCalls.every((tc) => HIDDEN_TOOL_NAMES.has(tc.toolName));
+
+  const hasToolResults = lastStep.toolResults.length > 0 && !onlySilentTools;
   const hasText = lastStep.text.trim().length > 0;
   const hasUIContent = hasUIResult(lastStep.toolResults);
 
@@ -264,6 +272,7 @@ export function analyzeLastStep(lastStep: LastStep): StepAnalysis {
     hasShortResponse,
     hasUIContent,
     textLength,
+    onlySilentTools,
   };
 }
 
@@ -274,7 +283,7 @@ export function buildResponseCompletionGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-You received tool results but didn't explain them. Summarize what you found and cite specific values. Cite any sources from your context as [title](url) inline and list them under a **Sources** heading. Do NOT ask the user any questions — call suggestActions with actionable follow-ups instead.`,
+You received tool results but didn't explain them. Summarize what you found and cite specific values. Do NOT include URLs or a Sources section — the UI handles source display. Do NOT ask the user any questions — call suggestActions with actionable follow-ups instead.`,
   };
 }
 
@@ -285,7 +294,7 @@ export function buildShortResponseGuard(enhancedSystemPrompt: string) {
   return {
     system: `${enhancedSystemPrompt}
 
-Your response was brief. Expand with specific evidence from the tool results. Cite any sources from your context as [title](url) inline and list them under a **Sources** heading. Do NOT ask the user any questions — call suggestActions with actionable follow-ups instead.`,
+Your response was brief. Expand with specific evidence from the tool results. Do NOT include URLs or a Sources section — the UI handles source display. Do NOT ask the user any questions — call suggestActions with actionable follow-ups instead.`,
   };
 }
 
@@ -301,6 +310,12 @@ export function computeStepResponse(
 ): Record<string, unknown> {
   if (analysis.hasUIContent) {
     return {};
+  }
+  if (analysis.onlySilentTools && analysis.hasText) {
+    return {
+      toolChoice: "none" as const,
+      system: `${enhancedSystemPrompt}\n\nYour response is already complete. Do not repeat or add to it. Stop generating.`,
+    };
   }
   if (analysis.hasToolResults && !analysis.hasText) {
     return buildResponseCompletionGuard(enhancedSystemPrompt);
@@ -354,7 +369,22 @@ export async function createChatStream({
   const result = streamText({
     model: google(CHAT_MODEL),
     messages: [{ role: "system", content: enhancedSystemPrompt }, ...messages],
-    stopWhen: [stepCountIs(15)],
+    stopWhen: [
+      stepCountIs(15),
+      ({ steps }) => {
+        const last = steps.at(-1);
+        if (!last) {
+          return false;
+        }
+        const hasText = last.text.trim().length > 100;
+        const onlySilent =
+          last.toolCalls.length > 0 &&
+          last.toolCalls.every(
+            (tc) => tc && HIDDEN_TOOL_NAMES.has(tc.toolName)
+          );
+        return hasText && onlySilent;
+      },
+    ],
     prepareStep: ({ steps }) => {
       if (steps.length === 0 && isFirstTurn) {
         return {
@@ -468,7 +498,7 @@ export async function createChatStream({
 
       searchKnowledge: tool({
         description:
-          "Search the knowledge base for documentation about Chrome Enterprise concepts, error codes, troubleshooting steps, and best practices. Results include title, url, and content. You MUST cite these sources as [title](url) inline and list them under a **Sources** heading at the end.",
+          "Search the knowledge base for documentation about Chrome Enterprise concepts, error codes, troubleshooting steps, and best practices. Results include title, url, and content. The UI automatically displays sources in a drawer — do NOT cite URLs inline or add a Sources section.",
         inputSchema: z.object({
           query: z
             .string()

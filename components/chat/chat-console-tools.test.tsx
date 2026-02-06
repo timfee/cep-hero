@@ -1,33 +1,35 @@
 /**
- * Tests for tool visibility tier classification in chat-console.
- * Verifies that HIDDEN_TOOLS and RICH_CARD_TOOLS sets are correctly defined.
+ * Tests for tool visibility tier classification.
+ * Verifies HIDDEN_TOOL_NAMES and RICH_CARD_TOOLS are correctly defined and disjoint.
  */
 
 import { describe, expect, it } from "bun:test";
 
-import { HIDDEN_TOOLS, RICH_CARD_TOOLS } from "./chat-console";
+import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
+
+import { RICH_CARD_TOOLS } from "./chat-console";
 
 describe("tool visibility tiers", () => {
-  describe("HIDDEN_TOOLS", () => {
+  describe("HIDDEN_TOOL_NAMES", () => {
     it("hides getFleetOverview (data feeds AI summary, not a user-facing card)", () => {
-      expect(HIDDEN_TOOLS.has("getFleetOverview")).toBe(true);
+      expect(HIDDEN_TOOL_NAMES.has("getFleetOverview")).toBe(true);
     });
 
     it("hides searchKnowledge (already rendered in Sources section)", () => {
-      expect(HIDDEN_TOOLS.has("searchKnowledge")).toBe(true);
+      expect(HIDDEN_TOOL_NAMES.has("searchKnowledge")).toBe(true);
     });
 
     it("hides debugAuth (internal diagnostic)", () => {
-      expect(HIDDEN_TOOLS.has("debugAuth")).toBe(true);
+      expect(HIDDEN_TOOL_NAMES.has("debugAuth")).toBe(true);
     });
 
     it("hides suggestActions (rendered as ActionButtons)", () => {
-      expect(HIDDEN_TOOLS.has("suggestActions")).toBe(true);
+      expect(HIDDEN_TOOL_NAMES.has("suggestActions")).toBe(true);
     });
 
     it("does not hide tools that have rich cards", () => {
       for (const tool of RICH_CARD_TOOLS) {
-        expect(HIDDEN_TOOLS.has(tool)).toBe(false);
+        expect(HIDDEN_TOOL_NAMES.has(tool)).toBe(false);
       }
     });
   });
@@ -46,8 +48,8 @@ describe("tool visibility tiers", () => {
   });
 
   describe("no tool is in both sets", () => {
-    it("HIDDEN_TOOLS and RICH_CARD_TOOLS are disjoint", () => {
-      for (const tool of HIDDEN_TOOLS) {
+    it("HIDDEN_TOOL_NAMES and RICH_CARD_TOOLS are disjoint", () => {
+      for (const tool of HIDDEN_TOOL_NAMES) {
         expect(RICH_CARD_TOOLS.has(tool)).toBe(false);
       }
     });
