@@ -16,11 +16,6 @@ const CHROMEPOLICY_TYPES_PATH = path.join(
   "node_modules/googleapis/build/src/apis/chromepolicy/v1.d.ts"
 );
 
-const ADMIN_TYPES_PATH = path.join(
-  process.cwd(),
-  "node_modules/googleapis/build/src/apis/admin/reports_v1.d.ts"
-);
-
 const API_BASE_PATH = path.join(
   process.cwd(),
   "evals/fixtures/base/api-base.json"

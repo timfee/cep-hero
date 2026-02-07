@@ -30,6 +30,8 @@ const testUserDomain =
   "example.com";
 
 const chatUrl = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
+const hasServiceAccount = Boolean(process.env.GOOGLE_SERVICE_ACCOUNT_JSON);
+const runIt = hasServiceAccount ? it : it.skip;
 
 /**
  * Check whether the chat endpoint is reachable.
@@ -104,6 +106,13 @@ describe("CEP live evals", () => {
   const users: string[] = [];
 
   beforeAll(async () => {
+    if (!hasServiceAccount) {
+      console.log(
+        "[e2e-evals] skipping - no GOOGLE_SERVICE_ACCOUNT_JSON configured"
+      );
+      return;
+    }
+
     const needsLocal = chatUrl.includes("localhost");
     if (needsLocal) {
       const up = await isServerUp(chatUrl);
@@ -177,7 +186,7 @@ describe("CEP live evals", () => {
     }
   });
 
-  it(
+  runIt(
     "EC-057 connector scope mis-targeted",
     async () => {
       const { orgUnitPath } = await createOrgUnit({
@@ -201,7 +210,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-058 missing policyTargetKey",
     async () => {
       const prompt =
@@ -212,7 +221,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-059 malformed resolve payload",
     async () => {
       const prompt =
@@ -223,7 +232,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-060 DLP rules absent",
     async () => {
       const prompt = "Why does testuser2@ have no DLP enforcement?";
@@ -233,7 +242,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-061 DLP rule not firing",
     async () => {
       const prompt =
@@ -244,7 +253,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-062 event reporting off",
     async () => {
       const prompt = "Why do Chrome audit events show zero for testuser3@?";
@@ -254,7 +263,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-063 Safe Browsing disabled",
     async () => {
       const prompt = "Why isn’t Safe Browsing enforced for testuser4@?";
@@ -264,7 +273,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-064 Bulk Data Connector disabled",
     async () => {
       const prompt = "Bulk connector not working for testuser5@—why?";
@@ -274,7 +283,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-065 Web Data Connector missing",
     async () => {
       const prompt = "Why can’t testuser6@ export web data?";
@@ -284,7 +293,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-066 File Transfer Connector missing",
     async () => {
       const prompt = "Why can’t testuser7@ use file transfer connector?";
@@ -294,7 +303,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-067 Print Connector mis-scoped",
     async () => {
       const prompt = "Why doesn’t print connector apply to testuser8@?";
@@ -304,7 +313,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-068 Mixed group vs OU precedence",
     async () => {
       const prompt =
@@ -315,7 +324,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-069 Enrollment token wrong OU",
     async () => {
       const prompt =
@@ -326,7 +335,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-070 Enrollment permission denied",
     async () => {
       const prompt = "Enrollment token creation failed with permission denied.";
@@ -336,7 +345,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-071 Propagation delay",
     async () => {
       const prompt = "Policies applied but not live yet after 30 minutes.";
@@ -346,7 +355,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-072 Bad schema ID",
     async () => {
       const prompt = "Policy resolve returned zero policies for schema id.";
@@ -356,7 +365,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-073 Group targeting format",
     async () => {
       const prompt =
@@ -367,7 +376,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-074 Reference doc grounding",
     async () => {
       const prompt = "Show me Chrome DLP reference for this issue.";
@@ -377,7 +386,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-075 Token expired",
     async () => {
       const prompt = "Why does the bot say missing Google access token?";
@@ -387,7 +396,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-076 Rate limit handling",
     async () => {
       const prompt = "Connector check hit rate limit.";
@@ -397,7 +406,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-077 Outlook.com blocked",
     async () => {
       const prompt = "Why can’t testuser13@ access outlook.com?";
@@ -407,7 +416,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-078 Outlook.com still blocked after removal",
     async () => {
       const prompt = "Outlook.com is still blocked after policy removal.";
@@ -417,7 +426,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-079 Detector tuning",
     async () => {
       const prompt = "Why is phone detector firing on internal domains?";
@@ -427,7 +436,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-080 Conflicting DLP vs connector",
     async () => {
       const prompt = "Data still leaving via bulk connector despite DLP rules.";
@@ -437,7 +446,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-081 Multi-OU comparison",
     async () => {
       const prompt =
@@ -448,7 +457,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-082 Multi-turn connector scope confirmation",
     async () => {
       const first = await callChatMessages([
@@ -478,7 +487,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-027 OS version mismatch in CAA",
     async () => {
       const prompt =
@@ -489,7 +498,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-028 Encryption status detection failure",
     async () => {
       const prompt =
@@ -500,7 +509,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-029 IP subnet or geo blocking",
     async () => {
       const prompt = "Access blocked due to IP subnet or region restrictions.";
@@ -510,7 +519,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-030 Split-brain profile context",
     async () => {
       const prompt =
@@ -521,7 +530,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-031 Corporate-owned vs BYOD classification",
     async () => {
       const prompt = "A corporate laptop is treated as BYOD and denied access.";
@@ -531,7 +540,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-032 Access level logic errors",
     async () => {
       const prompt =
@@ -542,7 +551,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-033 Malware scanning timeouts",
     async () => {
       const prompt = "Large file download failed with virus scan timeout.";
@@ -552,7 +561,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-034 Password-protected files blocked",
     async () => {
       const prompt = "Encrypted ZIP blocked because it is unscannable.";
@@ -562,7 +571,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-035 DLP false positives",
     async () => {
       const prompt =
@@ -573,7 +582,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-036 Printing restrictions blocked jobs",
     async () => {
       const prompt = "Print job blocked by DLP policy.";
@@ -583,7 +592,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-037 Clipboard restrictions",
     async () => {
       const prompt = "Copy/paste is blocked by clipboard restrictions.";
@@ -593,7 +602,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-038 Policy precedence conflicts",
     async () => {
       const prompt = "Local policy overrides cloud policy due to precedence.";
@@ -603,7 +612,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-039 OU inheritance override",
     async () => {
       const prompt = "A child OU is not inheriting root policy settings.";
@@ -613,7 +622,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-040 Policy schema JSON errors",
     async () => {
       const prompt = "ExtensionSettings JSON is invalid and policy is ignored.";
@@ -623,7 +632,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-041 Recommended vs mandatory policies",
     async () => {
       const prompt =
@@ -634,7 +643,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-042 User affiliation and profile separation",
     async () => {
       const prompt =
@@ -645,7 +654,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-043 Force-install extension failures",
     async () => {
       const prompt = "Forced extension install failed due to manifest errors.";
@@ -655,7 +664,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-044 Permission increase blocking",
     async () => {
       const prompt = "Extension disabled after requesting new permissions.";
@@ -665,7 +674,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-045 Malicious extension removal",
     async () => {
       const prompt = "Is the malicious extension still installed anywhere?";
@@ -675,7 +684,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-046 Enrollment token invalid or expired",
     async () => {
       const prompt = "Enrollment token invalid or expired during device setup.";
@@ -685,7 +694,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-047 Stale device sync",
     async () => {
       const prompt = "Device lastSyncTime is stale; state is out of date.";
@@ -695,7 +704,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-048 User session revocation delay",
     async () => {
       const prompt = "Suspended user still has an active Chrome session.";
@@ -705,7 +714,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-049 PAC file and proxy authentication",
     async () => {
       const prompt = "PAC file proxy auth is blocking CEP traffic.";
@@ -715,7 +724,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-050 SSL inspection conflicts",
     async () => {
       const prompt = "SSL inspection breaks connector traffic on our network.";
@@ -725,7 +734,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-051 Connector handshake service availability",
     async () => {
       const prompt =
@@ -736,7 +745,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-052 Performance degradation telemetry",
     async () => {
       const prompt = "Chrome telemetry shows high CPU usage by an extension.";
@@ -746,7 +755,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-053 Corrupt extension state",
     async () => {
       const prompt = "An extension is crashing repeatedly and appears corrupt.";
@@ -756,7 +765,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-054 Deprovisioning gaps",
     async () => {
       const prompt = "Wiped devices still appear in inventory.";
@@ -766,7 +775,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-055 Connector connectivity firewall",
     async () => {
       const prompt =
@@ -777,7 +786,7 @@ describe("CEP live evals", () => {
     TEST_TIMEOUT_MS
   );
 
-  it(
+  runIt(
     "EC-056 API quota exhaustion",
     async () => {
       const prompt = "Diagnostics hit API quota limits with HTTP 429.";

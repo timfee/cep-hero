@@ -93,7 +93,9 @@ async function getAccessToken(
   isTestBypass: boolean
 ): Promise<AccessTokenResult> {
   if (isTestBypass) {
-    // Prefer real service account token for E2E tests with live API access
+    // When USE_DEFAULT_USER=1 is explicitly set, use real service account
+    // tokens so E2E tests can make live Google API calls. Without that env
+    // var, tests get the inert "test-token" placeholder (deterministic mode).
     if (isDefaultUserEnabled()) {
       const defaultToken = await getDefaultUserAccessToken();
       if (defaultToken) {
