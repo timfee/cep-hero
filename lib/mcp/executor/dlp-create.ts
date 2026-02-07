@@ -8,6 +8,7 @@ import { z } from "zod";
 import {
   buildOrgUnitTargetResource,
   resolveOrgUnitDisplay,
+  resolveTargetForApply,
 } from "@/lib/mcp/org-units";
 import { type CreateDLPRuleSchema } from "@/lib/mcp/schemas";
 
@@ -102,7 +103,8 @@ export async function createDLPRule(
     accessToken,
     customerId,
     args,
-    targetOrgUnitDisplay
+    targetOrgUnitDisplay,
+    orgUnitContext
   );
   return result;
 }
@@ -143,9 +145,10 @@ async function executeCreateRule(
   accessToken: string,
   customerId: string,
   args: CreateDLPRuleArgs,
-  targetOrgUnitDisplay: string
+  targetOrgUnitDisplay: string,
+  orgUnitContext: OrgUnitContext
 ): Promise<CreateDLPRuleResult> {
-  const policyPayload = buildPolicyPayload(customerId, args);
+  const policyPayload = buildPolicyPayload(customerId, args, orgUnitContext);
   try {
     const result = await submitDLPRule(
       accessToken,
@@ -195,7 +198,11 @@ function buildNoTokenError(
 /**
  * Builds the Cloud Identity API request payload.
  */
-function buildPolicyPayload(customerId: string, args: CreateDLPRuleArgs) {
+function buildPolicyPayload(
+  customerId: string,
+  args: CreateDLPRuleArgs,
+  orgUnitContext: OrgUnitContext
+) {
   const triggerConditions = args.triggers.map(mapTrigger);
   const actionMapping: Record<string, string> = {
     AUDIT: "AUDIT_ONLY",
@@ -203,10 +210,16 @@ function buildPolicyPayload(customerId: string, args: CreateDLPRuleArgs) {
     BLOCK: "BLOCK_CONTENT",
   };
 
+  const resolvedTarget = resolveTargetForApply(
+    args.targetOrgUnit,
+    orgUnitContext.orgUnitNameMap,
+    orgUnitContext.rootOrgUnitId
+  );
+
   return {
     customer: `customers/${customerId}`,
     policyQuery: {
-      orgUnit: buildOrgUnitTargetResource(args.targetOrgUnit),
+      orgUnit: buildOrgUnitTargetResource(resolvedTarget),
       query: "user.is_member_of_any()",
     },
     setting: {

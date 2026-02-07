@@ -342,4 +342,60 @@ describe("createDLPRule payload validation", () => {
     };
     expect(body.setting.value.enabled).toBe(true);
   });
+
+  it("resolves '/' targetOrgUnit to root org unit ID in policyQuery", async () => {
+    mockFetchSuccess();
+
+    await createDLPRule(auth, customerId, ctx, {
+      displayName: "Root DLP rule",
+      targetOrgUnit: "/",
+      triggers: ["UPLOAD"],
+      action: "AUDIT",
+    });
+
+    const body = capturedRequests[0].body as {
+      policyQuery: { orgUnit: string };
+    };
+    expect(body.policyQuery.orgUnit).toBe("orgunits/03ph8a2z23yjui6");
+    expect(body.policyQuery.orgUnit).not.toBe("");
+  });
+
+  it("resolves path-based targetOrgUnit in policyQuery", async () => {
+    mockFetchSuccess();
+
+    await createDLPRule(auth, customerId, ctx, {
+      displayName: "Engineering DLP rule",
+      targetOrgUnit: "/Engineering",
+      triggers: ["DOWNLOAD"],
+      action: "BLOCK",
+    });
+
+    const body = capturedRequests[0].body as {
+      policyQuery: { orgUnit: string };
+    };
+    expect(body.policyQuery.orgUnit).toBe("orgunits/03ph8a2z221pcso");
+    expect(body.policyQuery.orgUnit).not.toStartWith("/");
+  });
+
+  it("policyQuery.orgUnit is never empty for any targetOrgUnit format", async () => {
+    const inputs = ["/", "id:03ph8a2z221pcso", "orgunits/03ph8a2z221pcso"];
+
+    for (const targetOrgUnit of inputs) {
+      capturedRequests = [];
+      mockFetchSuccess();
+
+      await createDLPRule(auth, customerId, ctx, {
+        displayName: `Rule for ${targetOrgUnit}`,
+        targetOrgUnit,
+        triggers: ["UPLOAD"],
+        action: "AUDIT",
+      });
+
+      const body = capturedRequests[0].body as {
+        policyQuery: { orgUnit: string };
+      };
+      expect(body.policyQuery.orgUnit).not.toBe("");
+      expect(body.policyQuery.orgUnit).toStartWith("orgunits/");
+    }
+  });
 });
