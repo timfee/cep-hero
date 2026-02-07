@@ -227,53 +227,52 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
           </p>
         )}
 
-        <label className="flex items-center gap-2 cursor-pointer pt-2">
-          <Checkbox
-            checked={confirmed}
-            onCheckedChange={(c) => setConfirmed(c as boolean)}
-            className="w-4 h-4 rounded border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
-          />
-          <span className="text-xs text-muted-foreground">
-            I understand this modifies Chrome Enterprise config
-          </span>
-        </label>
+        {!stacked && (
+          <label className="flex items-center gap-2 cursor-pointer pt-2">
+            <Checkbox
+              checked={confirmed}
+              onCheckedChange={(c) => setConfirmed(c as boolean)}
+              className="w-4 h-4 rounded border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+            />
+            <span className="text-xs text-muted-foreground">
+              I understand this modifies Chrome Enterprise config
+            </span>
+          </label>
+        )}
       </div>
 
-      {/* Footer */}
-      <div
-        className={cn(
-          "px-4 py-3 flex items-center justify-between",
-          !stacked && "border-t border-border"
-        )}
-      >
-        <a
-          href={proposal.adminConsoleUrl || "https://admin.google.com"}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
-        >
-          Admin Console <ExternalLink className="w-3 h-3" />
-        </a>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={onCancel}
-            disabled={isApplying}
-            className="h-8 px-3 text-sm"
+      {/* Footer — only for standalone cards; stacked cards use a shared footer */}
+      {!stacked && (
+        <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+          <a
+            href={proposal.adminConsoleUrl || "https://admin.google.com"}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
           >
-            Cancel
-          </Button>
-          <Button
-            size="sm"
-            disabled={!confirmed || isApplying}
-            onClick={onConfirm}
-            className="h-8 px-4 text-sm"
-          >
-            {isApplying ? "Applying..." : "Apply"}
-          </Button>
+            Admin Console <ExternalLink className="w-3 h-3" />
+          </a>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onCancel}
+              disabled={isApplying}
+              className="h-8 px-3 text-sm"
+            >
+              Cancel
+            </Button>
+            <Button
+              size="sm"
+              disabled={!confirmed || isApplying}
+              onClick={onConfirm}
+              className="h-8 px-4 text-sm"
+            >
+              {isApplying ? "Applying..." : "Apply"}
+            </Button>
+          </div>
         </div>
-      </div>
+      )}
     </Wrapper>
   );
 });

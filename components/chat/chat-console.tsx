@@ -7,7 +7,7 @@
 
 import { track } from "@vercel/analytics";
 import { type UIMessage, getToolName, isToolUIPart } from "ai";
-import { RefreshCcwIcon, CopyIcon } from "lucide-react";
+import { RefreshCcwIcon, CopyIcon, ExternalLink } from "lucide-react";
 import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
@@ -69,6 +69,8 @@ import {
 } from "@/components/ai-elements/tool";
 import { ToolResultCard } from "@/components/ai-elements/tool-result-card";
 import { useChatContext } from "@/components/chat/chat-context";
+import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   OrgUnitMapProvider,
   type OrgUnitInfo,
@@ -245,6 +247,99 @@ function mapActionsForSuggestion(actions: string[], key: string): ActionItem[] {
       primary: hasConfirm ? isConfirm : idx === 0 && !isCancel,
     };
   });
+}
+
+/**
+ * Collected proposal entry for stacked rendering.
+ */
+interface CollectedProposal {
+  partKey: string;
+  output: PolicyChangeConfirmationOutput;
+  proposalId: string;
+}
+
+/**
+ * Renders multiple proposal cards in a single stacked container with a
+ * shared confirmation checkbox and Apply All / Cancel buttons.
+ */
+function ProposalStack({
+  proposals,
+  onConfirmAll,
+  onCancel,
+  isApplying,
+}: {
+  proposals: CollectedProposal[];
+  onConfirmAll: () => void;
+  onCancel: () => void;
+  isApplying: boolean;
+}) {
+  const [confirmed, setConfirmed] = useState(false);
+
+  return (
+    <div className="pl-4 lg:pl-6 space-y-2">
+      <p className="text-xs text-muted-foreground">
+        {proposals.length} proposed changes
+      </p>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-sm rounded-lg border border-border bg-card overflow-hidden divide-y divide-border"
+      >
+        {proposals.map((p) => (
+          <PolicyChangeConfirmation
+            key={p.partKey}
+            proposal={p.output}
+            stacked
+          />
+        ))}
+
+        {/* Shared footer for all stacked proposals */}
+        <div className="px-4 py-3 space-y-3">
+          <label className="flex items-center gap-2 cursor-pointer">
+            <Checkbox
+              checked={confirmed}
+              onCheckedChange={(c) => setConfirmed(c as boolean)}
+              className="w-4 h-4 rounded border-muted-foreground/50 data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+            />
+            <span className="text-xs text-muted-foreground">
+              I understand this modifies Chrome Enterprise config
+            </span>
+          </label>
+          <div className="flex items-center justify-between">
+            <a
+              href="https://admin.google.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-muted-foreground hover:text-foreground flex items-center gap-1"
+            >
+              Admin Console <ExternalLink className="w-3 h-3" />
+            </a>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onCancel}
+                disabled={isApplying}
+                className="h-8 px-3 text-sm"
+              >
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                disabled={!confirmed || isApplying}
+                onClick={onConfirmAll}
+                className="h-8 px-4 text-sm"
+              >
+                {isApplying
+                  ? "Applying..."
+                  : `Apply ${proposals.length} changes`}
+              </Button>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
 }
 
 /**
@@ -514,11 +609,7 @@ export function ChatConsole() {
               let hasActionTool = false;
 
               // Collect proposal cards for end-of-message stacked rendering.
-              const proposals: {
-                partKey: string;
-                output: PolicyChangeConfirmationOutput;
-                proposalId: string;
-              }[] = [];
+              const proposals: CollectedProposal[] = [];
 
               for (let pi = 0; pi < message.parts.length; pi++) {
                 const p = message.parts[pi];
@@ -801,32 +892,17 @@ export function ChatConsole() {
                   )}
 
                   {proposals.length > 1 && (
-                    <div className="pl-4 lg:pl-6 space-y-2">
-                      <p className="text-xs text-muted-foreground">
-                        {proposals.length} proposed changes
-                      </p>
-                      <motion.div
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="max-w-sm rounded-lg border border-border bg-card overflow-hidden divide-y divide-border"
-                      >
-                        {proposals.map((p) => (
-                          <PolicyChangeConfirmation
-                            key={p.partKey}
-                            proposal={p.output}
-                            stacked
-                            onConfirm={() => {
-                              setApplyingProposalId(p.proposalId);
-                              void sendMessage({ text: "Confirm" });
-                            }}
-                            onCancel={() => {
-                              void sendMessage({ text: "Cancel" });
-                            }}
-                            isApplying={applyingProposalId === p.proposalId}
-                          />
-                        ))}
-                      </motion.div>
-                    </div>
+                    <ProposalStack
+                      proposals={proposals}
+                      onConfirmAll={() => {
+                        setApplyingProposalId("__stack__");
+                        void sendMessage({ text: "Confirm" });
+                      }}
+                      onCancel={() => {
+                        void sendMessage({ text: "Cancel" });
+                      }}
+                      isApplying={applyingProposalId === "__stack__"}
+                    />
                   )}
 
                   {!isUser &&
