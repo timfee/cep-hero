@@ -10,21 +10,32 @@
   ],
   "connectorPolicies": [
     {
-      "name": "chrome.users.FileTransferConnectorEnabled",
-      "value": {
-        "fileTransferConnectorEnabled": false
+      "targetKey": {
+        "targetResource": "orgunits/06ft0ff789"
       },
-      "targetResource": "orgunits/06ft0ff789",
-      "sourceResource": "orgunits/06ft0ff789",
-      "note": "File transfer connector explicitly disabled for this OU"
+      "value": {
+        "policySchema": "chrome.users.FileTransferConnectorEnabled",
+        "value": {
+          "fileTransferConnectorEnabled": false
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/06ft0ff789"
+      }
     },
     {
-      "name": "chrome.users.CloudReporting",
-      "value": {
-        "cloudReportingEnabled": true
+      "targetKey": {
+        "targetResource": "orgunits/06ft0ff789"
       },
-      "targetResource": "orgunits/06ft0ff789",
-      "sourceResource": "orgunits/06ft0ff789"
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/06ft0ff789"
+      }
     }
   ],
   "auditEvents": {
@@ -40,12 +51,30 @@
             "type": "CONTENT_TRANSFER",
             "name": "FILE_TRANSFER_BLOCKED",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-ft-001" },
-              { "name": "DEVICE_NAME", "value": "Windows-FT-Test" },
-              { "name": "USER_EMAIL", "value": "testuser7@example.com" },
-              { "name": "OU_PATH", "value": "/FT-Off" },
-              { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
-              { "name": "BLOCKED_ACTION", "value": "FILE_TRANSFER" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-ft-001"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-FT-Test"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "testuser7@example.com"
+              },
+              {
+                "name": "OU_PATH",
+                "value": "/FT-Off"
+              },
+              {
+                "name": "CONNECTOR_STATUS",
+                "value": "DISABLED"
+              },
+              {
+                "name": "BLOCKED_ACTION",
+                "value": "FILE_TRANSFER"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "File transfer connector is disabled. File transfers are blocked."

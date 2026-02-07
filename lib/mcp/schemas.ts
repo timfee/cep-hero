@@ -66,6 +66,11 @@ export const ListOrgUnitsSchema = z.object({});
  */
 export const DraftPolicyChangeSchema = z.object({
   policyName: z.string().describe("The human-readable name of the policy"),
+  policySchemaId: z
+    .string()
+    .describe(
+      "Full Chrome Policy schema ID (e.g., chrome.users.IncognitoModeAvailability, chrome.users.EnterpriseConnectors.OnSecurityEvent)"
+    ),
   proposedValue: z
     .unknown()
     .describe(

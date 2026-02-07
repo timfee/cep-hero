@@ -10,21 +10,32 @@
   ],
   "connectorPolicies": [
     {
-      "name": "chrome.users.BulkDataConnectorEnabled",
-      "value": {
-        "bulkDataConnectorEnabled": false
+      "targetKey": {
+        "targetResource": "orgunits/04bulk0ff123"
       },
-      "targetResource": "orgunits/04bulk0ff123",
-      "sourceResource": "orgunits/04bulk0ff123",
-      "note": "Bulk data connector explicitly disabled for this OU"
+      "value": {
+        "policySchema": "chrome.users.BulkDataConnectorEnabled",
+        "value": {
+          "bulkDataConnectorEnabled": false
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/04bulk0ff123"
+      }
     },
     {
-      "name": "chrome.users.CloudReporting",
-      "value": {
-        "cloudReportingEnabled": true
+      "targetKey": {
+        "targetResource": "orgunits/04bulk0ff123"
       },
-      "targetResource": "orgunits/04bulk0ff123",
-      "sourceResource": "orgunits/04bulk0ff123"
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/04bulk0ff123"
+      }
     }
   ],
   "auditEvents": {
@@ -40,11 +51,26 @@
             "type": "CONTENT_TRANSFER",
             "name": "BULK_CONNECTOR_DISABLED",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-bulk-001" },
-              { "name": "DEVICE_NAME", "value": "Windows-Bulk-Test" },
-              { "name": "USER_EMAIL", "value": "testuser5@example.com" },
-              { "name": "OU_PATH", "value": "/Bulk-Off" },
-              { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-bulk-001"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-Bulk-Test"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "testuser5@example.com"
+              },
+              {
+                "name": "OU_PATH",
+                "value": "/Bulk-Off"
+              },
+              {
+                "name": "CONNECTOR_STATUS",
+                "value": "DISABLED"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "Bulk data connector is disabled for this organizational unit"

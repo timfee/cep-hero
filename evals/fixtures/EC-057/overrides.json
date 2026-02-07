@@ -10,29 +10,46 @@
   ],
   "connectorPolicies": [
     {
-      "name": "chrome.users.BulkDataConnectorEnabled",
-      "value": {
-        "bulkDataConnectorEnabled": true
+      "targetKey": {
+        "targetResource": "customers/C00000000"
       },
-      "targetResource": "customers/C00000000",
-      "sourceResource": "customers/C00000000",
-      "note": "Policy applied at customer level - will NOT apply specifically to Engineering-Test OU"
+      "value": {
+        "policySchema": "chrome.users.BulkDataConnectorEnabled",
+        "value": {
+          "bulkDataConnectorEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "customers/C00000000"
+      }
     },
     {
-      "name": "chrome.users.WebDataConnectorEnabled",
-      "value": {
-        "webDataConnectorEnabled": true
+      "targetKey": {
+        "targetResource": "customers/C00000000"
       },
-      "targetResource": "customers/C00000000",
-      "sourceResource": "customers/C00000000"
+      "value": {
+        "policySchema": "chrome.users.WebDataConnectorEnabled",
+        "value": {
+          "webDataConnectorEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "customers/C00000000"
+      }
     },
     {
-      "name": "chrome.users.CloudReporting",
-      "value": {
-        "cloudReportingEnabled": true
+      "targetKey": {
+        "targetResource": "customers/C00000000"
       },
-      "targetResource": "customers/C00000000",
-      "sourceResource": "customers/C00000000"
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "customers/C00000000"
+      }
     }
   ],
   "auditEvents": {
@@ -52,10 +69,22 @@
                 "name": "POLICY_NAME",
                 "value": "chrome.users.BulkDataConnectorEnabled"
               },
-              { "name": "EXPECTED_SCOPE", "value": "orgunits/03ph8a2z4kcgsep" },
-              { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
-              { "name": "OU_PATH", "value": "/Engineering-Test" },
-              { "name": "AFFECTED_USER", "value": "engineer@example.com" },
+              {
+                "name": "EXPECTED_SCOPE",
+                "value": "orgunits/03ph8a2z4kcgsep"
+              },
+              {
+                "name": "ACTUAL_SCOPE",
+                "value": "customers/C00000000"
+              },
+              {
+                "name": "OU_PATH",
+                "value": "/Engineering-Test"
+              },
+              {
+                "name": "AFFECTED_USER",
+                "value": "engineer@example.com"
+              },
               {
                 "name": "NOTE",
                 "value": "Policy targeted at customer level; OU-specific targeting required"

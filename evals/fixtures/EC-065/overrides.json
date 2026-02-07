@@ -10,21 +10,32 @@
   ],
   "connectorPolicies": [
     {
-      "name": "chrome.users.WebDataConnectorEnabled",
-      "value": {
-        "webDataConnectorEnabled": false
+      "targetKey": {
+        "targetResource": "orgunits/05web0ff456"
       },
-      "targetResource": "orgunits/05web0ff456",
-      "sourceResource": "orgunits/05web0ff456",
-      "note": "Web data connector explicitly disabled for this OU"
+      "value": {
+        "policySchema": "chrome.users.WebDataConnectorEnabled",
+        "value": {
+          "webDataConnectorEnabled": false
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/05web0ff456"
+      }
     },
     {
-      "name": "chrome.users.CloudReporting",
-      "value": {
-        "cloudReportingEnabled": true
+      "targetKey": {
+        "targetResource": "orgunits/05web0ff456"
       },
-      "targetResource": "orgunits/05web0ff456",
-      "sourceResource": "orgunits/05web0ff456"
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/05web0ff456"
+      }
     }
   ],
   "auditEvents": {
@@ -40,12 +51,30 @@
             "type": "CONTENT_TRANSFER",
             "name": "WEB_DATA_EXPORT_BLOCKED",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-web-001" },
-              { "name": "DEVICE_NAME", "value": "Windows-Web-Test" },
-              { "name": "USER_EMAIL", "value": "testuser6@example.com" },
-              { "name": "OU_PATH", "value": "/Web-Off" },
-              { "name": "CONNECTOR_STATUS", "value": "DISABLED" },
-              { "name": "BLOCKED_ACTION", "value": "WEB_DATA_EXPORT" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-web-001"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-Web-Test"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "testuser6@example.com"
+              },
+              {
+                "name": "OU_PATH",
+                "value": "/Web-Off"
+              },
+              {
+                "name": "CONNECTOR_STATUS",
+                "value": "DISABLED"
+              },
+              {
+                "name": "BLOCKED_ACTION",
+                "value": "WEB_DATA_EXPORT"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "Web data connector is disabled. Web data export is blocked."

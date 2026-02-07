@@ -12,11 +12,16 @@ import {
 } from "@/lib/mcp/org-units";
 
 import { type ConnectorConfigResult } from "./executor/connector";
+import { type ListDLPRulesResult } from "./executor/dlp-list";
+import { type ListOrgUnitsResult } from "./executor/org-units-api";
 import {
   type ApplyPolicyChangeSchema,
   type CreateDLPRuleSchema,
   type DraftPolicyChangeSchema,
+  type EnrollBrowserSchema,
   type GetChromeEventsSchema,
+  type FleetOverviewResponse,
+  type GetFleetOverviewSchema,
 } from "./registry";
 import {
   type ApplyPolicyChangeResult,
@@ -83,7 +88,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns DLP rules from fixture data.
    */
-  listDLPRules() {
+  listDLPRules(): Promise<ListDLPRulesResult> {
     const fixtureError = buildFixtureError(this.fixtures.errors?.dlpRules);
     if (fixtureError) {
       return Promise.resolve(fixtureError);
@@ -94,7 +99,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns org units from fixture data.
    */
-  listOrgUnits() {
+  listOrgUnits(): Promise<ListOrgUnitsResult> {
     const fixtureError = buildFixtureError(this.fixtures.errors?.orgUnits);
     if (fixtureError) {
       return Promise.resolve(fixtureError);
@@ -105,7 +110,7 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns enrollment token from fixture data.
    */
-  enrollBrowser() {
+  enrollBrowser(_args?: z.infer<typeof EnrollBrowserSchema>) {
     if (typeof this.fixtures.errors?.enrollBrowser === "string") {
       return Promise.resolve({
         error: this.fixtures.errors.enrollBrowser,
@@ -166,27 +171,9 @@ export class FixtureToolExecutor implements ToolExecutor {
   /**
    * Returns a fleet overview summary from fixture data.
    */
-  getFleetOverview() {
+  getFleetOverview(_args?: z.infer<typeof GetFleetOverviewSchema>) {
     return Promise.resolve(buildFleetOverviewResponse(this.fixtures));
   }
-}
-
-/**
- * Shape of the fixture-based fleet overview response.
- */
-interface FleetOverviewFixtureResponse {
-  headline: string;
-  summary: string;
-  postureCards: {
-    label: string;
-    value: string;
-    note: string;
-    source: string;
-    action: string;
-    lastUpdated?: string;
-  }[];
-  suggestions: string[];
-  sources: string[];
 }
 
 /**
@@ -310,7 +297,7 @@ function buildDraftPolicyResponse(
     intent: "update_policy",
     status: "pending_approval",
     applyParams: {
-      policySchemaId: args.policyName,
+      policySchemaId: args.policySchemaId,
       targetResource: args.targetUnit,
       value: args.proposedValue,
     },
@@ -351,7 +338,7 @@ function buildCreateDlpResponse(
  */
 function buildFleetOverviewResponse(
   fixtures: FixtureData
-): FleetOverviewFixtureResponse {
+): FleetOverviewResponse {
   const eventCount = fixtures.auditEvents?.items?.length ?? 0;
   const dlpRuleCount = fixtures.dlpRules?.length ?? 0;
   const connectorPolicyCount = fixtures.connectorPolicies?.length ?? 0;
@@ -367,7 +354,9 @@ function buildFleetOverviewResponse(
         "Chrome activity logs",
         "Admin SDK Reports",
         "Show recent Chrome events",
-        timestamp
+        timestamp,
+        eventCount > 10 ? "warning" : "healthy",
+        1
       ),
       buildPostureCard(
         "DLP rules",
@@ -375,7 +364,9 @@ function buildFleetOverviewResponse(
         "Customer DLP policies",
         "Cloud Identity",
         "List active DLP rules",
-        timestamp
+        timestamp,
+        dlpRuleCount === 0 ? "critical" : "healthy",
+        2
       ),
       buildPostureCard(
         "Connector policies",
@@ -383,13 +374,30 @@ function buildFleetOverviewResponse(
         "Connector policy resolve",
         "Chrome Policy",
         "Check connector configuration",
-        timestamp
+        timestamp,
+        connectorPolicyCount === 0 ? "warning" : "healthy",
+        3
       ),
     ],
     suggestions: [
-      "List active DLP rules",
-      "Show recent Chrome events",
-      "Check connector configuration",
+      {
+        text: "List active DLP rules",
+        action: "List active DLP rules",
+        priority: 1,
+        category: "security" as const,
+      },
+      {
+        text: "Show recent Chrome events",
+        action: "Show recent Chrome events",
+        priority: 2,
+        category: "monitoring" as const,
+      },
+      {
+        text: "Check connector configuration",
+        action: "Check connector configuration",
+        priority: 3,
+        category: "compliance" as const,
+      },
     ],
     sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
   };
@@ -404,7 +412,18 @@ function buildPostureCard(
   note: string,
   source: string,
   action: string,
-  lastUpdated: string
+  lastUpdated: string,
+  status: "healthy" | "warning" | "critical" | "info",
+  priority: number
 ) {
-  return { label, value: `${value}`, note, source, action, lastUpdated };
+  return {
+    label,
+    value: `${value}`,
+    note,
+    source,
+    action,
+    lastUpdated,
+    status,
+    priority,
+  };
 }
