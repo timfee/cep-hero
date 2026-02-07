@@ -11,6 +11,7 @@ import { logApiError, logApiRequest, logApiResponse } from "@/lib/mcp/errors";
 import {
   buildOrgUnitTargetResource,
   resolveOrgUnitDisplay,
+  resolveTargetForApply,
 } from "@/lib/mcp/org-units";
 import {
   type ApplyPolicyChangeSchema,
@@ -81,7 +82,11 @@ export function draftPolicyChange(
     status: "pending_approval",
     applyParams: {
       policySchemaId: args.policySchemaId,
-      targetResource: args.targetUnit,
+      targetResource: resolveTargetForApply(
+        args.targetUnit,
+        orgUnitNameMap,
+        rootOrgUnitId
+      ),
       value: args.proposedValue,
     },
   };

@@ -9,6 +9,7 @@ import { resolveEnrollmentToken } from "@/lib/mcp/fixture-enrollment";
 import {
   buildOrgUnitNameMap,
   resolveOrgUnitDisplay,
+  resolveTargetForApply,
 } from "@/lib/mcp/org-units";
 
 import { type ConnectorConfigResult } from "./executor/connector";
@@ -298,7 +299,11 @@ function buildDraftPolicyResponse(
     status: "pending_approval",
     applyParams: {
       policySchemaId: args.policySchemaId,
-      targetResource: args.targetUnit,
+      targetResource: resolveTargetForApply(
+        args.targetUnit,
+        orgUnitNameMap,
+        rootOrgUnitId
+      ),
       value: args.proposedValue,
     },
   };

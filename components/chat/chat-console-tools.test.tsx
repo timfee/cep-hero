@@ -35,15 +35,18 @@ describe("tool visibility tiers", () => {
   });
 
   describe("RICH_CARD_TOOLS", () => {
-    it("includes all seven tools with custom UI cards", () => {
-      expect(RICH_CARD_TOOLS.size).toBe(7);
+    it("includes data-fetching tools that should be deduped within a message", () => {
+      expect(RICH_CARD_TOOLS.size).toBe(4);
       expect(RICH_CARD_TOOLS.has("getChromeEvents")).toBe(true);
       expect(RICH_CARD_TOOLS.has("getChromeConnectorConfiguration")).toBe(true);
       expect(RICH_CARD_TOOLS.has("listDLPRules")).toBe(true);
       expect(RICH_CARD_TOOLS.has("listOrgUnits")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("draftPolicyChange")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("createDLPRule")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("applyPolicyChange")).toBe(true);
+    });
+
+    it("does not include action tools that may be called multiple times with unique results", () => {
+      expect(RICH_CARD_TOOLS.has("draftPolicyChange")).toBe(false);
+      expect(RICH_CARD_TOOLS.has("createDLPRule")).toBe(false);
+      expect(RICH_CARD_TOOLS.has("applyPolicyChange")).toBe(false);
     });
   });
 
@@ -56,7 +59,7 @@ describe("tool visibility tiers", () => {
   });
 
   describe("deduplication logic", () => {
-    it("lastToolIndex map keeps only the last index per tool name", () => {
+    it("lastToolIndex map keeps only the last index per data-fetching tool name", () => {
       const parts = [
         { toolName: "listDLPRules", index: 0 },
         { toolName: "draftPolicyChange", index: 1 },
@@ -72,14 +75,11 @@ describe("tool visibility tiers", () => {
       }
 
       expect(lastToolIndex.get("listDLPRules")).toBe(2);
-      expect(lastToolIndex.get("draftPolicyChange")).toBe(3);
+      expect(lastToolIndex.has("draftPolicyChange")).toBe(false);
     });
 
-    it("earlier invocations are suppressed", () => {
-      const lastToolIndex = new Map<string, number>([
-        ["listDLPRules", 2],
-        ["draftPolicyChange", 3],
-      ]);
+    it("earlier invocations of data-fetching tools are suppressed", () => {
+      const lastToolIndex = new Map<string, number>([["listDLPRules", 2]]);
 
       const shouldShow0 = lastToolIndex.get("listDLPRules") === 0;
       expect(shouldShow0).toBe(false);
