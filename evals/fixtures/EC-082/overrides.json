@@ -10,30 +10,46 @@
   ],
   "connectorPolicies": [
     {
-      "name": "chrome.users.BulkDataConnectorEnabled",
-      "value": {
-        "bulkDataConnectorEnabled": true
+      "targetKey": {
+        "targetResource": "customers/C00000000"
       },
-      "targetResource": "customers/C00000000",
-      "sourceResource": "customers/C00000000",
-      "note": "Connector applied at customer level - confirmed by user in multi-turn conversation"
+      "value": {
+        "policySchema": "chrome.users.BulkDataConnectorEnabled",
+        "value": {
+          "bulkDataConnectorEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "customers/C00000000"
+      }
     },
     {
-      "name": "chrome.users.WebDataConnectorEnabled",
-      "value": {
-        "webDataConnectorEnabled": true
+      "targetKey": {
+        "targetResource": "customers/C00000000"
       },
-      "targetResource": "customers/C00000000",
-      "sourceResource": "customers/C00000000",
-      "note": "Applied at customer scope, not Engineering-Test OU"
+      "value": {
+        "policySchema": "chrome.users.WebDataConnectorEnabled",
+        "value": {
+          "webDataConnectorEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "customers/C00000000"
+      }
     },
     {
-      "name": "chrome.users.CloudReporting",
-      "value": {
-        "cloudReportingEnabled": true
+      "targetKey": {
+        "targetResource": "customers/C00000000"
       },
-      "targetResource": "customers/C00000000",
-      "sourceResource": "customers/C00000000"
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "customers/C00000000"
+      }
     }
   ],
   "auditEvents": {
@@ -53,9 +69,18 @@
                 "name": "POLICY_NAME",
                 "value": "chrome.users.BulkDataConnectorEnabled"
               },
-              { "name": "EXPECTED_SCOPE", "value": "orgunits/09eng0test456" },
-              { "name": "ACTUAL_SCOPE", "value": "customers/C00000000" },
-              { "name": "OU_PATH", "value": "/Engineering-Test" },
+              {
+                "name": "EXPECTED_SCOPE",
+                "value": "orgunits/09eng0test456"
+              },
+              {
+                "name": "ACTUAL_SCOPE",
+                "value": "customers/C00000000"
+              },
+              {
+                "name": "OU_PATH",
+                "value": "/Engineering-Test"
+              },
               {
                 "name": "RESOLUTION",
                 "value": "Re-scope policy to target OU or group instead of customer level"

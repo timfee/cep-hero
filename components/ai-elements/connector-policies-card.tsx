@@ -129,8 +129,7 @@ export const ConnectorPoliciesCard = memo(function ConnectorPoliciesCard({
             ) : (
               <span className="flex flex-wrap items-center gap-x-1 gap-y-0.5">
                 {policies.slice(0, 6).map((policy, index) => {
-                  const target =
-                    policy.policyTargetKey?.targetResource ?? "Unknown";
+                  const target = policy.targetKey?.targetResource ?? "Unknown";
                   return (
                     <span key={`${target}-${index}`}>
                       <OrgUnitDisplay targetResource={target} size="sm" />

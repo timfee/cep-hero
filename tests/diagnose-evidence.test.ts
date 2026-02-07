@@ -11,16 +11,14 @@ import { CONNECTOR_POLICY_SCHEMAS } from "@/lib/mcp/constants";
 import { buildEvidenceForTest } from "@/lib/test-helpers/diagnose-evidence";
 
 type ResolvedPolicy =
-  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
-    policyTargetKey?: { targetResource?: string };
-  };
+  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy;
 
 /**
  * Build fake connector policies for tests.
  */
 function makeConnectorPolicies(targets: string[]): ResolvedPolicy[] {
   return targets.map((target) => ({
-    policyTargetKey: { targetResource: target },
+    targetKey: { targetResource: target },
   }));
 }
 

@@ -12,16 +12,34 @@
             "type": "CITRIX_SPA",
             "name": "SESSION_LAUNCH_FAILURE",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-vdi-001" },
-              { "name": "DEVICE_NAME", "value": "Windows-VDI-Finance-1" },
-              { "name": "ERROR_CODE", "value": "PROFILE_PICKER_BLOCKING" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-vdi-001"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-VDI-Finance-1"
+              },
+              {
+                "name": "ERROR_CODE",
+                "value": "PROFILE_PICKER_BLOCKING"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "Citrix SPA session launch blocked by Chrome profile picker dialog. Session timed out waiting for profile selection."
               },
-              { "name": "CITRIX_APP", "value": "SAP Finance" },
-              { "name": "TIMEOUT_SECONDS", "value": "30" },
-              { "name": "USER_EMAIL", "value": "accountant@example.com" }
+              {
+                "name": "CITRIX_APP",
+                "value": "SAP Finance"
+              },
+              {
+                "name": "TIMEOUT_SECONDS",
+                "value": "30"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "accountant@example.com"
+              }
             ]
           }
         ]
@@ -37,16 +55,34 @@
             "type": "CITRIX_SPA",
             "name": "PROFILE_PICKER_DETECTED",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-vdi-001" },
-              { "name": "DEVICE_NAME", "value": "Windows-VDI-Finance-1" },
-              { "name": "PICKER_STATE", "value": "MODAL_OPEN" },
-              { "name": "PROFILES_AVAILABLE", "value": "3" },
-              { "name": "DEFAULT_PROFILE", "value": "Work" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-vdi-001"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-VDI-Finance-1"
+              },
+              {
+                "name": "PICKER_STATE",
+                "value": "MODAL_OPEN"
+              },
+              {
+                "name": "PROFILES_AVAILABLE",
+                "value": "3"
+              },
+              {
+                "name": "DEFAULT_PROFILE",
+                "value": "Work"
+              },
               {
                 "name": "SUGGESTION",
                 "value": "Close profile picker or set BrowserSignin policy to disable picker on launch"
               },
-              { "name": "USER_EMAIL", "value": "accountant@example.com" }
+              {
+                "name": "USER_EMAIL",
+                "value": "accountant@example.com"
+              }
             ]
           }
         ]
@@ -62,16 +98,34 @@
             "type": "CITRIX_SPA",
             "name": "SESSION_LAUNCH_FAILURE",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-vdi-002" },
-              { "name": "DEVICE_NAME", "value": "Windows-VDI-HR-1" },
-              { "name": "ERROR_CODE", "value": "PROFILE_PICKER_BLOCKING" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-vdi-002"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-VDI-HR-1"
+              },
+              {
+                "name": "ERROR_CODE",
+                "value": "PROFILE_PICKER_BLOCKING"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "Citrix SPA session launch blocked by Chrome profile picker dialog. User has multiple profiles configured."
               },
-              { "name": "CITRIX_APP", "value": "Workday HR" },
-              { "name": "TIMEOUT_SECONDS", "value": "30" },
-              { "name": "USER_EMAIL", "value": "hr.admin@example.com" }
+              {
+                "name": "CITRIX_APP",
+                "value": "Workday HR"
+              },
+              {
+                "name": "TIMEOUT_SECONDS",
+                "value": "30"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "hr.admin@example.com"
+              }
             ]
           }
         ]
@@ -80,12 +134,15 @@
   },
   "connectorPolicies": [
     {
-      "name": "chrome.users.BrowserSignin",
-      "value": {
-        "browserSignin": "ENABLED"
+      "targetKey": {
+        "targetResource": "orgunits/VDI-Users"
       },
-      "targetResource": "orgunits/VDI-Users",
-      "note": "Profile picker shows on launch when BrowserSignin is ENABLED with multiple profiles"
+      "value": {
+        "policySchema": "chrome.users.BrowserSignin",
+        "value": {
+          "browserSignin": "ENABLED"
+        }
+      }
     }
   ]
 }

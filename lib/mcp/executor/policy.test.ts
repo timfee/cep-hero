@@ -70,7 +70,8 @@ describe("draftPolicyChange", () => {
 
   it("returns a ui.confirmation response", () => {
     const result = draftPolicyChange(ctx, {
-      policyName: "chrome.users.IncognitoModeAvailability",
+      policyName: "Incognito Mode Availability",
+      policySchemaId: "chrome.users.IncognitoModeAvailability",
       proposedValue: { incognitoModeAvailability: 1 },
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Disable incognito mode for security compliance",
@@ -81,9 +82,10 @@ describe("draftPolicyChange", () => {
     expect(result.intent).toBe("update_policy");
   });
 
-  it("includes applyParams for downstream apply call", () => {
+  it("includes applyParams with schema ID for downstream apply call", () => {
     const result = draftPolicyChange(ctx, {
-      policyName: "chrome.users.IncognitoModeAvailability",
+      policyName: "Incognito Mode Availability",
+      policySchemaId: "chrome.users.IncognitoModeAvailability",
       proposedValue: { incognitoModeAvailability: 1 },
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Compliance requirement",
@@ -99,7 +101,8 @@ describe("draftPolicyChange", () => {
 
   it("resolves org unit to display path", () => {
     const result = draftPolicyChange(ctx, {
-      policyName: "chrome.users.PasswordManager",
+      policyName: "Password Manager",
+      policySchemaId: "chrome.users.PasswordManager",
       proposedValue: { passwordManagerEnabled: false },
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Disable password manager",
@@ -110,7 +113,8 @@ describe("draftPolicyChange", () => {
 
   it("falls back to raw targetUnit when not in name map", () => {
     const result = draftPolicyChange(ctx, {
-      policyName: "chrome.users.PasswordManager",
+      policyName: "Password Manager",
+      policySchemaId: "chrome.users.PasswordManager",
       proposedValue: { passwordManagerEnabled: false },
       targetUnit: "id:unknown-org-unit",
       reasoning: "Test unknown org unit",
@@ -121,7 +125,8 @@ describe("draftPolicyChange", () => {
 
   it("uses provided adminConsoleUrl", () => {
     const result = draftPolicyChange(ctx, {
-      policyName: "chrome.users.IncognitoModeAvailability",
+      policyName: "Incognito Mode Availability",
+      policySchemaId: "chrome.users.IncognitoModeAvailability",
       proposedValue: { incognitoModeAvailability: 1 },
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Test",
@@ -135,7 +140,8 @@ describe("draftPolicyChange", () => {
 
   it("defaults adminConsoleUrl to settings page", () => {
     const result = draftPolicyChange(ctx, {
-      policyName: "chrome.users.IncognitoModeAvailability",
+      policyName: "Incognito Mode Availability",
+      policySchemaId: "chrome.users.IncognitoModeAvailability",
       proposedValue: { incognitoModeAvailability: 1 },
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Test",
@@ -148,13 +154,15 @@ describe("draftPolicyChange", () => {
 
   it("generates unique proposal IDs", () => {
     const result1 = draftPolicyChange(ctx, {
-      policyName: "chrome.users.PasswordManager",
+      policyName: "Password Manager",
+      policySchemaId: "chrome.users.PasswordManager",
       proposedValue: {},
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Test 1",
     });
     const result2 = draftPolicyChange(ctx, {
-      policyName: "chrome.users.PasswordManager",
+      policyName: "Password Manager",
+      policySchemaId: "chrome.users.PasswordManager",
       proposedValue: {},
       targetUnit: "id:03ph8a2z221pcso",
       reasoning: "Test 2",
@@ -164,6 +172,134 @@ describe("draftPolicyChange", () => {
     expect(result1.proposalId).toStartWith("proposal-");
     expect(result2.proposalId).toStartWith("proposal-");
   });
+});
+
+describe("draft → apply round-trip", () => {
+  const ctx = buildOrgUnitContext();
+  const auth = new OAuth2Client();
+  auth.setCredentials({ access_token: "test-token" });
+  const customerId = "my_customer";
+
+  it("applyParams.policySchemaId is the schema ID, not the human name", () => {
+    const result = draftPolicyChange(ctx, {
+      policyName: "On Security Event Enterprise Connector",
+      policySchemaId: "chrome.users.EnterpriseConnectors.OnSecurityEvent",
+      proposedValue: [{ service_provider: "google" }],
+      targetUnit: "id:03ph8a2z221pcso",
+      reasoning: "Enable security event reporting",
+    });
+
+    expect(result.applyParams.policySchemaId).toBe(
+      "chrome.users.EnterpriseConnectors.OnSecurityEvent"
+    );
+    expect(result.applyParams.policySchemaId).not.toBe(
+      "On Security Event Enterprise Connector"
+    );
+  });
+
+  it("draft output feeds directly into apply for connector policies", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const draft = draftPolicyChange(ctx, {
+        policyName: "On Security Event Enterprise Connector",
+        policySchemaId: "chrome.users.EnterpriseConnectors.OnSecurityEvent",
+        proposedValue: [{ service_provider: "google" }],
+        targetUnit: "id:03ph8a2z221pcso",
+        reasoning: "Enable security event reporting",
+      });
+
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: draft.applyParams.policySchemaId,
+        targetResource: draft.applyParams.targetResource,
+        value: draft.applyParams.value,
+      });
+
+      expect(result._type).toBe("ui.success");
+      expect(captured).toHaveLength(1);
+      expect(captured[0].requestBody.requests[0].updateMask).toBe(
+        "onSecurityEventEnterpriseConnector"
+      );
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
+  it("draft output feeds directly into apply for simple policies", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const draft = draftPolicyChange(ctx, {
+        policyName: "Incognito Mode Availability",
+        policySchemaId: "chrome.users.IncognitoModeAvailability",
+        proposedValue: { incognitoModeAvailability: 1 },
+        targetUnit: "id:03ph8a2z221pcso",
+        reasoning: "Disable incognito",
+      });
+
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: draft.applyParams.policySchemaId,
+        targetResource: draft.applyParams.targetResource,
+        value: draft.applyParams.value,
+      });
+
+      expect(result._type).toBe("ui.success");
+      expect(captured[0].requestBody.requests[0].policyValue.policySchema).toBe(
+        "chrome.users.IncognitoModeAvailability"
+      );
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
+  for (const [schemaId, valueKey] of Object.entries({
+    "chrome.users.EnterpriseConnectors.OnFileAttached":
+      "onFileAttachedEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnFileDownloaded":
+      "onFileDownloadedEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnBulkDataEntry":
+      "onBulkDataEntryEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnSecurityEvent":
+      "onSecurityEventEnterpriseConnector",
+    "chrome.users.EnterpriseConnectors.OnPrint": "onPrintEnterpriseConnector",
+  })) {
+    it(`round-trips ${schemaId} through draft → apply`, async () => {
+      const captured: CapturedBatchModify[] = [];
+      const mockCP = buildMockChromepolicy(captured);
+      const original = googleApis.chromepolicy;
+      googleApis.chromepolicy =
+        mockCP as unknown as typeof googleApis.chromepolicy;
+
+      try {
+        const draft = draftPolicyChange(ctx, {
+          policyName: `Human Name for ${schemaId.split(".").pop()}`,
+          policySchemaId: schemaId,
+          proposedValue: [{ service_provider: "google" }],
+          targetUnit: "id:03ph8a2z221pcso",
+          reasoning: "Test round-trip",
+        });
+
+        const result = await applyPolicyChange(auth, customerId, {
+          policySchemaId: draft.applyParams.policySchemaId,
+          targetResource: draft.applyParams.targetResource,
+          value: draft.applyParams.value,
+        });
+
+        expect(result._type).toBe("ui.success");
+        expect(captured[0].requestBody.requests[0].updateMask).toBe(valueKey);
+      } finally {
+        googleApis.chromepolicy = original;
+      }
+    });
+  }
 });
 
 describe("applyPolicyChange payload validation", () => {

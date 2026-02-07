@@ -106,8 +106,8 @@
   "chromeReports": {},
   "auditEvents": {
     "kind": "admin#reports#activities",
-    "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/nn_QzHv7Xx-Tz0tDd_7YUKjm1Pc\"",
-    "nextPageToken": "R:AZWPV1PQ_DtwTW80wXQMfDJgy5kgytibQfzlCUkzAgWuJkNyfx6MTawgSBGZSZKkRrPW9t_F6F_dZW75a7m7IBAoW8k8itt64Va0c4Q",
+    "etag": "\"XPqmuTOgSAhYyeZHA9rhXeDXN4_l_mcPbAfH42Hc-hg/4oU-rQMDqpt3YIT9SlfB1ucKxaQ\"",
+    "nextPageToken": "R:AZWPV1Nxikv4h5W8OhIR99xCMm7vCzFzkzuFsmR1j4Zb2n4TFBvqWksvCZAUBAdNC9sXGsGcabqdHLO872qkteAhsmh0OHofDAKZ7yA",
     "items": [
       {
         "kind": "admin#reports#activity",
@@ -117,7 +117,7 @@
           "applicationName": "chrome",
           "customerId": "<redacted>"
         },
-        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/ydDOsvg9ln4dYSqFNS5kglGgF6Y\"",
+        "etag": "\"XPqmuTOgSAhYyeZHA9rhXeDXN4_l_mcPbAfH42Hc-hg/ydDOsvg9ln4dYSqFNS5kglGgF6Y\"",
         "actor": {
           "callerType": "USER",
           "email": "<redacted-email>",
@@ -288,7 +288,7 @@
           "applicationName": "chrome",
           "customerId": "<redacted>"
         },
-        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/Zzg10oSE4Zn78e0Fp2DhpzB-ihY\"",
+        "etag": "\"XPqmuTOgSAhYyeZHA9rhXeDXN4_l_mcPbAfH42Hc-hg/Zzg10oSE4Zn78e0Fp2DhpzB-ihY\"",
         "actor": {
           "callerType": "USER",
           "email": "<redacted-email>",
@@ -448,7 +448,7 @@
           "applicationName": "chrome",
           "customerId": "<redacted>"
         },
-        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/QJgbCAHk99jgll2w_Wq21gE26k0\"",
+        "etag": "\"XPqmuTOgSAhYyeZHA9rhXeDXN4_l_mcPbAfH42Hc-hg/QJgbCAHk99jgll2w_Wq21gE26k0\"",
         "actor": {
           "callerType": "USER",
           "email": "<redacted-email>",
@@ -619,7 +619,7 @@
           "applicationName": "chrome",
           "customerId": "<redacted>"
         },
-        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/BvX6FTCVmDpPm-HmzzipubIaTHU\"",
+        "etag": "\"XPqmuTOgSAhYyeZHA9rhXeDXN4_l_mcPbAfH42Hc-hg/BvX6FTCVmDpPm-HmzzipubIaTHU\"",
         "actor": {
           "callerType": "USER",
           "email": "<redacted-email>",
@@ -779,7 +779,7 @@
           "applicationName": "chrome",
           "customerId": "<redacted>"
         },
-        "etag": "\"GWeD8pys-5ARaKhKHPQvwL8ftqyMOfWyCEItaWlVkGM/2SwHepPoquA3BQvH7SuvXZVbhF8\"",
+        "etag": "\"XPqmuTOgSAhYyeZHA9rhXeDXN4_l_mcPbAfH42Hc-hg/2SwHepPoquA3BQvH7SuvXZVbhF8\"",
         "actor": {
           "callerType": "USER",
           "email": "<redacted-email>",
@@ -932,5 +932,7 @@
         ]
       }
     ]
-  }
+  },
+  "dlpRules": [],
+  "connectorPolicies": []
 }

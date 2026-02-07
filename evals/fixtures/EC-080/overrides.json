@@ -10,21 +10,32 @@
   ],
   "connectorPolicies": [
     {
-      "name": "chrome.users.BulkDataConnectorEnabled",
-      "value": {
-        "bulkDataConnectorEnabled": true
+      "targetKey": {
+        "targetResource": "orgunits/08conflict123"
       },
-      "targetResource": "orgunits/08conflict123",
-      "sourceResource": "orgunits/08conflict123",
-      "note": "Bulk connector enabled - allows data to leave via this channel"
+      "value": {
+        "policySchema": "chrome.users.BulkDataConnectorEnabled",
+        "value": {
+          "bulkDataConnectorEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/08conflict123"
+      }
     },
     {
-      "name": "chrome.users.CloudReporting",
-      "value": {
-        "cloudReportingEnabled": true
+      "targetKey": {
+        "targetResource": "orgunits/08conflict123"
       },
-      "targetResource": "orgunits/08conflict123",
-      "sourceResource": "orgunits/08conflict123"
+      "value": {
+        "policySchema": "chrome.users.CloudReporting",
+        "value": {
+          "cloudReportingEnabled": true
+        }
+      },
+      "sourceKey": {
+        "targetResource": "orgunits/08conflict123"
+      }
     }
   ],
   "dlpRules": [
@@ -68,14 +79,38 @@
             "type": "CONTENT_TRANSFER",
             "name": "BULK_EXFIL_ALLOWED",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-conflict-001" },
-              { "name": "DEVICE_NAME", "value": "Windows-Conflict-Test" },
-              { "name": "USER_EMAIL", "value": "user@example.com" },
-              { "name": "OU_PATH", "value": "/Conflict-Test" },
-              { "name": "CONNECTOR_TYPE", "value": "BulkDataConnector" },
-              { "name": "DATA_SIZE_MB", "value": "150" },
-              { "name": "TRANSFER_STATUS", "value": "ALLOWED" },
-              { "name": "DLP_RULE_APPLIED", "value": "NONE" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-conflict-001"
+              },
+              {
+                "name": "DEVICE_NAME",
+                "value": "Windows-Conflict-Test"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "user@example.com"
+              },
+              {
+                "name": "OU_PATH",
+                "value": "/Conflict-Test"
+              },
+              {
+                "name": "CONNECTOR_TYPE",
+                "value": "BulkDataConnector"
+              },
+              {
+                "name": "DATA_SIZE_MB",
+                "value": "150"
+              },
+              {
+                "name": "TRANSFER_STATUS",
+                "value": "ALLOWED"
+              },
+              {
+                "name": "DLP_RULE_APPLIED",
+                "value": "NONE"
+              },
               {
                 "name": "NOTE",
                 "value": "DLP rules do not cover bulk connector channel - data exfiltrated"
