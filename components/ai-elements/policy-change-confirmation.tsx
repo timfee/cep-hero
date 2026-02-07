@@ -39,6 +39,8 @@ export interface PolicyChangeConfirmationProps {
   onCancel?: () => void;
   isApplying?: boolean;
   className?: string;
+  /** When true, renders without border/radius/bg/animation (stack container owns those). */
+  stacked?: boolean;
 }
 
 const triggerConfig = {
@@ -74,6 +76,7 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
   onCancel,
   isApplying = false,
   className,
+  stacked = false,
 }: PolicyChangeConfirmationProps) {
   const [confirmed, setConfirmed] = useState(false);
 
@@ -101,12 +104,18 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
       ? Object.entries(proposedValue as Record<string, unknown>)
       : [];
 
+  const Wrapper = stacked ? "div" : motion.div;
+  const motionProps = stacked
+    ? {}
+    : { initial: { opacity: 0, y: 8 }, animate: { opacity: 1, y: 0 } };
+
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
+    <Wrapper
+      {...motionProps}
       className={cn(
-        "w-full max-w-sm rounded-lg border border-border bg-card overflow-hidden",
+        stacked
+          ? "w-full overflow-hidden"
+          : "w-full max-w-sm rounded-lg border border-border bg-card overflow-hidden",
         className
       )}
     >
@@ -231,7 +240,12 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 border-t border-border flex items-center justify-between">
+      <div
+        className={cn(
+          "px-4 py-3 flex items-center justify-between",
+          !stacked && "border-t border-border"
+        )}
+      >
         <a
           href={proposal.adminConsoleUrl || "https://admin.google.com"}
           target="_blank"
@@ -260,7 +274,7 @@ export const PolicyChangeConfirmation = memo(function PolicyChangeConfirmation({
           </Button>
         </div>
       </div>
-    </motion.div>
+    </Wrapper>
   );
 });
 

@@ -8,6 +8,7 @@
 import { track } from "@vercel/analytics";
 import { type UIMessage, getToolName, isToolUIPart } from "ai";
 import { RefreshCcwIcon, CopyIcon } from "lucide-react";
+import { motion } from "motion/react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import useSWR from "swr";
 
@@ -779,19 +780,41 @@ export function ChatConsole() {
                     return null;
                   })}
 
-                  {/* Proposal cards: always stacked at end of message */}
-                  {proposals.length > 0 && (
+                  {/* Proposal cards: always rendered at end of message */}
+                  {proposals.length === 1 && (
                     <div className="pl-4 lg:pl-6">
-                      {proposals.length > 1 && (
-                        <p className="text-xs text-muted-foreground mb-2">
-                          {proposals.length} proposed changes
-                        </p>
-                      )}
-                      <div className="flex flex-col">
-                        {proposals.map((p, idx) => (
+                      <PolicyChangeConfirmation
+                        key={proposals[0].partKey}
+                        proposal={proposals[0].output}
+                        onConfirm={() => {
+                          setApplyingProposalId(proposals[0].proposalId);
+                          void sendMessage({ text: "Confirm" });
+                        }}
+                        onCancel={() => {
+                          void sendMessage({ text: "Cancel" });
+                        }}
+                        isApplying={
+                          applyingProposalId === proposals[0].proposalId
+                        }
+                      />
+                    </div>
+                  )}
+
+                  {proposals.length > 1 && (
+                    <div className="pl-4 lg:pl-6 space-y-2">
+                      <p className="text-xs text-muted-foreground">
+                        {proposals.length} proposed changes
+                      </p>
+                      <motion.div
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="max-w-sm rounded-lg border border-border bg-card overflow-hidden divide-y divide-border"
+                      >
+                        {proposals.map((p) => (
                           <PolicyChangeConfirmation
                             key={p.partKey}
                             proposal={p.output}
+                            stacked
                             onConfirm={() => {
                               setApplyingProposalId(p.proposalId);
                               void sendMessage({ text: "Confirm" });
@@ -800,17 +823,9 @@ export function ChatConsole() {
                               void sendMessage({ text: "Cancel" });
                             }}
                             isApplying={applyingProposalId === p.proposalId}
-                            className={cn(
-                              proposals.length > 1 &&
-                                idx > 0 &&
-                                "-mt-px rounded-t-none",
-                              proposals.length > 1 &&
-                                idx < proposals.length - 1 &&
-                                "rounded-b-none"
-                            )}
                           />
                         ))}
-                      </div>
+                      </motion.div>
                     </div>
                   )}
 
