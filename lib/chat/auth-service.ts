@@ -93,6 +93,13 @@ async function getAccessToken(
   isTestBypass: boolean
 ): Promise<AccessTokenResult> {
   if (isTestBypass) {
+    // Prefer real service account token for E2E tests with live API access
+    if (isDefaultUserEnabled()) {
+      const defaultToken = await getDefaultUserAccessToken();
+      if (defaultToken) {
+        return { type: "success", token: defaultToken };
+      }
+    }
     return { type: "success", token: "test-token" };
   }
 
