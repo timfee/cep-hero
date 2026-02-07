@@ -304,6 +304,7 @@ describe("FixtureToolExecutor", () => {
       const executor = new FixtureToolExecutor(BASE_FIXTURES);
       const result = await executor.draftPolicyChange({
         policyName: "chrome.users.SafeBrowsing",
+        policySchemaId: "chrome.users.SafeBrowsing",
         proposedValue: { safeBrowsingEnabled: true },
         targetUnit: "id:eng456",
         reasoning: "Enable safe browsing for engineering",

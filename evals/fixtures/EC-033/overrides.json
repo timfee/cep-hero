@@ -12,13 +12,34 @@
             "type": "DLP_EVENT",
             "name": "CONTENT_UNSCANNED_TIMEOUT",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-corp-001" },
-              { "name": "USER_EMAIL", "value": "user@example.com" },
-              { "name": "FILE_NAME", "value": "large-dataset-backup.zip" },
-              { "name": "FILE_SIZE_MB", "value": "2500" },
-              { "name": "SCAN_TIMEOUT_SECONDS", "value": "30" },
-              { "name": "EVALUATION_TIME_LIMIT", "value": "30 seconds" },
-              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-corp-001"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "user@example.com"
+              },
+              {
+                "name": "FILE_NAME",
+                "value": "large-dataset-backup.zip"
+              },
+              {
+                "name": "FILE_SIZE_MB",
+                "value": "2500"
+              },
+              {
+                "name": "SCAN_TIMEOUT_SECONDS",
+                "value": "30"
+              },
+              {
+                "name": "EVALUATION_TIME_LIMIT",
+                "value": "30 seconds"
+              },
+              {
+                "name": "ACTION_TAKEN",
+                "value": "BLOCKED"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "Virus scan failed - scan timed out for large file"
@@ -31,13 +52,17 @@
   },
   "connectorPolicies": [
     {
-      "name": "chrome.users.MalwareScanningEnabled",
-      "value": {
-        "malwareScanningEnabled": true,
-        "evaluationTimeLimitSeconds": 30,
-        "blockUnscannable": true
+      "targetKey": {
+        "targetResource": "orgunits/corp-users"
       },
-      "targetResource": "orgunits/corp-users"
+      "value": {
+        "policySchema": "chrome.users.MalwareScanningEnabled",
+        "value": {
+          "malwareScanningEnabled": true,
+          "evaluationTimeLimitSeconds": 30,
+          "blockUnscannable": true
+        }
+      }
     }
   ]
 }

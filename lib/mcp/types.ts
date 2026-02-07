@@ -44,7 +44,7 @@ export type DebugAuthResult =
  */
 export interface DraftPolicyChangeResult {
   _type: "ui.confirmation";
-  proposalId?: string;
+  proposalId: string;
   title: string;
   description: string;
   diff: unknown;
@@ -52,7 +52,7 @@ export interface DraftPolicyChangeResult {
   adminConsoleUrl: string;
   intent: string;
   status: string;
-  applyParams?: {
+  applyParams: {
     policySchemaId: string;
     targetResource: string;
     value: unknown;
@@ -76,7 +76,7 @@ export interface ApplyPolicyChangeResult {
  * Result from creating a DLP rule.
  */
 export interface CreateDLPRuleResult {
-  _type: "ui.success" | "ui.manual_steps";
+  _type: "ui.success" | "ui.manual_steps" | "ui.error";
   message: string;
   ruleName?: string;
   displayName: string;
@@ -123,16 +123,9 @@ export interface ToolExecutor {
     args: z.infer<typeof CreateDLPRuleSchema>
   ): Promise<CreateDLPRuleResult>;
 
-  getFleetOverview(args: z.infer<typeof GetFleetOverviewSchema>): Promise<
-    | FleetOverviewResponse
-    | {
-        headline: string;
-        summary: string;
-        postureCards: unknown[];
-        suggestions: string[];
-        sources: string[];
-      }
-  >;
+  getFleetOverview(
+    args: z.infer<typeof GetFleetOverviewSchema>
+  ): Promise<FleetOverviewResponse>;
 }
 
 /**

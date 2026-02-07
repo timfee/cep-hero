@@ -175,6 +175,7 @@ describe("MCP output guardrails", () => {
     it("draftPolicyChange output is clean", async () => {
       const result = await executor.draftPolicyChange({
         policyName: "chrome.users.SafeBrowsing",
+        policySchemaId: "chrome.users.SafeBrowsing",
         proposedValue: { enabled: true, level: { mode: "strict" } },
         targetUnit: "id:eng002",
         reasoning: "Enable strict safe browsing",
@@ -226,6 +227,7 @@ describe("MCP output guardrails", () => {
     it("draftPolicyChange resolves root org unit target", async () => {
       const result = await executor.draftPolicyChange({
         policyName: "chrome.users.Test",
+        policySchemaId: "chrome.users.Test",
         proposedValue: { test: true },
         targetUnit: "id:root001",
         reasoning: "Test root target",
@@ -304,6 +306,7 @@ describe("MCP output guardrails", () => {
       it(`draftPolicyChange output for ${label} serializes cleanly`, async () => {
         const result = await executor.draftPolicyChange({
           policyName: "chrome.users.TestPolicy",
+          policySchemaId: "chrome.users.TestPolicy",
           proposedValue,
           targetUnit: "id:eng002",
           reasoning: "Test nested values",
