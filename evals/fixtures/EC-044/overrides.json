@@ -33,7 +33,7 @@
   },
   "connectorPolicies": [
     {
-      "policyTargetKey": { "targetResource": "orgunits/03ph8a2z221pcso" },
+      "targetKey": { "targetResource": "orgunits/03ph8a2z221pcso" },
       "value": {
         "policySchema": "chrome.users.ExtensionSettings",
         "value": {
