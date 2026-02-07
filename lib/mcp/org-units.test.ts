@@ -13,6 +13,7 @@ import {
   normalizeResource,
   type OrgUnit,
   resolveOrgUnitDisplay,
+  resolveTargetForApply,
   sanitizeOrgUnitIds,
 } from "./org-units";
 
@@ -301,5 +302,82 @@ describe("sanitizeOrgUnitIds", () => {
     const input = '{"target": "Orgunits/abc123"}';
     const result = sanitizeOrgUnitIds(input, pathMap);
     expect(result).toBe('{"target": "/Engineering"}');
+  });
+});
+
+describe("resolveTargetForApply", () => {
+  const map = buildOrgUnitNameMap(SAMPLE_ORG_UNITS);
+  const rootOrgUnitId = "id:03ph8a2z23yjui6";
+
+  it("resolves '/' to root org unit in orgunits/ format", () => {
+    const result = resolveTargetForApply("/", map, rootOrgUnitId);
+
+    expect(result).toBe("orgunits/03ph8a2z23yjui6");
+  });
+
+  it("resolves '/' to orgunits/ prefix even when rootOrgUnitId lacks prefix", () => {
+    const result = resolveTargetForApply("/", map, "03ph8a2z23yjui6");
+
+    expect(result).toBe("orgunits/03ph8a2z23yjui6");
+  });
+
+  it("returns '/' unchanged when rootOrgUnitId is not available", () => {
+    const result = resolveTargetForApply("/", map, null);
+
+    expect(result).toBe("/");
+  });
+
+  it("resolves path like '/Engineering-Test' to orgunits/ ID via map", () => {
+    const result = resolveTargetForApply(
+      "/Engineering-Test",
+      map,
+      rootOrgUnitId
+    );
+
+    expect(result).toBe("orgunits/03ph8a2z221pcso");
+  });
+
+  it("returns path unchanged when not found in map", () => {
+    const result = resolveTargetForApply("/Unknown-OU", map, rootOrgUnitId);
+
+    expect(result).toBe("/Unknown-OU");
+  });
+
+  it("passes through id: prefixed values unchanged", () => {
+    const result = resolveTargetForApply(
+      "id:03ph8a2z221pcso",
+      map,
+      rootOrgUnitId
+    );
+
+    expect(result).toBe("id:03ph8a2z221pcso");
+  });
+
+  it("passes through orgunits/ prefixed values unchanged", () => {
+    const result = resolveTargetForApply(
+      "orgunits/03ph8a2z221pcso",
+      map,
+      rootOrgUnitId
+    );
+
+    expect(result).toBe("orgunits/03ph8a2z221pcso");
+  });
+
+  it("passes through bare IDs unchanged", () => {
+    const result = resolveTargetForApply("03ph8a2z221pcso", map, rootOrgUnitId);
+
+    expect(result).toBe("03ph8a2z221pcso");
+  });
+
+  it("trims whitespace from input", () => {
+    const result = resolveTargetForApply("  /  ", map, rootOrgUnitId);
+
+    expect(result).toBe("orgunits/03ph8a2z23yjui6");
+  });
+
+  it("does not double-prefix orgunits/ when rootOrgUnitId already has it", () => {
+    const result = resolveTargetForApply("/", map, "orgunits/03ph8a2z23yjui6");
+
+    expect(result).toBe("orgunits/03ph8a2z23yjui6");
   });
 });
