@@ -321,8 +321,15 @@ describe("resolveTargetForApply", () => {
     expect(result).toBe("orgunits/03ph8a2z23yjui6");
   });
 
-  it("returns '/' unchanged when rootOrgUnitId is not available", () => {
+  it("resolves '/' via map fallback when rootOrgUnitId is not available", () => {
     const result = resolveTargetForApply("/", map, null);
+
+    expect(result).toBe("orgunits/03ph8a2z23yjui6");
+  });
+
+  it("returns '/' unchanged when rootOrgUnitId is null and map has no root entry", () => {
+    const emptyMap = new Map<string, string>();
+    const result = resolveTargetForApply("/", emptyMap, null);
 
     expect(result).toBe("/");
   });

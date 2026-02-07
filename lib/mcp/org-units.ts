@@ -167,10 +167,30 @@ export function sanitizeOrgUnitIds(
 }
 
 /**
- * Resolves a target unit value (path or ID) into a proper org unit resource
- * string suitable for the Chrome Policy API. Handles "/" by mapping it to
- * the root org unit ID, and resolves other paths via reverse lookup in the
- * org unit name map.
+ * Builds a reverse mapping from org unit display paths to their canonical
+ * "orgunits/{id}" keys. Used by resolveTargetForApply for O(1) path lookups
+ * instead of iterating the full name map.
+ */
+export function buildPathToIdMap(
+  nameMap: Map<string, string>
+): Map<string, string> {
+  const pathMap = new Map<string, string>();
+  for (const [key, path] of nameMap.entries()) {
+    if (key.startsWith("orgunits/") && !pathMap.has(path)) {
+      pathMap.set(path, key);
+    }
+  }
+  return pathMap;
+}
+
+/**
+ * Resolves a target unit value (path, "/", or ID) into a resource string
+ * for downstream use. Handles "/" by mapping it to the root org unit ID,
+ * and resolves path-based targets via reverse lookup.
+ *
+ * The returned value may still be in "id:..." or bare ID form for non-path
+ * inputs — callers should pass the result through buildOrgUnitTargetResource()
+ * when a canonical "orgunits/{id}" format is required by the API.
  */
 export function resolveTargetForApply(
   targetUnit: string,
@@ -178,19 +198,28 @@ export function resolveTargetForApply(
   rootOrgUnitId: string | null | undefined
 ): string {
   const trimmed = targetUnit.trim();
+  const pathToId = buildPathToIdMap(orgUnitNameMap);
 
-  if (trimmed === "/" && rootOrgUnitId) {
-    const normalized = normalizeResource(rootOrgUnitId);
-    return normalized.startsWith("orgunits/")
-      ? normalized
-      : `orgunits/${normalized}`;
+  if (trimmed === "/") {
+    if (rootOrgUnitId) {
+      const normalized = normalizeResource(rootOrgUnitId);
+      return normalized.startsWith("orgunits/")
+        ? normalized
+        : `orgunits/${normalized}`;
+    }
+
+    const rootId = pathToId.get("/");
+    if (rootId) {
+      return rootId;
+    }
+
+    return trimmed;
   }
 
-  if (trimmed.startsWith("/") && trimmed !== "/") {
-    for (const [key, path] of orgUnitNameMap.entries()) {
-      if (path === trimmed && key.startsWith("orgunits/")) {
-        return key;
-      }
+  if (trimmed.startsWith("/")) {
+    const resolved = pathToId.get(trimmed);
+    if (resolved) {
+      return resolved;
     }
   }
 

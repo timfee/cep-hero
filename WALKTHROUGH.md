@@ -465,7 +465,7 @@ The pattern prevents several failure modes:
 
 Both `createDLPRule` and `applyPolicyChange` return structured results with a `_type` discriminator (`ui.success`, `ui.error`, or `ui.manual_steps`). The chat console renders these via `ToolResultCard` (`components/ai-elements/tool-result-card.tsx`), a compact inline card that shows an icon (green check for success, red alert for error, orange alert for manual steps), the result message, and an optional Admin Console link. This keeps evidence co-located with the action that produced it, rather than forcing the AI to restate results in verbose text.
 
-These tools are also included in the `RICH_CARD_TOOLS` set, so when the AI retries a tool call within the same message, only the final result card is shown.
+Data-fetching tools are included in the `DEDUPED_CARD_TOOLS` set, so when the AI retries a tool call within the same message, only the final result card is shown. Action tools (`draftPolicyChange`, `applyPolicyChange`, `createDLPRule`) are excluded from deduplication because each invocation is a unique proposal or action that must be shown separately.
 
 ## Org Unit Display: Context-Based Name Resolution
 
