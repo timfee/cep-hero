@@ -22,9 +22,7 @@ import { type OrgUnitContext } from "./context";
 import { resolveOrgUnitCandidates } from "./utils";
 
 type ResolvedPolicy =
-  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy & {
-    policyTargetKey?: { targetResource?: string };
-  };
+  chromepolicy_v1.Schema$GoogleChromePolicyVersionsV1ResolvedPolicy;
 
 interface ConnectorConfigSuccess {
   status: string;
@@ -213,7 +211,7 @@ function logResolveResponse(
   logApiResponse("connector-config", {
     targetResource,
     count: policies?.length ?? 0,
-    sampleTargetResource: policies?.[0]?.policyTargetKey?.targetResource,
+    sampleTargetResource: policies?.[0]?.targetKey?.targetResource,
   });
 }
 

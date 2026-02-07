@@ -6,13 +6,13 @@ describe("analyzeConnectorPolicies", () => {
   it("flags customer-level scoped policies as mis-scoped", () => {
     const policies = [
       {
-        policyTargetKey: { targetResource: "customers/my_customer" },
+        targetKey: { targetResource: "customers/my_customer" },
       },
       {
-        policyTargetKey: { targetResource: "orgunits/abc" },
+        targetKey: { targetResource: "orgunits/abc" },
       },
       {
-        policyTargetKey: { targetResource: "customers/another" },
+        targetKey: { targetResource: "customers/another" },
       },
     ];
 
@@ -28,8 +28,8 @@ describe("analyzeConnectorPolicies", () => {
 
   it("returns no flag when policies are OU or group scoped", () => {
     const policies = [
-      { policyTargetKey: { targetResource: "orgunits/root" } },
-      { policyTargetKey: { targetResource: "groups/123" } },
+      { targetKey: { targetResource: "orgunits/root" } },
+      { targetKey: { targetResource: "groups/123" } },
     ];
 
     const result = analyzeConnectorPolicies(policies);

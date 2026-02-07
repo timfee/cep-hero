@@ -179,7 +179,7 @@ export interface FixtureData {
     consoleUrl?: string;
   }[];
   connectorPolicies?: {
-    policyTargetKey?: { targetResource?: string };
+    targetKey?: { targetResource?: string };
     value?: { policySchema?: string; value?: Record<string, unknown> };
     sourceKey?: { targetResource?: string };
   }[];

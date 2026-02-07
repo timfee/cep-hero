@@ -86,7 +86,7 @@ const STRESS_FIXTURES: FixtureData = {
   ],
   connectorPolicies: [
     {
-      policyTargetKey: { targetResource: "orgunits/root001" },
+      targetKey: { targetResource: "orgunits/root001" },
       value: {
         policySchema: "chrome.users.ConnectorEnabled",
         value: { enabled: true, nested: { deep: "value" } },

@@ -64,7 +64,7 @@ export interface DlpRulesOutput {
  * Output shape for connector configuration API responses.
  */
 export interface ConnectorConfigOutput {
-  value?: { policyTargetKey?: { targetResource?: string | null } }[];
+  value?: { targetKey?: { targetResource?: string | null } }[];
   targetResource?: string | null;
   targetResourceName?: string | null;
   attemptedTargets?: string[];

@@ -11,7 +11,7 @@ export type { ConnectorAnalysis };
  * Satisfies both the googleapis PolicyWithTarget and plain UI types.
  */
 interface PolicyWithTarget {
-  policyTargetKey?: { targetResource?: string | null };
+  targetKey?: { targetResource?: string | null };
 }
 
 /**
@@ -79,6 +79,6 @@ export function analyzeConnectorPolicies(
  * Safely extracts the policy target resource from a resolved policy.
  */
 function getTargetResource(policy: PolicyWithTarget) {
-  const targetResource = policy.policyTargetKey?.targetResource;
+  const targetResource = policy.targetKey?.targetResource;
   return typeof targetResource === "string" ? targetResource : undefined;
 }
