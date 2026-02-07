@@ -511,6 +511,14 @@ export function ChatConsole() {
               // only the last invocation's rich card is shown.
               const lastToolIndex = new Map<string, number>();
               let hasActionTool = false;
+
+              // Collect proposal cards for end-of-message stacked rendering.
+              const proposals: {
+                partKey: string;
+                output: PolicyChangeConfirmationOutput;
+                proposalId: string;
+              }[] = [];
+
               for (let pi = 0; pi < message.parts.length; pi++) {
                 const p = message.parts[pi];
                 if (isToolUIPart(p)) {
@@ -523,6 +531,23 @@ export function ChatConsole() {
                     name === "createDLPRule"
                   ) {
                     hasActionTool = true;
+                  }
+
+                  // Collect completed proposals for stacking at message end
+                  if (name === "draftPolicyChange") {
+                    const tp = p as ToolPart;
+                    if (tp.state === "output-available") {
+                      const output =
+                        tp.output as PolicyChangeConfirmationOutput;
+                      if (output?._type === "ui.confirmation") {
+                        const pk = `${message.id || index}-${pi}`;
+                        proposals.push({
+                          partKey: pk,
+                          output,
+                          proposalId: output.proposalId ?? pk,
+                        });
+                      }
+                    }
                   }
                 }
               }
@@ -671,30 +696,16 @@ export function ChatConsole() {
                         );
                       }
 
+                      // Suppress only successfully collected proposals;
+                      // errors and non-confirmation outputs fall through to
+                      // the generic Tool/ToolOutput rendering below.
                       if (
                         toolName === "draftPolicyChange" &&
-                        toolPart.state === "output-available"
+                        toolPart.state === "output-available" &&
+                        (toolPart.output as PolicyChangeConfirmationOutput)
+                          ?._type === "ui.confirmation"
                       ) {
-                        const output =
-                          toolPart.output as PolicyChangeConfirmationOutput;
-                        if (output?._type === "ui.confirmation") {
-                          const proposalId = output.proposalId ?? partKey;
-                          return (
-                            <div key={partKey} className="pl-4 lg:pl-6">
-                              <PolicyChangeConfirmation
-                                proposal={output}
-                                onConfirm={() => {
-                                  setApplyingProposalId(proposalId);
-                                  void sendMessage({ text: "Confirm" });
-                                }}
-                                onCancel={() => {
-                                  void sendMessage({ text: "Cancel" });
-                                }}
-                                isApplying={applyingProposalId === proposalId}
-                              />
-                            </div>
-                          );
-                        }
+                        return null;
                       }
 
                       // Tool result cards for action tools
@@ -767,6 +778,41 @@ export function ChatConsole() {
 
                     return null;
                   })}
+
+                  {/* Proposal cards: always stacked at end of message */}
+                  {proposals.length > 0 && (
+                    <div className="pl-4 lg:pl-6">
+                      {proposals.length > 1 && (
+                        <p className="text-xs text-muted-foreground mb-2">
+                          {proposals.length} proposed changes
+                        </p>
+                      )}
+                      <div className="flex flex-col">
+                        {proposals.map((p, idx) => (
+                          <PolicyChangeConfirmation
+                            key={p.partKey}
+                            proposal={p.output}
+                            onConfirm={() => {
+                              setApplyingProposalId(p.proposalId);
+                              void sendMessage({ text: "Confirm" });
+                            }}
+                            onCancel={() => {
+                              void sendMessage({ text: "Cancel" });
+                            }}
+                            isApplying={applyingProposalId === p.proposalId}
+                            className={cn(
+                              proposals.length > 1 &&
+                                idx > 0 &&
+                                "-mt-px rounded-t-none",
+                              proposals.length > 1 &&
+                                idx < proposals.length - 1 &&
+                                "rounded-b-none"
+                            )}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
                   {!isUser &&
                     (() => {
