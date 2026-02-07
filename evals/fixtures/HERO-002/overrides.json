@@ -17,14 +17,14 @@
   ],
   "connectorPolicies": [
     {
-      "targetKey": { "targetResource": "orgunits/03ph8a2z1enroot" },
+      "policyTargetKey": { "targetResource": "orgunits/03ph8a2z1enroot" },
       "value": {
         "policySchema": "chrome.users.CookieEncryption",
         "value": { "cookieEncryptionMode": "DISABLED" }
       }
     },
     {
-      "targetKey": { "targetResource": "orgunits/03ph8a2z1enroot" },
+      "policyTargetKey": { "targetResource": "orgunits/03ph8a2z1enroot" },
       "value": {
         "policySchema": "chrome.users.IncognitoModeAvailability",
         "value": { "incognitoModeAvailability": "AVAILABLE" }

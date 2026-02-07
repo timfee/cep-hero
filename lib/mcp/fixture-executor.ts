@@ -20,6 +20,7 @@ import {
   type DraftPolicyChangeSchema,
   type EnrollBrowserSchema,
   type GetChromeEventsSchema,
+  type FleetOverviewResponse,
   type GetFleetOverviewSchema,
 } from "./registry";
 import {
@@ -173,24 +174,6 @@ export class FixtureToolExecutor implements ToolExecutor {
   getFleetOverview(_args?: z.infer<typeof GetFleetOverviewSchema>) {
     return Promise.resolve(buildFleetOverviewResponse(this.fixtures));
   }
-}
-
-/**
- * Shape of the fixture-based fleet overview response.
- */
-interface FleetOverviewFixtureResponse {
-  headline: string;
-  summary: string;
-  postureCards: {
-    label: string;
-    value: string;
-    note: string;
-    source: string;
-    action: string;
-    lastUpdated?: string;
-  }[];
-  suggestions: string[];
-  sources: string[];
 }
 
 /**
@@ -355,7 +338,7 @@ function buildCreateDlpResponse(
  */
 function buildFleetOverviewResponse(
   fixtures: FixtureData
-): FleetOverviewFixtureResponse {
+): FleetOverviewResponse {
   const eventCount = fixtures.auditEvents?.items?.length ?? 0;
   const dlpRuleCount = fixtures.dlpRules?.length ?? 0;
   const connectorPolicyCount = fixtures.connectorPolicies?.length ?? 0;
@@ -371,7 +354,9 @@ function buildFleetOverviewResponse(
         "Chrome activity logs",
         "Admin SDK Reports",
         "Show recent Chrome events",
-        timestamp
+        timestamp,
+        eventCount > 10 ? "warning" : "healthy",
+        1
       ),
       buildPostureCard(
         "DLP rules",
@@ -379,7 +364,9 @@ function buildFleetOverviewResponse(
         "Customer DLP policies",
         "Cloud Identity",
         "List active DLP rules",
-        timestamp
+        timestamp,
+        dlpRuleCount === 0 ? "critical" : "healthy",
+        2
       ),
       buildPostureCard(
         "Connector policies",
@@ -387,13 +374,30 @@ function buildFleetOverviewResponse(
         "Connector policy resolve",
         "Chrome Policy",
         "Check connector configuration",
-        timestamp
+        timestamp,
+        connectorPolicyCount === 0 ? "warning" : "healthy",
+        3
       ),
     ],
     suggestions: [
-      "List active DLP rules",
-      "Show recent Chrome events",
-      "Check connector configuration",
+      {
+        text: "List active DLP rules",
+        action: "List active DLP rules",
+        priority: 1,
+        category: "security" as const,
+      },
+      {
+        text: "Show recent Chrome events",
+        action: "Show recent Chrome events",
+        priority: 2,
+        category: "monitoring" as const,
+      },
+      {
+        text: "Check connector configuration",
+        action: "Check connector configuration",
+        priority: 3,
+        category: "compliance" as const,
+      },
     ],
     sources: ["Admin SDK Reports", "Cloud Identity", "Chrome Policy"],
   };
@@ -408,7 +412,18 @@ function buildPostureCard(
   note: string,
   source: string,
   action: string,
-  lastUpdated: string
+  lastUpdated: string,
+  status: "healthy" | "warning" | "critical" | "info",
+  priority: number
 ) {
-  return { label, value: `${value}`, note, source, action, lastUpdated };
+  return {
+    label,
+    value: `${value}`,
+    note,
+    source,
+    action,
+    lastUpdated,
+    status,
+    priority,
+  };
 }

@@ -2,7 +2,7 @@
   "dlpRules": [],
   "connectorPolicies": [
     {
-      "targetKey": { "targetResource": "orgunits/03ph8a2z23yjui6" },
+      "policyTargetKey": { "targetResource": "orgunits/03ph8a2z23yjui6" },
       "value": {
         "policySchema": "chrome.users.CloudReporting",
         "value": { "enableCloudReporting": true }
