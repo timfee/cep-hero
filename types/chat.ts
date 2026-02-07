@@ -86,7 +86,7 @@ export interface PolicyChangeConfirmationOutput {
   adminConsoleUrl: string;
   intent: string;
   status: string;
-  applyParams?: {
+  applyParams: {
     policySchemaId: string;
     targetResource: string;
     value: unknown;

@@ -1,13 +1,13 @@
 /**
  * Tests for tool visibility tier classification.
- * Verifies HIDDEN_TOOL_NAMES and RICH_CARD_TOOLS are correctly defined and disjoint.
+ * Verifies HIDDEN_TOOL_NAMES and DEDUPED_CARD_TOOLS are correctly defined and disjoint.
  */
 
 import { describe, expect, it } from "bun:test";
 
 import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
 
-import { RICH_CARD_TOOLS } from "./chat-console";
+import { DEDUPED_CARD_TOOLS } from "./chat-console";
 
 describe("tool visibility tiers", () => {
   describe("HIDDEN_TOOL_NAMES", () => {
@@ -28,35 +28,40 @@ describe("tool visibility tiers", () => {
     });
 
     it("does not hide tools that have rich cards", () => {
-      for (const tool of RICH_CARD_TOOLS) {
+      for (const tool of DEDUPED_CARD_TOOLS) {
         expect(HIDDEN_TOOL_NAMES.has(tool)).toBe(false);
       }
     });
   });
 
-  describe("RICH_CARD_TOOLS", () => {
-    it("includes all seven tools with custom UI cards", () => {
-      expect(RICH_CARD_TOOLS.size).toBe(7);
-      expect(RICH_CARD_TOOLS.has("getChromeEvents")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("getChromeConnectorConfiguration")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("listDLPRules")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("listOrgUnits")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("draftPolicyChange")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("createDLPRule")).toBe(true);
-      expect(RICH_CARD_TOOLS.has("applyPolicyChange")).toBe(true);
+  describe("DEDUPED_CARD_TOOLS", () => {
+    it("includes data-fetching tools that should be deduped within a message", () => {
+      expect(DEDUPED_CARD_TOOLS.size).toBe(4);
+      expect(DEDUPED_CARD_TOOLS.has("getChromeEvents")).toBe(true);
+      expect(DEDUPED_CARD_TOOLS.has("getChromeConnectorConfiguration")).toBe(
+        true
+      );
+      expect(DEDUPED_CARD_TOOLS.has("listDLPRules")).toBe(true);
+      expect(DEDUPED_CARD_TOOLS.has("listOrgUnits")).toBe(true);
+    });
+
+    it("does not include action tools that may be called multiple times with unique results", () => {
+      expect(DEDUPED_CARD_TOOLS.has("draftPolicyChange")).toBe(false);
+      expect(DEDUPED_CARD_TOOLS.has("createDLPRule")).toBe(false);
+      expect(DEDUPED_CARD_TOOLS.has("applyPolicyChange")).toBe(false);
     });
   });
 
   describe("no tool is in both sets", () => {
-    it("HIDDEN_TOOL_NAMES and RICH_CARD_TOOLS are disjoint", () => {
+    it("HIDDEN_TOOL_NAMES and DEDUPED_CARD_TOOLS are disjoint", () => {
       for (const tool of HIDDEN_TOOL_NAMES) {
-        expect(RICH_CARD_TOOLS.has(tool)).toBe(false);
+        expect(DEDUPED_CARD_TOOLS.has(tool)).toBe(false);
       }
     });
   });
 
   describe("deduplication logic", () => {
-    it("lastToolIndex map keeps only the last index per tool name", () => {
+    it("lastToolIndex map keeps only the last index per data-fetching tool name", () => {
       const parts = [
         { toolName: "listDLPRules", index: 0 },
         { toolName: "draftPolicyChange", index: 1 },
@@ -66,20 +71,17 @@ describe("tool visibility tiers", () => {
 
       const lastToolIndex = new Map<string, number>();
       for (const p of parts) {
-        if (RICH_CARD_TOOLS.has(p.toolName)) {
+        if (DEDUPED_CARD_TOOLS.has(p.toolName)) {
           lastToolIndex.set(p.toolName, p.index);
         }
       }
 
       expect(lastToolIndex.get("listDLPRules")).toBe(2);
-      expect(lastToolIndex.get("draftPolicyChange")).toBe(3);
+      expect(lastToolIndex.has("draftPolicyChange")).toBe(false);
     });
 
-    it("earlier invocations are suppressed", () => {
-      const lastToolIndex = new Map<string, number>([
-        ["listDLPRules", 2],
-        ["draftPolicyChange", 3],
-      ]);
+    it("earlier invocations of data-fetching tools are suppressed", () => {
+      const lastToolIndex = new Map<string, number>([["listDLPRules", 2]]);
 
       const shouldShow0 = lastToolIndex.get("listDLPRules") === 0;
       expect(shouldShow0).toBe(false);
@@ -88,7 +90,7 @@ describe("tool visibility tiers", () => {
       expect(shouldShow2).toBe(true);
     });
 
-    it("does not deduplicate tools outside RICH_CARD_TOOLS", () => {
+    it("does not deduplicate tools outside DEDUPED_CARD_TOOLS", () => {
       const parts = [
         { toolName: "enrollBrowser", index: 0 },
         { toolName: "enrollBrowser", index: 1 },
@@ -96,7 +98,7 @@ describe("tool visibility tiers", () => {
 
       const lastToolIndex = new Map<string, number>();
       for (const p of parts) {
-        if (RICH_CARD_TOOLS.has(p.toolName)) {
+        if (DEDUPED_CARD_TOOLS.has(p.toolName)) {
           lastToolIndex.set(p.toolName, p.index);
         }
       }
