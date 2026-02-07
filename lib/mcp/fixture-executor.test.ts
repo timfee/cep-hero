@@ -315,6 +315,39 @@ describe("FixtureToolExecutor", () => {
       expect(result.description).toBe("Enable safe browsing for engineering");
       expect(result.status).toBe("pending_approval");
       expect(result.applyParams).toBeDefined();
+      expect(result.applyParams.policySchemaId).toBe(
+        "chrome.users.SafeBrowsing"
+      );
+      expect(result.applyParams.targetResource).toBe("id:eng456");
+      expect(result.applyParams.value).toEqual({ safeBrowsingEnabled: true });
+    });
+
+    it("resolves '/' targetUnit to root org unit ID in applyParams", async () => {
+      const executor = new FixtureToolExecutor(BASE_FIXTURES);
+      const result = await executor.draftPolicyChange({
+        policyName: "chrome.users.SafeBrowsing",
+        policySchemaId: "chrome.users.SafeBrowsing",
+        proposedValue: { safeBrowsingEnabled: true },
+        targetUnit: "/",
+        reasoning: "Enable at root",
+      });
+
+      expect(result.applyParams.targetResource).toBe("orgunits/root123");
+      expect(result.applyParams.targetResource).not.toBe("/");
+    });
+
+    it("resolves path-based targetUnit to org unit ID in applyParams", async () => {
+      const executor = new FixtureToolExecutor(BASE_FIXTURES);
+      const result = await executor.draftPolicyChange({
+        policyName: "chrome.users.SafeBrowsing",
+        policySchemaId: "chrome.users.SafeBrowsing",
+        proposedValue: { safeBrowsingEnabled: true },
+        targetUnit: "/Engineering",
+        reasoning: "Enable for engineering",
+      });
+
+      expect(result.applyParams.targetResource).toBe("orgunits/eng456");
+      expect(result.applyParams.targetResource).not.toStartWith("/");
     });
   });
 

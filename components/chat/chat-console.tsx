@@ -78,17 +78,16 @@ import { cn } from "@/lib/utils";
 import { OrgUnitsList } from "./org-units-list";
 
 /**
- * Tools whose output is rendered by dedicated UI cards.
- * Only the last invocation per tool in a message is shown, earlier duplicates are suppressed.
+ * Data-fetching tools where only the last invocation per message matters.
+ * Earlier duplicates are suppressed so repeated fetches don't clutter the UI.
+ * Action tools (draftPolicyChange, applyPolicyChange, createDLPRule) are NOT
+ * included because each invocation is a unique proposal or action.
  */
-export const RICH_CARD_TOOLS = new Set([
+export const DEDUPED_CARD_TOOLS = new Set([
   "getChromeEvents",
   "getChromeConnectorConfiguration",
   "listDLPRules",
   "listOrgUnits",
-  "draftPolicyChange",
-  "createDLPRule",
-  "applyPolicyChange",
 ]);
 
 import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
@@ -516,7 +515,7 @@ export function ChatConsole() {
                 const p = message.parts[pi];
                 if (isToolUIPart(p)) {
                   const name = getToolName(p);
-                  if (RICH_CARD_TOOLS.has(name)) {
+                  if (DEDUPED_CARD_TOOLS.has(name)) {
                     lastToolIndex.set(name, pi);
                   }
                   if (
@@ -610,7 +609,7 @@ export function ChatConsole() {
                       // Dedup: for rich-card tools called multiple times,
                       // suppress earlier invocations so only the last card shows
                       if (
-                        RICH_CARD_TOOLS.has(toolName) &&
+                        DEDUPED_CARD_TOOLS.has(toolName) &&
                         lastToolIndex.get(toolName) !== i
                       ) {
                         return null;
