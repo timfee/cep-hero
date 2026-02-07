@@ -248,6 +248,44 @@ describe("MCP output guardrails", () => {
     });
   });
 
+  describe("draftPolicyChange applyParams.targetResource is always API-safe", () => {
+    const TARGET_INPUTS: [string, string][] = [
+      ['root path "/"', "/"],
+      ['sub-OU path "/Engineering"', "/Engineering"],
+      ['id: prefixed "id:eng002"', "id:eng002"],
+      ['orgunits/ prefixed "orgunits/eng002"', "orgunits/eng002"],
+      ["bare ID", "eng002"],
+    ];
+
+    for (const [label, targetUnit] of TARGET_INPUTS) {
+      it(`with ${label} → targetResource is never "/" or empty`, async () => {
+        const result = await executor.draftPolicyChange({
+          policyName: "chrome.users.TestPolicy",
+          policySchemaId: "chrome.users.TestPolicy",
+          proposedValue: { test: true },
+          targetUnit,
+          reasoning: "Test target resolution",
+        });
+
+        expect(result.applyParams.targetResource).not.toBe("/");
+        expect(result.applyParams.targetResource).not.toBe("");
+        expect(result.applyParams.targetResource.length).toBeGreaterThan(0);
+      });
+    }
+
+    it("with root '/' → targetResource starts with orgunits/", async () => {
+      const result = await executor.draftPolicyChange({
+        policyName: "chrome.users.TestPolicy",
+        policySchemaId: "chrome.users.TestPolicy",
+        proposedValue: { test: true },
+        targetUnit: "/",
+        reasoning: "Test root resolution",
+      });
+
+      expect(result.applyParams.targetResource).toStartWith("orgunits/");
+    });
+  });
+
   describe("formatters never produce [object Object]", () => {
     const EVIL_VALUES: [string, Record<string, unknown>][] = [
       ["nested object", { action: { type: "BLOCK", severity: "HIGH" } }],
