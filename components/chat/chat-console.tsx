@@ -696,8 +696,15 @@ export function ChatConsole() {
                         );
                       }
 
-                      // Proposals are collected and stacked at the message end
-                      if (toolName === "draftPolicyChange") {
+                      // Suppress only successfully collected proposals;
+                      // errors and non-confirmation outputs fall through to
+                      // the generic Tool/ToolOutput rendering below.
+                      if (
+                        toolName === "draftPolicyChange" &&
+                        toolPart.state === "output-available" &&
+                        (toolPart.output as PolicyChangeConfirmationOutput)
+                          ?._type === "ui.confirmation"
+                      ) {
                         return null;
                       }
 
