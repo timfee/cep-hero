@@ -152,6 +152,32 @@ describe("draftPolicyChange", () => {
     );
   });
 
+  it("resolves '/' targetUnit to root org unit ID in applyParams", () => {
+    const result = draftPolicyChange(ctx, {
+      policyName: "Safe Browsing",
+      policySchemaId: "chrome.users.SafeBrowsing",
+      proposedValue: { safeBrowsingEnabled: true },
+      targetUnit: "/",
+      reasoning: "Enable at root",
+    });
+
+    expect(result.applyParams.targetResource).toBe("orgunits/03ph8a2z23yjui6");
+    expect(result.applyParams.targetResource).not.toBe("/");
+  });
+
+  it("resolves path-based targetUnit to org unit ID in applyParams", () => {
+    const result = draftPolicyChange(ctx, {
+      policyName: "Safe Browsing",
+      policySchemaId: "chrome.users.SafeBrowsing",
+      proposedValue: { safeBrowsingEnabled: true },
+      targetUnit: "/Engineering",
+      reasoning: "Enable for engineering",
+    });
+
+    expect(result.applyParams.targetResource).toBe("orgunits/03ph8a2z221pcso");
+    expect(result.applyParams.targetResource).not.toStartWith("/");
+  });
+
   it("generates unique proposal IDs", () => {
     const result1 = draftPolicyChange(ctx, {
       policyName: "Password Manager",
@@ -179,6 +205,71 @@ describe("draft → apply round-trip", () => {
   const auth = new OAuth2Client();
   auth.setCredentials({ access_token: "test-token" });
   const customerId = "my_customer";
+
+  it("draft with '/' targetUnit round-trips successfully through apply", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const draft = draftPolicyChange(ctx, {
+        policyName: "Incognito Mode Availability",
+        policySchemaId: "chrome.users.IncognitoModeAvailability",
+        proposedValue: { incognitoModeAvailability: 1 },
+        targetUnit: "/",
+        reasoning: "Disable incognito at root",
+      });
+
+      expect(draft.applyParams.targetResource).not.toBe("/");
+      expect(draft.applyParams.targetResource).not.toBe("");
+
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: draft.applyParams.policySchemaId,
+        targetResource: draft.applyParams.targetResource,
+        value: draft.applyParams.value,
+      });
+
+      expect(result._type).toBe("ui.success");
+      expect(captured).toHaveLength(1);
+      expect(
+        captured[0].requestBody.requests[0].policyTargetKey.targetResource
+      ).toStartWith("orgunits/");
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
+
+  it("draft with path-based targetUnit round-trips successfully through apply", async () => {
+    const captured: CapturedBatchModify[] = [];
+    const mockCP = buildMockChromepolicy(captured);
+    const original = googleApis.chromepolicy;
+    googleApis.chromepolicy =
+      mockCP as unknown as typeof googleApis.chromepolicy;
+
+    try {
+      const draft = draftPolicyChange(ctx, {
+        policyName: "Password Manager",
+        policySchemaId: "chrome.users.PasswordManager",
+        proposedValue: { passwordManagerEnabled: false },
+        targetUnit: "/Engineering",
+        reasoning: "Disable for eng",
+      });
+
+      expect(draft.applyParams.targetResource).toBe("orgunits/03ph8a2z221pcso");
+
+      const result = await applyPolicyChange(auth, customerId, {
+        policySchemaId: draft.applyParams.policySchemaId,
+        targetResource: draft.applyParams.targetResource,
+        value: draft.applyParams.value,
+      });
+
+      expect(result._type).toBe("ui.success");
+    } finally {
+      googleApis.chromepolicy = original;
+    }
+  });
 
   it("applyParams.policySchemaId is the schema ID, not the human name", () => {
     const result = draftPolicyChange(ctx, {
