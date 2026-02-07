@@ -167,6 +167,37 @@ export function sanitizeOrgUnitIds(
 }
 
 /**
+ * Resolves a target unit value (path or ID) into a proper org unit resource
+ * string suitable for the Chrome Policy API. Handles "/" by mapping it to
+ * the root org unit ID, and resolves other paths via reverse lookup in the
+ * org unit name map.
+ */
+export function resolveTargetForApply(
+  targetUnit: string,
+  orgUnitNameMap: Map<string, string>,
+  rootOrgUnitId: string | null | undefined
+): string {
+  const trimmed = targetUnit.trim();
+
+  if (trimmed === "/" && rootOrgUnitId) {
+    const normalized = normalizeResource(rootOrgUnitId);
+    return normalized.startsWith("orgunits/")
+      ? normalized
+      : `orgunits/${normalized}`;
+  }
+
+  if (trimmed.startsWith("/") && trimmed !== "/") {
+    for (const [key, path] of orgUnitNameMap.entries()) {
+      if (path === trimmed && key.startsWith("orgunits/")) {
+        return key;
+      }
+    }
+  }
+
+  return trimmed;
+}
+
+/**
  * Builds a policy target resource string from an org unit identifier.
  * Returns empty string if the input is invalid or missing the org unit ID.
  */

@@ -86,9 +86,6 @@ export const RICH_CARD_TOOLS = new Set([
   "getChromeConnectorConfiguration",
   "listDLPRules",
   "listOrgUnits",
-  "draftPolicyChange",
-  "createDLPRule",
-  "applyPolicyChange",
 ]);
 
 import { HIDDEN_TOOL_NAMES } from "@/lib/mcp/constants";
