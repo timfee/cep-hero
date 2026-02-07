@@ -93,7 +93,7 @@ const BASE_FIXTURES: FixtureData = {
   ],
   connectorPolicies: [
     {
-      targetKey: { targetResource: "orgunits/root123" },
+      policyTargetKey: { targetResource: "orgunits/root123" },
       value: { policySchema: "chrome.users.ConnectorEnabled" },
     },
   ],
