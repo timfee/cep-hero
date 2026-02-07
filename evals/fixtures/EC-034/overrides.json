@@ -12,13 +12,34 @@
             "type": "DLP_EVENT",
             "name": "CONTENT_UNSCANNED_FILE_PASSWORD_PROTECTED",
             "parameters": [
-              { "name": "DEVICE_ID", "value": "win-corp-002" },
-              { "name": "USER_EMAIL", "value": "user@example.com" },
-              { "name": "FILE_NAME", "value": "confidential-data.zip" },
-              { "name": "FILE_TYPE", "value": "application/zip" },
-              { "name": "ENCRYPTION_TYPE", "value": "PASSWORD_PROTECTED" },
-              { "name": "ACTION_TAKEN", "value": "BLOCKED" },
-              { "name": "POLICY_FLAG", "value": "blockPasswordProtectedFiles" },
+              {
+                "name": "DEVICE_ID",
+                "value": "win-corp-002"
+              },
+              {
+                "name": "USER_EMAIL",
+                "value": "user@example.com"
+              },
+              {
+                "name": "FILE_NAME",
+                "value": "confidential-data.zip"
+              },
+              {
+                "name": "FILE_TYPE",
+                "value": "application/zip"
+              },
+              {
+                "name": "ENCRYPTION_TYPE",
+                "value": "PASSWORD_PROTECTED"
+              },
+              {
+                "name": "ACTION_TAKEN",
+                "value": "BLOCKED"
+              },
+              {
+                "name": "POLICY_FLAG",
+                "value": "blockPasswordProtectedFiles"
+              },
               {
                 "name": "ERROR_MESSAGE",
                 "value": "Encrypted ZIP blocked - cannot scan password-protected archives"
@@ -31,13 +52,17 @@
   },
   "connectorPolicies": [
     {
-      "name": "chrome.users.MalwareScanningEnabled",
-      "value": {
-        "malwareScanningEnabled": true,
-        "blockPasswordProtectedFiles": true,
-        "blockUnscannable": true
+      "targetKey": {
+        "targetResource": "orgunits/corp-users"
       },
-      "targetResource": "orgunits/corp-users"
+      "value": {
+        "policySchema": "chrome.users.MalwareScanningEnabled",
+        "value": {
+          "malwareScanningEnabled": true,
+          "blockPasswordProtectedFiles": true,
+          "blockUnscannable": true
+        }
+      }
     }
   ]
 }
