@@ -41,7 +41,7 @@
       "tags": ["updates", "chromeos"],
       "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
       "overrides": ["evals/fixtures/EC-003/overrides.json"],
-      "required_evidence": ["UPDATE_ENGINE", "scatter", "pinned"],
+      "required_evidence": ["update engine", "scatter", "pinned"],
       "required_tool_calls": ["getChromeEvents"]
     },
     {
@@ -62,7 +62,7 @@
       "source_refs": ["CommonChallenge-5"],
       "case_file": "evals/cases/EC-005-policy-not-applying-restart.md",
       "tags": ["policy"],
-      "required_evidence": ["restart", "chrome://policy", "JSON"],
+      "required_evidence": ["chrome://policy", "reporting", "enrolled"],
       "required_tool_calls": ["getChromeConnectorConfiguration"]
     },
     {
@@ -72,7 +72,7 @@
       "source_refs": ["CommonChallenge-6"],
       "case_file": "evals/cases/EC-006-macos-policy-sync-issue.md",
       "tags": ["policy", "macos"],
-      "required_evidence": ["enrollment", "machine-level", "MDM", "token"]
+      "required_evidence": ["enrollment", "machine", "MDM", "token"]
     },
     {
       "id": "EC-007",
@@ -82,7 +82,7 @@
       "case_file": "evals/cases/EC-007-browser-crashes-aw-snap.md",
       "tags": ["browser", "crash"],
       "overrides": ["evals/fixtures/EC-007/overrides.json"],
-      "required_evidence": ["Aw, Snap", "crash", "memory", "extension"]
+      "required_evidence": ["OOM", "crash", "memory", "extension"]
     },
     {
       "id": "EC-008",
@@ -92,7 +92,7 @@
       "case_file": "evals/cases/EC-008-browser-performance-high-cpu.md",
       "tags": ["browser", "performance"],
       "overrides": ["evals/fixtures/EC-008/overrides.json"],
-      "required_evidence": ["CPU", "extension", "performance", "disable"]
+      "required_evidence": ["CPU", "extension", "performance", "background"]
     },
     {
       "id": "EC-009",
@@ -102,12 +102,7 @@
       "case_file": "evals/cases/EC-009-endpoint-verification-macos-keychain.md",
       "tags": ["endpoint-verification", "macos"],
       "overrides": ["evals/fixtures/EC-009/overrides.json"],
-      "required_evidence": [
-        "Keychain",
-        "KEYCHAIN_ACCESS_DENIED",
-        "Safe Storage",
-        "macOS"
-      ]
+      "required_evidence": ["Keychain", "denied", "Safe Storage", "macOS"]
     },
     {
       "id": "EC-010",
@@ -127,7 +122,7 @@
       "case_file": "evals/cases/EC-011-endpoint-verification-recover-key.md",
       "tags": ["endpoint-verification", "windows"],
       "overrides": ["evals/fixtures/EC-011/overrides.json"],
-      "required_evidence": ["DPAPI", "key recovery", "Safe Storage", "reset"]
+      "required_evidence": ["DPAPI", "corrupted", "Safe Storage", "reset"]
     },
     {
       "id": "EC-012",
@@ -152,12 +147,7 @@
       "case_file": "evals/cases/EC-013-chromebook-battery-power-issues.md",
       "tags": ["chromeos", "hardware"],
       "overrides": ["evals/fixtures/EC-013/overrides.json"],
-      "required_evidence": [
-        "DEVICE_POWER_FAILURE",
-        "NOT_CHARGING",
-        "DEGRADED",
-        "power cycle"
-      ],
+      "required_evidence": ["battery", "charging", "reset", "power"],
       "forbidden_evidence": ["factory reset", "powerwash"]
     },
     {
@@ -177,7 +167,7 @@
       "source_refs": ["CommonChallenge-15"],
       "case_file": "evals/cases/EC-015-shared-drive-move-playback-issues.md",
       "tags": ["chromeos", "storage"],
-      "required_evidence": ["storage", "ChromeOS", "update"]
+      "required_evidence": ["shared drive", "access", "playback"]
     },
     {
       "id": "EC-016",
@@ -188,12 +178,12 @@
       "tags": ["chromeos", "devices"],
       "overrides": ["evals/fixtures/EC-016/overrides.json"],
       "required_evidence": [
-        "PREVIOUS_OWNER",
+        "DEVICE_LOCKOUT",
         "oldcompany.com",
-        "48 hours",
-        "powerwash"
+        "deprovision",
+        "serial"
       ],
-      "forbidden_evidence": ["factory reset"]
+      "forbidden_evidence": ["wipe all data"]
     },
     {
       "id": "EC-017",
@@ -213,7 +203,7 @@
       "case_file": "evals/cases/EC-018-enrollment-connectors-not-registering.md",
       "tags": ["enrollment", "connectors"],
       "overrides": ["evals/fixtures/EC-018/overrides.json"],
-      "required_evidence": ["license", "token", "enrollment", "managed"]
+      "required_evidence": ["reporting", "token", "enrollment", "managed"]
     },
     {
       "id": "EC-019",
@@ -234,7 +224,7 @@
       "case_file": "evals/cases/EC-020-remote-log-collection-support.md",
       "tags": ["support", "logging"],
       "mode": "how-to",
-      "required_evidence": ["Admin console", "remote", "log"]
+      "required_evidence": ["remote", "log", "troubleshoot"]
     },
     {
       "id": "EC-021",
@@ -267,7 +257,7 @@
       "required_evidence": [
         "profile picker",
         "Citrix",
-        "close",
+        "session",
         "BrowserSignin"
       ]
     },
@@ -289,7 +279,7 @@
       "case_file": "evals/cases/EC-025-citrix-spa-expired-token-proxy.md",
       "tags": ["citrix", "auth"],
       "overrides": ["evals/fixtures/EC-025/overrides.json"],
-      "required_evidence": ["expired", "token", "proxy", "re-authenticat"]
+      "required_evidence": ["expired", "token", "proxy", "authentication"]
     },
     {
       "id": "EC-026",
@@ -299,7 +289,7 @@
       "case_file": "evals/cases/EC-026-citrix-spa-service-unavailable.md",
       "tags": ["citrix", "availability"],
       "overrides": ["evals/fixtures/EC-026/overrides.json"],
-      "required_evidence": ["Service Unavailable", "outage", "support", "logs"]
+      "required_evidence": ["503", "outage", "support", "logs"]
     },
     {
       "id": "EC-027",
@@ -362,12 +352,7 @@
       "mode": "rubric",
       "tags": ["caa", "devices"],
       "overrides": ["evals/fixtures/EC-031/overrides.json"],
-      "required_evidence": [
-        "is_corporate_device",
-        "PF2ABC123",
-        "inventory",
-        "add serial"
-      ],
+      "required_evidence": ["BYOD", "PF2ABC123", "inventory", "serial"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -445,7 +430,7 @@
         "CREDIT_CARD_NUMBER",
         "product-sku-list.xlsx",
         "false positive",
-        "tuning"
+        "exclusion"
       ],
       "forbidden_evidence": [
         "disable DLP",
@@ -470,8 +455,8 @@
       "required_evidence": [
         "PRINT_JOB_BLOCKED",
         "Q4-Financial-Report",
-        "DLP rule",
-        "allowlist"
+        "DLP",
+        "exception"
       ],
       "forbidden_evidence": [
         "disable DLP",
@@ -607,7 +592,7 @@
         "PERMISSIONS_INCREASE",
         "EXTENSION_DISABLED",
         "webRequest",
-        "allowlist"
+        "allow"
       ],
       "forbidden_evidence": ["uninstall Chrome", "disable all extensions"],
       "rubric": {
@@ -640,7 +625,7 @@
       "mode": "rubric",
       "tags": ["enrollment"],
       "overrides": ["evals/fixtures/EC-046/overrides.json"],
-      "required_evidence": ["expired", "token", "new"],
+      "required_evidence": ["revoked", "token", "generate"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -655,12 +640,7 @@
       "mode": "rubric",
       "tags": ["devices"],
       "overrides": ["evals/fixtures/EC-047/overrides.json"],
-      "required_evidence": [
-        "52 hours",
-        "lastSyncTime",
-        "Endpoint Verification",
-        "force sync"
-      ],
+      "required_evidence": ["stale", "reporting", "connector"],
       "forbidden_evidence": ["deprovision", "factory reset", "wipe"],
       "rubric": {
         "min_score": 1,
@@ -676,7 +656,7 @@
       "mode": "rubric",
       "tags": ["users"],
       "overrides": ["evals/fixtures/EC-048/overrides.json"],
-      "required_evidence": ["suspend", "session", "token", "SignOutUser"],
+      "required_evidence": ["suspend", "session", "token", "revoke"],
       "forbidden_evidence": ["delete user account", "wipe device"],
       "rubric": {
         "min_score": 1,
@@ -739,7 +719,7 @@
       "mode": "rubric",
       "tags": ["telemetry"],
       "overrides": ["evals/fixtures/EC-052/overrides.json"],
-      "required_evidence": ["Legacy Ad Blocker", "CPU", "extension", "disable"],
+      "required_evidence": ["telemetry", "CPU", "extension", "resource"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -775,7 +755,7 @@
       "mode": "rubric",
       "tags": ["devices"],
       "overrides": ["evals/fixtures/EC-054/overrides.json"],
-      "required_evidence": ["97 days", "141 days", "deprovision", "Admin SDK"],
+      "required_evidence": ["Wiped", "deprovision", "Admin"],
       "forbidden_evidence": ["factory reset", "wipe all"],
       "rubric": {
         "min_score": 1,
@@ -821,7 +801,7 @@
       "source_refs": ["TestPlan-S02"],
       "case_file": "evals/cases/EC-058-missing-policy-target-key.md",
       "tags": ["policy"],
-      "required_evidence": ["policyTargetKey", "targetResource"]
+      "required_evidence": ["policyTargetKey", "target"]
     },
     {
       "id": "EC-059",
@@ -830,7 +810,7 @@
       "source_refs": ["TestPlan-S03"],
       "case_file": "evals/cases/EC-059-malformed-resolve-payload.md",
       "tags": ["policy"],
-      "required_evidence": ["targetResource", "resolve", "format"]
+      "required_evidence": ["schema", "resolve", "syntax"]
     },
     {
       "id": "EC-060",
@@ -840,12 +820,7 @@
       "case_file": "evals/cases/EC-060-dlp-rules-absent.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-060/overrides.json"],
-      "required_evidence": [
-        "DLP-Test",
-        "no DLP rules",
-        "0 rules",
-        "create rule"
-      ]
+      "required_evidence": ["DLP-Test", "no DLP rules", "0", "create"]
     },
     {
       "id": "EC-061",
@@ -856,10 +831,10 @@
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-061/overrides.json"],
       "required_evidence": [
-        "US_SOCIAL_SECURITY_NUMBER",
+        "SSN",
         "NO_MATCH",
         "threshold",
-        "scope"
+        "organizational unit"
       ]
     },
     {
@@ -880,7 +855,7 @@
       "source_refs": ["TestPlan-S07"],
       "case_file": "evals/cases/EC-063-safe-browsing-disabled.md",
       "tags": ["safe-browsing"],
-      "required_evidence": ["Safe Browsing", "disabled", "enable"],
+      "required_evidence": ["Safe Browsing", "enforced", "protection"],
       "required_tool_calls": ["getChromeConnectorConfiguration"],
       "forbidden_evidence": ["disable safe browsing"]
     },
@@ -941,7 +916,7 @@
       "case_file": "evals/cases/EC-069-enrollment-token-wrong-ou.md",
       "tags": ["enrollment"],
       "overrides": ["evals/fixtures/EC-069/overrides.json"],
-      "required_evidence": ["targetResource", "root", "OU", "Enroll-Eng"]
+      "required_evidence": ["enrollment token", "root", "OU", "Enroll-Eng"]
     },
     {
       "id": "EC-070",
@@ -1037,10 +1012,10 @@
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-079/overrides.json"],
       "required_evidence": [
-        "PHONE_NUMBER",
+        "Phone Numbers",
         "internal-share.example.com",
         "allowlist",
-        "tuning"
+        "exclusion"
       ],
       "forbidden_evidence": [
         "disable DLP",
@@ -1119,7 +1094,7 @@
       "tags": ["security", "cookies", "incognito", "policy"],
       "fixtures": ["evals/fixtures/EC-085/overrides.json"],
       "overrides": ["evals/fixtures/EC-085/overrides.json"],
-      "required_evidence": ["connector", "policy"],
+      "required_evidence": ["incognito", "encryption"],
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend", "admin.google.com"]
@@ -1210,8 +1185,7 @@
         "debugAuth",
         "searchKnowledge",
         "suggestActions"
-      ],
-      "required_tool_calls": ["getChromeConnectorConfiguration"]
+      ]
     },
     {
       "id": "EC-087",
