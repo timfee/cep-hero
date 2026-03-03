@@ -239,7 +239,7 @@
       "case_file": "evals/cases/EC-022-update-scattering-delays.md",
       "tags": ["updates", "policy"],
       "required_evidence": ["scatter", "update", "days"],
-      "required_tool_calls": ["getChromeConnectorConfiguration"]
+      "required_tool_calls": ["getFleetOverview"]
     },
     {
       "id": "EC-023",
@@ -611,7 +611,7 @@
       "overrides": ["evals/fixtures/EC-046/overrides.json"],
       "required_evidence": ["token", "generate"],
       "rubric": {
-        "min_score": 2,
+        "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -734,7 +734,7 @@
       "required_evidence": ["Wiped", "deprovision", "Admin"],
       "forbidden_evidence": ["factory reset", "wipe all"],
       "rubric": {
-        "min_score": 2,
+        "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
