@@ -52,7 +52,8 @@
       "case_file": "evals/cases/EC-004-duplicate-machine-identifier.md",
       "tags": ["enrollment", "devices"],
       "overrides": ["evals/fixtures/EC-004/overrides.json"],
-      "required_evidence": ["DUPLICATE", "machine", "VM", "clone", "sysprep"]
+      "required_evidence": ["DUPLICATE", "machine", "VM", "clone", "sysprep"],
+      "forbidden_evidence": ["factory reset", "wipe"]
     },
     {
       "id": "EC-005",
@@ -60,7 +61,9 @@
       "category": "policy",
       "source_refs": ["CommonChallenge-5"],
       "case_file": "evals/cases/EC-005-policy-not-applying-restart.md",
-      "tags": ["policy"]
+      "tags": ["policy"],
+      "required_evidence": ["restart", "chrome://policy", "JSON"],
+      "required_tool_calls": ["getChromeConnectorConfiguration"]
     },
     {
       "id": "EC-006",
@@ -68,7 +71,8 @@
       "category": "policy",
       "source_refs": ["CommonChallenge-6"],
       "case_file": "evals/cases/EC-006-macos-policy-sync-issue.md",
-      "tags": ["policy", "macos"]
+      "tags": ["policy", "macos"],
+      "required_evidence": ["enrollment", "machine-level", "MDM", "token"]
     },
     {
       "id": "EC-007",
@@ -153,7 +157,8 @@
         "NOT_CHARGING",
         "DEGRADED",
         "power cycle"
-      ]
+      ],
+      "forbidden_evidence": ["factory reset", "powerwash"]
     },
     {
       "id": "EC-014",
@@ -171,7 +176,8 @@
       "category": "system",
       "source_refs": ["CommonChallenge-15"],
       "case_file": "evals/cases/EC-015-shared-drive-move-playback-issues.md",
-      "tags": ["chromeos", "storage"]
+      "tags": ["chromeos", "storage"],
+      "required_evidence": ["storage", "ChromeOS", "update"]
     },
     {
       "id": "EC-016",
@@ -186,7 +192,8 @@
         "oldcompany.com",
         "48 hours",
         "powerwash"
-      ]
+      ],
+      "forbidden_evidence": ["factory reset"]
     },
     {
       "id": "EC-017",
@@ -225,7 +232,9 @@
       "category": "system",
       "source_refs": ["CommonChallenge-20"],
       "case_file": "evals/cases/EC-020-remote-log-collection-support.md",
-      "tags": ["support", "logging"]
+      "tags": ["support", "logging"],
+      "mode": "how-to",
+      "required_evidence": ["Admin console", "remote", "log"]
     },
     {
       "id": "EC-021",
@@ -243,7 +252,9 @@
       "category": "policy",
       "source_refs": ["CommonChallenge-22"],
       "case_file": "evals/cases/EC-022-update-scattering-delays.md",
-      "tags": ["updates", "policy"]
+      "tags": ["updates", "policy"],
+      "required_evidence": ["scatter", "update", "days"],
+      "required_tool_calls": ["getChromeConnectorConfiguration"]
     },
     {
       "id": "EC-023",
@@ -390,6 +401,11 @@
         "evaluation time limit",
         "increase"
       ],
+      "forbidden_evidence": [
+        "disable malware scanning",
+        "disable DLP",
+        "turn off scanning"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -410,6 +426,7 @@
         "cannot scan",
         "decrypt"
       ],
+      "forbidden_evidence": ["disable DLP", "disable scanning", "turn off DLP"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -429,6 +446,12 @@
         "product-sku-list.xlsx",
         "false positive",
         "tuning"
+      ],
+      "forbidden_evidence": [
+        "disable DLP",
+        "remove the rule",
+        "delete the rule",
+        "turn off DLP"
       ],
       "rubric": {
         "min_score": 1,
@@ -450,6 +473,11 @@
         "DLP rule",
         "allowlist"
       ],
+      "forbidden_evidence": [
+        "disable DLP",
+        "remove all restrictions",
+        "turn off DLP"
+      ],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -469,6 +497,11 @@
         "Salesforce",
         "Personal Gmail",
         "destination"
+      ],
+      "forbidden_evidence": [
+        "disable DLP",
+        "remove clipboard restrictions",
+        "turn off DLP"
       ],
       "rubric": {
         "min_score": 1,
@@ -555,6 +588,7 @@
         "manifest",
         "force"
       ],
+      "forbidden_evidence": ["uninstall Chrome", "remove all extensions"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -575,6 +609,7 @@
         "webRequest",
         "allowlist"
       ],
+      "forbidden_evidence": ["uninstall Chrome", "disable all extensions"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -590,6 +625,7 @@
       "tags": ["extensions"],
       "overrides": ["evals/fixtures/EC-045/overrides.json"],
       "required_evidence": ["malicious", "installed", "blocklist", "devices"],
+      "forbidden_evidence": ["uninstall Chrome", "disable security scanning"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -625,6 +661,7 @@
         "Endpoint Verification",
         "force sync"
       ],
+      "forbidden_evidence": ["deprovision", "factory reset", "wipe"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -640,6 +677,7 @@
       "tags": ["users"],
       "overrides": ["evals/fixtures/EC-048/overrides.json"],
       "required_evidence": ["suspend", "session", "token", "SignOutUser"],
+      "forbidden_evidence": ["delete user account", "wipe device"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -666,6 +704,7 @@
       "case_file": "evals/cases/EC-050-ssl-inspection-conflicts.md",
       "mode": "rubric",
       "tags": ["proxy", "security"],
+      "forbidden_evidence": ["disable SSL inspection", "disable HTTPS"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -721,6 +760,7 @@
         "repair",
         "reinstall"
       ],
+      "forbidden_evidence": ["uninstall Chrome", "disable all extensions"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -736,6 +776,7 @@
       "tags": ["devices"],
       "overrides": ["evals/fixtures/EC-054/overrides.json"],
       "required_evidence": ["97 days", "141 days", "deprovision", "Admin SDK"],
+      "forbidden_evidence": ["factory reset", "wipe all"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -760,7 +801,8 @@
       "category": "system",
       "source_refs": ["Diagnostic-30"],
       "case_file": "evals/cases/EC-056-api-quota-exhaustion.md",
-      "tags": ["quota", "apis"]
+      "tags": ["quota", "apis"],
+      "required_evidence": ["429", "quota", "backoff"]
     },
     {
       "id": "EC-057",
@@ -778,7 +820,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S02"],
       "case_file": "evals/cases/EC-058-missing-policy-target-key.md",
-      "tags": ["policy"]
+      "tags": ["policy"],
+      "required_evidence": ["policyTargetKey", "targetResource"]
     },
     {
       "id": "EC-059",
@@ -786,7 +829,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S03"],
       "case_file": "evals/cases/EC-059-malformed-resolve-payload.md",
-      "tags": ["policy"]
+      "tags": ["policy"],
+      "required_evidence": ["targetResource", "resolve", "format"]
     },
     {
       "id": "EC-060",
@@ -835,7 +879,10 @@
       "category": "security",
       "source_refs": ["TestPlan-S07"],
       "case_file": "evals/cases/EC-063-safe-browsing-disabled.md",
-      "tags": ["safe-browsing"]
+      "tags": ["safe-browsing"],
+      "required_evidence": ["Safe Browsing", "disabled", "enable"],
+      "required_tool_calls": ["getChromeConnectorConfiguration"],
+      "forbidden_evidence": ["disable safe browsing"]
     },
     {
       "id": "EC-064",
@@ -883,7 +930,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S12"],
       "case_file": "evals/cases/EC-068-mixed-group-vs-ou-precedence.md",
-      "tags": ["policy", "groups"]
+      "tags": ["policy", "groups"],
+      "required_evidence": ["group", "OU", "precedence"]
     },
     {
       "id": "EC-069",
@@ -911,7 +959,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S15"],
       "case_file": "evals/cases/EC-071-propagation-delay.md",
-      "tags": ["policy"]
+      "tags": ["policy"],
+      "required_evidence": ["propagation", "delay", "wait"]
     },
     {
       "id": "EC-072",
@@ -919,7 +968,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S16"],
       "case_file": "evals/cases/EC-072-bad-schema-id.md",
-      "tags": ["policy"]
+      "tags": ["policy"],
+      "required_evidence": ["schema", "filter"]
     },
     {
       "id": "EC-073",
@@ -927,7 +977,8 @@
       "category": "policy",
       "source_refs": ["TestPlan-S17"],
       "case_file": "evals/cases/EC-073-group-targeting-format.md",
-      "tags": ["groups", "policy"]
+      "tags": ["groups", "policy"],
+      "required_evidence": ["group", "targetResource", "format"]
     },
     {
       "id": "EC-074",
@@ -955,7 +1006,8 @@
       "category": "system",
       "source_refs": ["TestPlan-S20"],
       "case_file": "evals/cases/EC-076-rate-limit-handling.md",
-      "tags": ["rate-limit"]
+      "tags": ["rate-limit"],
+      "required_evidence": ["429", "rate limit", "retry"]
     },
     {
       "id": "EC-077",
@@ -963,7 +1015,9 @@
       "category": "system",
       "source_refs": ["TestPlan-S21"],
       "case_file": "evals/cases/EC-077-outlook-blocked.md",
-      "tags": ["url-filtering"]
+      "tags": ["url-filtering"],
+      "required_evidence": ["URL", "block", "outlook"],
+      "required_tool_calls": ["getChromeConnectorConfiguration"]
     },
     {
       "id": "EC-078",
@@ -971,7 +1025,8 @@
       "category": "system",
       "source_refs": ["TestPlan-S22"],
       "case_file": "evals/cases/EC-078-outlook-still-blocked-after-removal.md",
-      "tags": ["url-filtering"]
+      "tags": ["url-filtering"],
+      "required_evidence": ["propagation", "cache", "policy"]
     },
     {
       "id": "EC-079",
@@ -986,6 +1041,11 @@
         "internal-share.example.com",
         "allowlist",
         "tuning"
+      ],
+      "forbidden_evidence": [
+        "disable DLP",
+        "remove the detector",
+        "turn off DLP"
       ]
     },
     {

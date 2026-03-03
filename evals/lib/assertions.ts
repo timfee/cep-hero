@@ -80,47 +80,90 @@ function hasExpectedSchema(metadata: unknown, expected: string[]) {
 }
 
 /**
+ * Generic signal words that indicate a diagnostic-style response.
+ */
+const structuralSignals = [
+  "diagnosis",
+  "evidence",
+  "hypothesis",
+  "next",
+  "reference",
+  "found",
+  "issue",
+  "cause",
+  "recommend",
+  "steps",
+  "suggest",
+  "check",
+  "error",
+  "configur",
+  "investigat",
+];
+
+/**
+ * Patterns that indicate an expected section is present in the response text.
+ * Each key maps to an array of regex patterns; matching any one is sufficient.
+ */
+const sectionPatterns: Record<string, RegExp[]> = {
+  diagnosis: [/\bdiagnos[ei]s?\b/, /\broot cause\b/, /\bfinding\b/],
+  evidence: [/\bevidence\b/, /\bfound\b.{0,30}\b(?:event|log|error|data)\b/],
+  hypotheses: [/\bhypothes[ei]s\b/, /\bpossible cause\b/, /\blikely\b/],
+  next_steps: [/\bnext step\b/, /\brecommend\b/, /\baction item\b/],
+  reference: [/\breference\b/, /\bdocumentation\b/],
+};
+
+/**
  * Check if text contains structural signals indicating a valid diagnostic response.
+ * When expected schema keys are provided, validates that matching sections exist.
+ * When no schema is expected, requires a minimum quality bar of signal density.
  */
 function checkStructuredText(
   text: string,
   expected: string[]
 ): AssertionResult {
   const lower = text.toLowerCase();
-  const signals = [
-    "diagnosis",
-    "evidence",
-    "hypothesis",
-    "next",
-    "reference",
-    "found",
-    "issue",
-    "cause",
-    "recommend",
-    "steps",
-    "suggest",
-    "check",
-    "error",
-    "configur",
-    "investigat",
-  ];
-  const matches = signals.filter((signal) => lower.includes(signal)).length;
 
-  if (expected.length === 0 && lower.length > 0) {
-    return { passed: true, message: "Non-empty response" };
+  if (expected.length === 0) {
+    if (lower.length < 50) {
+      return {
+        passed: false,
+        message: `Response too short: length=${lower.length}`,
+      };
+    }
+    const matches = structuralSignals.filter((s) => lower.includes(s)).length;
+    if (matches >= 2) {
+      return {
+        passed: true,
+        message: `Found ${matches} structural signals in text`,
+        details: { matches },
+      };
+    }
+    return {
+      passed: false,
+      message: `Insufficient structure: length=${lower.length}, signals=${matches}`,
+    };
   }
 
-  if (lower.length > 20 && matches >= 1) {
+  const missing = expected.filter((key) => {
+    const patterns = sectionPatterns[key];
+    if (!patterns) {
+      return !lower.includes(key);
+    }
+    return !patterns.some((pattern) => pattern.test(lower));
+  });
+
+  if (missing.length === 0) {
     return {
       passed: true,
-      message: `Found ${matches} structural signals in text`,
-      details: { matches },
+      message: "All expected sections found in text",
+      details: { expected, source: "text" },
     };
   }
 
   return {
     passed: false,
-    message: `Insufficient structure: length=${lower.length}, signals=${matches}`,
+    message: `Missing sections: ${missing.join(", ")}`,
+    details: { expected, missing },
   };
 }
 
