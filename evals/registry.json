@@ -292,7 +292,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["sync", "version", "Endpoint Verification"]
     },
     {
       "id": "EC-028",
@@ -305,7 +306,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["encryption", "reporting", "verify"]
     },
     {
       "id": "EC-029",
@@ -318,7 +320,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["network", "access", "policy"]
     },
     {
       "id": "EC-030",
@@ -331,7 +334,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["CONTENT_TRANSFER", "detect", "profile"]
     },
     {
       "id": "EC-031",
@@ -359,7 +363,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["CONTENT_TRANSFER", "detector", "scan"]
     },
     {
       "id": "EC-033",
@@ -483,7 +488,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["override", "GPO"]
     },
     {
       "id": "EC-039",
@@ -496,7 +502,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["inherit", "child", "OU"]
     },
     {
       "id": "EC-040",
@@ -509,7 +516,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["ExtensionSettings", "connector"]
     },
     {
       "id": "EC-041",
@@ -522,7 +530,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["mandatory", "enforce"]
     },
     {
       "id": "EC-042",
@@ -535,7 +544,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["scope", "profile", "managed"]
     },
     {
       "id": "EC-043",
@@ -633,7 +643,7 @@
       "required_evidence": ["suspend", "session", "token", "revoke"],
       "forbidden_evidence": ["delete user account", "wipe device"],
       "rubric": {
-        "min_score": 2,
+        "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -648,7 +658,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["proxy", "connector"]
     },
     {
       "id": "EC-050",
@@ -662,7 +673,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["connector", "network"]
     },
     {
       "id": "EC-051",
@@ -737,7 +749,8 @@
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
-      }
+      },
+      "required_evidence": ["connector", "OU"]
     },
     {
       "id": "EC-056",

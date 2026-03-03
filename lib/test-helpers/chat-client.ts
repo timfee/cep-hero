@@ -347,13 +347,7 @@ export function callChat(
   prompt: string,
   options?: CallChatMessagesOptions
 ): Promise<ChatResponse> {
-  return callChatMessages(
-    [
-      { role: "system", content: "You are CEP Hero." },
-      { role: "user", content: prompt },
-    ],
-    options
-  );
+  return callChatMessages([{ role: "user", content: prompt }], options);
 }
 
 /**

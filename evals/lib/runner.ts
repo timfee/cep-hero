@@ -176,7 +176,7 @@ interface MultiTurnState {
  */
 function createMultiTurnState(): MultiTurnState {
   return {
-    messages: [{ role: "system", content: "You are CEP Hero." }],
+    messages: [],
     allToolCalls: [],
     allResponses: [],
     turnResults: [],

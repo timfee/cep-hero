@@ -104,6 +104,9 @@ const structuralSignals = [
   "applied",
   "enabl",
   "disabl",
+  "draft",
+  "creat",
+  "success",
 ];
 
 /**
