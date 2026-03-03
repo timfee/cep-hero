@@ -40,8 +40,10 @@ import {
   type EvalReport,
   type EvalSummary,
   buildSummary,
+  compareRuns,
   createRunId,
   formatCaseResult,
+  formatRegressionDiff,
   formatSummary,
   writeEvalReport,
   writeSummaryReport,
@@ -924,6 +926,12 @@ async function finalizeRun(
   const summary = buildSummary(runId, reports, startTime);
   await writeSummaryReport(summary);
   console.log(formatSummary(summary));
+
+  const diff = compareRuns(reports);
+  if (diff) {
+    console.log(formatRegressionDiff(diff));
+  }
+
   return summary;
 }
 

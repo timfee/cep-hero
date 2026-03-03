@@ -4,9 +4,12 @@
 
 import { readFileSync } from "node:fs";
 
+import { stemText } from "./stemmer";
+
 /**
  * Type guard for plain objects (non-array, non-null objects).
  */
+
 export function isPlainObject(
   value: unknown
 ): value is Record<string, unknown> {
@@ -31,6 +34,14 @@ export function normalizeForMatching(text: string): string {
     .replaceAll(/[^\w\s]/g, " ")
     .replaceAll(/\s+/g, " ")
     .trim();
+}
+
+/**
+ * Normalize text with Porter stemming applied after standard cleanup.
+ * Use for A/B comparison against normalizeForMatching to validate stemmer impact.
+ */
+export function normalizeForMatchingStemmed(text: string): string {
+  return stemText(normalizeForMatching(text));
 }
 
 /**

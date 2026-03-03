@@ -117,7 +117,7 @@
       "case_file": "evals/cases/EC-011-endpoint-verification-recover-key.md",
       "tags": ["endpoint-verification", "windows"],
       "overrides": ["evals/fixtures/EC-011/overrides.json"],
-      "required_evidence": ["DPAPI", "Safe Storage", "reset"]
+      "required_evidence": ["DPAPI", "corrupt", "Safe Storage", "reset"]
     },
     {
       "id": "EC-012",
@@ -229,7 +229,7 @@
       "case_file": "evals/cases/EC-021-wifi-deauth-reason-codes.md",
       "tags": ["network", "wifi"],
       "fixtures": ["evals/fixtures/EC-021/eventlog.txt"],
-      "required_evidence": ["reason code", "wifi"]
+      "required_evidence": ["reason code", "handshake"]
     },
     {
       "id": "EC-022",
@@ -290,7 +290,7 @@
       "mode": "rubric",
       "tags": ["caa", "os"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -303,7 +303,7 @@
       "mode": "rubric",
       "tags": ["caa", "encryption"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -316,7 +316,7 @@
       "mode": "rubric",
       "tags": ["caa", "network"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -329,7 +329,7 @@
       "mode": "rubric",
       "tags": ["caa", "profiles"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -344,7 +344,7 @@
       "overrides": ["evals/fixtures/EC-031/overrides.json"],
       "required_evidence": ["BYOD", "PF2ABC123", "inventory", "serial"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -357,7 +357,7 @@
       "mode": "rubric",
       "tags": ["caa", "policy"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -370,14 +370,14 @@
       "mode": "rubric",
       "tags": ["dlp", "malware"],
       "overrides": ["evals/fixtures/EC-033/overrides.json"],
-      "required_evidence": ["CONTENT_UNSCANNED", "timeout"],
+      "required_evidence": ["CONTENT_UNSCANNED", "timeout", "2500"],
       "forbidden_evidence": [
         "disable malware scanning",
         "disable DLP",
         "turn off scanning"
       ],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -390,10 +390,10 @@
       "mode": "rubric",
       "tags": ["dlp", "malware"],
       "overrides": ["evals/fixtures/EC-034/overrides.json"],
-      "required_evidence": ["FILE_PASSWORD_PROTECTED", "confidential"],
+      "required_evidence": ["FILE_PASSWORD_PROTECTED", "password"],
       "forbidden_evidence": ["disable DLP", "disable scanning", "turn off DLP"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -406,7 +406,11 @@
       "mode": "rubric",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-035/overrides.json"],
-      "required_evidence": ["CREDIT_CARD_NUMBER", "false positive"],
+      "required_evidence": [
+        "CREDIT_CARD_NUMBER",
+        "false positive",
+        "exception"
+      ],
       "forbidden_evidence": [
         "disable DLP",
         "remove the rule",
@@ -414,7 +418,7 @@
         "turn off DLP"
       ],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -439,7 +443,7 @@
         "turn off DLP"
       ],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -455,6 +459,7 @@
       "required_evidence": [
         "CLIPBOARD_OPERATION_BLOCKED",
         "Salesforce",
+        "mail.google.com",
         "destination"
       ],
       "forbidden_evidence": [
@@ -463,7 +468,7 @@
         "turn off DLP"
       ],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -476,7 +481,7 @@
       "mode": "rubric",
       "tags": ["policy"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -489,7 +494,7 @@
       "mode": "rubric",
       "tags": ["policy", "ou"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -502,7 +507,7 @@
       "mode": "rubric",
       "tags": ["policy", "json"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -515,7 +520,7 @@
       "mode": "rubric",
       "tags": ["policy"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -528,7 +533,7 @@
       "mode": "rubric",
       "tags": ["policy", "users"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -544,7 +549,7 @@
       "required_evidence": ["CRX_FETCH", "manifest", "force"],
       "forbidden_evidence": ["uninstall Chrome", "remove all extensions"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -565,7 +570,7 @@
       ],
       "forbidden_evidence": ["uninstall Chrome", "disable all extensions"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -581,7 +586,7 @@
       "required_evidence": ["malicious", "installed", "blocklist", "devices"],
       "forbidden_evidence": ["uninstall Chrome", "disable security scanning"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -596,7 +601,7 @@
       "overrides": ["evals/fixtures/EC-046/overrides.json"],
       "required_evidence": ["token", "generate"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -612,7 +617,7 @@
       "required_evidence": ["stale", "report"],
       "forbidden_evidence": ["deprovision", "factory reset", "wipe"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -628,7 +633,7 @@
       "required_evidence": ["suspend", "session", "token", "revoke"],
       "forbidden_evidence": ["delete user account", "wipe device"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -641,7 +646,7 @@
       "mode": "rubric",
       "tags": ["proxy", "network"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -655,7 +660,7 @@
       "tags": ["proxy", "security"],
       "forbidden_evidence": ["disable SSL inspection", "disable HTTPS"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -668,9 +673,9 @@
       "mode": "rubric",
       "tags": ["connectors"],
       "overrides": ["evals/fixtures/EC-051/overrides.json"],
-      "required_evidence": ["TOO_MANY_REQUESTS", "handshake"],
+      "required_evidence": ["503", "TOO_MANY_REQUESTS", "handshake"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -685,7 +690,7 @@
       "overrides": ["evals/fixtures/EC-052/overrides.json"],
       "required_evidence": ["CPU", "extension", "resource"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -698,10 +703,10 @@
       "mode": "rubric",
       "tags": ["extensions"],
       "overrides": ["evals/fixtures/EC-053/overrides.json"],
-      "required_evidence": ["CORRUPTED", "repair", "reinstall"],
+      "required_evidence": ["CORRUPTED", "crash", "reinstall"],
       "forbidden_evidence": ["uninstall Chrome", "disable all extensions"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -717,7 +722,7 @@
       "required_evidence": ["Wiped", "deprovision", "Admin"],
       "forbidden_evidence": ["factory reset", "wipe all"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -730,7 +735,7 @@
       "mode": "rubric",
       "tags": ["connectors", "network"],
       "rubric": {
-        "min_score": 1,
+        "min_score": 2,
         "criteria": ["issue", "evidence", "recommend"]
       }
     },
@@ -769,7 +774,7 @@
       "source_refs": ["TestPlan-S03"],
       "case_file": "evals/cases/EC-059-malformed-resolve-payload.md",
       "tags": ["policy"],
-      "required_evidence": ["schema", "resolve"]
+      "required_evidence": ["schema", "resolve", "invalid"]
     },
     {
       "id": "EC-060",
@@ -789,7 +794,7 @@
       "case_file": "evals/cases/EC-061-dlp-rule-not-firing.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-061/overrides.json"],
-      "required_evidence": ["SSN", "NO_MATCH", "threshold"]
+      "required_evidence": ["SSN", "NO_MATCH", "threshold", "OU"]
     },
     {
       "id": "EC-062",
@@ -880,7 +885,7 @@
       "case_file": "evals/cases/EC-070-enrollment-permission-denied.md",
       "tags": ["enrollment"],
       "overrides": ["evals/fixtures/EC-070/overrides.json"],
-      "required_evidence": ["PERMISSION_DENIED", "admin"]
+      "required_evidence": ["permission", "scope", "admin"]
     },
     {
       "id": "EC-071",
@@ -898,7 +903,7 @@
       "source_refs": ["TestPlan-S16"],
       "case_file": "evals/cases/EC-072-bad-schema-id.md",
       "tags": ["policy"],
-      "required_evidence": ["schema"]
+      "required_evidence": ["schema", "empty"]
     },
     {
       "id": "EC-073",
@@ -936,7 +941,7 @@
       "source_refs": ["TestPlan-S20"],
       "case_file": "evals/cases/EC-076-rate-limit-handling.md",
       "tags": ["rate-limit"],
-      "required_evidence": ["rate limit", "retry"]
+      "required_evidence": ["rate limit", "backoff"]
     },
     {
       "id": "EC-077",
@@ -965,7 +970,7 @@
       "case_file": "evals/cases/EC-079-detector-tuning.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-079/overrides.json"],
-      "required_evidence": ["Phone", "allowlist"],
+      "required_evidence": ["PHONE_NUMBER", "exception"],
       "forbidden_evidence": [
         "disable DLP",
         "remove the detector",
@@ -980,7 +985,7 @@
       "case_file": "evals/cases/EC-080-conflicting-dlp-vs-connector.md",
       "tags": ["dlp", "connectors"],
       "overrides": ["evals/fixtures/EC-080/overrides.json"],
-      "required_evidence": ["DLP", "connector", "bulk"]
+      "required_evidence": ["DLP", "connector", "cover", "bulk"]
     },
     {
       "id": "EC-081",
@@ -1027,7 +1032,7 @@
       "tags": ["dlp", "audit", "policy"],
       "fixtures": ["evals/fixtures/EC-084/overrides.json"],
       "overrides": ["evals/fixtures/EC-084/overrides.json"],
-      "required_evidence": ["dlp"],
+      "required_evidence": ["DLP", "audit", "rule"],
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend", "admin.google.com"]
