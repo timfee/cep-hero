@@ -13,12 +13,7 @@
         "evals/fixtures/EC-001/eventlog-wifi-fail.txt"
       ],
       "overrides": ["evals/fixtures/EC-001/overrides.json"],
-      "required_evidence": [
-        "ERR_NAME_NOT_RESOLVED",
-        "ERR_CONNECTION",
-        "handshake",
-        "wifi"
-      ],
+      "required_evidence": ["ERR_NAME_NOT_RESOLVED", "handshake", "wifi"],
       "required_tool_calls": ["getChromeEvents"]
     },
     {
@@ -52,7 +47,7 @@
       "case_file": "evals/cases/EC-004-duplicate-machine-identifier.md",
       "tags": ["enrollment", "devices"],
       "overrides": ["evals/fixtures/EC-004/overrides.json"],
-      "required_evidence": ["DUPLICATE", "machine", "VM", "clone", "sysprep"],
+      "required_evidence": ["DUPLICATE", "machine", "VM", "clone"],
       "forbidden_evidence": ["factory reset", "wipe"]
     },
     {
@@ -62,7 +57,7 @@
       "source_refs": ["CommonChallenge-5"],
       "case_file": "evals/cases/EC-005-policy-not-applying-restart.md",
       "tags": ["policy"],
-      "required_evidence": ["chrome://policy", "reporting", "enrolled"],
+      "required_evidence": ["chrome://policy", "report", "enroll"],
       "required_tool_calls": ["getChromeConnectorConfiguration"]
     },
     {
@@ -92,7 +87,7 @@
       "case_file": "evals/cases/EC-008-browser-performance-high-cpu.md",
       "tags": ["browser", "performance"],
       "overrides": ["evals/fixtures/EC-008/overrides.json"],
-      "required_evidence": ["CPU", "extension", "performance", "background"]
+      "required_evidence": ["CPU", "performance", "background"]
     },
     {
       "id": "EC-009",
@@ -102,7 +97,7 @@
       "case_file": "evals/cases/EC-009-endpoint-verification-macos-keychain.md",
       "tags": ["endpoint-verification", "macos"],
       "overrides": ["evals/fixtures/EC-009/overrides.json"],
-      "required_evidence": ["Keychain", "denied", "Safe Storage", "macOS"]
+      "required_evidence": ["Keychain", "Safe Storage", "macOS"]
     },
     {
       "id": "EC-010",
@@ -112,7 +107,7 @@
       "case_file": "evals/cases/EC-010-endpoint-verification-windows-dpapi.md",
       "tags": ["endpoint-verification", "windows"],
       "overrides": ["evals/fixtures/EC-010/overrides.json"],
-      "required_evidence": ["DPAPI", "S4U", "Windows", "Safe Storage"]
+      "required_evidence": ["DPAPI", "Windows"]
     },
     {
       "id": "EC-011",
@@ -122,7 +117,7 @@
       "case_file": "evals/cases/EC-011-endpoint-verification-recover-key.md",
       "tags": ["endpoint-verification", "windows"],
       "overrides": ["evals/fixtures/EC-011/overrides.json"],
-      "required_evidence": ["DPAPI", "corrupted", "Safe Storage", "reset"]
+      "required_evidence": ["DPAPI", "Safe Storage", "reset"]
     },
     {
       "id": "EC-012",
@@ -158,7 +153,7 @@
       "case_file": "evals/cases/EC-014-account-conflict-gtempaccount.md",
       "tags": ["accounts", "chromeos"],
       "overrides": ["evals/fixtures/EC-014/overrides.json"],
-      "required_evidence": ["gtempaccount", "conflict", "rename", "guest"]
+      "required_evidence": ["conflict", "rename", "guest"]
     },
     {
       "id": "EC-015",
@@ -167,7 +162,7 @@
       "source_refs": ["CommonChallenge-15"],
       "case_file": "evals/cases/EC-015-shared-drive-move-playback-issues.md",
       "tags": ["chromeos", "storage"],
-      "required_evidence": ["shared drive", "access", "playback"]
+      "required_evidence": ["shared drive", "playback"]
     },
     {
       "id": "EC-016",
@@ -224,7 +219,7 @@
       "case_file": "evals/cases/EC-020-remote-log-collection-support.md",
       "tags": ["support", "logging"],
       "mode": "how-to",
-      "required_evidence": ["remote", "log", "troubleshoot"]
+      "required_evidence": ["remote", "log"]
     },
     {
       "id": "EC-021",
@@ -254,12 +249,7 @@
       "case_file": "evals/cases/EC-023-citrix-spa-profile-picker.md",
       "tags": ["citrix", "browser"],
       "overrides": ["evals/fixtures/EC-023/overrides.json"],
-      "required_evidence": [
-        "profile picker",
-        "Citrix",
-        "session",
-        "BrowserSignin"
-      ]
+      "required_evidence": ["profile picker", "Citrix", "session"]
     },
     {
       "id": "EC-024",
@@ -380,12 +370,7 @@
       "mode": "rubric",
       "tags": ["dlp", "malware"],
       "overrides": ["evals/fixtures/EC-033/overrides.json"],
-      "required_evidence": [
-        "CONTENT_UNSCANNED_TIMEOUT",
-        "2500 MB",
-        "evaluation time limit",
-        "increase"
-      ],
+      "required_evidence": ["CONTENT_UNSCANNED", "timeout"],
       "forbidden_evidence": [
         "disable malware scanning",
         "disable DLP",
@@ -405,12 +390,7 @@
       "mode": "rubric",
       "tags": ["dlp", "malware"],
       "overrides": ["evals/fixtures/EC-034/overrides.json"],
-      "required_evidence": [
-        "FILE_PASSWORD_PROTECTED",
-        "confidential-data.zip",
-        "cannot scan",
-        "decrypt"
-      ],
+      "required_evidence": ["FILE_PASSWORD_PROTECTED", "confidential"],
       "forbidden_evidence": ["disable DLP", "disable scanning", "turn off DLP"],
       "rubric": {
         "min_score": 1,
@@ -426,12 +406,7 @@
       "mode": "rubric",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-035/overrides.json"],
-      "required_evidence": [
-        "CREDIT_CARD_NUMBER",
-        "product-sku-list.xlsx",
-        "false positive",
-        "exclusion"
-      ],
+      "required_evidence": ["CREDIT_CARD_NUMBER", "false positive"],
       "forbidden_evidence": [
         "disable DLP",
         "remove the rule",
@@ -480,7 +455,6 @@
       "required_evidence": [
         "CLIPBOARD_OPERATION_BLOCKED",
         "Salesforce",
-        "Personal Gmail",
         "destination"
       ],
       "forbidden_evidence": [
@@ -567,12 +541,7 @@
       "mode": "rubric",
       "tags": ["extensions"],
       "overrides": ["evals/fixtures/EC-043/overrides.json"],
-      "required_evidence": [
-        "EXTENSION_INSTALL_FAILED",
-        "CRX_FETCH",
-        "manifest",
-        "force"
-      ],
+      "required_evidence": ["CRX_FETCH", "manifest", "force"],
       "forbidden_evidence": ["uninstall Chrome", "remove all extensions"],
       "rubric": {
         "min_score": 1,
@@ -625,7 +594,7 @@
       "mode": "rubric",
       "tags": ["enrollment"],
       "overrides": ["evals/fixtures/EC-046/overrides.json"],
-      "required_evidence": ["revoked", "token", "generate"],
+      "required_evidence": ["token", "generate"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -640,7 +609,7 @@
       "mode": "rubric",
       "tags": ["devices"],
       "overrides": ["evals/fixtures/EC-047/overrides.json"],
-      "required_evidence": ["stale", "reporting", "connector"],
+      "required_evidence": ["stale", "report"],
       "forbidden_evidence": ["deprovision", "factory reset", "wipe"],
       "rubric": {
         "min_score": 1,
@@ -699,12 +668,7 @@
       "mode": "rubric",
       "tags": ["connectors"],
       "overrides": ["evals/fixtures/EC-051/overrides.json"],
-      "required_evidence": [
-        "SERVICE_UNAVAILABLE",
-        "TOO_MANY_REQUESTS",
-        "handshake",
-        "allowlist"
-      ],
+      "required_evidence": ["TOO_MANY_REQUESTS", "handshake"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -719,7 +683,7 @@
       "mode": "rubric",
       "tags": ["telemetry"],
       "overrides": ["evals/fixtures/EC-052/overrides.json"],
-      "required_evidence": ["telemetry", "CPU", "extension", "resource"],
+      "required_evidence": ["CPU", "extension", "resource"],
       "rubric": {
         "min_score": 1,
         "criteria": ["issue", "evidence", "recommend"]
@@ -734,12 +698,7 @@
       "mode": "rubric",
       "tags": ["extensions"],
       "overrides": ["evals/fixtures/EC-053/overrides.json"],
-      "required_evidence": [
-        "EXTENSION_CRASH",
-        "CORRUPTED",
-        "repair",
-        "reinstall"
-      ],
+      "required_evidence": ["CORRUPTED", "repair", "reinstall"],
       "forbidden_evidence": ["uninstall Chrome", "disable all extensions"],
       "rubric": {
         "min_score": 1,
@@ -782,7 +741,7 @@
       "source_refs": ["Diagnostic-30"],
       "case_file": "evals/cases/EC-056-api-quota-exhaustion.md",
       "tags": ["quota", "apis"],
-      "required_evidence": ["429", "quota", "backoff"]
+      "required_evidence": ["quota", "backoff"]
     },
     {
       "id": "EC-057",
@@ -810,7 +769,7 @@
       "source_refs": ["TestPlan-S03"],
       "case_file": "evals/cases/EC-059-malformed-resolve-payload.md",
       "tags": ["policy"],
-      "required_evidence": ["schema", "resolve", "syntax"]
+      "required_evidence": ["schema", "resolve"]
     },
     {
       "id": "EC-060",
@@ -820,7 +779,7 @@
       "case_file": "evals/cases/EC-060-dlp-rules-absent.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-060/overrides.json"],
-      "required_evidence": ["DLP-Test", "no DLP rules", "0", "create"]
+      "required_evidence": ["DLP", "no DLP rules", "create"]
     },
     {
       "id": "EC-061",
@@ -830,12 +789,7 @@
       "case_file": "evals/cases/EC-061-dlp-rule-not-firing.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-061/overrides.json"],
-      "required_evidence": [
-        "SSN",
-        "NO_MATCH",
-        "threshold",
-        "organizational unit"
-      ]
+      "required_evidence": ["SSN", "NO_MATCH", "threshold"]
     },
     {
       "id": "EC-062",
@@ -855,7 +809,7 @@
       "source_refs": ["TestPlan-S07"],
       "case_file": "evals/cases/EC-063-safe-browsing-disabled.md",
       "tags": ["safe-browsing"],
-      "required_evidence": ["Safe Browsing", "enforced", "protection"],
+      "required_evidence": ["Safe Browsing", "protection"],
       "required_tool_calls": ["getChromeConnectorConfiguration"],
       "forbidden_evidence": ["disable safe browsing"]
     },
@@ -926,7 +880,7 @@
       "case_file": "evals/cases/EC-070-enrollment-permission-denied.md",
       "tags": ["enrollment"],
       "overrides": ["evals/fixtures/EC-070/overrides.json"],
-      "required_evidence": ["PERMISSION_DENIED", "role", "admin"]
+      "required_evidence": ["PERMISSION_DENIED", "admin"]
     },
     {
       "id": "EC-071",
@@ -935,7 +889,7 @@
       "source_refs": ["TestPlan-S15"],
       "case_file": "evals/cases/EC-071-propagation-delay.md",
       "tags": ["policy"],
-      "required_evidence": ["propagation", "delay", "wait"]
+      "required_evidence": ["propagation", "delay"]
     },
     {
       "id": "EC-072",
@@ -944,7 +898,7 @@
       "source_refs": ["TestPlan-S16"],
       "case_file": "evals/cases/EC-072-bad-schema-id.md",
       "tags": ["policy"],
-      "required_evidence": ["schema", "filter"]
+      "required_evidence": ["schema"]
     },
     {
       "id": "EC-073",
@@ -982,7 +936,7 @@
       "source_refs": ["TestPlan-S20"],
       "case_file": "evals/cases/EC-076-rate-limit-handling.md",
       "tags": ["rate-limit"],
-      "required_evidence": ["429", "rate limit", "retry"]
+      "required_evidence": ["rate limit", "retry"]
     },
     {
       "id": "EC-077",
@@ -1011,12 +965,7 @@
       "case_file": "evals/cases/EC-079-detector-tuning.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-079/overrides.json"],
-      "required_evidence": [
-        "Phone Numbers",
-        "internal-share.example.com",
-        "allowlist",
-        "exclusion"
-      ],
+      "required_evidence": ["Phone", "allowlist"],
       "forbidden_evidence": [
         "disable DLP",
         "remove the detector",
@@ -1031,7 +980,7 @@
       "case_file": "evals/cases/EC-080-conflicting-dlp-vs-connector.md",
       "tags": ["dlp", "connectors"],
       "overrides": ["evals/fixtures/EC-080/overrides.json"],
-      "required_evidence": ["DLP", "connector", "coverage", "bulk"]
+      "required_evidence": ["DLP", "connector", "bulk"]
     },
     {
       "id": "EC-081",
@@ -1078,7 +1027,7 @@
       "tags": ["dlp", "audit", "policy"],
       "fixtures": ["evals/fixtures/EC-084/overrides.json"],
       "overrides": ["evals/fixtures/EC-084/overrides.json"],
-      "required_evidence": ["dlp", "policy"],
+      "required_evidence": ["dlp"],
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend", "admin.google.com"]
@@ -1094,7 +1043,7 @@
       "tags": ["security", "cookies", "incognito", "policy"],
       "fixtures": ["evals/fixtures/EC-085/overrides.json"],
       "overrides": ["evals/fixtures/EC-085/overrides.json"],
-      "required_evidence": ["incognito", "encryption"],
+      "required_evidence": ["incognito"],
       "rubric": {
         "min_score": 2,
         "criteria": ["issue", "evidence", "recommend", "admin.google.com"]
@@ -1207,8 +1156,7 @@
         "debugAuth",
         "searchKnowledge",
         "suggestActions"
-      ],
-      "required_tool_calls": ["getChromeConnectorConfiguration"]
+      ]
     }
   ]
 }

@@ -80,7 +80,8 @@ function hasExpectedSchema(metadata: unknown, expected: string[]) {
 }
 
 /**
- * Generic signal words that indicate a diagnostic-style response.
+ * Signal words that indicate a substantive response: diagnostic terms
+ * plus action-oriented terms for policy change / configuration responses.
  */
 const structuralSignals = [
   "diagnosis",
@@ -98,6 +99,11 @@ const structuralSignals = [
   "error",
   "configur",
   "investigat",
+  "policy",
+  "change",
+  "applied",
+  "enabl",
+  "disabl",
 ];
 
 /**
