@@ -740,7 +740,8 @@ async function processEvidenceFailures(evidenceFailures: EvalReport[]) {
 }
 
 /**
- * Apply LLM judge phase to re-evaluate evidence failures.
+ * Apply LLM judge phase to re-evaluate evidence failures,
+ * then re-write any upgraded reports so individual files match the summary.
  */
 async function applyLlmJudgePhase(reports: EvalReport[]) {
   const useLlmJudge = process.env.EVAL_LLM_JUDGE !== "0";
@@ -755,6 +756,16 @@ async function applyLlmJudgePhase(reports: EvalReport[]) {
 
   const llmResults = await processEvidenceFailures(evidenceFailures);
   applyLlmResultsToReports(reports, llmResults);
+
+  const upgraded = reports.filter(
+    (r) => llmResults.has(r.caseId) && r.status === "pass"
+  );
+  if (upgraded.length > 0) {
+    console.log(
+      `[eval] Re-writing ${upgraded.length} upgraded reports to disk`
+    );
+    await Promise.all(upgraded.map((r) => writeEvalReport(r)));
+  }
 }
 
 /**

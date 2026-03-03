@@ -218,17 +218,9 @@ export function checkRequiredEvidence({
  * that the response addresses key quality dimensions.
  */
 const rubricSynonyms: Record<string, string[]> = {
-  issue: ["problem", "detect", "show", "indicate", "trigger", "fail", "block"],
-  evidence: ["event", "log", "data", "result", "output", "policy", "rule"],
-  recommend: [
-    "enable",
-    "configure",
-    "suggest",
-    "try",
-    "set up",
-    "apply",
-    "use",
-  ],
+  issue: ["problem", "detect", "indicate", "trigger", "fail", "block"],
+  evidence: ["event", "log", "audit", "policy", "rule", "connector"],
+  recommend: ["enable", "configure", "suggest", "set up", "apply", "enforce"],
 };
 
 /**

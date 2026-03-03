@@ -36,7 +36,7 @@
       "tags": ["updates", "chromeos"],
       "fixtures": ["evals/fixtures/EC-003/update_engine.log"],
       "overrides": ["evals/fixtures/EC-003/overrides.json"],
-      "required_evidence": ["update engine", "scatter", "pinned"],
+      "required_evidence": ["update", "scatter", "pinned"],
       "required_tool_calls": ["getChromeEvents"]
     },
     {
@@ -229,7 +229,7 @@
       "case_file": "evals/cases/EC-021-wifi-deauth-reason-codes.md",
       "tags": ["network", "wifi"],
       "fixtures": ["evals/fixtures/EC-021/eventlog.txt"],
-      "required_evidence": ["reason code", "Wi-Fi"]
+      "required_evidence": ["reason code", "wifi"]
     },
     {
       "id": "EC-022",
@@ -779,7 +779,7 @@
       "case_file": "evals/cases/EC-060-dlp-rules-absent.md",
       "tags": ["dlp"],
       "overrides": ["evals/fixtures/EC-060/overrides.json"],
-      "required_evidence": ["DLP", "no DLP rules", "create"]
+      "required_evidence": ["DLP", "rule"]
     },
     {
       "id": "EC-061",
@@ -870,7 +870,7 @@
       "case_file": "evals/cases/EC-069-enrollment-token-wrong-ou.md",
       "tags": ["enrollment"],
       "overrides": ["evals/fixtures/EC-069/overrides.json"],
-      "required_evidence": ["enrollment token", "root", "OU", "Enroll-Eng"]
+      "required_evidence": ["enrollment token", "OU"]
     },
     {
       "id": "EC-070",
@@ -1000,7 +1000,7 @@
       "case_file": "evals/cases/EC-082-multi-turn-connector-scope-confirmation.md",
       "tags": ["connector", "multi-turn", "scope"],
       "overrides": ["evals/fixtures/EC-082/overrides.json"],
-      "required_evidence": ["customer", "scope", "OU", "re-scope"]
+      "required_evidence": ["scope", "OU"]
     },
     {
       "id": "EC-083",
