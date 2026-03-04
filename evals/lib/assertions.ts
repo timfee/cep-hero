@@ -131,6 +131,7 @@ function checkStructuredText(
   expected: string[]
 ): AssertionResult {
   const lower = text.toLowerCase();
+  const matches = structuralSignals.filter((s) => lower.includes(s)).length;
 
   if (expected.length === 0) {
     if (lower.length < 50) {
@@ -221,9 +222,28 @@ export function checkRequiredEvidence({
  * that the response addresses key quality dimensions.
  */
 const rubricSynonyms: Record<string, string[]> = {
-  issue: ["problem", "detect", "indicate", "trigger", "fail", "block"],
-  evidence: ["event", "log", "audit", "policy", "rule", "connector"],
-  recommend: ["enable", "configure", "suggest", "set up", "apply", "enforce"],
+  issue: ["problem", "detect", "show", "indicate", "trigger", "fail", "block"],
+  evidence: [
+    "event",
+    "log",
+    "audit",
+    "data",
+    "result",
+    "output",
+    "policy",
+    "rule",
+    "connector",
+  ],
+  recommend: [
+    "enable",
+    "configure",
+    "suggest",
+    "try",
+    "set up",
+    "apply",
+    "use",
+    "enforce",
+  ],
 };
 
 /**
