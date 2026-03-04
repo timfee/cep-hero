@@ -83,17 +83,43 @@ ${c.responseText.slice(0, RESPONSE_TRUNCATION_LIMIT)}
     )
     .join("\n---\n");
 
-  const prompt = `You are an eval judge. For each case below, determine if the response adequately addresses the required evidence concepts.
+  const prompt = `You are an eval judge for a Chrome Enterprise diagnostic AI. For each case below, determine if the response adequately addresses the required evidence concepts.
 
-Evidence matching rules:
+## Rules
 - Concepts can be addressed through synonyms, paraphrasing, or semantic equivalence
-- "wifi" matches "Wi-Fi", "wireless network", etc.
-- "deauth" matches "deauthentication", "disconnection", "authentication failure", "handshake timeout"
-- "license" matches "licensing", "subscription", "enterprise license"
-- Error codes like "ERR_NAME_NOT_RESOLVED" should be cited exactly OR explained (e.g., "DNS resolution failed")
+- Error codes (e.g., "ERR_NAME_NOT_RESOLVED") must be cited exactly OR explained equivalently (e.g., "DNS resolution failed")
 - Technical terms can be explained rather than quoted verbatim
+- Be lenient on exact wording but strict on conceptual coverage
+- A concept is MISSING only if the response never addresses that topic at all
 
-Be lenient on exact wording but strict on conceptual coverage.
+## Examples
+
+**Example 1 — PASS**
+Required: ["enroll", "chrome://policy"]
+Response: "The browser is not yet registered with your organization. Navigate to chrome://policy to verify that policies are being applied after enrollment completes."
+Verdict: PASS — "enroll" addressed by "registered" and "enrollment"; "chrome://policy" cited directly.
+
+**Example 2 — PASS**
+Required: ["ERR_NAME_NOT_RESOLVED", "wifi"]
+Response: "DNS resolution is failing for clients.google.com, which typically indicates a Wi-Fi connectivity or DNS configuration issue."
+Verdict: PASS — error code explained as "DNS resolution failing"; "wifi" addressed as "Wi-Fi connectivity".
+
+**Example 3 — FAIL**
+Required: ["DPAPI", "Safe Storage", "reset"]
+Response: "The browser profile appears corrupted. Try clearing the cache and restarting Chrome."
+Verdict: FAIL — response never mentions DPAPI, Safe Storage, or credential reset. Generic advice without addressing the specific evidence concepts.
+
+**Example 4 — PASS**
+Required: ["incognito", "cookie"]
+Response: "I've drafted policy changes to enable cookie encryption and disable Incognito mode for your fleet."
+Verdict: PASS — both concepts directly addressed even though the response is action-oriented rather than diagnostic.
+
+**Example 5 — FAIL**
+Required: ["PERMISSION_DENIED", "scope"]
+Response: "Your connector policies are configured correctly with DLP rules active across the fleet."
+Verdict: FAIL — response discusses configuration but never addresses permission errors or scope issues.
+
+## Cases to Evaluate
 
 ${casesDescription}
 

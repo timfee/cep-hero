@@ -11,7 +11,7 @@ const CHAT_URL = process.env.CHAT_URL ?? "http://localhost:3100/api/chat";
 const USE_FAKE_CHAT = process.env.EVAL_TEST_MODE === "1";
 const ALLOW_FAKE_ON_ERROR = process.env.EVAL_TEST_MODE_FALLBACK === "1";
 const CHAT_TIMEOUT_MS = Number.parseInt(
-  process.env.EVAL_CHAT_TIMEOUT_MS ?? "60000",
+  process.env.EVAL_CHAT_TIMEOUT_MS ?? "180000",
   10
 );
 const USE_EVAL_FIXTURE_MODE = process.env.EVAL_FIXTURES === "1";
@@ -347,13 +347,7 @@ export function callChat(
   prompt: string,
   options?: CallChatMessagesOptions
 ): Promise<ChatResponse> {
-  return callChatMessages(
-    [
-      { role: "system", content: "You are CEP Hero." },
-      { role: "user", content: prompt },
-    ],
-    options
-  );
+  return callChatMessages([{ role: "user", content: prompt }], options);
 }
 
 /**

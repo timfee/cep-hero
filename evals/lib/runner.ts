@@ -40,8 +40,10 @@ import {
   type EvalReport,
   type EvalSummary,
   buildSummary,
+  compareRuns,
   createRunId,
   formatCaseResult,
+  formatRegressionDiff,
   formatSummary,
   writeEvalReport,
   writeSummaryReport,
@@ -174,7 +176,7 @@ interface MultiTurnState {
  */
 function createMultiTurnState(): MultiTurnState {
   return {
-    messages: [{ role: "system", content: "You are CEP Hero." }],
+    messages: [],
     allToolCalls: [],
     allResponses: [],
     turnResults: [],
@@ -740,7 +742,8 @@ async function processEvidenceFailures(evidenceFailures: EvalReport[]) {
 }
 
 /**
- * Apply LLM judge phase to re-evaluate evidence failures.
+ * Apply LLM judge phase to re-evaluate evidence failures,
+ * then re-write any upgraded reports so individual files match the summary.
  */
 async function applyLlmJudgePhase(reports: EvalReport[]) {
   const useLlmJudge = process.env.EVAL_LLM_JUDGE !== "0";
@@ -755,6 +758,16 @@ async function applyLlmJudgePhase(reports: EvalReport[]) {
 
   const llmResults = await processEvidenceFailures(evidenceFailures);
   applyLlmResultsToReports(reports, llmResults);
+
+  const upgraded = reports.filter(
+    (r) => llmResults.has(r.caseId) && r.status === "pass"
+  );
+  if (upgraded.length > 0) {
+    console.log(
+      `[eval] Re-writing ${upgraded.length} upgraded reports to disk`
+    );
+    await Promise.all(upgraded.map((r) => writeEvalReport(r)));
+  }
 }
 
 /**
@@ -785,22 +798,45 @@ function buildEmptySummary(runId: string): EvalSummary {
   };
 }
 
+/** Maximum number of eval cases to run concurrently in parallel mode. */
+const PARALLEL_CONCURRENCY = 3;
+
+/** Pause between parallel batches to let the server recover. */
+const BATCH_PAUSE_MS = 2000;
+
 /**
- * Run cases in parallel.
+ * Run cases in parallel with bounded concurrency to avoid overwhelming the server.
+ * Pauses briefly between batches so the dev server can recover resources.
  */
 async function runCasesParallel(cases: EvalCase[], context: CaseRunContext) {
-  const results = await Promise.allSettled(
-    cases.map(async (evalCase) => {
-      const report = await runCase(evalCase, context);
-      return report;
-    })
-  );
-  return results
-    .filter(
-      (result): result is PromiseFulfilledResult<EvalReport> =>
-        result.status === "fulfilled"
-    )
-    .map((result) => result.value);
+  const reports: EvalReport[] = [];
+  const totalBatches = Math.ceil(cases.length / PARALLEL_CONCURRENCY);
+
+  for (let i = 0; i < cases.length; i += PARALLEL_CONCURRENCY) {
+    const batchIndex = Math.floor(i / PARALLEL_CONCURRENCY) + 1;
+    if (i > 0) {
+      await Bun.sleep(BATCH_PAUSE_MS);
+    }
+    if (totalBatches > 1) {
+      console.log(
+        `[eval] Batch ${batchIndex}/${totalBatches} (${Math.min(PARALLEL_CONCURRENCY, cases.length - i)} cases)`
+      );
+    }
+
+    const batch = cases.slice(i, i + PARALLEL_CONCURRENCY);
+    const results = await Promise.allSettled(
+      batch.map((evalCase) => runCase(evalCase, context))
+    );
+    for (const result of results) {
+      if (result.status === "fulfilled") {
+        reports.push(result.value);
+      } else {
+        console.error(`[eval] Case rejected: ${result.reason}`);
+      }
+    }
+  }
+
+  return reports;
 }
 
 /**
@@ -890,6 +926,12 @@ async function finalizeRun(
   const summary = buildSummary(runId, reports, startTime);
   await writeSummaryReport(summary);
   console.log(formatSummary(summary));
+
+  const diff = compareRuns(reports);
+  if (diff) {
+    console.log(formatRegressionDiff(diff));
+  }
+
   return summary;
 }
 
@@ -901,28 +943,24 @@ interface EvalRunSetup {
 }
 
 /**
- * Initialize an eval run.
+ * Initialize an eval run and select cases in a single pass over the registry.
  */
-function initializeEvalRun(options: RunnerOptions): EvalRunSetup {
+function initializeEvalRun(options: RunnerOptions): {
+  setup: EvalRunSetup;
+  cases: EvalCase[];
+} {
   const resolved = resolveOptions(options);
   const registry = loadEvalRegistry();
   const promptMap = buildPromptMap(registry);
   const runId = createRunId();
   const startTime = performance.now();
-  return { resolved, runId, promptMap, startTime };
-}
-
-/**
- * Select cases to run based on filters.
- */
-function selectCases(resolved: ResolvedOptions) {
-  const registry = loadEvalRegistry();
-  return filterEvalCases(registry.cases, {
+  const cases = filterEvalCases(registry.cases, {
     ids: resolved.ids,
     categories: resolved.categories,
     tags: resolved.tags,
     limit: resolved.limit,
   });
+  return { setup: { resolved, runId, promptMap, startTime }, cases };
 }
 
 /**
@@ -969,8 +1007,7 @@ async function executeEvalRun(
 export async function runEvals(
   options: RunnerOptions = {}
 ): Promise<RunnerResult> {
-  const setup = initializeEvalRun(options);
-  const cases = selectCases(setup.resolved);
+  const { setup, cases } = initializeEvalRun(options);
 
   if (cases.length === 0) {
     console.log("[eval] No cases selected");
