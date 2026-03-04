@@ -2,6 +2,7 @@
  * Eval report generation and output for writing results to disk and formatting console output.
  */
 
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { mkdir, writeFile } from "node:fs/promises";
 import path from "node:path";
 
@@ -268,4 +269,149 @@ export function buildSummary(
     byCategory: accumulator.byCategory,
     failures: accumulator.failures,
   };
+}
+
+export interface RegressionDiff {
+  previousRunId: string;
+  newFailures: string[];
+  newPasses: string[];
+  unchanged: number;
+}
+
+/**
+ * Find the most recent summary file before the given run ID.
+ */
+export function findPreviousRun(
+  reportsDir: string = DEFAULT_REPORTS_DIR,
+  currentRunId?: string
+): string | undefined {
+  if (!existsSync(reportsDir)) {
+    return undefined;
+  }
+
+  const summaries = readdirSync(reportsDir)
+    .filter((f) => f.startsWith("summary-") && f.endsWith(".json"))
+    .toSorted();
+
+  if (currentRunId) {
+    const currentFile = `summary-${currentRunId}.json`;
+    const idx = summaries.indexOf(currentFile);
+    return idx > 0 ? summaries[idx - 1] : undefined;
+  }
+
+  return summaries.length > 0 ? summaries.at(-1) : undefined;
+}
+
+/**
+ * Load case-level statuses from individual reports for a given run ID.
+ */
+function loadCaseStatuses(
+  runId: string,
+  reportsDir: string
+): Map<string, EvalReportStatus> {
+  const statuses = new Map<string, EvalReportStatus>();
+  const suffix = `-${runId}.json`;
+
+  for (const file of readdirSync(reportsDir)) {
+    if (file.startsWith("summary-") || file.startsWith("comprehensive-")) {
+      continue;
+    }
+    if (!file.endsWith(suffix)) {
+      continue;
+    }
+    try {
+      const content = readFileSync(path.join(reportsDir, file), "utf8");
+      const report = JSON.parse(content) as {
+        caseId: string;
+        status: EvalReportStatus;
+      };
+      statuses.set(report.caseId, report.status);
+    } catch {
+      // Skip unreadable reports
+    }
+  }
+
+  return statuses;
+}
+
+/**
+ * Diff current reports against previous case statuses.
+ */
+function diffCaseStatuses(
+  currentReports: EvalReport[],
+  previousStatuses: Map<string, EvalReportStatus>
+): { newFailures: string[]; newPasses: string[]; unchanged: number } {
+  const newFailures: string[] = [];
+  const newPasses: string[] = [];
+  let unchanged = 0;
+
+  for (const report of currentReports) {
+    const prev = previousStatuses.get(report.caseId);
+    if (!prev) {
+      continue;
+    }
+    if (prev === "pass" && report.status !== "pass") {
+      newFailures.push(report.caseId);
+    } else if (prev !== "pass" && report.status === "pass") {
+      newPasses.push(report.caseId);
+    } else {
+      unchanged += 1;
+    }
+  }
+
+  return { newFailures, newPasses, unchanged };
+}
+
+/**
+ * Compare current run results against a previous run and return case-level diffs.
+ */
+export function compareRuns(
+  currentReports: EvalReport[],
+  reportsDir: string = DEFAULT_REPORTS_DIR
+): RegressionDiff | undefined {
+  const currentRunId = currentReports[0]?.runId;
+  if (!currentRunId) {
+    return undefined;
+  }
+
+  const previousSummaryFile = findPreviousRun(reportsDir, currentRunId);
+  if (!previousSummaryFile) {
+    return undefined;
+  }
+
+  const previousRunId = previousSummaryFile
+    .replace("summary-", "")
+    .replace(".json", "");
+  const previousStatuses = loadCaseStatuses(previousRunId, reportsDir);
+
+  if (previousStatuses.size === 0) {
+    return undefined;
+  }
+
+  const { newFailures, newPasses, unchanged } = diffCaseStatuses(
+    currentReports,
+    previousStatuses
+  );
+  return { previousRunId, newFailures, newPasses, unchanged };
+}
+
+/**
+ * Format regression diff for console output.
+ */
+export function formatRegressionDiff(diff: RegressionDiff): string {
+  const lines = ["", `[eval] Regression diff vs ${diff.previousRunId}:`];
+
+  if (diff.newFailures.length > 0) {
+    lines.push(`[eval]   NEW FAILURES: ${diff.newFailures.join(", ")}`);
+  }
+  if (diff.newPasses.length > 0) {
+    lines.push(`[eval]   NEW PASSES:   ${diff.newPasses.join(", ")}`);
+  }
+  lines.push(`[eval]   UNCHANGED:    ${diff.unchanged} cases`);
+
+  if (diff.newFailures.length === 0 && diff.newPasses.length === 0) {
+    lines.push("[eval]   No regressions detected.");
+  }
+
+  return lines.join("\n");
 }
