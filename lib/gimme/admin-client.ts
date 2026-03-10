@@ -100,7 +100,7 @@ export async function makeUserSuperAdmin(
 
       const delay = baseDelay * attempt;
       console.log("[gimme] makeAdmin retry", { userKey, attempt, delay });
-      await Bun.sleep(delay);
+      await new Promise((resolve) => setTimeout(resolve, delay));
     }
   }
 }
