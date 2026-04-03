@@ -2,11 +2,37 @@
 
 Fetches Chrome Enterprise documentation from three sources and saves each document as a markdown file with YAML front matter, ready for RAG ingestion.
 
-## Setup
+## Quickstart
 
 ```bash
-cd rag-content
+# 1. Clone and install
+git clone <repo-url>
+cd cep-hero/rag-content
 npm install
+```
+
+Before fetching, you need fresh browser headers for the help center crawler. Without them, Google's support site will return 429 rate limit errors.
+
+```bash
+# 2. Get fresh headers
+#    a. Open Chrome and sign in to your Google Workspace / corp account
+#    b. Visit https://support.google.com/chrome/a
+#    c. Open DevTools (F12) > Network tab
+#    d. Reload the page
+#    e. Right-click the first document request > Copy > Copy as fetch
+#    f. Open src/fetch-helpcenter.ts and replace the `headers` object
+#       (around line 146) with the headers from the copied fetch call
+
+# 3. Fetch all content
+npm run fetch:all
+```
+
+This will populate three directories with markdown files:
+
+```
+policies/       ~2000+ Chrome Enterprise policy docs
+helpcenter/     Google Support help center articles
+cloud-docs/     Google Cloud Chrome Enterprise Premium docs
 ```
 
 ## Fetchers
