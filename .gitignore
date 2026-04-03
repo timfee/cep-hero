@@ -51,3 +51,10 @@ debug.log
 /yarn.lock
 
 storage
+
+# rag-content generated output
+/rag-content/node_modules/
+/rag-content/policies/
+/rag-content/helpcenter/
+/rag-content/cloud-docs/
+/rag-content/storage/
