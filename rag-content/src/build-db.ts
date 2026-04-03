@@ -129,7 +129,8 @@ function buildDatabase(): void {
   }
 
   const db = new Database(DB_PATH);
-  db.pragma("journal_mode = WAL");
+  db.pragma("journal_mode = DELETE");
+  db.pragma("page_size = 4096");
 
   // Main documents table with all front matter columns
   db.exec(`
@@ -236,8 +237,19 @@ function buildDatabase(): void {
     console.log(`${dir}/: indexed ${rows.length} files`);
   }
 
+  // Drop write-time triggers (DB is read-only after build)
+  db.exec("DROP TRIGGER IF EXISTS documents_ai");
+  db.exec("DROP TRIGGER IF EXISTS documents_ad");
+  db.exec("DROP TRIGGER IF EXISTS documents_au");
+
+  // Optimize FTS index and compact the database file
+  db.exec("INSERT INTO documents_fts(documents_fts) VALUES ('optimize')");
+  db.exec("VACUUM");
+
+  const sizeBytes = fs.statSync(DB_PATH).size;
+  const sizeMB = (sizeBytes / 1024 / 1024).toFixed(1);
   db.close();
-  console.log(`\nDatabase built: ${DB_PATH} (${totalFiles} documents)`);
+  console.log(`\nDatabase built: ${DB_PATH} (${totalFiles} documents, ${sizeMB} MB)`);
 }
 
 /**
