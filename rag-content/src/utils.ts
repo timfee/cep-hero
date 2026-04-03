@@ -13,13 +13,11 @@ import type { RagDocument } from "./types.js";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, "..");
 
-
 export const turndown = new TurndownService({
   headingStyle: "atx",
   codeBlockStyle: "fenced",
   bulletListMarker: "-",
 });
-
 
 /**
  * Convert a string to a safe filesystem slug.
@@ -32,14 +30,12 @@ export function slugify(input: string): string {
     .slice(0, 200);
 }
 
-
 /**
  * Remove "Was this helpful?" trailing section from HTML.
  */
 export function cleanHtml(html: string): string {
   return html.split(/Was this helpful\?/i)[0] || html;
 }
-
 
 /**
  * Normalize a URL to a standard ID format without query parameters or hash.
@@ -52,7 +48,6 @@ export function getStandardId(url: string): string {
     return url;
   }
 }
-
 
 /**
  * Escape a YAML string value, wrapping in quotes if it contains special characters.
@@ -77,7 +72,6 @@ function yamlValue(value: unknown): string {
   return str;
 }
 
-
 /**
  * Serialize a flat metadata object to YAML front matter lines.
  */
@@ -99,9 +93,7 @@ function toFrontMatter(fields: Record<string, unknown>): string {
       }
     } else if (typeof value === "object") {
       lines.push(`${key}:`);
-      for (const [subKey, subValue] of Object.entries(
-        value as Record<string, unknown>,
-      )) {
+      for (const [subKey, subValue] of Object.entries(value as Record<string, unknown>)) {
         if (subValue !== undefined && subValue !== null) {
           lines.push(`  ${subKey}: ${yamlValue(subValue)}`);
         }
@@ -115,7 +107,6 @@ function toFrontMatter(fields: Record<string, unknown>): string {
   return lines.join("\n");
 }
 
-
 /**
  * Remove all files in an output subdirectory and recreate it.
  */
@@ -126,7 +117,6 @@ export function clearOutputDir(subdir: string): void {
   }
   fs.mkdirSync(dir, { recursive: true });
 }
-
 
 /**
  * Write a single RagDocument as a markdown file with YAML front matter.
@@ -147,7 +137,6 @@ export function writeDocument(subdir: string, doc: RagDocument): void {
   const filePath = path.join(dir, `${doc.filename}.md`);
   fs.writeFileSync(filePath, fileContent, "utf-8");
 }
-
 
 /**
  * Clear the output directory and write all documents as markdown files.

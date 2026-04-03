@@ -19,7 +19,6 @@ interface CrawleeError extends Error {
 const MAX_REQUESTS = 500;
 const MAX_CONCURRENCY = 10;
 
-
 /**
  * Extract a clean title from a Cheerio element or URL.
  */
@@ -32,7 +31,6 @@ function extractCleanTitle(element: unknown, url: string): string {
   const match = url.match(/\/(answer|topic)\/(\d+)/);
   return match ? `Article ${match[2]}` : "Untitled";
 }
-
 
 /**
  * Extract helpcenter metadata from a URL.
@@ -52,7 +50,6 @@ function extractHelpcenterMetadata(url: string): {
   return {};
 }
 
-
 /**
  * Parse article type from a URL segment.
  */
@@ -62,7 +59,6 @@ function parseArticleType(value: string | undefined): ArticleType | undefined {
   }
   return undefined;
 }
-
 
 /**
  * Read text content from a Cheerio-like element.
@@ -87,7 +83,6 @@ function getElementText(element: unknown): string | null {
   return null;
 }
 
-
 /**
  * Resolve headers from a fetch options object or headers directly.
  */
@@ -101,20 +96,16 @@ function resolveHeaders(input: unknown): Record<string, string> {
   return {};
 }
 
-
 /**
  * Coerce header values to strings.
  */
-function coerceHeaders(
-  value: Record<string, unknown>,
-): Record<string, string> {
+function coerceHeaders(value: Record<string, unknown>): Record<string, string> {
   return Object.fromEntries(
     Object.entries(value).filter(
       (entry): entry is [string, string] => typeof entry[1] === "string",
     ),
   );
 }
-
 
 /**
  * Type guard for plain objects.
@@ -123,14 +114,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
-
 /**
  * Type guard for Crawlee error objects.
  */
 function isCrawleeError(error: unknown): error is CrawleeError {
   return isRecord(error);
 }
-
 
 /**
  * Generate a safe filename from a help center URL.
@@ -143,14 +132,12 @@ function filenameFromUrl(url: string): string {
   return slugify(new URL(url).pathname);
 }
 
-
 const headers = resolveHeaders({
   accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
   "accept-language": "en-US,en;q=0.9",
   priority: "u=0, i",
-  "sec-ch-ua":
-    '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
+  "sec-ch-ua": '"Not(A:Brand";v="8", "Chromium";v="144", "Google Chrome";v="144"',
   "sec-ch-ua-mobile": "?0",
   "sec-ch-ua-platform": '"macOS"',
   "sec-fetch-dest": "iframe",
@@ -208,7 +195,6 @@ const SEED_URLS = [
   "https://support.google.com/a/topic/9105077",
 ];
 
-
 /**
  * Transform and filter enqueued links to valid help center URLs.
  */
@@ -232,7 +218,6 @@ function transformRequest(req: { url: string }): { url: string } | false {
     return false;
   }
 }
-
 
 /**
  * Crawl Google Support help center and write articles as markdown files.
@@ -290,9 +275,7 @@ corp account to bypass.
       const cleaned = cleanHtml(articleHtml);
 
       if (!/\/(answer|topic)\/(\d+)/.test(request.url)) {
-        console.log(
-          `Topic/category page (no content extraction): ${request.url}`,
-        );
+        console.log(`Topic/category page (no content extraction): ${request.url}`);
         await enqueueLinks({
           globs: ENQUEUE_GLOBS,
           selector: "article a[href]",
@@ -332,7 +315,6 @@ corp account to bypass.
   writeDocuments("helpcenter", documents);
   await crawler.teardown();
 }
-
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);

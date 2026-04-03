@@ -6,7 +6,6 @@ import { main as fetchPolicies } from "./fetch-policies.js";
 import { main as fetchHelpcenter } from "./fetch-helpcenter.js";
 import { main as fetchCloud } from "./fetch-cloud.js";
 
-
 /**
  * Run all content fetchers in sequence.
  */
@@ -22,6 +21,5 @@ async function main(): Promise<void> {
 
   console.log("\n=== All content fetched ===");
 }
-
 
 main().catch(console.error);

@@ -14,7 +14,6 @@ export enum PolicyType {
   StructuredObject = "structured_object",
 }
 
-
 /**
  * JSON Schema structure for policy value validation and documentation.
  */
@@ -32,7 +31,6 @@ export interface Schema {
   sensitiveValue?: boolean;
 }
 
-
 /**
  * A selectable option within an enum-type policy.
  */
@@ -42,7 +40,6 @@ export interface Item {
   name?: string;
   supported_on?: string[];
 }
-
 
 /**
  * Feature flags describing policy behavior characteristics.
@@ -60,7 +57,6 @@ export interface Features {
   metapolicy_type?: string;
 }
 
-
 /**
  * Any valid JSON value for flexible policy field types.
  */
@@ -71,7 +67,6 @@ export type JsonValue =
   | null
   | JsonValue[]
   | { [key: string]: JsonValue };
-
 
 /**
  * A complete Chrome Enterprise policy definition.
@@ -106,7 +101,6 @@ export interface PolicyDefinition {
   default_policy_level?: string;
 }
 
-
 /**
  * A group of related policies treated as an atomic unit for conflict resolution.
  */
@@ -117,7 +111,6 @@ export interface PolicyAtomicGroupDefinition {
   policies: string[];
 }
 
-
 /**
  * A localized message string for UI elements.
  */
@@ -125,12 +118,10 @@ export interface Message {
   text: string;
 }
 
-
 /**
  * Dictionary of all UI messages keyed by identifier.
  */
 export type Messages = Record<string, Message>;
-
 
 /**
  * Top-level policy templates structure containing all definitions.
@@ -140,7 +131,6 @@ export interface PolicyTemplates {
   policy_atomic_group_definitions: PolicyAtomicGroupDefinition[];
   messages: Messages;
 }
-
 
 /**
  * A document to be written as a markdown file with YAML front matter.
@@ -154,7 +144,6 @@ export interface RagDocument {
   metadata: Record<string, unknown>;
 }
 
-
 const PLATFORM_MAP: Record<string, string> = {
   chrome_os: "ChromeOS",
   "chrome.win": "Google Chrome on Windows",
@@ -167,7 +156,6 @@ const PLATFORM_MAP: Record<string, string> = {
   chrome_frame: "Google Chrome Frame",
   fuchsia: "Google Chrome on Fuchsia",
 };
-
 
 /**
  * Parse a single supported_on string into human-readable format.
@@ -189,7 +177,6 @@ export function parseSupportString(supportString: string): string {
   }
   return `${platformName} version ${startVersion}`;
 }
-
 
 /**
  * Convert the supported_on array to a human-readable string.

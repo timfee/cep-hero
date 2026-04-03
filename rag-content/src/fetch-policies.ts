@@ -10,9 +10,7 @@ import {
 } from "./types.js";
 import { slugify, writeDocuments } from "./utils.js";
 
-const API_URL =
-  "https://chromeenterprise.google/static/json/policy_templates_en-US.json";
-
+const API_URL = "https://chromeenterprise.google/static/json/policy_templates_en-US.json";
 
 /**
  * Generate markdown documentation for a single policy.
@@ -53,11 +51,7 @@ function generatePolicyMarkdown(policy: PolicyDefinition): string {
     sections.push("");
   }
 
-  if (
-    typeof policy.type === "string" ||
-    policy.schema !== undefined ||
-    policy.items?.length
-  ) {
+  if (typeof policy.type === "string" || policy.schema !== undefined || policy.items?.length) {
     sections.push("## Configuration");
     sections.push("");
 
@@ -125,7 +119,6 @@ function generatePolicyMarkdown(policy: PolicyDefinition): string {
   return sections.join("\n");
 }
 
-
 /**
  * Type guard for the policy templates API response.
  */
@@ -136,7 +129,6 @@ function isPolicyTemplates(value: unknown): value is PolicyTemplates {
   const record = value as Record<string, unknown>;
   return Array.isArray(record.policy_definitions);
 }
-
 
 /**
  * Fetch all Chrome Enterprise policies and write them as markdown files.
@@ -183,12 +175,9 @@ export async function main(): Promise<void> {
     };
   });
 
-  console.log(
-    `Generated ${documents.length} policy documents with rich metadata`,
-  );
+  console.log(`Generated ${documents.length} policy documents with rich metadata`);
   writeDocuments("policies", documents);
 }
-
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);

@@ -10,7 +10,6 @@ import { getStandardId, slugify, turndown, writeDocuments } from "./utils.js";
 const MAX_REQUESTS = 500;
 const MAX_CONCURRENCY = 10;
 
-
 /**
  * Generate a safe filename from a cloud docs URL path.
  */
@@ -21,7 +20,6 @@ function filenameFromUrl(url: string): string {
     .replace(/\/$/, "");
   return slugify(pathAfterPrefix) || "index";
 }
-
 
 /**
  * Crawl Google Cloud Chrome Enterprise Premium docs and write as markdown files.
@@ -67,9 +65,8 @@ export async function main(): Promise<void> {
         const pathSegments = urlPath.split("/").filter(Boolean);
         const lastSegment = pathSegments.at(-1) ?? "";
         title =
-          lastSegment
-            .replaceAll("-", " ")
-            .replaceAll(/\b\w/g, (l) => l.toUpperCase()) || "Untitled";
+          lastSegment.replaceAll("-", " ").replaceAll(/\b\w/g, (l) => l.toUpperCase()) ||
+          "Untitled";
       }
 
       const content = turndown.turndown(articleHtml);
@@ -85,9 +82,7 @@ export async function main(): Promise<void> {
         });
         console.log(`Crawled: ${title}`);
       } else {
-        console.log(
-          `Skipping page with insufficient content: ${request.url}`,
-        );
+        console.log(`Skipping page with insufficient content: ${request.url}`);
       }
 
       await enqueueLinks({
@@ -120,14 +115,11 @@ export async function main(): Promise<void> {
   });
 
   console.log("Starting cloud docs crawler...");
-  await crawler.run([
-    "https://cloud.google.com/chrome-enterprise-premium/docs/overview",
-  ]);
+  await crawler.run(["https://cloud.google.com/chrome-enterprise-premium/docs/overview"]);
 
   writeDocuments("cloud-docs", documents);
   await crawler.teardown();
 }
-
 
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);
