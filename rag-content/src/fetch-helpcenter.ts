@@ -132,6 +132,17 @@ function filenameFromUrl(url: string): string {
   return slugify(new URL(url).pathname);
 }
 
+// ============================================================================
+// IMPORTANT: Update these headers before each crawl run to avoid 429 rate limits.
+//
+// To get fresh headers:
+//   1. Open https://support.google.com/chrome/a in Chrome (logged into a corp account)
+//   2. Open DevTools > Network tab
+//   3. Right-click the initial page request > "Copy as fetch"
+//   4. Paste here and extract the headers object
+//
+// Stale headers will result in 429 Too Many Requests errors.
+// ============================================================================
 const headers = resolveHeaders({
   accept:
     "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
@@ -223,6 +234,18 @@ function transformRequest(req: { url: string }): { url: string } | false {
  * Crawl Google Support help center and write articles as markdown files.
  */
 export async function main(): Promise<void> {
+  console.log(`
+================================================================
+  REMINDER: Before running, ensure the headers in this file
+  are fresh. Stale headers will cause 429 rate limit errors.
+
+  To refresh:
+    1. Visit https://support.google.com/chrome/a (corp account)
+    2. DevTools > Network > right-click page request > Copy as fetch
+    3. Update the "headers" object in src/fetch-helpcenter.ts
+================================================================
+`);
+
   const documents: RagDocument[] = [];
   const INSTRUCTION_MESSAGE = `
 TOO MANY REQUESTS (429) DETECTED
