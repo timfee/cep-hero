@@ -160,6 +160,34 @@ The `curated/` directory is for manually authored markdown files. Same format as
 
 The database is rebuilt from scratch on each run (idempotent, same as the fetchers).
 
+## MCP Server
+
+The database can be exposed as an MCP tool server for any compatible agent:
+
+```bash
+npm run serve
+```
+
+This starts a stdio-based MCP server with three tools:
+
+- **`searchContent`** — full-text search across all content. Supports FTS5 query syntax (plain words, `"quoted phrases"`, `AND`/`OR`/`NOT`, column filters like `kind:policies`). Returns title, URL, kind, and a highlighted content snippet.
+- **`getDocument`** — retrieve the full content of a specific document by kind and filename. Use after `searchContent` to read a complete result.
+- **`listDocuments`** — list documents in a directory, or get counts per kind.
+
+To wire it into Claude Code, add to your MCP settings:
+
+```json
+{
+  "mcpServers": {
+    "rag-content": {
+      "command": "npx",
+      "args": ["tsx", "src/serve.ts"],
+      "cwd": "/path/to/rag-content"
+    }
+  }
+}
+```
+
 ## Idempotency
 
 Every fetcher clears its entire output directory before writing. Re-running produces a clean set of files with no stale leftovers. Safe to run on a schedule or re-run at any time.

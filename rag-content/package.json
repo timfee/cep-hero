@@ -9,6 +9,7 @@
     "fetch:cloud": "tsx src/fetch-cloud.ts",
     "fetch:all": "tsx src/fetch-all.ts",
     "build:db": "tsx src/build-db.ts",
+    "serve": "tsx src/serve.ts",
     "lint": "eslint src/",
     "lint:fix": "eslint src/ --fix",
     "format": "prettier --write src/",
@@ -17,9 +18,11 @@
     "fix": "npm run format && npm run lint:fix"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "better-sqlite3": "^12.8.0",
     "crawlee": "^3.15.3",
-    "turndown": "^7.2.2"
+    "turndown": "^7.2.2",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
