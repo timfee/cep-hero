@@ -117,7 +117,7 @@ The help center crawler (`fetch:helpcenter`) sends browser-like HTTP headers wit
 5. Extract the `headers` object from the copied fetch call
 6. Replace the `headers` constant in `src/fetch-helpcenter.ts` with the new values
 
-The script prints a reminder banner every time it starts. If you see 429 errors during a crawl, stale headers are almost always the cause.
+If the crawler hits 429 errors, it will print a detailed warning at the end of the run with these same instructions. Stale headers are almost always the cause.
 
 The policies fetcher and cloud docs fetcher do **not** need header updates — they use standard unauthenticated requests.
 

@@ -234,31 +234,8 @@ function transformRequest(req: { url: string }): { url: string } | false {
  * Crawl Google Support help center and write articles as markdown files.
  */
 export async function main(): Promise<void> {
-  console.log(`
-================================================================
-  REMINDER: Before running, ensure the headers in this file
-  are fresh. Stale headers will cause 429 rate limit errors.
-
-  To refresh:
-    1. Visit https://support.google.com/chrome/a (corp account)
-    2. DevTools > Network > right-click page request > Copy as fetch
-    3. Update the "headers" object in src/fetch-helpcenter.ts
-================================================================
-`);
-
   const documents: RagDocument[] = [];
-  const INSTRUCTION_MESSAGE = `
-TOO MANY REQUESTS (429) DETECTED
-
-Rate limiting typically occurs when off-corp and not logged in. Log in to a
-corp account to bypass.
-
-1. Visit https://support.google.com from your corp account.
-2. Resolve any captcha, refresh.
-3. Open dev tools -> Network tab.
-4. Right click the page request -> Copy as Fetch.
-5. Paste the headers into the 'headers' constant in src/fetch-helpcenter.ts.
-`;
+  let hit429 = false;
 
   const crawler = new CheerioCrawler({
     maxRequestsPerCrawl: MAX_REQUESTS,
@@ -276,7 +253,7 @@ corp account to bypass.
       const statusCode = error?.response?.statusCode ?? error?.statusCode;
 
       if (statusCode === 429) {
-        console.error(INSTRUCTION_MESSAGE);
+        hit429 = true;
       }
       console.log(`Failed to crawl: ${request.url}`);
     },
@@ -284,7 +261,7 @@ corp account to bypass.
     async requestHandler(context: CheerioCrawlingContext) {
       const { request, response, $, enqueueLinks } = context;
       if (response.statusCode === 429) {
-        console.error(INSTRUCTION_MESSAGE);
+        hit429 = true;
         return;
       }
 
@@ -337,6 +314,26 @@ corp account to bypass.
 
   writeDocuments("helpcenter", documents);
   await crawler.teardown();
+
+  if (hit429) {
+    console.error(`
+================================================================
+  429 TOO MANY REQUESTS errors were encountered during this run.
+  Your results are likely incomplete.
+
+  The headers in src/fetch-helpcenter.ts are probably stale.
+  To fix this:
+
+    1. Open Chrome and sign in to your Google Workspace / corp account
+    2. Visit https://support.google.com/chrome/a
+    3. Open DevTools (F12) > Network tab
+    4. Right-click the first page request > Copy > Copy as fetch
+    5. Replace the "headers" object in src/fetch-helpcenter.ts
+       with the headers from the copied fetch call
+    6. Re-run this script
+================================================================
+`);
+  }
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

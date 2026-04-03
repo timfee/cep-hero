@@ -2,6 +2,7 @@
  * Shared utilities for RAG content generation: file writing, slugification, and HTML conversion.
  */
 
+import { execSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -139,7 +140,23 @@ export function writeDocument(subdir: string, doc: RagDocument): void {
 }
 
 /**
- * Clear the output directory and write all documents as markdown files.
+ * Run prettier against all markdown files in an output subdirectory.
+ */
+function formatMarkdown(subdir: string): void {
+  const dir = path.join(ROOT, subdir);
+  try {
+    execSync(`npx prettier --write "${dir}/**/*.md"`, {
+      cwd: ROOT,
+      stdio: "pipe",
+    });
+    console.log(`Formatted ${subdir}/ with prettier`);
+  } catch {
+    console.warn(`Warning: prettier formatting failed for ${subdir}/, skipping`);
+  }
+}
+
+/**
+ * Clear the output directory, write all documents as markdown files, then format them.
  */
 export function writeDocuments(subdir: string, docs: RagDocument[]): void {
   clearOutputDir(subdir);
@@ -147,4 +164,5 @@ export function writeDocuments(subdir: string, docs: RagDocument[]): void {
     writeDocument(subdir, doc);
   }
   console.log(`Wrote ${docs.length} files to ${subdir}/`);
+  formatMarkdown(subdir);
 }
