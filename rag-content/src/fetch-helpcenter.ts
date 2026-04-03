@@ -9,13 +9,6 @@ import { cleanHtml, getStandardId, slugify, turndown, writeDocuments } from "./u
 
 type ArticleType = "answer" | "topic";
 
-interface CrawleeError extends Error {
-  statusCode?: number;
-  response?: {
-    statusCode?: number;
-  };
-}
-
 const MAX_REQUESTS = 500;
 const MAX_CONCURRENCY = 10;
 
@@ -112,13 +105,6 @@ function coerceHeaders(value: Record<string, unknown>): Record<string, string> {
  */
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
-}
-
-/**
- * Type guard for Crawlee error objects.
- */
-function isCrawleeError(error: unknown): error is CrawleeError {
-  return isRecord(error);
 }
 
 /**
@@ -249,20 +235,26 @@ export async function main(): Promise<void> {
     ],
 
     failedRequestHandler({ request, error: rawError }) {
-      const error = isCrawleeError(rawError) ? rawError : undefined;
-      const statusCode = error?.response?.statusCode ?? error?.statusCode;
-
-      if (statusCode === 429) {
+      const message = String(rawError);
+      if (message.includes("429") || message.includes("Too Many")) {
         hit429 = true;
       }
       console.log(`Failed to crawl: ${request.url}`);
+    },
+
+    errorHandler({ request, error: rawError }) {
+      const message = String(rawError);
+      if (message.includes("429") || message.includes("Too Many")) {
+        hit429 = true;
+        console.log(`Rate limited (429): ${request.url}`);
+      }
     },
 
     async requestHandler(context: CheerioCrawlingContext) {
       const { request, response, $, enqueueLinks } = context;
       if (response.statusCode === 429) {
         hit429 = true;
-        return;
+        throw new Error(`429 Too Many Requests: ${request.url}`);
       }
 
       const url = new URL(request.url);
