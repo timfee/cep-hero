@@ -121,6 +121,45 @@ If the crawler hits 429 errors, it will print a detailed warning at the end of t
 
 The policies fetcher and cloud docs fetcher do **not** need header updates — they use standard unauthenticated requests.
 
+## Building the Database
+
+Once you've fetched content, build a SQLite database with full-text search:
+
+```bash
+npm run build:db
+```
+
+This reads all `.md` files from `policies/`, `helpcenter/`, `cloud-docs/`, and `curated/`, parses their front matter and body, and writes `rag-content.db`.
+
+The database has two tables:
+
+- **`documents`** — one row per markdown file with front matter fields as columns, the markdown body as `content`, and a `kind` column (the source directory name)
+- **`documents_fts`** — an FTS5 virtual table for full-text search over `title`, `content`, and `kind`, using the Porter stemmer
+
+Query examples:
+
+```sql
+-- Full-text search
+SELECT d.title, d.url, d.kind, rank
+FROM documents_fts f
+JOIN documents d ON d.id = f.rowid
+WHERE documents_fts MATCH 'password policy'
+ORDER BY rank;
+
+-- Filter by kind
+SELECT title, url FROM documents WHERE kind = 'policies' AND deprecated = 0;
+
+-- Search within a specific kind
+SELECT d.title, d.url
+FROM documents_fts f
+JOIN documents d ON d.id = f.rowid
+WHERE documents_fts MATCH 'kind:policies password';
+```
+
+The `curated/` directory is for manually authored markdown files. Same format as the fetched content — YAML front matter with at least `title`, then markdown body. They'll be indexed alongside everything else with `kind = "curated"`.
+
+The database is rebuilt from scratch on each run (idempotent, same as the fetchers).
+
 ## Idempotency
 
 Every fetcher clears its entire output directory before writing. Re-running produces a clean set of files with no stale leftovers. Safe to run on a schedule or re-run at any time.

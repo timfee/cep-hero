@@ -57,4 +57,6 @@ storage
 /rag-content/policies/
 /rag-content/helpcenter/
 /rag-content/cloud-docs/
+/rag-content/curated/
+/rag-content/*.db
 /rag-content/storage/
