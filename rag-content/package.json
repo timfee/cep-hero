@@ -1,0 +1,38 @@
+{
+  "name": "cep-hero-rag-content",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "fetch:policies": "tsx src/fetch-policies.ts",
+    "fetch:helpcenter": "tsx src/fetch-helpcenter.ts",
+    "fetch:cloud": "tsx src/fetch-cloud.ts",
+    "fetch:all": "tsx src/fetch-all.ts",
+    "build:db": "tsx src/build-db.ts",
+    "serve": "tsx src/serve.ts",
+    "lint": "eslint src/",
+    "lint:fix": "eslint src/ --fix",
+    "format": "prettier --write src/",
+    "format:check": "prettier --check src/",
+    "check": "npm run format:check && npm run lint && tsc --noEmit",
+    "fix": "npm run format && npm run lint:fix"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "better-sqlite3": "^12.8.0",
+    "crawlee": "^3.15.3",
+    "turndown": "^7.2.2",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/better-sqlite3": "^7.6.13",
+    "@types/node": "^25.2.1",
+    "@types/turndown": "^5.0.6",
+    "eslint": "^10.1.0",
+    "prettier": "^3.8.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.58.0"
+  }
+}

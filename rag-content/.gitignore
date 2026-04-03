@@ -1,0 +1,10 @@
+node_modules/
+policies/
+helpcenter/
+cloud-docs/
+curated/
+storage/
+*.db
+*.db-shm
+*.db-wal
+*.db-journal
