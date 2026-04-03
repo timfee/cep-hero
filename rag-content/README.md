@@ -1,8 +1,6 @@
 # rag-content
 
-Standalone tool that fetches Chrome Enterprise documentation and saves it as markdown files with YAML front matter. Designed for RAG (Retrieval-Augmented Generation) pipelines.
-
-100% independent from the main cep-hero application — runs with npm and tsx, no Bun required.
+Fetches Chrome Enterprise documentation from three sources and saves each document as a markdown file with YAML front matter, ready for RAG ingestion.
 
 ## Setup
 
@@ -11,74 +9,101 @@ cd rag-content
 npm install
 ```
 
-## Usage
+## Fetchers
 
-```bash
-# Fetch everything
-npm run fetch:all
+### `npm run fetch:policies`
 
-# Or fetch individually
-npm run fetch:policies      # Chrome Enterprise policy definitions
-npm run fetch:helpcenter    # Google Support help center articles
-npm run fetch:cloud         # Google Cloud Chrome Enterprise Premium docs
-```
+Fetches the [Chrome Enterprise policy templates JSON](https://chromeenterprise.google/static/json/policy_templates_en-US.json) — a single public API call, no authentication needed. Generates one markdown file per policy (~2000+) with full metadata including supported platforms, feature flags, configuration type, example values, and tags.
 
-## Output
-
-Each fetcher writes markdown files to its own output directory:
-
-```
-rag-content/
-  policies/          # ~2000+ policy .md files
-  helpcenter/        # help center article .md files
-  cloud-docs/        # cloud documentation .md files
-```
-
-Every file includes YAML front matter:
+**Output:** `policies/<policy-name>.md`
 
 ```yaml
 ---
 title: Allow Dinosaur Easter Egg
 url: https://chromeenterprise.google/policies/#AllowDinosaurEasterEgg
 kind: chrome-enterprise-policy
-fetchedAt: 2026-04-03T00:00:00.000Z
+fetchedAt: 2026-04-03T12:00:00.000Z
 policyId: 196
 policyName: AllowDinosaurEasterEgg
 deprecated: false
+deviceOnly: false
+supportedPlatformsText: Google Chrome on Windows version 48 and later, ...
 tags:
   - system
+features:
+  dynamicRefresh: true
+  perProfile: true
+  canBeRecommended: true
+  canBeMandatory: true
+  cloudOnly: false
+  userOnly: false
 ---
-
-# Allow Dinosaur Easter Egg
-...
 ```
 
-Output directories are gitignored. Runs are **idempotent** — each fetch clears its output directory before writing, so re-runs never accumulate stale files.
+### `npm run fetch:helpcenter`
 
-## Content Sources
+Crawls Google Support help center articles for Chrome Enterprise admin documentation. Uses [Crawlee](https://crawlee.dev/) with CheerioCrawler to spider from a set of seed URLs, following links within `support.google.com/chrome/a` and `support.google.com/a`. Extracts article HTML and converts to markdown via Turndown.
 
-| Fetcher | Source | Output |
-|---------|--------|--------|
-| `fetch:policies` | [Chrome Enterprise policy JSON](https://chromeenterprise.google/static/json/policy_templates_en-US.json) | `policies/<policy-name>.md` |
-| `fetch:helpcenter` | Google Support help center crawl | `helpcenter/answer-<id>.md` |
-| `fetch:cloud` | Google Cloud docs crawl | `cloud-docs/<slug>.md` |
+**Output:** `helpcenter/answer-<id>.md` or `helpcenter/topic-<id>.md`
 
-## Help Center: Updating Headers
+```yaml
+---
+title: Set Chrome policies for users or browsers
+url: https://support.google.com/chrome/a/answer/9037717
+kind: admin-docs
+fetchedAt: 2026-04-03T12:00:00.000Z
+articleType: answer
+articleId: "9037717"
+---
+```
 
-The help center crawler requires fresh browser headers to avoid 429 rate limits. **Update headers before each run:**
+> **This fetcher requires fresh browser headers.** See [Updating Headers](#updating-headers-before-crawling) below.
 
-1. Open https://support.google.com/chrome/a in Chrome (logged into a corp account)
-2. Open DevTools > Network tab
-3. Right-click the initial page request > **Copy as fetch**
-4. Replace the `headers` object in `src/fetch-helpcenter.ts` with the copied values
+### `npm run fetch:cloud`
 
-The script prints a reminder banner on each run. If you hit 429 errors, this is almost always the fix.
+Crawls Google Cloud documentation for Chrome Enterprise Premium, starting from the [overview page](https://cloud.google.com/chrome-enterprise-premium/docs/overview) and following links within the `/chrome-enterprise-premium/` path. Extracts content from `.devsite-article-body` elements and converts to markdown.
+
+**Output:** `cloud-docs/<path-slug>.md`
+
+```yaml
+---
+title: Chrome Enterprise Premium overview
+url: https://cloud.google.com/chrome-enterprise-premium/docs/overview
+kind: cloud-docs
+fetchedAt: 2026-04-03T12:00:00.000Z
+---
+```
+
+### `npm run fetch:all`
+
+Runs all three fetchers in sequence.
+
+## Updating Headers Before Crawling
+
+The help center crawler (`fetch:helpcenter`) sends browser-like HTTP headers with each request. Google's support site rate-limits requests that don't look like real browser traffic, returning **429 Too Many Requests**. The headers hardcoded in `src/fetch-helpcenter.ts` will go stale over time as Google rotates what it expects.
+
+**You must update these headers before each crawl run:**
+
+1. Open https://support.google.com/chrome/a in Chrome, logged into a corp/workspace account
+2. Open DevTools > **Network** tab
+3. Reload the page
+4. Right-click the first document request > **Copy** > **Copy as fetch**
+5. Extract the `headers` object from the copied fetch call
+6. Replace the `headers` constant in `src/fetch-helpcenter.ts` with the new values
+
+The script prints a reminder banner every time it starts. If you see 429 errors during a crawl, stale headers are almost always the cause.
+
+The policies fetcher and cloud docs fetcher do **not** need header updates — they use standard unauthenticated requests.
+
+## Idempotency
+
+Every fetcher clears its entire output directory before writing. Re-running produces a clean set of files with no stale leftovers. Safe to run on a schedule or re-run at any time.
 
 ## Development
 
 ```bash
-npm run check          # format check + lint + typecheck
-npm run fix            # auto-fix format + lint issues
-npm run lint           # eslint only
-npm run format         # prettier only
+npm run check     # prettier check + eslint + tsc --noEmit
+npm run fix       # auto-fix formatting and lint issues
+npm run lint      # eslint only
+npm run format    # prettier only
 ```
