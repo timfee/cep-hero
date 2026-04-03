@@ -20,6 +20,8 @@ export const turndown = new TurndownService({
   bulletListMarker: "-",
 });
 
+turndown.remove(["style", "script", "noscript"]);
+
 /**
  * Convert a string to a safe filesystem slug.
  */
