@@ -5,3 +5,6 @@ cloud-docs/
 curated/
 storage/
 *.db
+*.db-shm
+*.db-wal
+*.db-journal
