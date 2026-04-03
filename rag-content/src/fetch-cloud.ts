@@ -2,7 +2,7 @@
  * Crawls Google Cloud Chrome Enterprise Premium documentation and writes as markdown files.
  */
 
-import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
+import { CheerioCrawler, Configuration, type CheerioCrawlingContext } from "crawlee";
 
 import type { RagDocument } from "./types.js";
 import { getStandardId, slugify, turndown, writeDocuments } from "./utils.js";
@@ -27,92 +27,99 @@ function filenameFromUrl(url: string): string {
 export async function main(): Promise<void> {
   const documents: RagDocument[] = [];
 
-  const crawler = new CheerioCrawler({
-    maxRequestsPerCrawl: MAX_REQUESTS,
-    maxConcurrency: MAX_CONCURRENCY,
+  const config = new Configuration({
+    persistStorage: false,
+  });
 
-    preNavigationHooks: [
-      (_, gotOptions) => {
-        gotOptions.http2 = false;
-      },
-    ],
+  const crawler = new CheerioCrawler(
+    {
+      maxRequestsPerCrawl: MAX_REQUESTS,
+      maxConcurrency: MAX_CONCURRENCY,
 
-    async requestHandler(context: CheerioCrawlingContext) {
-      const { request, $, enqueueLinks } = context;
-      const articleHtml = $("div.devsite-article-body").html() ?? "";
-      const articleId = getStandardId(request.url);
+      preNavigationHooks: [
+        (_, gotOptions) => {
+          gotOptions.http2 = false;
+        },
+      ],
 
-      let title = "";
+      async requestHandler(context: CheerioCrawlingContext) {
+        const { request, $, enqueueLinks } = context;
+        const articleHtml = $("div.devsite-article-body").html() ?? "";
+        const articleId = getStandardId(request.url);
 
-      const h1Element = $("h1.devsite-page-title").first();
-      if (h1Element.length) {
-        title = h1Element.text().trim();
-      }
+        let title = "";
 
-      if (!title) {
-        const h1 = $("h1").first();
-        if (h1.length) {
-          title = h1.text().trim();
+        const h1Element = $("h1.devsite-page-title").first();
+        if (h1Element.length) {
+          title = h1Element.text().trim();
         }
-      }
 
-      if (!title) {
-        title = $("title").first().text().split(" | ")[0].trim();
-      }
+        if (!title) {
+          const h1 = $("h1").first();
+          if (h1.length) {
+            title = h1.text().trim();
+          }
+        }
 
-      if (!title) {
-        const urlPath = new URL(request.url).pathname;
-        const pathSegments = urlPath.split("/").filter(Boolean);
-        const lastSegment = pathSegments.at(-1) ?? "";
-        title =
-          lastSegment.replaceAll("-", " ").replaceAll(/\b\w/g, (l) => l.toUpperCase()) ||
-          "Untitled";
-      }
+        if (!title) {
+          title = $("title").first().text().split(" | ")[0].trim();
+        }
 
-      const content = turndown.turndown(articleHtml);
+        if (!title) {
+          const urlPath = new URL(request.url).pathname;
+          const pathSegments = urlPath.split("/").filter(Boolean);
+          const lastSegment = pathSegments.at(-1) ?? "";
+          title =
+            lastSegment.replaceAll("-", " ").replaceAll(/\b\w/g, (l) => l.toUpperCase()) ||
+            "Untitled";
+        }
 
-      if (title && title !== "Untitled" && content.trim()) {
-        documents.push({
-          filename: filenameFromUrl(request.url),
-          title,
-          url: articleId,
-          kind: "cloud-docs",
-          content,
-          metadata: {},
-        });
-        console.log(`Crawled: ${title}`);
-      } else {
-        console.log(`Skipping page with insufficient content: ${request.url}`);
-      }
+        const content = turndown.turndown(articleHtml);
 
-      await enqueueLinks({
-        globs: ["**/chrome-enterprise-premium/**"],
-        transformRequestFunction: (req) => {
-          try {
-            const url = new URL(req.url);
+        if (title && title !== "Untitled" && content.trim()) {
+          documents.push({
+            filename: filenameFromUrl(request.url),
+            title,
+            url: articleId,
+            kind: "cloud-docs",
+            content,
+            metadata: {},
+          });
+          console.log(`Crawled: ${title}`);
+        } else {
+          console.log(`Skipping page with insufficient content: ${request.url}`);
+        }
 
-            const path = url.pathname;
-            if (
-              path.includes("/reference/") ||
-              path.includes("/samples/") ||
-              path.includes("/quotas") ||
-              path.endsWith("/") ||
-              path.includes("#")
-            ) {
+        await enqueueLinks({
+          globs: ["**/chrome-enterprise-premium/**"],
+          transformRequestFunction: (req) => {
+            try {
+              const url = new URL(req.url);
+
+              const path = url.pathname;
+              if (
+                path.includes("/reference/") ||
+                path.includes("/samples/") ||
+                path.includes("/quotas") ||
+                path.endsWith("/") ||
+                path.includes("#")
+              ) {
+                return false;
+              }
+
+              url.search = "";
+              url.hash = "";
+              req.url = url.toString();
+              return req;
+            } catch {
               return false;
             }
-
-            url.search = "";
-            url.hash = "";
-            req.url = url.toString();
-            return req;
-          } catch {
-            return false;
-          }
-        },
-      });
+          },
+        });
+      },
     },
-  });
+    config,
+  );
 
   console.log("Starting cloud docs crawler...");
   await crawler.run(["https://cloud.google.com/chrome-enterprise-premium/docs/overview"]);

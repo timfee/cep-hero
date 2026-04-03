@@ -2,7 +2,7 @@
  * Crawls Google Support help center articles for Chrome Enterprise and writes them as markdown files.
  */
 
-import { CheerioCrawler, type CheerioCrawlingContext } from "crawlee";
+import { CheerioCrawler, Configuration, type CheerioCrawlingContext } from "crawlee";
 
 import type { RagDocument } from "./types.js";
 import { cleanHtml, getStandardId, slugify, turndown, writeDocuments } from "./utils.js";
@@ -223,83 +223,90 @@ export async function main(): Promise<void> {
   const documents: RagDocument[] = [];
   let hit429 = false;
 
-  const crawler = new CheerioCrawler({
-    maxRequestsPerCrawl: MAX_REQUESTS,
-    maxConcurrency: MAX_CONCURRENCY,
+  const config = new Configuration({
+    persistStorage: false,
+  });
 
-    preNavigationHooks: [
-      ({ request }, gotOptions) => {
-        gotOptions.http2 = false;
-        request.headers = headers;
+  const crawler = new CheerioCrawler(
+    {
+      maxRequestsPerCrawl: MAX_REQUESTS,
+      maxConcurrency: MAX_CONCURRENCY,
+
+      preNavigationHooks: [
+        ({ request }, gotOptions) => {
+          gotOptions.http2 = false;
+          request.headers = headers;
+        },
+      ],
+
+      failedRequestHandler({ request, error: rawError }) {
+        const message = String(rawError);
+        if (message.includes("429") || message.includes("Too Many")) {
+          hit429 = true;
+        }
+        console.log(`Failed to crawl: ${request.url}`);
       },
-    ],
 
-    failedRequestHandler({ request, error: rawError }) {
-      const message = String(rawError);
-      if (message.includes("429") || message.includes("Too Many")) {
-        hit429 = true;
-      }
-      console.log(`Failed to crawl: ${request.url}`);
-    },
+      errorHandler({ request, error: rawError }) {
+        const message = String(rawError);
+        if (message.includes("429") || message.includes("Too Many")) {
+          hit429 = true;
+          console.log(`Rate limited (429): ${request.url}`);
+        }
+      },
 
-    errorHandler({ request, error: rawError }) {
-      const message = String(rawError);
-      if (message.includes("429") || message.includes("Too Many")) {
-        hit429 = true;
-        console.log(`Rate limited (429): ${request.url}`);
-      }
-    },
+      async requestHandler(context: CheerioCrawlingContext) {
+        const { request, response, $, enqueueLinks } = context;
+        if (response.statusCode === 429) {
+          hit429 = true;
+          throw new Error(`429 Too Many Requests: ${request.url}`);
+        }
 
-    async requestHandler(context: CheerioCrawlingContext) {
-      const { request, response, $, enqueueLinks } = context;
-      if (response.statusCode === 429) {
-        hit429 = true;
-        throw new Error(`429 Too Many Requests: ${request.url}`);
-      }
+        const url = new URL(request.url);
+        if (!VALID_PATTERN.test(url.pathname)) {
+          console.log(`Skipping malformed URL: ${request.url}`);
+          return;
+        }
 
-      const url = new URL(request.url);
-      if (!VALID_PATTERN.test(url.pathname)) {
-        console.log(`Skipping malformed URL: ${request.url}`);
-        return;
-      }
+        const articleHtml = $("article").html() ?? "";
+        const cleaned = cleanHtml(articleHtml);
 
-      const articleHtml = $("article").html() ?? "";
-      const cleaned = cleanHtml(articleHtml);
+        if (!/\/(answer|topic)\/(\d+)/.test(request.url)) {
+          console.log(`Topic/category page (no content extraction): ${request.url}`);
+          await enqueueLinks({
+            globs: ENQUEUE_GLOBS,
+            selector: "article a[href]",
+            transformRequestFunction: transformRequest,
+            limit: 200,
+          });
+          return;
+        }
 
-      if (!/\/(answer|topic)\/(\d+)/.test(request.url)) {
-        console.log(`Topic/category page (no content extraction): ${request.url}`);
+        const articleId = getStandardId(request.url);
+        const title = extractCleanTitle($("h1"), request.url);
+        const helpcenterMetadata = extractHelpcenterMetadata(request.url);
+        const content = turndown.turndown(cleaned);
+
+        documents.push({
+          filename: filenameFromUrl(request.url),
+          title,
+          url: articleId,
+          kind: "admin-docs",
+          content,
+          metadata: helpcenterMetadata,
+        });
+        console.log(`Crawled: ${title}`);
+
         await enqueueLinks({
           globs: ENQUEUE_GLOBS,
           selector: "article a[href]",
           transformRequestFunction: transformRequest,
           limit: 200,
         });
-        return;
-      }
-
-      const articleId = getStandardId(request.url);
-      const title = extractCleanTitle($("h1"), request.url);
-      const helpcenterMetadata = extractHelpcenterMetadata(request.url);
-      const content = turndown.turndown(cleaned);
-
-      documents.push({
-        filename: filenameFromUrl(request.url),
-        title,
-        url: articleId,
-        kind: "admin-docs",
-        content,
-        metadata: helpcenterMetadata,
-      });
-      console.log(`Crawled: ${title}`);
-
-      await enqueueLinks({
-        globs: ENQUEUE_GLOBS,
-        selector: "article a[href]",
-        transformRequestFunction: transformRequest,
-        limit: 200,
-      });
+      },
     },
-  });
+    config,
+  );
 
   console.log("Starting help center crawler...");
   await crawler.run(SEED_URLS);
